@@ -10,23 +10,35 @@ import april.jmat.*;
 import april.jmat.geom.*;
 import april.util.*;
 
+import lcm.lcm.*;
+
+import probcog.arm.*;
 import probcog.lcmtypes.*;
 
 public class Tracker
 {
     static LCM lcm = LCM.getSingleton();
+
+    // Soar stuff
     private Object soarLock;
     private soar_objects_t soar_lcm;
 
-    private KinectSegment segmenter;
+    // Arm Stuff
+    private Object armLock = new Object();
+    private robot_command_t robot_cmd;
 
-    public Tracker(Config color, Config ir, Config armConfig)
+    private KinectSegment segmenter;
+    private ArmCommandInterpreter armInterpreter;
+
+    public Tracker(Config color, Config ir, Config calib, Config armConfig)
     {
-        segmenter = new KinectSegment(color, ir, armConfig);
+        segmenter = new KinectSegment(color, ir, calib, armConfig);
+        armInterpreter = new ArmCommandInterpreter(false);  // Debug off
 
         soarLock = new Object();
         soar_lcm = null;
         new ListenerThread().start();
+        new TrackingThread().start();
     }
 
     public void compareObjects()
@@ -112,11 +124,12 @@ public class Tracker
         public ListenerThread()
         {
             lcm.subscribe("SOAR_OBJECTS", this);
+            lcm.subscribe("ROBOT_COMMAND", this);
         }
 
         public void run()
         {
-            while(true) {
+            while (true) {
                 TimeUtil.sleep(1000/60);    // XXX.
             }
         }
@@ -124,14 +137,41 @@ public class Tracker
         public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
         {
             try {
-                if(channel.equals("SOAR_OBJECTS")) {
-                    synchronized (soarLock) {
-                        soar_lcm = new soar_objects_t(ins);
-                    }
-                }
-            } catch(IOException ioex) {
-                System.err.println("ERR: LCM channel ="+channel);
+                messageReceivedEx(lcm, channel, ins);
+            } catch (IOException ioex) {
+                System.err.println("ERR: LCM channel -"+channel);
                 ioex.printStackTrace();
+            }
+        }
+
+        public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
+            throws IOException
+        {
+            if (channel.equals("SOAR_OBJECTS")) {
+                synchronized (soarLock) {
+                    soar_lcm = new soar_objects_t(ins);
+                }
+            } else if (channel.equals("ROBOT_COMMAND")) {
+                synchronized (armLock) {
+                    robot_cmd = new robot_command_t(ins);
+                    armInterpreter.queueCommand(robot_cmd);
+                }
+            }
+        }
+    }
+
+    /** Runs in the background, updating our knowledge of the scene */
+    public class TrackingThread extends Thread
+    {
+        public void run()
+        {
+            while (true) {
+                ArrayList<Obj> objs = getVisibleObjects();  // XXX
+                synchronized (armLock) {
+                    armInterpreter.updateWorld(objs);
+                }
+
+                TimeUtil.sleep(1000/30);
             }
         }
     }
