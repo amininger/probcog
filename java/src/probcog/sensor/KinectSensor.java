@@ -23,19 +23,6 @@ import probcog.lcmtypes.*;
  **/
 public class KinectSensor
 {
-    // FOR NOW, hardcoded values for depth  camera calibration, which will
-    // take some extra work to get to.
-    //
-    // parameters for IR depth camera
-    //public static double Firx = 5.7191759217862204e+02; // focal length
-    //public static double Firy = 5.8760489958891026e+02; //
-
-    //public static double Cirx = 3.37025048258259540e+02; // larger -> moves right
-    //public static double Ciry = 2.4675008449138741e+02; // larger -> moves down
-
-    //public static double Cirx = 3.2525048258259540e+02; // camera center in pixels
-    //public static double Ciry = 2.4275008449138741e+02; //
-
     LCM lcm = LCM.getSingleton();
 
     Object kinectLock = new Object();
@@ -48,17 +35,25 @@ public class KinectSensor
     View output;
     Rasterizer rasterizer;
 
+    // IR Camera parameters, pulled from config
     double Cirx, Ciry, Firx, Firy;
+
+    // Kinect to world transformation and point filtering
+    Config robot;
+    double[][] k2wXform;
+    april.jmat.geom.Polygon poly;
 
     // Stash
     kinect_status_t stash_ks;
     BufferedImage r_rgbIm;
     BufferedImage r_depthIm;
 
-    public KinectSensor(Config color_, Config ir_) throws IOException
+    // XXX Might want to condense the config files to just one
+    public KinectSensor(Config color_, Config ir_, Config robot_) throws IOException
     {
         color = color_;
         ir = ir_;
+        robot = robot_;
 
         // Set IR Paremeters
         Cirx = ir.requireDoubles("intrinsics.cc")[0];
@@ -83,6 +78,31 @@ public class KinectSensor
         // Create the rasterizer. XXX Eventually specified by config or cmd?
         System.err.println("NFO: Initializing rasterizer");
         rasterizer = new NearestNeighborRasterizer(input, output);
+
+        // Initialize kinect-to-world transform
+        if (robot != null) {
+            System.out.println("Loading robot calibration from file...");
+            // Create the k2w transform
+            k2wXform = new double[4][4];
+            double[] k2wArray = robot.getDoubles("calibration.k2w");
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    k2wXform[i][j] = k2wArray[i*4 + j];
+                }
+            }
+
+            // Build bounding poly
+            ArrayList<double[]> points = new ArrayList<double[]>();
+            double[] dim = robot.getDoubles("calibration.dim");
+            double[] polyArray = robot.getDoubles("calibration.poly");
+            for (int i = 0; i < polyArray.length; i+=2) {
+                points.add(new double[] {polyArray[i], dim[1] - polyArray[i+1]});
+            }
+            poly = new april.jmat.geom.Polygon(points);
+        } else {
+            k2wXform = LinAlg.identity(4);
+            poly = null;    // A null polygon will not filter out any points
+        }
 
         // Spin up LCM listener
         new ListenerThread().start();
@@ -158,9 +178,9 @@ public class KinectSensor
             for (int x = 0; x < stash_ks.WIDTH; x++) {
                 int i = y*stash_ks.WIDTH + x;
                 brgb[i] = 0xff000000 |
-                          ((stash_ks.rgb[i*3 + 0] & 0xff) << 0) |
+                          ((stash_ks.rgb[i*3 + 2] & 0xff) << 0) |
                           ((stash_ks.rgb[i*3 + 1] & 0xff) << 8) |
-                          ((stash_ks.rgb[i*3 + 2] & 0xff) << 16);
+                          ((stash_ks.rgb[i*3 + 0] & 0xff) << 16);
 
                 bdepth[i] = ((stash_ks.depth[i*2 + 0] & 0xff) << 0) |
                             ((stash_ks.depth[i*2 + 1] & 0xff) << 8);
@@ -178,6 +198,18 @@ public class KinectSensor
         //                                          r_depthIm.getHeight());
 
         return true;
+    }
+
+    /** Get the stashed RGB Image */
+    public BufferedImage getImage()
+    {
+        return r_rgbIm;
+    }
+
+    /** Get the bounding polygon */
+    public april.jmat.geom.Polygon getPoly()
+    {
+        return poly;
     }
 
     /** Get the width of our rectified images */
@@ -198,31 +230,104 @@ public class KinectSensor
 
         return r_rgbIm.getHeight();
     }
+    // === Get points in the world coordinate system ===
 
-    // XXX Add bounds checking
-    /** Get the colored point at (ix, iy) in the stashed frame */
+    /** Convert a kinect point to world coordinates */
+    private double[] k2w(double[] p)
+    {
+        double[] pt = LinAlg.resize(p, 4);
+        pt[3] = 1;
+
+        return LinAlg.resize(LinAlg.matrixAB(pt, k2wXform), 3);
+    }
+
     public double[] getXYZRGB(int ix, int iy)
+    {
+        return getXYZRGB(ix, iy, true);
+    }
+
+    public double[] getXYZRGB(int ix, int iy, boolean filter)
+    {
+        if (ix < 0 || ix >= getWidth() ||
+            iy < 0 || iy >= getHeight())
+            return null;
+
+        if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
+            return null;
+
+        double[] xyzc = getXYZ(ix, iy, new double[4], false);
+        xyzc[3] = getRGB(ix, iy, false);
+
+        return xyzc;
+    }
+
+    public double[] getXYZ(int ix, int iy)
+    {
+        return getXYZ(ix, iy, new double[3], true);
+    }
+
+    public double[] getXYZ(int ix, int iy, boolean filter)
+    {
+        return getXYZ(ix, iy, new double[3], filter);
+    }
+
+    public double[] getXYZ(int ix, int iy, double[] xyz, boolean filter)
+    {
+        if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
+            return null;
+
+        double[] l_xyz = getLocalXYZ(ix, iy, xyz);
+        if (l_xyz == null)
+            return null;
+        return k2w(l_xyz);
+    }
+
+    public int getRGB(int ix, int iy)
+    {
+        return getRGB(ix, iy, true);
+    }
+
+    /** Get the color of the point at (ix, iy) in the stashed frame */
+    public int getRGB(int ix, int iy, boolean filter)
     {
         if (ix < 0 || ix >= r_rgbIm.getWidth() ||
             iy < 0 || iy >= r_rgbIm.getHeight())
+            return 0;
+
+        if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
+            return 0;
+
+        assert (r_rgbIm != null);
+        int[] buf = ((DataBufferInt)(r_rgbIm.getRaster().getDataBuffer())).getData();
+
+        return buf[iy*r_rgbIm.getWidth() + ix];
+    }
+
+    // === Get points from the raw kinect data. No filtering provided ===
+
+    /** Get the colored point at (ix, iy) in the stashed frame */
+    public double[] getLocalXYZRGB(int ix, int iy)
+    {
+        if (ix < 0 || ix >= getWidth() ||
+            iy < 0 || iy >= getHeight())
             return null;
 
-        double[] xyzc = getXYZ(ix, iy, new double[4]);
+        double[] xyzc = getLocalXYZ(ix, iy, new double[4]);
         xyzc[3] = getRGB(ix, iy);
 
         return xyzc;
     }
 
     /** Get the 3D point at (ix, iy) in the stashed frame */
-    public double[] getXYZ(int ix, int iy)
+    public double[] getLocalXYZ(int ix, int iy)
     {
-        return getXYZ(ix, iy, new double[3]);
+        return getLocalXYZ(ix, iy, new double[3]);
     }
 
-    public double[] getXYZ(int ix, int iy, double[] xyz)
+    public double[] getLocalXYZ(int ix, int iy, double[] xyz)
     {
-        if (ix < 0 || ix >= r_rgbIm.getWidth() ||
-            iy < 0 || iy >= r_rgbIm.getHeight())
+        if (ix < 0 || ix >= getWidth() ||
+            iy < 0 || iy >= getHeight())
             return null;
 
         assert (xyz != null && xyz.length >= 3);
@@ -239,26 +344,14 @@ public class KinectSensor
         return xyz;
     }
 
-    /** Get the color of the point at (ix, iy) in the stashed frame */
-    public int getRGB(int ix, int iy)
-    {
-        if (ix < 0 || ix >= r_rgbIm.getWidth() ||
-            iy < 0 || iy >= r_rgbIm.getHeight())
-            return 0;
-
-        assert (r_rgbIm != null);
-        int[] buf = ((DataBufferInt)(r_rgbIm.getRaster().getDataBuffer())).getData();
-
-        return buf[iy*r_rgbIm.getWidth() + ix];
-    }
-
     // === Debug GUI ==============
     public static void main(String[] args)
     {
         GetOpt opts = new GetOpt();
         opts.addBoolean('h',"help",false,"Show this help screen");
         opts.addString('c',"color",null,"RGB calibration config");
-        opts.addString('r',"ir",null,"IR calibration config");
+        opts.addString('i',"ir",null,"IR calibration config");
+        opts.addString('r',"robot",null,"Robot calibration config");
 
         if (!opts.parse(args)) {
             System.err.println("ERR: Error parsing args. "+opts.getReason());
@@ -275,12 +368,18 @@ public class KinectSensor
 
         Config color = null;
         Config ir = null;
+        Config robot = null;
+
+        // Create camera calibration configs
         try {
             color = new ConfigFile(opts.getString("color"));
             color = color.getChild("aprilCameraCalibration.camera0000");
 
             ir = new ConfigFile(opts.getString("ir"));
             ir = ir.getChild("aprilCameraCalibration.camera0000");
+
+            if (opts.getString("robot") != null)
+                robot = new ConfigFile(opts.getString("robot"));
         } catch (IOException ioex) {
             System.err.println("ERR: Could not open calibration config");
             ioex.printStackTrace();
@@ -301,8 +400,7 @@ public class KinectSensor
 
         KinectSensor kinect = null;
         try {
-            // XXX HACK
-            kinect = new KinectSensor(color, ir);
+            kinect = new KinectSensor(color, ir, robot);
         } catch (IOException ioex) {
             System.err.println("ERR: Could not initialize KinectSensor");
             ioex.printStackTrace();
@@ -326,7 +424,7 @@ public class KinectSensor
                         continue;
 
                     points.add(xyz);
-                    vcd.add(rgb);   // XXX probably flipped
+                    vcd.add(rgb);   // XXX these colors are flipped
                 }
             }
 
