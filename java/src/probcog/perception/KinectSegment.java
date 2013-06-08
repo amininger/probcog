@@ -36,7 +36,7 @@ public class KinectSegment
 
 
 
-    public KinectSegment(Config color, Config ir, Config armConfig)
+    public KinectSegment(Config color, Config ir, Config calib, Config armConfig)
     {
         // Get stuff ready for removing arms
         String armType = armConfig.getString("arm.arm_version",null);
@@ -55,7 +55,7 @@ public class KinectSegment
         armWidths.add(.05);
 
         try {
-            kinect = new KinectSensor(color, ir);
+            kinect = new KinectSensor(color, ir, calib);
         } catch (IOException ioex) {
             System.err.println("ERR: Could not initialize KinectSensor");
             ioex.printStackTrace();
