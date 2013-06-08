@@ -54,14 +54,14 @@ public class Obj
         return id;
     }
 
-    public void setPoints(PointCloud ptClout)
+    public void setPointCloud(PointCloud ptClout)
     {
         this.ptCloud = ptCloud;
         bbox = ptCloud.getBoundingBox();
         centroid = ptCloud.getCentroid();
     }
 
-    public PointCloud getPoints()
+    public PointCloud getPointCloud()
     {
         return ptCloud;
     }
