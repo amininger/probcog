@@ -7,21 +7,39 @@ public class Obj
     private int id;
     private PointCloud ptCloud;
     private ArrayList<String> labels;
+    private double[][] bbox;
+    private double[] centroid;
     // private HashMap<FeatureCategory, ArrayList<Double> > features;
-    private int segmentColor;
 
-    public Obj()
+    public Obj(boolean assignID)
     {
-        id = 0; // XXX - NEED TO GET SEQUENTIAL IDS
+        if(assignID)
+            id = nextID();
+
         labels = new ArrayList<String>();
+        bbox = new double[2][3];
+        centroid = new double[3];
         // features = new HashMap<FeatureCategory, ArrayList<Double> >();
     }
 
-    public Obj(PointCloud ptCloud)
+    public Obj(boolean assignID, PointCloud ptCloud)
     {
-        id = 0; // XXX - NEED TO GET SEQUENTIAL IDS
+        if(assignID)
+            id = nextID();
+
         this.ptCloud = ptCloud;
         labels = new ArrayList<String>();
+        bbox = ptCloud.getBoundingBox();
+        centroid = ptCloud.getCentroid();
+        // features = new HashMap<FeatureCategory, ArrayList<Double> >();
+    }
+
+    public Obj(int id)
+    {
+        this.id = id;
+        labels = new ArrayList<String>();
+        bbox = new double[2][3];
+        centroid = new double[3];
         // features = new HashMap<FeatureCategory, ArrayList<Double> >();
     }
 
@@ -39,6 +57,8 @@ public class Obj
     public void setPoints(PointCloud ptClout)
     {
         this.ptCloud = ptCloud;
+        bbox = ptCloud.getBoundingBox();
+        centroid = ptCloud.getCentroid();
     }
 
     public PointCloud getPoints()
@@ -46,14 +66,30 @@ public class Obj
         return ptCloud;
     }
 
-    public void setVisColor(int color)
+    public void setBoundingBox(double[][] bbox)
     {
-        segmentColor = color;
+        this.bbox = bbox;
     }
 
-    public int getVisColor()
+    public double[][] getBoundingBox()
     {
-        return segmentColor;
+        return bbox;
     }
 
+    public void setCentroid(double[] centroid)
+    {
+        this.centroid = centroid;
+    }
+
+    public double[] getCentroid()
+    {
+        return centroid;
+    }
+
+    // Increasing ids
+    private static int idGen = 0;
+    private int nextID()
+    {
+        return idGen ++;
+    }
 }
