@@ -20,8 +20,16 @@ public class ArmDriver implements LCMSubscriber, Runnable
 
     ExpiringMessageCache<dynamixel_command_list_t> cmdCache;
 
-    public ArmDriver(Config config)
+    public ArmDriver(Config config_)
     {
+        Config config = config_;
+        try {
+            config = new ConfigFile(config.getPath("robot.arm"));
+        } catch (IOException ioex) {
+            System.err.println("ERR: Could not open arm config file");
+            ioex.printStackTrace();
+        }
+
         AbstractBus bus;
         String device;
         String name;

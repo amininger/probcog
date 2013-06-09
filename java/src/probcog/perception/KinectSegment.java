@@ -9,6 +9,7 @@ import april.jmat.*;
 import april.jmat.geom.*;
 import april.util.*;
 
+import probcog.arm.*;
 import probcog.sensor.*;
 
 public class KinectSegment
@@ -25,6 +26,7 @@ public class KinectSegment
     private int height, width;
 
     private KinectSensor kinect;
+    private ArmStatus arm;
     private double baseHeight, wristHeight;
     private ArrayList<Double> armWidths;
 
@@ -36,31 +38,15 @@ public class KinectSegment
 
 
 
-    public KinectSegment(Config color, Config ir, Config calib, Config armConfig)
+    public KinectSegment(Config config_) throws IOException
     {
         // Get stuff ready for removing arms
-        String armType = armConfig.getString("arm.arm_version",null);
-        baseHeight = armConfig.getDouble("arm."+armType+".base_height",0);
-        wristHeight = armConfig.getDouble("arm."+armType+".wrist_height",0);
-        armWidths = new ArrayList<Double>();
-        for (int i = 0;; i++) {
-            double[] range = armConfig.getDoubles("arm."+armType+".r"+i+".range", null);
-            double width = armConfig.getDouble("arm."+armType+".r"+i+".width", 0);
-            if (range == null)
-                break;
+        ArmStatus arm = new ArmStatus(config_);
+        baseHeight = arm.baseHeight;
+        wristHeight = arm.wristHeight;
+        armWidths = arm.getArmSegmentWidths();
 
-            armWidths.add(width);
-        }
-        armWidths.add(.05);
-        armWidths.add(.05);
-
-        try {
-            kinect = new KinectSensor(color, ir, calib);
-        } catch (IOException ioex) {
-            System.err.println("ERR: Could not initialize KinectSensor");
-            ioex.printStackTrace();
-            System.exit(1);
-        }
+        kinect = new KinectSensor(config_);
     }
 
     public ArrayList<PointCloud> getObjectPointClouds()

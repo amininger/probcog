@@ -17,6 +17,7 @@ import april.vis.*;
 import april.util.*;
 
 import probcog.lcmtypes.*;
+import probcog.perception.*;
 
 public class ArmDemo implements LCMSubscriber
 {
@@ -33,7 +34,7 @@ public class ArmDemo implements LCMSubscriber
     // XXX Do we even use cmds anymore?
     ExpiringMessageCache<observations_t> observations = new ExpiringMessageCache<observations_t>(2.5, true);
 
-    public ArmDemo(Config config_, boolean sim)
+    public ArmDemo(Config config_, boolean sim) throws IOException
     {
         arm = new ArmStatus(config_);
 
@@ -420,7 +421,12 @@ public class ArmDemo implements LCMSubscriber
 
         // XXX Can no longer start up the arm command interpreter alone.
         //ArmCommandInterpreter interpreter = new ArmCommandInterpreter(false);
-        ArmController controller = new ArmController(config);
-        ArmDemo demo = new ArmDemo(config, opts.getBoolean("sim"));
+        try {
+            Tracker tracker = new Tracker(config);
+            ArmController controller = new ArmController(config);
+            ArmDemo demo = new ArmDemo(config, opts.getBoolean("sim"));
+        } catch (IOException ioex) {
+            System.err.println("ERR: Error reading arm config");
+        }
     }
 }

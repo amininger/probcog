@@ -29,8 +29,8 @@ public class KinectSensor
     kinect_status_t ks = null;
 
     // Calibration
-    Config color;
-    Config ir;
+    Config color = null;
+    Config ir = null;
     View input;
     View output;
     Rasterizer rasterizer;
@@ -39,7 +39,7 @@ public class KinectSensor
     double Cirx, Ciry, Firx, Firy;
 
     // Kinect to world transformation and point filtering
-    Config robot;
+    Config robot = null;
     double[][] k2wXform;
     april.jmat.geom.Polygon poly;
 
@@ -48,12 +48,16 @@ public class KinectSensor
     BufferedImage r_rgbIm;
     BufferedImage r_depthIm;
 
-    // XXX Might want to condense the config files to just one
-    public KinectSensor(Config color_, Config ir_, Config robot_) throws IOException
+    public KinectSensor(Config config_) throws IOException
     {
-        color = color_;
-        ir = ir_;
-        robot = robot_;
+        // Pull out config files
+        color = new ConfigFile(config_.getPath("kinect.calib_rgb"));
+        color = color.getChild("aprilCameraCalibration.camera0000");
+        ir = new ConfigFile(config_.getPath("kinect.calib_ir"));
+        ir = ir.getChild("aprilCameraCalibration.camera0000");
+
+        if (config_.getPath("kinect.calib_robot") != null)
+            robot = new ConfigFile(config_.getPath("kinect.calib_robot"));
 
         // Set IR Paremeters
         Cirx = ir.requireDoubles("intrinsics.cc")[0];
@@ -349,9 +353,7 @@ public class KinectSensor
     {
         GetOpt opts = new GetOpt();
         opts.addBoolean('h',"help",false,"Show this help screen");
-        opts.addString('c',"color",null,"RGB calibration config");
-        opts.addString('i',"ir",null,"IR calibration config");
-        opts.addString('r',"robot",null,"Robot calibration config");
+        opts.addString('c',"config",null,"Calibration config");
 
         if (!opts.parse(args)) {
             System.err.println("ERR: Error parsing args. "+opts.getReason());
@@ -359,27 +361,16 @@ public class KinectSensor
         }
 
         if (opts.getBoolean("help") ||
-            opts.getString("color") == null ||
-            opts.getString("ir") == null)
+            opts.getString("config") == null)
         {
             opts.doHelp();
             System.exit(0);
         }
 
-        Config color = null;
-        Config ir = null;
-        Config robot = null;
-
+        Config config = null;
         // Create camera calibration configs
         try {
-            color = new ConfigFile(opts.getString("color"));
-            color = color.getChild("aprilCameraCalibration.camera0000");
-
-            ir = new ConfigFile(opts.getString("ir"));
-            ir = ir.getChild("aprilCameraCalibration.camera0000");
-
-            if (opts.getString("robot") != null)
-                robot = new ConfigFile(opts.getString("robot"));
+            config = new ConfigFile(opts.getString("config"));
         } catch (IOException ioex) {
             System.err.println("ERR: Could not open calibration config");
             ioex.printStackTrace();
@@ -400,7 +391,7 @@ public class KinectSensor
 
         KinectSensor kinect = null;
         try {
-            kinect = new KinectSensor(color, ir, robot);
+            kinect = new KinectSensor(config);
         } catch (IOException ioex) {
             System.err.println("ERR: Could not initialize KinectSensor");
             ioex.printStackTrace();

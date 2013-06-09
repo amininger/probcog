@@ -31,14 +31,16 @@ public class ArmStatus implements LCMSubscriber
     private ArrayList<Joint> joints = new ArrayList<Joint>();
     private ArrayList<Double> armWidths = new ArrayList<Double>();
     public static double baseHeight = 0.0;
-    public static double wristHeight;
+    public static double wristHeight = 0.0;
 
     private ExpiringMessageCache<dynamixel_status_list_t> statuses =
         new ExpiringMessageCache<dynamixel_status_list_t>(1.0, true);
 
-    public ArmStatus(Config config_)
+    public ArmStatus(Config config_) throws IOException
     {
-        config = config_;
+        // Construct config
+        config = new ConfigFile(config_.getPath("robot.arm"));
+
         initArm();
 
         lcm.subscribe("ARM_STATUS", this);

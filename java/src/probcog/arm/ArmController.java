@@ -696,7 +696,7 @@ public class ArmController implements LCMSubscriber
         }
     }
 
-    public ArmController(Config config)
+    public ArmController(Config config) throws IOException
     {
         arm = new ArmStatus(config);
         initArm();
@@ -773,6 +773,12 @@ public class ArmController implements LCMSubscriber
             System.exit(1);
         }
 
-        ArmController ac = new ArmController(config);
+        try {
+            ArmController ac = new ArmController(config);
+        } catch (IOException ioex) {
+            System.err.println("ERR: Could not read arm config file");
+            ioex.printStackTrace();
+            System.exit(1);
+        }
     }
 }

@@ -33,9 +33,9 @@ public class Tracker
     // World state, as decided by Soar and the perception system
     ArrayList<Obj> worldState = new ArrayList<Obj>();
 
-    public Tracker(Config color, Config ir, Config calib, Config armConfig)
+    public Tracker(Config config_) throws IOException
     {
-        segmenter = new KinectSegment(color, ir, calib, armConfig);
+        segmenter = new KinectSegment(config_);
         armInterpreter = new ArmCommandInterpreter(false);  // Debug off
 
         soarLock = new Object();
