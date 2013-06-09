@@ -31,7 +31,7 @@ public class KinectCalibrator
     ParameterGUI pg;
 
     // Kinect
-    Config calib_rgb, calib_ir, calib_robot;
+    Config config_;
     KinectSensor kinect;
     BufferedImage im = null;
     april.jmat.geom.Polygon poly;
@@ -53,18 +53,7 @@ public class KinectCalibrator
         jf.setLayout(new BorderLayout());
         jf.setSize(800, 600);
 
-        // Create a KinectSensor to pull frames from based on calibration
-        // files specified in the config. CURRENTLY REQUIRES SOME FORM OF
-        // CALIBRATION, EVEN IF IT IS JUST A 'NULL' CALIBRATION. XXX
-        calib_rgb = new ConfigFile(config.getPath("kinect.calib_rgb"));
-        calib_ir = new ConfigFile(config.getPath("kinect.calib_ir"));
-        calib_rgb = calib_rgb.getChild("aprilCameraCalibration.camera0000");
-        calib_ir = calib_ir.getChild("aprilCameraCalibration.camera0000");
-
-        calib_robot = new ConfigFile(config.getPath("kinect.calib_robot"));
-        kinect = new KinectSensor(calib_rgb,
-                                  calib_ir,
-                                  calib_robot);
+        kinect = new KinectSensor(config_);
         poly = kinect.getPoly();
 
         vw = new VisWorld();
@@ -213,8 +202,8 @@ public class KinectCalibrator
         // Reload the kinect with our new parameters
         try {
             System.out.println("Trying to construct new KinectSensor");
-            calib_robot = new ConfigFile(filename);
-            kinect = new KinectSensor(calib_rgb, calib_ir, calib_robot);
+            //calib_robot = new ConfigFile(filename); // XXX
+            kinect = new KinectSensor(config_);
 
             int timeout = 10;
             while (timeout > 0 && !kinect.stashFrame()) {
