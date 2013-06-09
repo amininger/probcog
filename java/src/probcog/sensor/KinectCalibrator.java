@@ -56,6 +56,11 @@ public class KinectCalibrator
         kinect = new KinectSensor(config_);
         poly = kinect.getPoly();
 
+        // Load in arm parameter
+        Config armConfig = new ConfigFile(config_.getPath("robot.arm"));
+        String name = armConfig.getString("arm.arm_version");
+        x_offset = armConfig.getDouble("arm."+name+".calib_offset", 0);
+
         vw = new VisWorld();
         vl = new VisLayer(vw);
         vc = new VisCanvas(vl);
@@ -123,7 +128,6 @@ public class KinectCalibrator
         double[] wy = LinAlg.normalize(LinAlg.subtract(ky, ko));
         double[] wz = LinAlg.crossProduct(wx, wy);
         wy = LinAlg.crossProduct(wz, wx);
-
 
         // Translation of kinect origin to world origin
         double[][] k2wTranslate = new double[][] {
