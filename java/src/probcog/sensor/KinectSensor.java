@@ -24,6 +24,7 @@ import probcog.lcmtypes.*;
 public class KinectSensor
 {
     LCM lcm = LCM.getSingleton();
+    Config config;
 
     Object kinectLock = new Object();
     kinect_status_t ks = null;
@@ -50,6 +51,8 @@ public class KinectSensor
 
     public KinectSensor(Config config_) throws IOException
     {
+        config = config_;
+
         // Pull out config files
         color = new ConfigFile(config_.getPath("kinect.calib_rgb"));
         color = color.getChild("aprilCameraCalibration.camera0000");

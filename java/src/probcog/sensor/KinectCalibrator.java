@@ -156,10 +156,12 @@ public class KinectCalibrator
                                                   wTranslate);
 
         // Write to a configuration file
-        String filename = "k2w.config";
+        String filename = config.getPath("kinect.calib_robot");
+        if (filename == null)
+            filename = "k2w.config";
         try {
             BufferedWriter fout = new BufferedWriter(new FileWriter(filename));
-            System.out.println("Writing calibration file...");
+            System.out.println("Writing to calibration file "+filename);
 
             // Save transformation matrix
             // XXX Should really be able to write to a matrix, not flat array
@@ -203,7 +205,7 @@ public class KinectCalibrator
         try {
             System.out.println("Trying to construct new KinectSensor");
             //calib_robot = new ConfigFile(filename); // XXX
-            kinect = new KinectSensor(config_);
+            kinect = new KinectSensor(config);
 
             int timeout = 10;
             while (timeout > 0 && !kinect.stashFrame()) {
