@@ -13,11 +13,15 @@ import april.util.*;
 import lcm.lcm.*;
 
 import probcog.arm.*;
+import probcog.classify.*;
+import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 
 public class Tracker
 {
     static LCM lcm = LCM.getSingleton();
+    // Classification stuff
+    ClassifierManager classyManager;
 
     // Soar stuff
     private Object soarLock;
@@ -31,12 +35,16 @@ public class Tracker
     private ArmCommandInterpreter armInterpreter;
 
     // World state, as decided by Soar and the perception system
-    ArrayList<Obj> worldState = new ArrayList<Obj>();
+    public Object stateLock;
+    HashMap<Integer, Obj> worldState = new HashMap<Integer, Obj>();
 
     public Tracker(Config config_) throws IOException
     {
         segmenter = new KinectSegment(config_);
+        classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(false);  // Debug off
+
+        stateLock = new Object();
 
         soarLock = new Object();
         soar_lcm = null;
@@ -44,9 +52,15 @@ public class Tracker
         new TrackingThread().start();
     }
 
-    public ArrayList<Obj> getWorldState()
+    public HashMap<Integer, Obj> getWorldState()
     {
         return worldState;
+    }
+
+    // Returns null if object not found
+    public Obj getObject(Integer id)
+    {
+        return worldState.get(id);
     }
 
     public void compareObjects()
@@ -54,41 +68,46 @@ public class Tracker
         ArrayList<Obj> visibleObjects = getVisibleObjects();
         ArrayList<Obj> soarObjects = getSoarObjects();
 
-        // XXX - Need some sort of matching code here.
-        //
-        // Iterate through our existing objects. If there is an object
-        // sharing any single label within a fixed distance of an existing
-        // object, take the existing object's ID. If the ID has already
-        // been taken by another object, take a new ID
-        Set<Integer> idSet = new HashSet<Integer>();
-        double thresh = 0.02;
-        for (Obj newObj: visibleObjects) {
-            boolean matched = false;
-            double minDist = Double.MAX_VALUE;
-            int minID = -1;
+        synchronized (stateLock) {
+            HashMap<Integer, Obj> newWorldState = new HashMap<Integer, Obj>();
 
-            for (Obj oldObj: worldState) {
-                if (idSet.contains(oldObj.getID()))
-                    continue;
-                double dist = LinAlg.distance(newObj.getCentroid(),
-                                              oldObj.getCentroid(),
-                                              2);
-                if (dist < thresh && dist < minDist) {
-                    matched = true;
-                    minID = oldObj.getID();
-                    minDist = dist;
+            // XXX - Need some sort of matching code here.
+            //
+            // Iterate through our existing objects. If there is an object
+            // sharing any single label within a fixed distance of an existing
+            // object, take the existing object's ID. If the ID has already
+            // been taken by another object, take a new ID
+            Set<Integer> idSet = new HashSet<Integer>();
+            double thresh = 0.02;
+            for (Obj newObj: visibleObjects) {
+                boolean matched = false;
+                double minDist = Double.MAX_VALUE;
+                int minID = -1;
+
+                for (Obj oldObj: worldState.values()) {
+                    if (idSet.contains(oldObj.getID()))
+                        continue;
+                    double dist = LinAlg.distance(newObj.getCentroid(),
+                                                  oldObj.getCentroid(),
+                                                  2);
+                    if (dist < thresh && dist < minDist) {
+                        matched = true;
+                        minID = oldObj.getID();
+                        minDist = dist;
+                    }
                 }
-            }
 
-            if (matched) {
-                newObj.setID(minID);
-            } else {
-                newObj.setID(Obj.nextID());
+                if (matched) {
+                    newObj.setID(minID);
+                } else {
+                    newObj.setID(Obj.nextID());
+                }
+                idSet.add(newObj.getID());
+
+                newWorldState.put(newObj.getID(), newObj);
             }
-            idSet.add(newObj.getID());
+            worldState = newWorldState;
         }
-
-        worldState = visibleObjects;
     }
 
 
@@ -138,6 +157,46 @@ public class Tracker
         }
         return soarObjects;
     }
+
+    //////////////////////////////////////////////////////////////
+    // Methods for interacting with the classifierManager (used through guis)
+    public void clearClassificationData()
+    {
+        classyManager.clearData();
+    }
+    public void reloadClassificationData()
+    {
+        classyManager.reloadData();
+    }
+    public void undoClassification()
+    {
+        classyManager.undo();
+    }
+    public void redoClassification()
+    {
+        classyManager.redo();
+    }
+    public void addTraining(FeatureCategory category, ArrayList<Double> features, String label)
+    {
+        classyManager.addDataPoint(category, features, label);
+    }
+    public void writeClassificationState(String filename) throws IOException
+    {
+        classyManager.writeState(filename);
+    }
+    public boolean canUndoClassification()
+    {
+        return classyManager.hasUndo();
+    }
+    public boolean canRedoClassification()
+    {
+        return classyManager.hasRedo();
+    }
+    public Classifications getClassification(FeatureCategory category, Obj ob)
+    {
+        return classyManager.classify(category, ob);
+    }
+
 
     // public void sendMessage()
     // {
@@ -209,9 +268,12 @@ public class Tracker
         {
             while (true) {
                 compareObjects();
-                ArrayList<Obj> objs = getWorldState();
+                HashMap<Integer, Obj> objs = getWorldState();
+                ArrayList<Obj> objsList = new ArrayList<Obj>();
+                for(Obj o : objs.values())
+                    objsList.add(o);
                 synchronized (armLock) {
-                    armInterpreter.updateWorld(objs);
+                    armInterpreter.updateWorld(objsList);
                 }
 
                 TimeUtil.sleep(1000/30);

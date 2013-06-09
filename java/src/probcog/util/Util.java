@@ -2,6 +2,8 @@ package probcog.util;
 
 import java.util.*;
 
+import probcog.sensor.*;
+
 public class Util
 {
     /** Give a string of key=token pairs, extract the token
@@ -78,6 +80,26 @@ public class Util
 
         return ia;
     }
+
+    public static ArrayList<double[]> extractPoints(KinectSensor kinect)
+    {
+        ArrayList<double[]> points = new ArrayList<double[]>();
+        int height = kinect.getHeight();
+        int width = kinect.getWidth();
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                double[] xyz = kinect.getXYZ(x,y);
+                int rgb = kinect.getRGB(x,y); // Probably flipped?
+                if (xyz == null)
+                    continue;
+
+                points.add(new double[]{xyz[0], xyz[1], xyz[2],rgb});
+            }
+        }
+        return points;
+    }
+
 
 
     static public void main(String[] args)
