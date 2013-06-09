@@ -106,7 +106,7 @@ public class ClassifierManager
         Classifications classifications;
 		synchronized (stateLock) {
 			classifications = classifier.classify(features);
-            obj.addLabel(cat, classifications.label);
+            objToClassify.addLabel(cat, classifications.getBestLabel().label); // XXX - might want multiple
 		}
 		return classifications;
 	}

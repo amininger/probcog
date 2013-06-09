@@ -84,7 +84,7 @@ public class Obj
         return centroid;
     }
 
-    public void setLabel(FeatureCategory category, String label)
+    public void addLabel(FeatureCategory category, String label)
     {
         HashSet<String> allLabels;
         if(labels.containsKey(category))
@@ -96,7 +96,7 @@ public class Obj
         labels.put(category, allLabels);
     }
 
-    public void setLabels(FeatureCategory category, HashSet<String> newLabels)
+    public void addLabels(FeatureCategory category, HashSet<String> newLabels)
     {
         HashSet<String> allLabels;
         if(labels.containsKey(category))
@@ -108,7 +108,20 @@ public class Obj
         labels.put(category, allLabels);
     }
 
-    public void setLabels(HashMap<FeatureCategory, HashSet<String>> newLabels)
+    public void addLabels(FeatureCategory category, ArrayList<String> newLabels)
+    {
+        HashSet<String> allLabels;
+        if(labels.containsKey(category))
+            allLabels = labels.get(category);
+        else
+            allLabels = new HashSet<String>();
+
+        for(String label : newLabels)
+            allLabels.add(label);
+        labels.put(category, allLabels);
+    }
+
+    public void addLabels(HashMap<FeatureCategory, HashSet<String>> newLabels)
     {
         for(FeatureCategory category : newLabels.keySet()){
             HashSet<String> allLabels;
