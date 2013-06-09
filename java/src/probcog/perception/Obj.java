@@ -2,24 +2,24 @@ package probcog.perception;
 
 import java.util.*;
 
+import probcog.classify.Features.FeatureCategory;
+
 public class Obj
 {
     private int id;
     private PointCloud ptCloud;
-    private ArrayList<String> labels;
     private double[][] bbox;
     private double[] centroid;
-    // private HashMap<FeatureCategory, ArrayList<Double> > features;
+    private HashMap<FeatureCategory, HashSet<String>> labels;
 
     public Obj(boolean assignID)
     {
         if(assignID)
             id = nextID();
 
-        labels = new ArrayList<String>();
+        labels = new HashMap<FeatureCategory, HashSet<String>>();
         bbox = new double[2][3];
         centroid = new double[3];
-        // features = new HashMap<FeatureCategory, ArrayList<Double> >();
     }
 
     public Obj(boolean assignID, PointCloud ptCloud)
@@ -28,19 +28,17 @@ public class Obj
             id = nextID();
 
         this.ptCloud = ptCloud;
-        labels = new ArrayList<String>();
+        labels = new HashMap<FeatureCategory, HashSet<String>>();
         bbox = ptCloud.getBoundingBox();
         centroid = ptCloud.getCentroid();
-        // features = new HashMap<FeatureCategory, ArrayList<Double> >();
     }
 
     public Obj(int id)
     {
         this.id = id;
-        labels = new ArrayList<String>();
+        labels = new HashMap<FeatureCategory, HashSet<String>>();
         bbox = new double[2][3];
         centroid = new double[3];
-        // features = new HashMap<FeatureCategory, ArrayList<Double> >();
     }
 
     // SET AND GET CALLS
@@ -84,6 +82,80 @@ public class Obj
     public double[] getCentroid()
     {
         return centroid;
+    }
+
+    public void addLabel(FeatureCategory category, String label)
+    {
+        HashSet<String> allLabels;
+        if(labels.containsKey(category))
+            allLabels = labels.get(category);
+        else
+            allLabels = new HashSet<String>();
+
+        allLabels.add(label);
+        labels.put(category, allLabels);
+    }
+
+    public void addLabels(FeatureCategory category, HashSet<String> newLabels)
+    {
+        HashSet<String> allLabels;
+        if(labels.containsKey(category))
+            allLabels = labels.get(category);
+        else
+            allLabels = new HashSet<String>();
+
+        allLabels.addAll(newLabels);
+        labels.put(category, allLabels);
+    }
+
+    public void addLabels(FeatureCategory category, ArrayList<String> newLabels)
+    {
+        HashSet<String> allLabels;
+        if(labels.containsKey(category))
+            allLabels = labels.get(category);
+        else
+            allLabels = new HashSet<String>();
+
+        for(String label : newLabels)
+            allLabels.add(label);
+        labels.put(category, allLabels);
+    }
+
+    public void addLabels(HashMap<FeatureCategory, HashSet<String>> newLabels)
+    {
+        for(FeatureCategory category : newLabels.keySet()){
+            HashSet<String> allLabels;
+            if(labels.containsKey(category))
+                allLabels = labels.get(category);
+            else
+                allLabels = new HashSet<String>();
+
+            allLabels.addAll(newLabels.get(category));
+            labels.put(category, allLabels);
+        }
+    }
+
+    public Set<String> getLabels(FeatureCategory category)
+    {
+        if(labels.containsKey(category)){
+    		return labels.get(category);
+    	}
+        return new HashSet<String>();
+    }
+
+    public HashMap<FeatureCategory, HashSet<String>> getLabels()
+    {
+        return labels;
+    }
+
+    public void clearLabels()
+    {
+        labels = new HashMap<FeatureCategory, HashSet<String>>();
+    }
+
+    public void clearLabels(FeatureCategory category)
+    {
+        labels.put(category, new HashSet<String>());
     }
 
     // Increasing ids
