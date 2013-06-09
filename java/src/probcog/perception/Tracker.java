@@ -30,6 +30,9 @@ public class Tracker
     private KinectSegment segmenter;
     private ArmCommandInterpreter armInterpreter;
 
+    // World state, as decided by Soar and the perception system
+    ArrayList<Obj> worldState = new ArrayList<Obj>();
+
     public Tracker(Config color, Config ir, Config calib, Config armConfig)
     {
         segmenter = new KinectSegment(color, ir, calib, armConfig);
@@ -41,12 +44,51 @@ public class Tracker
         new TrackingThread().start();
     }
 
+    public ArrayList<Obj> getWorldState()
+    {
+        return worldState;
+    }
+
     public void compareObjects()
     {
         ArrayList<Obj> visibleObjects = getVisibleObjects();
         ArrayList<Obj> soarObjects = getSoarObjects();
 
         // XXX - Need some sort of matching code here.
+        //
+        // Iterate through our existing objects. If there is an object
+        // sharing any single label within a fixed distance of an existing
+        // object, take the existing object's ID. If the ID has already
+        // been taken by another object, take a new ID
+        Set<Integer> idSet = new HashSet<Integer>();
+        double thresh = 0.02;
+        for (Obj newObj: visibleObjects) {
+            boolean matched = false;
+            double minDist = Double.MAX_VALUE;
+            int minID = -1;
+
+            for (Obj oldObj: worldState) {
+                if (idSet.contains(oldObj.getID()))
+                    continue;
+                double dist = LinAlg.distance(newObj.getCentroid(),
+                                              oldObj.getCentroid(),
+                                              2);
+                if (dist < thresh && dist < minDist) {
+                    matched = true;
+                    minID = oldObj.getID();
+                    minDist = dist;
+                }
+            }
+
+            if (matched) {
+                newObj.setID(minID);
+            } else {
+                newObj.setID(Obj.nextID());
+            }
+            idSet.add(newObj.getID());
+        }
+
+        worldState = visibleObjects;
     }
 
 
@@ -166,7 +208,8 @@ public class Tracker
         public void run()
         {
             while (true) {
-                ArrayList<Obj> objs = getVisibleObjects();  // XXX
+                compareObjects();
+                ArrayList<Obj> objs = getWorldState();
                 synchronized (armLock) {
                     armInterpreter.updateWorld(objs);
                 }
