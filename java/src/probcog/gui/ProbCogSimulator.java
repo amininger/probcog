@@ -50,6 +50,7 @@ public class ProbCogSimulator implements VisConsole.Listener
     enum ClickType{
     	SELECT, CHANGE_ID, VISIBLE
     };
+
     ViewType viewType;
     ClickType clickType;
 
@@ -362,12 +363,10 @@ public class ProbCogSimulator implements VisConsole.Listener
                 		labelString += String.format("%s%d\n", tf, ob.getID());
                     	if(ob.isVisible()){
                     		for(FeatureCategory cat : FeatureCategory.values()){
-                                HashSet<String> labels = ob.getLabels(cat);
-                                String lab = "";
-                                for(String l : labels)
-                                    lab += l;
-                        		labelString += String.format("%s%s:%.2f\n", tf, lab);
-                                //, cs.getBestLabel().weight); XXX -- Need to get confidences to display on screen
+                                Classifications cs = ob.getLabels(cat);
+                        		labelString += String.format("%s%s:%.2f\n", tf,
+                                                             cs.getBestLabel().label,
+                                                             cs.getBestLabel().weight);
                     		}
                     	}
                 		VzText text = new VzText(labelString);

@@ -2,16 +2,8 @@ package probcog.classify;
 
 import java.util.*;
 
-public interface Classifier {
-    /**
-     * @param object
-     * Adds the given training example to the classifier.
-     * Automatically creates the point for it.
-     * XXX Legacy code. To be removed. Preferred:
-     * add(CPoint);
-     */
-    void add(ArrayList<Double> features, String label);
-
+public interface Classifier
+{
     /** Add an existing point to the classifier */
     void add(CPoint point);
 

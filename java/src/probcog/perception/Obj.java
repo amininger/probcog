@@ -17,7 +17,7 @@ public class Obj
     private PointCloud ptCloud;
     private double[][] bbox;
     private double[] centroid;
-    private HashMap<FeatureCategory, HashSet<String>> labels;
+    private HashMap<FeatureCategory, Classifications> labels;
     private HashMap<FeatureCategory, ArrayList<Double>> features;
 
     // Visualization information
@@ -31,7 +31,7 @@ public class Obj
         if(assignID)
             id = nextID();
 
-        labels = new HashMap<FeatureCategory, HashSet<String>>();
+        labels = new HashMap<FeatureCategory, Classifications>();
         features = new HashMap<FeatureCategory, ArrayList<Double>>();
         bbox = new double[2][3];
         centroid = new double[3];
@@ -43,7 +43,7 @@ public class Obj
             id = nextID();
 
         this.ptCloud = ptCloud;
-        labels = new HashMap<FeatureCategory, HashSet<String>>();
+        labels = new HashMap<FeatureCategory, Classifications>();
         features = new HashMap<FeatureCategory, ArrayList<Double>>();
         bbox = ptCloud.getBoundingBox();
         centroid = ptCloud.getCentroid();
@@ -65,7 +65,7 @@ public class Obj
     public Obj(int id)
     {
         this.id = id;
-        labels = new HashMap<FeatureCategory, HashSet<String>>();
+        labels = new HashMap<FeatureCategory, Classifications>();
         features = new HashMap<FeatureCategory, ArrayList<Double>>();
         bbox = new double[2][3];
         centroid = new double[3];
@@ -140,8 +140,6 @@ public class Obj
     }
 
 
-
-
     // FEATURES / CLASSIFICATIONS / LABELS
     public void addFeatures(FeatureCategory category, ArrayList<Double> vector)
     {
@@ -153,78 +151,38 @@ public class Obj
         return features.get(category);
     }
 
-    public void addLabel(FeatureCategory category, String label)
+    public void addClassifications(FeatureCategory category, Classifications cs)
     {
-        HashSet<String> allLabels;
-        if(labels.containsKey(category))
-            allLabels = labels.get(category);
-        else
-            allLabels = new HashSet<String>();
-
-        allLabels.add(label);
-        labels.put(category, allLabels);
+        labels.put(category, cs);
     }
 
-    public void addLabels(FeatureCategory category, HashSet<String> newLabels)
+    public void addAllClassifications(HashMap<FeatureCategory, Classifications> allCS)
     {
-        HashSet<String> allLabels;
-        if(labels.containsKey(category))
-            allLabels = labels.get(category);
-        else
-            allLabels = new HashSet<String>();
-
-        allLabels.addAll(newLabels);
-        labels.put(category, allLabels);
+        for(FeatureCategory fc : allCS.keySet())
+            labels.put(fc, allCS.get(fc));
     }
 
-    public void addLabels(FeatureCategory category, ArrayList<String> newLabels)
-    {
-        HashSet<String> allLabels;
-        if(labels.containsKey(category))
-            allLabels = labels.get(category);
-        else
-            allLabels = new HashSet<String>();
-
-        for(String label : newLabels)
-            allLabels.add(label);
-        labels.put(category, allLabels);
-    }
-
-    public void addLabels(HashMap<FeatureCategory, HashSet<String>> newLabels)
-    {
-        for(FeatureCategory category : newLabels.keySet()){
-            HashSet<String> allLabels;
-            if(labels.containsKey(category))
-                allLabels = labels.get(category);
-            else
-                allLabels = new HashSet<String>();
-
-            allLabels.addAll(newLabels.get(category));
-            labels.put(category, allLabels);
-        }
-    }
-
-    public HashSet<String> getLabels(FeatureCategory category)
+    public Classifications getLabels(FeatureCategory category)
     {
         if(labels.containsKey(category)){
     		return labels.get(category);
     	}
-        return new HashSet<String>();
+        return new Classifications();
     }
 
-    public HashMap<FeatureCategory, HashSet<String>> getLabels()
+    public HashMap<FeatureCategory, Classifications> getLabels()
     {
         return labels;
     }
 
     public void clearLabels()
     {
-        labels = new HashMap<FeatureCategory, HashSet<String>>();
+        labels = new HashMap<FeatureCategory, Classifications>();
     }
 
     public void clearLabels(FeatureCategory category)
     {
-        labels.put(category, new HashSet<String>());
+        labels.put(category, new Classifications());
     }
 
     // Increasing ids

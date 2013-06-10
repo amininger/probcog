@@ -94,6 +94,15 @@ public class ClassifierManager
         reloadData();
     }
 
+    public HashMap<FeatureCategory,Classifications> classifyAll(Obj objectToClassify)
+    {
+        HashMap<FeatureCategory,Classifications> results = new HashMap<FeatureCategory,Classifications>();
+        for(FeatureCategory fc : classifiers.keySet())
+            results.put(fc, classify(fc, objectToClassify));
+
+        return results;
+    }
+
 	public Classifications classify(FeatureCategory cat, Obj objToClassify)
     {
 		Classifier classifier = classifiers.get(cat);
@@ -107,7 +116,7 @@ public class ClassifierManager
         Classifications classifications;
 		synchronized (stateLock) {
 			classifications = classifier.classify(features);
-            objToClassify.addLabel(cat, classifications.getBestLabel().label); // XXX - might want multiple
+            objToClassify.addClassifications(cat, classifications);
 		}
 		return classifications;
 	}
@@ -181,6 +190,32 @@ public class ClassifierManager
                 System.err.println("ERR: Unhandled redo case - "+entry.action);
             }
         }
+    }
+
+    public categorized_data_t[] getCategoryData(Obj ob)
+    {
+        categorized_data_t[] cat_dat = new categorized_data_t[classifiers.size()];
+        int j = 0;
+        for (FeatureCategory fc: classifiers.keySet()) {
+            cat_dat[j] = new categorized_data_t();
+            cat_dat[j].cat = new category_t();
+            cat_dat[j].cat.cat = Features.getLCMCategory(fc);
+            Classifier classifier = classifiers.get(fc);
+            Classifications cs = classifier.classify(ob.getFeatures(fc));
+            cs.sortLabels();    // Just to be nice
+            cat_dat[j].len = cs.size();
+            cat_dat[j].confidence = new double[cat_dat[j].len];
+            cat_dat[j].label = new String[cat_dat[j].len];
+
+            int k = 0;
+            for (Classifications.Label label: cs.labels) {
+                cat_dat[j].confidence[k] = label.weight;
+                cat_dat[j].label[k] = label.label;
+                k++;
+            }
+            j++;
+        }
+        return cat_dat;
     }
 
     // XXX Might want to spawn a backup thread to do this...
