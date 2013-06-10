@@ -9,17 +9,20 @@ import lcm.lcm.*;
 
 import april.jmat.LinAlg;
 import april.vis.*;
+import april.util.*;
 
-import probcog.lcmtypes.kinect_status_t;
+import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
-import probcog.util.Util;
+import probcog.util.*;
 
 // XXX If we're passing around objects with their bounding boxes over LCM,
 // is there any reason for this to be running a full tracker?
 /** Just a windowed view of the raw kinect data with some object box overlays */
-public class KinectView extends JFrame
+public class KinectView extends JFrame implements LCMSubscriber
 {
+    LCM lcm = LCM.getSingleton();
+
     VisWorld visWorld;
     VisLayer visLayer;
 
@@ -28,11 +31,12 @@ public class KinectView extends JFrame
     private Timer updateTimer;
     private static final int UPDATE_RATE = 10; // # updates per second
 
-    private Tracker tracker;
+    // Observations for bounding boxes
+    ExpiringMessageCache<observations_t> observations =
+        new ExpiringMessageCache<observations_t>(2.5, true);
 
-    public KinectView(Tracker tracker_)
+    public KinectView()
     {
-        tracker = tracker_;
 
         // Setup Frame
         JFrame frame = new JFrame("Kinect View");
@@ -71,18 +75,19 @@ public class KinectView extends JFrame
     {
     	VisWorld.Buffer buffer = visWorld.getBuffer("objects");
 
-    	synchronized(tracker.stateLock){
-    		for(Obj ob : tracker.getWorldState().values()){
-    			double[][] bbox = ob.getBoundingBox();
-                double[] centroid = ob.getCentroid();
-                double[] pos = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
-    			double[][] scale = LinAlg.scale(bbox[1][0] - bbox[0][0],
-                                                bbox[1][1] - bbox[0][1],
-                                                bbox[1][2] - bbox[0][2]);
-    			VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)), new VzLines.Style(Color.cyan, 2));
-    			buffer.addBack(new VisChain(LinAlg.translate(pos), scale, box));
-    		}
-    	}
+        observations_t obs = observations.get();
+        for (object_data_t ob: obs.observations) {
+            double[][] bbox = ob.bbox;
+            double[] pos = ob.pos;
+            double[][] scale = LinAlg.scale(bbox[1][0] - bbox[0][0],
+                                            bbox[1][1] - bbox[0][1],
+                                            bbox[1][2] - bbox[0][2]);
+            // This color really isn't necessary, but is convenient if we
+            // ever decide to add one, I suppose.
+            VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)),
+                                  new VzLines.Style(Color.cyan, 2));
+            buffer.addBack(new VisChain(LinAlg.translate(pos), scale, box));
+        }
 		buffer.swap();
     }
 
@@ -100,11 +105,34 @@ public class KinectView extends JFrame
 			VisVertexData vertexData = new VisVertexData();
 			for(double[] pt : points){
 				vertexData.add(new double[]{pt[0], pt[1], pt[2]});
-    			colors.add((int)pt[3]);
+
+                // Flip RGB
+    			colors.add(ColorUtil.swapRedBlue((int)pt[3]));
 			}
 			VzPoints visPts = new VzPoints(vertexData, new VzPoints.Style(colors, 2));
 			buffer.addBack(visPts);
 		}
 		buffer.swap();
+    }
+
+    // === LCM =====================
+    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+    {
+        try {
+            messageReceivedEx(lcm, channel, ins);
+        } catch (IOException ioex) {
+            System.err.println("ERR: Error handling LCM channel - "+channel);
+            ioex.printStackTrace();
+        }
+    }
+
+    public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
+        throws IOException
+    {
+        if (channel.equals("OBSERVATIONS")) {
+            // Handle observations
+            observations_t obs = new observations_t(ins);
+            observations.put(obs, obs.utime);
+        }
     }
 }
