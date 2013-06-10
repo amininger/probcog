@@ -8,6 +8,7 @@ import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
+import april.sim.*;
 import april.util.*;
 
 import lcm.lcm.*;
@@ -38,9 +39,12 @@ public class Tracker
     public Object stateLock;
     HashMap<Integer, Obj> worldState = new HashMap<Integer, Obj>();
 
-    public Tracker(Config config_) throws IOException
+    public Tracker(Config config_, Boolean physicalKinect, SimWorld world) throws IOException
     {
-        segmenter = new KinectSegment(config_);
+        if(physicalKinect)
+            segmenter = new KinectSegment(config_);
+        else
+            segmenter = new KinectSegment(config_, world);
         classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(false);  // Debug off
 
@@ -84,8 +88,8 @@ public class Tracker
                 double minDist = Double.MAX_VALUE;
                 int minID = -1;
 
-//                for (Obj oldObj: worldState.values()) {
-                  for (Obj oldObj: soarObjects) {
+                // for (Obj oldObj: worldState.values()) {
+                for (Obj oldObj: soarObjects) {
                     if (idSet.contains(oldObj.getID()))
                         continue;
                     double dist = LinAlg.distance(newObj.getCentroid(),
@@ -202,7 +206,6 @@ public class Tracker
     {
         return classyManager.classify(category, ob);
     }
-
 
     /** Build up the object_data_t describing the observed objects
      *  in the world. Runs classifiers on the objects and builds

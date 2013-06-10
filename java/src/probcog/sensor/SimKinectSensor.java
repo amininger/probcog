@@ -12,7 +12,7 @@ import april.vis.VisCameraManager.CameraPosition;
  *  make up objects are automatically returned as transparent points
  *  at the origin.
  */
-public class SimKinectSensor
+public class SimKinectSensor implements Sensor
 {
     // Sim Kinect parameters
     public static final int WIDTH = 640;
@@ -38,7 +38,7 @@ public class SimKinectSensor
     }
 
     /** Get the RGBXYZ point corresponding to virtual kinect pixel (ix,iy) */
-    public double[] getRGBXYZ(int ix, int iy)
+    public double[] getXYZRGB(int ix, int iy)
     {
         // Find the ray leaving the camera
         GRay3D ray = camera.computeRay(ix, iy);
@@ -76,5 +76,20 @@ public class SimKinectSensor
         // XXX COLOR CHECK
 
         return xyzc;
+    }
+
+    public int getWidth()
+    {
+        return WIDTH;
+    }
+
+    public int getHeight()
+    {
+        return HEIGHT;
+    }
+
+    public boolean stashFrame()
+    {
+        return true;
     }
 }

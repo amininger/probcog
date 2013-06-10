@@ -7,6 +7,7 @@ import java.util.*;
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
+import april.sim.*;
 import april.util.*;
 
 import probcog.arm.*;
@@ -26,7 +27,7 @@ public class KinectSegment
     private double[] floorPlane;
     private int height, width;
 
-    private KinectSensor kinect;
+    private Sensor kinect;
     private ArmStatus arm;
     private double baseHeight, wristHeight;
     private ArrayList<Double> armWidths;
@@ -41,6 +42,11 @@ public class KinectSegment
 
     public KinectSegment(Config config_) throws IOException
     {
+        this(config_, null);
+    }
+
+    public KinectSegment(Config config_, SimWorld world) throws IOException
+    {
         // Get stuff ready for removing arms
         ArmStatus arm = new ArmStatus(config_);
         baseHeight = arm.baseHeight;
@@ -48,7 +54,10 @@ public class KinectSegment
         armWidths = arm.getArmSegmentWidths();
 
         points = new ArrayList<double[]>();
-        kinect = new KinectSensor(config_);
+        if(world == null)
+            kinect = new KinectSensor(config_);
+        else
+            kinect = new SimKinectSensor(world);
     }
 
     public ArrayList<PointCloud> getObjectPointClouds()
