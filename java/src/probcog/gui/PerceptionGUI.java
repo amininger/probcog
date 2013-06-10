@@ -229,7 +229,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // XXX -- More commented out sensables
         // obs.sensables = sensableManager.getSensableStrings();
         // obs.nsens = obs.sensables.length;
-        obs.observations = classifierManager.getObjectData(); // This needs to live in Tracker now
+        obs.observations = tracker.getObjectData();
         obs.nobs = obs.observations.length;
 
         lcm.publish("OBSERVATIONS",obs);

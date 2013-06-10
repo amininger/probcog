@@ -198,20 +198,37 @@ public class Tracker
     }
 
 
-    // public void sendMessage()
-    // {
-    //     observations_t obs = new observations_t();
-    //     obs.utime = TimeUtil.utime();
-    //     synchronized(objectManager.objects) {
-    //         obs.click_id = simulator.getSelectedId();
-    //     }
-    //     obs.sensables = sensableManager.getSensableStrings();
-    //     obs.nsens = obs.sensables.length;
-    //     obs.observations = classifierManager.getObjectData();
-    //     obs.nobs = obs.observations.length;
+    /** Build up the object_data_t describing the observed objects
+     *  in the world. Runs classifiers on the objects and builds
+     *  the appropriate lcmtypes to return.
+     */
+    public object_data_t[] getObjectData()
+    {
+        object_data_t[] od;
+        long utime = TimeUtil.utime();
 
-    //     lcm.publish("TRACKED_OBJECTS",obs);
-    // }
+        int i = 0;
+        synchronized (stateLock) {
+            od = new object_data_t[worldState.size()];
+            for (Obj ob: worldState.values()) {
+                od[i] = new object_data_t();
+                od[i].utime = utime;
+                od[i].id = ob.getID();
+                od[i].pos = ob.getPose();
+                od[i].bbox = ob.getBoundingBox();
+
+                categorized_data_t[] cat_dat = classyManager.getCategoryData(ob);
+                od[i].num_cat = cat_dat.length;
+                od[i].cat_dat = cat_dat;
+
+                i++;
+            }
+        }
+
+        return od;
+    }
+
+
 
 
     /** Class that continually listens for messages from Soar about what objects
