@@ -15,6 +15,9 @@ import probcog.perception.*;
 import probcog.sensor.*;
 import probcog.util.Util;
 
+// XXX If we're passing around objects with their bounding boxes over LCM,
+// is there any reason for this to be running a full tracker?
+/** Just a windowed view of the raw kinect data with some object box overlays */
 public class KinectView extends JFrame
 {
     VisWorld visWorld;
