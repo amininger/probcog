@@ -21,7 +21,7 @@ import probcog.lcmtypes.*;
  *  keeps track of the most recently received frame from the
  *  kinect.
  **/
-public class KinectSensor
+public class KinectSensor implements Sensor
 {
     LCM lcm = LCM.getSingleton();
     Config config;

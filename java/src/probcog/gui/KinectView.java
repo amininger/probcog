@@ -71,8 +71,8 @@ public class KinectView extends JFrame
     {
     	VisWorld.Buffer buffer = visWorld.getBuffer("objects");
 
-    	synchronized(tracker.stateLock){
-    		for(Obj ob : tracker.getWorldState().values()){
+    	synchronized(tracker.stateLock) {
+    		for(Obj ob : tracker.getWorldState().values()) {
     			double[][] bbox = ob.getBoundingBox();
                 double[] centroid = ob.getCentroid();
                 double[] pos = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};

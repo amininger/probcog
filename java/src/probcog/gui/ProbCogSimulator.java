@@ -53,10 +53,8 @@ public class ProbCogSimulator implements VisConsole.Listener
 
     private Tracker tracker;
 
-    public ProbCogSimulator(GetOpt opts, Tracker tracker_)
+    public ProbCogSimulator(GetOpt opts)
     {
-        tracker = tracker_;
-
 		vw = new VisWorld();
 		vl = new VisLayer(vw);
 	    vc = new VisCanvas(vl);

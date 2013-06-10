@@ -60,8 +60,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
             System.out.println("ATTN: Successfully restored from autosave file");
         }
 
-        // Initialize object tracker
-        tracker = new Tracker(config);
 
         // Arm control...eventually should integrate with simulated arm?
         // XXX SEE ArmDemo
@@ -82,7 +80,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // virtual point clouds based on the sim environment
 
     	// Initialize the simulator
-        simulator = new ProbCogSimulator(opts, tracker);
+        simulator = new ProbCogSimulator(opts);
+
+        // Initialize object tracker
+        tracker = new Tracker(config, opts.getBoolean("kinect"), simulator.getWorld());
+
 
         if(opts.getBoolean("kinect")){
         	//camera = new KinectCamera(simulator.getVisWorld()); // Lauren
@@ -289,6 +291,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
+        opts.addBoolean('k', "kinect", false, "Use a physical kinect");
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
         opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
         opts.addString('\0', "backup", null, "Load from backup file");

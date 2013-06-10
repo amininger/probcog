@@ -81,20 +81,19 @@ public class Util
         return ia;
     }
 
-    public static ArrayList<double[]> extractPoints(KinectSensor kinect)
+    public static ArrayList<double[]> extractPoints(Sensor sensor)
     {
         ArrayList<double[]> points = new ArrayList<double[]>();
-        int height = kinect.getHeight();
-        int width = kinect.getWidth();
+        int height = sensor.getHeight();
+        int width = sensor.getWidth();
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                double[] xyz = kinect.getXYZ(x,y);
-                int rgb = kinect.getRGB(x,y); // Probably flipped?
-                if (xyz == null)
+                double[] xyzrgb = sensor.getXYZRGB(x,y);
+                if (xyzrgb == null)
                     continue;
 
-                points.add(new double[]{xyz[0], xyz[1], xyz[2],rgb});
+                points.add(xyzrgb);
             }
         }
         return points;

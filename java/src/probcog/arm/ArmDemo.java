@@ -422,7 +422,7 @@ public class ArmDemo implements LCMSubscriber
         // XXX Can no longer start up the arm command interpreter alone.
         //ArmCommandInterpreter interpreter = new ArmCommandInterpreter(false);
         try {
-            Tracker tracker = new Tracker(config);
+            // Tracker tracker = new Tracker(config); // Needs a physicalArm boolean and a SimWorld
             ArmController controller = new ArmController(config);
             ArmDemo demo = new ArmDemo(config, opts.getBoolean("sim"));
         } catch (IOException ioex) {
