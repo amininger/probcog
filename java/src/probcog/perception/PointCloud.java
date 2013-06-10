@@ -1,5 +1,6 @@
 package probcog.perception;
 
+import java.awt.*;
 import java.util.*;
 
 import april.jmat.*;
@@ -89,6 +90,19 @@ public class PointCloud
             }
         }
         return center;
+    }
+
+    public int[] getAvgRGB()
+    {
+        int[] rgb = new int[3];
+        for(double[] pt : pts) {
+            Color c = new Color((int)pt[3]);
+            rgb[0] += c.getRed();
+            rgb[1] += c.getGreen();
+            rgb[2] += c.getBlue();
+        }
+        int num = pts.size();
+        return new int[]{rgb[0]/num, rgb[1]/num, rgb[2]/num};
     }
 
     //////////////////////////////////////////////////////
@@ -291,6 +305,7 @@ public class PointCloud
                 top.add(p);
             }
         }
+
         return top;
     }
 }

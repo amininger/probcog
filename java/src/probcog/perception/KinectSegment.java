@@ -11,6 +11,7 @@ import april.util.*;
 
 import probcog.arm.*;
 import probcog.sensor.*;
+import probcog.util.Util;
 
 public class KinectSegment
 {
@@ -46,6 +47,7 @@ public class KinectSegment
         wristHeight = arm.wristHeight;
         armWidths = arm.getArmSegmentWidths();
 
+        points = new ArrayList<double[]>();
         kinect = new KinectSensor(config_);
     }
 
@@ -54,28 +56,9 @@ public class KinectSegment
         if (!kinect.stashFrame())
             return new ArrayList<PointCloud>();
 
-        extractPoints(kinect);
+        points = Util.extractPoints(kinect);
         removeFloorAndArmPoints();
         return unionFind();
-    }
-
-    private void extractPoints(KinectSensor kinect)
-    {
-        points = new ArrayList<double[]>();
-        height = kinect.getHeight();
-        width = kinect.getWidth();
-
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                double[] xyz = kinect.getXYZ(x,y);
-                int rgb = kinect.getRGB(x,y); // Probably flipped?
-
-                if (xyz == null)
-                    continue;
-
-                points.add(new double[]{xyz[0], xyz[1], xyz[2],rgb});
-            }
-        }
     }
 
 

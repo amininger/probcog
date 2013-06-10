@@ -98,6 +98,7 @@ public class ClassifierManager
     {
 		Classifier classifier = classifiers.get(cat);
 		ArrayList<Double> features = Features.getFeatures(cat, objToClassify.getPointCloud());
+        objToClassify.addFeatures(cat, features);
 
 		if(features == null){
 			return null;
