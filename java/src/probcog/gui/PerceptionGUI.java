@@ -299,6 +299,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
         opts.addBoolean('k', "kinect", false, "Use kinect data to create objects");
         opts.addBoolean('a', "arm", false, "Run with the actual arm");
+        opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
         opts.addBoolean('\0', "seg", false, "Show the segmentation instead of the simulator");
         opts.addString('w', "world", null, "World file");
         opts.addString('s', "sim-config", null, "Configuration file for the Simulator");
@@ -331,6 +332,10 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         PerceptionGUI gui = new PerceptionGUI(opts);
 
         ArmCommandInterpreter interpreter = new ArmCommandInterpreter(opts.getBoolean("debug"));
+
+        SoarEmulator soarEm;
+        if (opts.getBoolean("emulate"))
+            soarEm = new SoarEmulator();
 
         if (opts.getBoolean("arm")) {
             try {
