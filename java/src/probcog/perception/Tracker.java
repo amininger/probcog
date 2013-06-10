@@ -84,8 +84,8 @@ public class Tracker
                 double minDist = Double.MAX_VALUE;
                 int minID = -1;
 
-//                for (Obj oldObj: worldState.values()) {
-                  for (Obj oldObj: soarObjects) {
+                // for (Obj oldObj: worldState.values()) {
+                for (Obj oldObj: soarObjects) {
                     if (idSet.contains(oldObj.getID()))
                         continue;
                     double dist = LinAlg.distance(newObj.getCentroid(),

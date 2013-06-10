@@ -113,6 +113,8 @@ public class KinectSegment
     {
         ArrayList objects = new ArrayList<PointCloud>();
 
+        // XXX  The indexing scheme here breaks when we have a non-rectangular
+        // viewing window.
         // Union pixels that are close together
         UnionFindSimple uf = new UnionFindSimple(points.size());
         for(int y=0; y<height; y++){

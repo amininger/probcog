@@ -88,6 +88,19 @@ public class Obj
         this.ptCloud = ptCloud;
         bbox = ptCloud.getBoundingBox();
         centroid = ptCloud.getCentroid();
+        pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
+        double maxDim = Math.max(bbox[1][0]-bbox[0][0],
+                                 Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
+        shape = new SphereShape(maxDim);
+
+        int[] avgRGB = ptCloud.getAvgRGB();
+        Color color = new Color(avgRGB[0], avgRGB[1], avgRGB[2]);
+        model = new VisChain(LinAlg.translate(centroid),
+                             LinAlg.scale(bbox[1][0]-bbox[0][0],
+                                          bbox[1][1]-bbox[0][1],
+                                          bbox[1][2]-bbox[0][2]),
+                             new VzBox(new VzMesh.Style(color)));
+
     }
     public PointCloud getPointCloud()
     {

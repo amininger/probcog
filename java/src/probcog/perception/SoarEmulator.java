@@ -18,7 +18,7 @@ public class SoarEmulator
         new ListenerThread().start();
     }
 
-    /** Class that continually listens for messages from Soar about what objects
+     /** Class that continually listens for messages from Soar about what objects
      *  it believes exists in the world. The received lcm message is stored so it
      *  can be used upon request.
      **/

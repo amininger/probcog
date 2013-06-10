@@ -23,6 +23,7 @@ import probcog.classify.Features.FeatureCategory;
 
 public class PerceptionGUI extends JFrame implements LCMSubscriber
 {
+    private ArmController controller;
     private Tracker tracker;
     private ClassifierManager classifierManager;
     private KinectView kinectView;
@@ -37,7 +38,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     private static final int OBSERVATION_RATE = 2; // # sent per second
 
     // Periodic tasks
-    PeriodicTasks tasks = new PeriodicTasks(2);   // Only one thread for now
+    PeriodicTasks tasks = new PeriodicTasks(2);
 
     // GUI Stuff
     JMenuBar menuBar;
@@ -45,41 +46,32 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     JMenuItem clearData, reloadData;
     JMenuItem undoAction, redoAction;
 
-    public PerceptionGUI(GetOpt opts)
+    public PerceptionGUI(GetOpt opts) throws IOException
     {
-        super("BOLT");
+        super("ProbCog");
         this.setSize(800, 600);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Handle Options
-        Config config;
-        try {
-            config = new ConfigFile(opts.getString("config"));
-        } catch (IOException ioex) {
-            System.err.println("ERR: Could not load configuration from file");
-            ioex.printStackTrace();
-            return;
-        }
+        Config config = new ConfigFile(opts.getString("config"));
         if (opts.getString("backup") != null) {
-            try {
-                System.out.println("ATTN: Loading from autosave file");
-                classifierManager.readState(opts.getString("backup"));
-                System.out.println("ATTN: Successfully restored from autosave file");
-            } catch (IOException ioex) {
-                System.err.println("ERR: Failure to load from autosave file");
-                ioex.printStackTrace();
-            }
+            System.out.println("ATTN: Loading from autosave file");
+            classifierManager.readState(opts.getString("backup"));
+            System.out.println("ATTN: Successfully restored from autosave file");
         }
 
         // Initialize object tracker
-        try{
-            tracker = new Tracker(config);
+        tracker = new Tracker(config);
+
+        // Arm control...eventually should integrate with simulated arm?
+        // XXX SEE ArmDemo
+        controller = new ArmController(config);
+
+        // XXX Arm debugging
+        if (opts.getBoolean("debug")) {
+            ArmDemo demo = new ArmDemo(config, false);  // XXX NO SIM
         }
-        catch (IOException ioex)
-        {
-            System.err.println("ERR: Error config");
-            ioex.printStackTrace();
-        }
+
         // Initialize sensable manager
         //sensableManager = SensableManager.getSingleton();
 
@@ -295,77 +287,32 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
         // XXX Todo: clean up arguments
         opts.addBoolean('h', "help", false, "Show this help screen");
-        opts.addString('c', "config", null, "Specify the configuration file for Bolt");
+        opts.addString('c', "config", null, "Global configuration file");
+        opts.addString('w', "world", null, "Simulated world file");
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
-        opts.addBoolean('k', "kinect", false, "Use kinect data to create objects");
-        opts.addBoolean('a', "arm", false, "Run with the actual arm");
         opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
-        opts.addBoolean('\0', "seg", false, "Show the segmentation instead of the simulator");
-        opts.addString('w', "world", null, "World file");
-        opts.addString('s', "sim-config", null, "Configuration file for the Simulator");
         opts.addString('\0', "backup", null, "Load from backup file");
-        opts.addInt('\0', "fps", 10, "Maximum frame rate");
 
-        if (!opts.parse(args) || opts.getBoolean("help") || opts.getExtraArgs().size() > 0) {
-            opts.doHelp();
-            return;
+        if (!opts.parse(args)) {
+            System.err.println("ERR: Error parsing args - "+opts.getReason());
+            System.exit(1);
         }
-
-        Config config;
-        if (opts.getString("config") == null) {
-            System.out.println("Usage: Must specify a configuration file");
+        if (opts.getBoolean("help")) {
             opts.doHelp();
-            return;
-        } else {
-            try {
-                config = new ConfigFile(opts.getString("config"));
-            } catch (IOException ioex) {
-                System.err.println("ERR: "+ioex);
-                ioex.printStackTrace();
-                return;
-            }
+            System.exit(0);
         }
-
-        // Initialize the arm
-        // BoltArm.getSingleton().initArm(config); // XXX - How do we initialize the arm now?
-
-        PerceptionGUI gui = new PerceptionGUI(opts);
-
-        ArmCommandInterpreter interpreter = new ArmCommandInterpreter(opts.getBoolean("debug"));
 
         SoarEmulator soarEm;
         if (opts.getBoolean("emulate"))
             soarEm = new SoarEmulator();
 
-        if (opts.getBoolean("arm")) {
-            try {
-                ArmController controller = new ArmController(config);
-                ArmDriver armDriver = new ArmDriver(config);
-                (new Thread(armDriver)).start();
-                if (opts.getBoolean("debug")) {
-                    ArmDemo demo = new ArmDemo(config, false);
-                }
-            }
-            catch (IOException ioex) {
-                System.err.println("ERR: Error reading arm config");
-                ioex.printStackTrace();
-                return;
-            }
-        } else {
-            if (opts.getBoolean("debug")) {
-                try {
-                    ArmDemo demo = new ArmDemo(config, true);
-                }
-                catch (IOException ioex) {
-                    System.err.println("ERR: Error reading arm config");
-                    ioex.printStackTrace();
-                    return;
-                }
-            }
+        // Spin up the GUI
+        try {
+            PerceptionGUI gui = new PerceptionGUI(opts);
+        } catch (IOException ioex) {
+            System.err.println("ERR: Error starting GUI");
+            ioex.printStackTrace();
+            System.exit(1);
         }
-
-        // if (opts.getBoolean("debug")) {
-        //     ClassifyDebugGUI clDebugger = new ClassifyDebugGUI();
-        // }
     }
 }

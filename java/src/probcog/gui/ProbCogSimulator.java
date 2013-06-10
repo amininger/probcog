@@ -26,9 +26,6 @@ import probcog.vis.*;
 
 public class ProbCogSimulator implements VisConsole.Listener
 {
-    private final static int K_HEIGHT = 480;
-    private final static int K_WIDTH = 640;
-
 	// Sim stuff
     SimWorld world;
     Simulator sim;
