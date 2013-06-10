@@ -156,44 +156,11 @@ public class Obj
         labels.put(category, cs);
     }
 
-    // public void addLabels(FeatureCategory category, HashSet<String> newLabels)
-    // {
-    //     HashSet<String> allLabels;
-    //     if(labels.containsKey(category))
-    //         allLabels = labels.get(category);
-    //     else
-    //         allLabels = new HashSet<String>();
-
-    //     allLabels.addAll(newLabels);
-    //     labels.put(category, allLabels);
-    // }
-
-    // public void addLabels(FeatureCategory category, ArrayList<String> newLabels)
-    // {
-    //     HashSet<String> allLabels;
-    //     if(labels.containsKey(category))
-    //         allLabels = labels.get(category);
-    //     else
-    //         allLabels = new HashSet<String>();
-
-    //     for(String label : newLabels)
-    //         allLabels.add(label);
-    //     labels.put(category, allLabels);
-    // }
-
-    // public void addLabels(HashMap<FeatureCategory, HashSet<String>> newLabels)
-    // {
-    //     for(FeatureCategory category : newLabels.keySet()){
-    //         HashSet<String> allLabels;
-    //         if(labels.containsKey(category))
-    //             allLabels = labels.get(category);
-    //         else
-    //             allLabels = new HashSet<String>();
-
-    //         allLabels.addAll(newLabels.get(category));
-    //         labels.put(category, allLabels);
-    //     }
-    // }
+    public void addAllClassifications(HashMap<FeatureCategory, Classifications> allCS)
+    {
+        for(FeatureCategory fc : allCS.keySet())
+            labels.put(fc, allCS.get(fc));
+    }
 
     public Classifications getLabels(FeatureCategory category)
     {

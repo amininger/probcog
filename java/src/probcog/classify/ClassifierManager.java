@@ -94,6 +94,15 @@ public class ClassifierManager
         reloadData();
     }
 
+    public HashMap<FeatureCategory,Classifications> classifyAll(Obj objectToClassify)
+    {
+        HashMap<FeatureCategory,Classifications> results = new HashMap<FeatureCategory,Classifications>();
+        for(FeatureCategory fc : classifiers.keySet())
+            results.put(fc, classify(fc, objectToClassify));
+
+        return results;
+    }
+
 	public Classifications classify(FeatureCategory cat, Obj objToClassify)
     {
 		Classifier classifier = classifiers.get(cat);

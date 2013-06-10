@@ -71,7 +71,7 @@ public class Tracker
         synchronized (stateLock) {
             HashMap<Integer, Obj> newWorldState = new HashMap<Integer, Obj>();
 
-            // XXX - Need some sort of matching code here.
+            // XXX - Need better matching code here.
             //
             // Iterate through our existing objects. If there is an object
             // sharing any single label within a fixed distance of an existing
@@ -84,7 +84,8 @@ public class Tracker
                 double minDist = Double.MAX_VALUE;
                 int minID = -1;
 
-                for (Obj oldObj: worldState.values()) {
+//                for (Obj oldObj: worldState.values()) {
+                  for (Obj oldObj: soarObjects) {
                     if (idSet.contains(oldObj.getID()))
                         continue;
                     double dist = LinAlg.distance(newObj.getCentroid(),
@@ -124,8 +125,7 @@ public class Tracker
         ArrayList<PointCloud> ptClouds = segmenter.getObjectPointClouds();
         for(PointCloud ptCloud : ptClouds) {
             Obj vObj = new Obj(assignID, ptCloud);
-            // XXX - should we be classifying objects before the tracking?
-            // XXX - hand off to classifiers
+            vObj.addAllClassifications(classyManager.classifyAll(vObj));
             visibleObjects.add(vObj);
         }
 
@@ -149,7 +149,13 @@ public class Tracker
                     sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
 
                     for(int j=0; j<odt.num_cat; j++) {
-                        // XXX - Need to do something with this information
+                        categorized_data_t cat = odt.cat_dat[j];
+                        FeatureCategory fc = Features.getFeatureCategory(cat.cat.cat);
+                        Classifications cs = new Classifications();
+                        for(int k=0; k<cat.len; k++)
+                            cs.add(cat.label[k], cat.confidence[k]);
+
+                        sObj.addClassifications(fc, cs);
                     }
                     soarObjects.add(sObj);
                 }
@@ -248,7 +254,7 @@ public class Tracker
         public void run()
         {
             while (true) {
-                TimeUtil.sleep(1000/60);    // XXX.
+                TimeUtil.sleep(1000/60);
             }
         }
 
