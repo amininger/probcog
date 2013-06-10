@@ -37,7 +37,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     private static final int OBSERVATION_RATE = 2; // # sent per second
 
     // Periodic tasks
-    PeriodicTasks tasks = new PeriodicTasks(2);   // Only one thread for now
+    PeriodicTasks tasks = new PeriodicTasks(2);
 
     // GUI Stuff
     JMenuBar menuBar;

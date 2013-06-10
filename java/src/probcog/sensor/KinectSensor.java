@@ -250,17 +250,17 @@ public class KinectSensor
 
     public double[] getXYZRGB(int ix, int iy)
     {
-        return getXYZRGB(ix, iy, true);
+        return getXYZRGB(ix, iy, false);
     }
 
     public double[] getXYZRGB(int ix, int iy, boolean filter)
     {
         if (ix < 0 || ix >= getWidth() ||
             iy < 0 || iy >= getHeight())
-            return null;
+            return new double[4];
 
         if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
-            return null;
+            return new double[4];
 
         double[] xyzc = getXYZ(ix, iy, new double[4], false);
         xyzc[3] = getRGB(ix, iy, false);
@@ -270,7 +270,7 @@ public class KinectSensor
 
     public double[] getXYZ(int ix, int iy)
     {
-        return getXYZ(ix, iy, new double[3], true);
+        return getXYZ(ix, iy, new double[3], false);
     }
 
     public double[] getXYZ(int ix, int iy, boolean filter)
@@ -281,11 +281,11 @@ public class KinectSensor
     public double[] getXYZ(int ix, int iy, double[] xyz, boolean filter)
     {
         if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
-            return null;
+            return xyz;
 
         double[] l_xyz = getLocalXYZ(ix, iy, xyz);
         if (l_xyz == null)
-            return null;
+            return xyz;
         return k2w(l_xyz);
     }
 
@@ -317,7 +317,7 @@ public class KinectSensor
     {
         if (ix < 0 || ix >= getWidth() ||
             iy < 0 || iy >= getHeight())
-            return null;
+            return new double[4];
 
         double[] xyzc = getLocalXYZ(ix, iy, new double[4]);
         xyzc[3] = getRGB(ix, iy);
@@ -333,13 +333,14 @@ public class KinectSensor
 
     public double[] getLocalXYZ(int ix, int iy, double[] xyz)
     {
-        if (ix < 0 || ix >= getWidth() ||
-            iy < 0 || iy >= getHeight())
-            return null;
 
         assert (xyz != null && xyz.length >= 3);
         assert (r_depthIm != null);
         int[] buf = ((DataBufferInt)(r_depthIm.getRaster().getDataBuffer())).getData();
+
+        if (ix < 0 || ix >= getWidth() ||
+            iy < 0 || iy >= getHeight())
+            return xyz;
 
         int d = buf[iy*r_depthIm.getWidth() + ix];
         double depth = d/1000.0;   // millimeters to meters
