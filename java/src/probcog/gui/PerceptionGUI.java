@@ -72,8 +72,14 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         }
 
         // Initialize object tracker
-        tracker = new Tracker(config);
-
+        try{
+            tracker = new Tracker(config);
+        }
+        catch (IOException ioex)
+        {
+            System.err.println("ERR: Error config");
+            ioex.printStackTrace();
+        }
         // Initialize sensable manager
         //sensableManager = SensableManager.getSingleton();
 
@@ -320,22 +326,36 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         }
 
         // Initialize the arm
-        BoltArm.getSingleton().initArm(config); // XXX - How do we initialize the arm now?
+        // BoltArm.getSingleton().initArm(config); // XXX - How do we initialize the arm now?
 
         PerceptionGUI gui = new PerceptionGUI(opts);
 
         ArmCommandInterpreter interpreter = new ArmCommandInterpreter(opts.getBoolean("debug"));
 
         if (opts.getBoolean("arm")) {
-            ArmController controller = new ArmController(config);
-            ArmDriver armDriver = new ArmDriver(config);
-            (new Thread(armDriver)).start();
-            if (opts.getBoolean("debug")) {
-                ArmDemo demo = new ArmDemo(config, false);
+            try {
+                ArmController controller = new ArmController(config);
+                ArmDriver armDriver = new ArmDriver(config);
+                (new Thread(armDriver)).start();
+                if (opts.getBoolean("debug")) {
+                    ArmDemo demo = new ArmDemo(config, false);
+                }
+            }
+            catch (IOException ioex) {
+                System.err.println("ERR: Error reading arm config");
+                ioex.printStackTrace();
+                return;
             }
         } else {
             if (opts.getBoolean("debug")) {
-                ArmDemo demo = new ArmDemo(config, true);
+                try {
+                    ArmDemo demo = new ArmDemo(config, true);
+                }
+                catch (IOException ioex) {
+                    System.err.println("ERR: Error reading arm config");
+                    ioex.printStackTrace();
+                    return;
+                }
             }
         }
 
