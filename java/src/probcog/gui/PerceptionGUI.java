@@ -590,7 +590,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 	    			VisVertexData vertexData = new VisVertexData();
 	    			for(double[] pt : points){
 	    				vertexData.add(new double[]{pt[0], pt[1], pt[2]});
-		    			colors.add((int)pt[3]);
+		    			colors.add(ColorUtil.swapRedBlue((int)pt[3]));
 	    			}
 	    			VzPoints visPts = new VzPoints(vertexData, new VzPoints.Style(colors, 2));
 	    			buffer.addBack(visPts);

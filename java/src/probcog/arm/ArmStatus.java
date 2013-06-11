@@ -83,6 +83,7 @@ public class ArmStatus implements LCMSubscriber
     private void initArm()
     {
         joints.clear();
+        armWidths.clear();
         Joint j0, j1, j2, j3, j4, j5;
         RevoluteJoint.Parameters p0, p1, p2, p3, p4;
 
@@ -91,6 +92,7 @@ public class ArmStatus implements LCMSubscriber
 
         baseHeight = config.getDouble("arm."+name+".base_height", 0);
         wristHeight = config.getDouble("arm."+name+".wrist_height",0);
+        armWidths.add(0.055);
 
         for (int i = 0;; i++) {
             double[] range = config.getDoubles("arm."+name+".r"+i+".range", null);
@@ -126,7 +128,6 @@ public class ArmStatus implements LCMSubscriber
 
         }
         joints.add(new HandJoint(new HandJoint.Parameters()));
-        armWidths.add(.05);
         armWidths.add(.05);
     }
 
@@ -222,11 +223,11 @@ public class ArmStatus implements LCMSubscriber
         ArrayList<double[]> points = new ArrayList<double[]>();
         points.add(new double[3]);
         points.add(new double[]{0,0,baseHeight});
-        double[][] xform = LinAlg.translate(points.get(1));
+        double[][] xform = LinAlg.translate(0,0,baseHeight);
         for (Joint j: joints) {
             LinAlg.timesEquals(xform, j.getRotation());
             LinAlg.timesEquals(xform, j.getTranslation());
-            points.add(LinAlg.transform(xform, new double[3]));
+            points.add(LinAlg.resize(LinAlg.matrixToXyzrpy(xform),3));
         }
 
         return points;

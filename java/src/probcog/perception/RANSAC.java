@@ -39,7 +39,12 @@ public class RANSAC
             // Derive plane through all three points
             double[] p2p1 = LinAlg.subtract(p2, p1);
             double[] p3p1 = LinAlg.subtract(p3, p1);
-            double[] pqr = LinAlg.crossProduct(p2p1, p3p1);
+            double[] pqr = LinAlg.normalize(LinAlg.crossProduct(p2p1, p3p1));
+            if (pqr[2] < 0) {
+                pqr[0] = -pqr[0];
+                pqr[1] = -pqr[1];
+                pqr[2] = -pqr[2];
+            }
             double s = -(pqr[0]*r1[0] + pqr[1]*r1[1] + pqr[2]*r1[2]);
             double[] plane = new double[]{pqr[0], pqr[1], pqr[2], s};
 
@@ -59,6 +64,9 @@ public class RANSAC
 
         if(bestFit == 0)
             return new double[4];
+
+        System.out.printf("Plane score: %d\n", bestFit);
+        System.out.printf("Plane fit: %f _ %f _ %f _ %f \n", bestPlane[0], bestPlane[1], bestPlane[2], bestPlane[3]);
         return bestPlane;
     }
 

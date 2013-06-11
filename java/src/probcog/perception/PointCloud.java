@@ -82,7 +82,8 @@ public class PointCloud
         }
         else{
             for(double[] p : points){
-                LinAlg.plusEquals(center, p);
+		double[] p3 = new double[]{p[0], p[1], p[2]};
+                LinAlg.plusEquals(center, p3);
             }
 
             for(int i=0; i<center.length; i++){

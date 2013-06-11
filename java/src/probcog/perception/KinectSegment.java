@@ -18,10 +18,10 @@ public class KinectSegment
 {
     final static double COLOR_THRESH = .02;//30;
     final static double DISTANCE_THRESH = 0.01;
-    final static double MIN_FROM_FLOOR_PLANE = .015;
+    final static double MIN_FROM_FLOOR_PLANE = .010; // XXX 0.015
     final static double MIN_OBJECT_SIZE = 100;
-    final static double RANSAC_PERCENT = .2;
-    final static int RANSAC_ITERATIONS = 2000;
+    final static double RANSAC_PERCENT = .6;
+    final static int RANSAC_ITERATIONS = 1000;
 
     private ArrayList<double[]> points;
     private double[] floorPlane;
@@ -31,14 +31,13 @@ public class KinectSegment
     private ArmStatus arm;
     private double baseHeight, wristHeight;
     private ArrayList<Double> armWidths;
+    private ArrayList<double[]> armPoints;
 
     // Set up some "Random" colors to draw the segments
     static int[] colors = new int[]{0xff3300CC, 0xff9900CC, 0xffCC0099, 0xffCC0033,
-                                    0xff0033CC, 0xff470AFF, 0xff7547FF, 0xffCC3300,
-                                    0xff0099CC, 0xffD1FF47, 0xffC2FF0A, 0xffCC9900,
-                                    0xff00CC99, 0xff00CC33, 0xff33CC00, 0xff99CC00};
-
-
+        0xff0033CC, 0xff470AFF, 0xff7547FF, 0xffCC3300,
+        0xff0099CC, 0xffD1FF47, 0xffC2FF0A, 0xffCC9900,
+        0xff00CC99, 0xff00CC33, 0xff33CC00, 0xff99CC00};
 
     public KinectSegment(Config config_) throws IOException
     {
@@ -65,6 +64,9 @@ public class KinectSegment
         if (!kinect.stashFrame())
             return new ArrayList<PointCloud>();
 
+        width = kinect.getWidth();
+        height = kinect.getHeight();
+
         points = Util.extractPoints(kinect);
         removeFloorAndArmPoints();
         return unionFind();
@@ -78,33 +80,41 @@ public class KinectSegment
     private boolean removeFloorAndArmPoints()
     {
         // Only calculate the floor plane once
-        if(floorPlane == null)
+        if(floorPlane == null && points.size() > 0){
+            System.out.println("Getting floor plane!");
             floorPlane = RANSAC.estimatePlane(points, RANSAC_ITERATIONS, RANSAC_PERCENT);
-
-        // Figure out where each of the joints are
-        ArrayList<double[]> armPoints = arm.getArmPoints();
-
-        // Set up segments of the arm
-        ArrayList<GLineSegment2D> armLines = new ArrayList<GLineSegment2D>();
-        for(int i=1; i<armPoints.size(); i++){
-            armLines.add(new GLineSegment2D(armPoints.get(i-1), armPoints.get(i)));
-            double[] p1 = armPoints.get(i-1);
-            double[] p2 = armPoints.get(i);
         }
 
+        // Figure out where each of the joints are
+        armPoints = arm.getArmPoints();
+
+        int nonBlack = 0;
         // Remove points that are either on the floor plane, below the plane,
         // or along the arm's position
         for(int i=0; i<points.size(); i++){
             double[] point = points.get(i);
             double[] p = new double[]{point[0], point[1], point[2]};
             double distToPlane = RANSAC.pointToPlaneDist(p, floorPlane);
-            if(distToPlane < MIN_FROM_FLOOR_PLANE || distToPlane > wristHeight ||
-               belowPlane(p, floorPlane) || inArmRange(armLines, p))
+            if(distToPlane < MIN_FROM_FLOOR_PLANE ||
+               distToPlane > wristHeight ||
+               belowPlane(p, floorPlane) ||
+               inArmRange(p))
+            {
                 points.set(i, new double[4]);
+            } else {
+                nonBlack ++;
+            }
         }
 
-        System.out.println("NFO: Found floor plane");
-
+        // XXX - Debug!!
+        /*
+        for(double x=-.5; x<.5; x+=.01){
+            for(double y=-.5; y<.5; y+=.01){
+                double z = (floorPlane[0]*x + floorPlane[1]*y + floorPlane[3])/-floorPlane[2];
+                double[] pt = new double[]{x,y,z,Color.BLUE.getRGB()};
+                points.add(pt);
+            }
+        }*/
         return true;
     }
 
@@ -113,11 +123,8 @@ public class KinectSegment
      ** they are close enough. **/
     public ArrayList<PointCloud> unionFind()
     {
-        ArrayList objects = new ArrayList<PointCloud>();
-        System.out.println("UNION FIND BEGIN..."); // XXX DEBUG
+        ArrayList<PointCloud> objects = new ArrayList<PointCloud>();
 
-        // XXX  The indexing scheme here breaks when we have a non-rectangular
-        // viewing window.
         // Union pixels that are close together
         UnionFindSimple uf = new UnionFindSimple(points.size());
         for(int y=0; y<height; y++){
@@ -126,15 +133,22 @@ public class KinectSegment
                 double[] p1 = points.get(loc);
                 // Look at neighboring pixels
                 if(!almostZero(p1)){
-                    int[] neighbors = new int[]{y*width + x+1, (y+1)*width + x};
-                    for(int loc2 : neighbors){
-                        if (loc2>=0 && loc2<points.size() && (x+1)<width){
-                            double[] p2 = points.get(loc2);
-                            if(!almostZero(p2)
-                               && (dist(p1, p2) < DISTANCE_THRESH
-                                   && colorDiff(p1[3], p2[3]) < COLOR_THRESH)){
-                                uf.connectNodes(loc, loc2);
-                            }
+                    int loc2 = y*width + x+1;
+                    if (loc2>=0 && loc2<points.size() && (x+1)<width){
+                        double[] p2 = points.get(loc2);
+                        if(!almostZero(p2)
+                           && (dist(p1, p2) < DISTANCE_THRESH
+                               && colorDiff(p1[3], p2[3]) < COLOR_THRESH)){
+                            uf.connectNodes(loc, loc2);
+                        }
+                    }
+                    loc2 = (y+1)*width + x;
+                    if (loc2>=0 && loc2<points.size() && (y+1)<height){
+                        double[] p2 = points.get(loc2);
+                        if(!almostZero(p2)
+                           && (dist(p1, p2) < DISTANCE_THRESH
+                               && colorDiff(p1[3], p2[3]) < COLOR_THRESH)){
+                            uf.connectNodes(loc, loc2);
                         }
                     }
                 }
@@ -158,8 +172,6 @@ public class KinectSegment
         for(PointCloud ptc : idToPoints.values())
             objects.add(ptc);
 
-        System.out.println("FOUND " + objects.size() + " OBJECTS"); // XXX DEBUG
-
         return objects;
     }
 
@@ -167,12 +179,29 @@ public class KinectSegment
 
     /** Determine whether a line is part of the arm, given a set of lines
      *  representing the positions of the joints.**/
-    private boolean inArmRange(ArrayList<GLineSegment2D> armLines, double[] p)
+    private boolean inArmRange(double[] p)
     {
-        assert(armWidths.size() <= armLines.size());
-        boolean inArm = false;
-        for(int i=0; i<armWidths.size(); i++){
-            if(armLines.get(i).distanceTo(p) < armWidths.get(i)){
+        assert(armWidths.size() < armPoints.size());
+        for (int i=0; i<armWidths.size(); i++) {
+            double[] p0 = armPoints.get(i);
+            double[] p1 = armPoints.get(i+1);
+            GLine3D line = new GLine3D(p0, p1);
+            double[] cp = line.pointOnLineClosestTo(p);
+
+            if (cp[0] < Math.min(p0[0], p1[0]) ||
+                cp[0] > Math.max(p0[0], p1[0]) ||
+                cp[1] < Math.min(p0[1], p1[1]) ||
+                cp[1] > Math.max(p0[1], p1[1]))
+            {
+                double d1 = LinAlg.distance(cp, p0);
+                double d2 = LinAlg.distance(cp, p1);
+                if (d1 < d2)
+                    cp = p0;
+                else
+                    cp = p1;
+            }
+
+            if (LinAlg.distance(p, cp) < armWidths.get(i)) {
                 return true;
             }
         }

@@ -54,8 +54,6 @@ public class KinectCalibrator
         jf.setSize(800, 600);
 
         kinect = new KinectSensor(config_);
-        poly = kinect.getPoly();
-
         // Load in arm parameter
         Config armConfig = new ConfigFile(config_.getPath("robot.arm"));
         String name = armConfig.getString("arm.arm_version");
@@ -90,6 +88,8 @@ public class KinectCalibrator
                 } else if (name.equals("frame")) {
                     if (kinect.stashFrame()) {
                         updateImage();
+                        poly = kinect.getPoly();
+                        flipPoly();
                         updateWindow();
                     }
                 }
@@ -220,6 +220,7 @@ public class KinectCalibrator
                 System.out.println("updating frame...");
                 updateImage();
                 poly = kinect.getPoly();
+                flipPoly();
                 updateWindow();
             } else {
                 System.err.println("ERR: Failed to load new frame from kinect");
@@ -441,6 +442,18 @@ public class KinectCalibrator
 
             return true;
         }
+    }
+
+    private april.jmat.geom.Polygon flipPoly()
+    {
+        assert (im != null && poly != null);
+
+        ArrayList<double[]> points = poly.getPoints();
+        for (double[] p: points) {
+            p[1] = im.getHeight() - p[1];
+        }
+
+        return new april.jmat.geom.Polygon(points);
     }
 
     // ================================

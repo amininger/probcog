@@ -103,56 +103,56 @@ public class ClassifierManager
         return results;
     }
 
-	public Classifications classify(FeatureCategory cat, Obj objToClassify)
+    public Classifications classify(FeatureCategory cat, Obj objToClassify)
     {
-		Classifier classifier = classifiers.get(cat);
-		ArrayList<Double> features = Features.getFeatures(cat, objToClassify.getPointCloud());
-        objToClassify.addFeatures(cat, features);
-
-		if(features == null){
-			return null;
-		}
-
-        Classifications classifications;
-		synchronized (stateLock) {
-			classifications = classifier.classify(features);
-            objToClassify.addClassifications(cat, classifications);
-		}
-		return classifications;
+	Classifier classifier = classifiers.get(cat);
+	ArrayList<Double> features = Features.getFeatures(cat, objToClassify.getPointCloud());
+	objToClassify.addFeatures(cat, features);
+	
+	if(features == null){
+	    return null;
 	}
-
-	public void addDataPoint(FeatureCategory cat, ArrayList<Double> features, String label){
-		Classifier classifier = classifiers.get(cat);
-		synchronized(stateLock){
-            CPoint point = new CPoint(label, features);
-            StackEntry entry = new StackEntry(point, cat, "ADD");
-			classifier.add(point);
-            undoStack.add(entry);
-		}
+	
+	Classifications classifications;
+	synchronized (stateLock) {
+	    classifications = classifier.classify(features);
+	    objToClassify.addClassifications(cat, classifications);
 	}
-
-	public void clearData(){
-		for(Classifier classifier : classifiers.values()){
-			synchronized(stateLock){
-				classifier.clearData();
-			}
-		}
+	return classifications;
+    }
+    
+    public void addDataPoint(FeatureCategory cat, ArrayList<Double> features, String label){
+	Classifier classifier = classifiers.get(cat);
+	synchronized(stateLock){
+	    CPoint point = new CPoint(label, features);
+	    StackEntry entry = new StackEntry(point, cat, "ADD");
+	    classifier.add(point);
+	    undoStack.add(entry);
 	}
-
-	public void reloadData(){
-		for(Classifier classifier : classifiers.values()){
-			synchronized(stateLock){
-				classifier.clearData();
-				classifier.loadData();
-			}
-		}
+    }
+    
+    public void clearData(){
+	for(Classifier classifier : classifiers.values()){
+	    synchronized(stateLock){
+		classifier.clearData();
+	    }
 	}
-
+    }
+    
+    public void reloadData(){
+	for(Classifier classifier : classifiers.values()){
+	    synchronized(stateLock){
+		classifier.clearData();
+		classifier.loadData();
+	    }
+	}
+    }
+    
     public boolean hasUndo()
     {
         return undoStack.size() > 0;
     }
-
+    
     public boolean hasRedo()
     {
         return redoStack.size() > 0;

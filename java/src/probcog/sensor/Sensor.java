@@ -9,7 +9,7 @@ public interface Sensor
     public int getWidth();
 
     /** Get a colored, 3D point of an object.**/
-    public double[] getXYZRGB(int x, int y);
+    public double[] getXYZRGB(int ix, int iy);
 
     public boolean stashFrame();
 }

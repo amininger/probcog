@@ -103,7 +103,7 @@ public class KinectSensor implements Sensor
             double[] dim = robot.getDoubles("calibration.dim");
             double[] polyArray = robot.getDoubles("calibration.poly");
             for (int i = 0; i < polyArray.length; i+=2) {
-                points.add(new double[] {polyArray[i], dim[1] - polyArray[i+1]});
+                points.add(new double[] {polyArray[i], polyArray[i+1]});
             }
             poly = new april.jmat.geom.Polygon(points);
         } else {
@@ -222,8 +222,7 @@ public class KinectSensor implements Sensor
     /** Get the width of our rectified images */
     public int getWidth()
     {
-        if (r_rgbIm == null)
-            return 0;
+        assert (r_rgbIm != null);
         assert (r_rgbIm.getWidth() == r_depthIm.getWidth());
 
         return r_rgbIm.getWidth();
@@ -231,8 +230,7 @@ public class KinectSensor implements Sensor
 
     public int getHeight()
     {
-        if (r_rgbIm == null)
-            return 0;
+        assert (r_rgbIm != null);
         assert (r_rgbIm.getHeight() == r_depthIm.getHeight());
 
         return r_rgbIm.getHeight();
@@ -248,9 +246,10 @@ public class KinectSensor implements Sensor
         return LinAlg.resize(LinAlg.matrixAB(pt, k2wXform), p.length);
     }
 
+    /** Sensor interface to colored points */
     public double[] getXYZRGB(int ix, int iy)
     {
-        return getXYZRGB(ix, iy, false);
+        return getXYZRGB(ix, iy, true);
     }
 
     public double[] getXYZRGB(int ix, int iy, boolean filter)
@@ -333,7 +332,6 @@ public class KinectSensor implements Sensor
 
     public double[] getLocalXYZ(int ix, int iy, double[] xyz)
     {
-
         assert (xyz != null && xyz.length >= 3);
         assert (r_depthIm != null);
         int[] buf = ((DataBufferInt)(r_depthIm.getRaster().getDataBuffer())).getData();
@@ -342,7 +340,7 @@ public class KinectSensor implements Sensor
             iy < 0 || iy >= getHeight())
             return xyz;
 
-        int d = buf[iy*r_depthIm.getWidth() + ix];
+        int d = buf[iy*getWidth() + ix];
         double depth = d/1000.0;   // millimeters to meters
 
         xyz[0] = (ix - Cirx) * depth / Firx;

@@ -92,6 +92,7 @@ public class Util
                 double[] xyzrgb = sensor.getXYZRGB(x,y);
                 if (xyzrgb == null)
                     continue;
+                //System.out.printf("%f %f %f\n", xyzrgb[0], xyzrgb[1], xyzrgb[2]);
 
                 points.add(xyzrgb);
             }
