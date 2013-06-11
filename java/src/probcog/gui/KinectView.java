@@ -7,6 +7,7 @@ import javax.swing.JFrame;
 
 import lcm.lcm.*;
 
+import april.config.*;
 import april.jmat.LinAlg;
 import april.vis.*;
 import april.util.*;
@@ -35,13 +36,15 @@ public class KinectView extends JFrame implements LCMSubscriber
     ExpiringMessageCache<observations_t> observations =
         new ExpiringMessageCache<observations_t>(2.5, true);
 
-    public KinectView()
+    public KinectView(Config config_) throws IOException
     {
-
         // Setup Frame
         JFrame frame = new JFrame("Kinect View");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
+
+        // Make a goddamn kinect
+        kinect = new KinectSensor(config_);
 
         // Initialize the image frame and canvas
         visWorld = new VisWorld();
@@ -55,15 +58,15 @@ public class KinectView extends JFrame implements LCMSubscriber
                                   new double[] {0, 0, 1},// Up
                                   false);
 
-
         frame.add(visCanvas, BorderLayout.CENTER);
 
         // Finalize JFrame
         frame.setSize(400, 300);
         frame.setVisible(true);
 
-		class RefreshTask extends TimerTask{
+		class RefreshTask extends TimerTask {
 			public void run() {
+                redrawKinectData();
 				update();
 			}
     	}
@@ -76,6 +79,9 @@ public class KinectView extends JFrame implements LCMSubscriber
     	VisWorld.Buffer buffer = visWorld.getBuffer("objects");
 
         observations_t obs = observations.get();
+        if (obs == null)
+            return;
+
         for (object_data_t ob: obs.observations) {
             double[][] bbox = ob.bbox;
             double[] pos = ob.pos;
@@ -95,10 +101,11 @@ public class KinectView extends JFrame implements LCMSubscriber
     {
     	VisWorld.Buffer buffer = visWorld.getBuffer("kinect");
         ArrayList<double[]> points;
-        if (!kinect.stashFrame())
+        if (!kinect.stashFrame()) {
             points = new ArrayList<double[]>();
-        else
+        } else {
             points = Util.extractPoints(kinect);
+        }
 
 		if(points != null && points.size() > 0){
 			VisColorData colors = new VisColorData();

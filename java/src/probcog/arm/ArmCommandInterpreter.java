@@ -91,7 +91,7 @@ public class ArmCommandInterpreter
                     // Broadcast command message to robot
                     if (bolt_cmd != null) {
                         bolt_cmd.utime = TimeUtil.utime();
-                        lcm.publish("ARM_COMMAND", bolt_cmd);
+                        lcm.publish("BOLT_ARM_COMMAND", bolt_cmd);
                     }
                 }
             }

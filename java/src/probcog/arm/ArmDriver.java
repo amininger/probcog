@@ -59,7 +59,7 @@ public class ArmDriver implements LCMSubscriber, Runnable
                 js = new JSerial(device, 1000000);
                 js.setCTSRTS(true);
             } catch (IOException ioex) {
-                System.err.println("ERR: "+ioex);
+                System.err.println("ERR: could not open serial device "+ioex);
                 ioex.printStackTrace();
             }
             bus = new SerialBus(js);

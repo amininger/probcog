@@ -245,7 +245,7 @@ public class KinectSensor implements Sensor
         double[] pt = LinAlg.resize(p, 4);
         pt[3] = 1;
 
-        return LinAlg.resize(LinAlg.matrixAB(pt, k2wXform), 3);
+        return LinAlg.resize(LinAlg.matrixAB(pt, k2wXform), p.length);
     }
 
     public double[] getXYZRGB(int ix, int iy)

@@ -48,7 +48,7 @@ public class KinectSegment
     public KinectSegment(Config config_, SimWorld world) throws IOException
     {
         // Get stuff ready for removing arms
-        ArmStatus arm = new ArmStatus(config_);
+        arm = new ArmStatus(config_);
         baseHeight = arm.baseHeight;
         wristHeight = arm.wristHeight;
         armWidths = arm.getArmSegmentWidths();
@@ -82,16 +82,7 @@ public class KinectSegment
             floorPlane = RANSAC.estimatePlane(points, RANSAC_ITERATIONS, RANSAC_PERCENT);
 
         // Figure out where each of the joints are
-        ArrayList<double[]> armPoints = new ArrayList<double[]>();
-//        ArrayList<Joint> joints = tracker.arm.getJoints();
-        double[][] xform = LinAlg.translate(0,0,baseHeight);
-        armPoints.add(new double[3]);
-        armPoints.add(LinAlg.matrixToXyzrpy(xform));
-//        for (Joint j: joints) {
-//            LinAlg.timesEquals(xform, j.getRotation());
-//            LinAlg.timesEquals(xform, j.getTranslation());
-//            armPoints.add(LinAlg.matrixToXyzrpy(xform));
-//        }
+        ArrayList<double[]> armPoints = arm.getArmPoints();
 
         // Set up segments of the arm
         ArrayList<GLineSegment2D> armLines = new ArrayList<GLineSegment2D>();

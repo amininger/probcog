@@ -705,7 +705,7 @@ public class ArmController implements LCMSubscriber
         ControlThread ct = new ControlThread();
         ct.start();
 
-        lcm.subscribe("ARM_COMMAND", this);
+        lcm.subscribe("BOLT_ARM_COMMAND", this);    // XXX
     }
 
     /** Construct a series of revolute joints representing our current arm
@@ -729,14 +729,15 @@ public class ArmController implements LCMSubscriber
         try {
             messageReceivedEx(lcm, channel, ins);
         } catch (IOException ex) {
-            System.out.println("ERR: "+ex);
+            System.out.println("ERR: Could not handle LCM channel - "+channel);
+            ex.printStackTrace();
         }
     }
 
     /** Responds to messages such as arm statuses and robot commands. */
     public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
     {
-        if (channel.equals("ARM_COMMAND")) {
+        if (channel.equals("BOLT_ARM_COMMAND")) {
             //robot_command_t cmd = new robot_command_t(ins);
             bolt_arm_command_t cmd = new bolt_arm_command_t(ins);
             //cmds.put(cmd, cmd.utime);

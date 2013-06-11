@@ -121,7 +121,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         tracker = new Tracker(config, opts.getBoolean("kinect"), simulator.getWorld());
 
         // Raw kinect data view
-        kinectView = new KinectView();
+        kinectView = new KinectView(config);
 
         // Initialize the JMenuBar
         createMenuBar();
@@ -492,7 +492,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         {
             Tic tic = new Tic();
             while (true) {
-
                 double dt = tic.toctic();
                 if (animation != null) {
                     VisWorld.Buffer vb = vw.getBuffer("selection");

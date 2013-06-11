@@ -56,7 +56,8 @@ public class ArmDemo implements LCMSubscriber
         try {
             messageReceivedEx(lcm, channel, ins);
         } catch (IOException ex) {
-            System.out.println("ERR: "+ex);
+            System.out.println("ERR: Could not handle LCM channel - "+channel);
+            ex.printStackTrace();
         }
     }
 
