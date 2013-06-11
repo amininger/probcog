@@ -293,6 +293,7 @@ public class Tracker
         public void run()
         {
             while (true) {
+                System.out.println("Tracking..."); // XXX DEBUG
                 compareObjects();
                 HashMap<Integer, Obj> objs = getWorldState();
                 ArrayList<Obj> objsList = new ArrayList<Obj>();

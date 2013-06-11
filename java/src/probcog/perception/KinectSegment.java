@@ -103,6 +103,8 @@ public class KinectSegment
                 points.set(i, new double[4]);
         }
 
+        System.out.println("NFO: Found floor plane");
+
         return true;
     }
 
@@ -112,6 +114,7 @@ public class KinectSegment
     public ArrayList<PointCloud> unionFind()
     {
         ArrayList objects = new ArrayList<PointCloud>();
+        System.out.println("UNION FIND BEGIN..."); // XXX DEBUG
 
         // XXX  The indexing scheme here breaks when we have a non-rectangular
         // viewing window.
@@ -154,6 +157,8 @@ public class KinectSegment
 
         for(PointCloud ptc : idToPoints.values())
             objects.add(ptc);
+
+        System.out.println("FOUND " + objects.size() + " OBJECTS"); // XXX DEBUG
 
         return objects;
     }
