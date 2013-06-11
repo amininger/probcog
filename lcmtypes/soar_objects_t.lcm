@@ -1,6 +1,6 @@
 struct soar_objects_t
 {
-    category_t cat;
+    int64_t utime;
 
     int32_t num_objects;
     object_data_t objects[num_objects];
