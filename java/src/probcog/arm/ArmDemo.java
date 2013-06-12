@@ -13,8 +13,9 @@ import april.dynamixel.*;
 import april.jserial.*;
 import april.jmat.*;
 import april.jmat.geom.*;
-import april.vis.*;
+import april.sim.*;
 import april.util.*;
+import april.vis.*;
 
 import probcog.lcmtypes.*;
 import probcog.perception.*;
@@ -28,22 +29,11 @@ public class ArmDemo implements LCMSubscriber
     RenderThread rt;
     ActionState action = ActionState.UNKNOWN;
 
-    // Simulation thread
-    SimulationThread st;
-
-    // XXX Do we even use cmds anymore?
     ExpiringMessageCache<observations_t> observations = new ExpiringMessageCache<observations_t>(2.5, true);
 
-    public ArmDemo(Config config_, boolean sim) throws IOException
+    public ArmDemo(Config config_) throws IOException
     {
         arm = new ArmStatus(config_);
-
-        // If we're simulating, we spoof our own ARM_STATUS messages. Otherwise,
-        // we just run normally.
-        if (sim) {
-            st = new SimulationThread();
-            st.start();
-        }
 
         lcm.subscribe("OBSERVATIONS", this);
 
@@ -290,40 +280,6 @@ public class ArmDemo implements LCMSubscriber
         }
     }
 
-    class SimulationThread extends Thread
-    {
-        int Hz = 15;
-
-        public void run()
-        {
-            System.out.println("ATTN: Starting simulation thread");
-            while (true) {
-                TimeUtil.sleep(1000/Hz);
-
-                long utime = TimeUtil.utime();
-                dynamixel_status_list_t dsl = new dynamixel_status_list_t();
-                dsl.len = arm.getNumJoints();
-                dsl.statuses = new dynamixel_status_t[dsl.len];
-                for (int i = 0; i < dsl.len; i++) {
-                    dynamixel_status_t status = new dynamixel_status_t();
-                    status.utime = utime;
-                    status.position_radians = arm.getDesiredPos(i);
-                    // XXX Ignore the rest of the values we could set
-                    // for now. Could later get clever and actually set
-                    // these in a way that simulates movement
-                    /*status.error_flags = dynamixel_status_t.ERROR_VOLTAGE |
-                                         dynamixel_status_t.ERROR_OVERLOAD |
-                                         dynamixel_status_t.ERROR_ANGLE_LIMIT |
-                                         dynamixel_status_t.ERROR_OVERHEAT;*/
-
-                    dsl.statuses[i] = status;
-                }
-
-                lcm.publish("ARM_STATUS", dsl);
-            }
-        }
-    }
-
     private robot_command_t getRobotCommand(int id, ActionState state)
     {
         action = state;
@@ -385,49 +341,54 @@ public class ArmDemo implements LCMSubscriber
     {
         GetOpt opts = new GetOpt();
         opts.addString('c',"config",null,"Config file");
-        opts.addBoolean('s',"sim",false,"Run in simulation mode");
+        opts.addString('w',"world",null,"Sim world file");
+        //opts.addBoolean('s',"sim",false,"Run in simulation mode");
         opts.addBoolean('h',"help",false,"Display this help screen");
 
         if (!opts.parse(args)) {
             System.err.println("ERR: Option error - "+opts.getReason());
-            return;
+            System.exit(1);
         }
 
         if (opts.getBoolean("help")) {
             opts.doHelp();
-            return;
+            System.exit(0);
         }
 
         if (opts.getString("config") == null) {
             System.err.println("ERR: Need to supply config file");
-            return;
+            System.exit(1);
         }
 
-        Config config;
+        Config config = null;
         try {
             config = new ConfigFile(opts.getString("config"));
         } catch (IOException ioex) {
             System.err.println("ERR: Unable to open config file");
             ioex.printStackTrace();
-            return;
+            System.exit(1);
         }
 
-        // XXX NEED TO FIGURE OUT WHAT THINGS TO RUN TO START UP DEMO
 
-        // XXX
-        if (!opts.getBoolean("sim")) {
-            ArmDriver driver = new ArmDriver(config);
-            (new Thread(driver)).start();
-        }
-
-        // XXX Can no longer start up the arm command interpreter alone.
-        //ArmCommandInterpreter interpreter = new ArmCommandInterpreter(false);
         try {
-            // Tracker tracker = new Tracker(config); // Needs a physicalArm boolean and a SimWorld
+            // Take the presence of a world file as a sign that we want a sim
+            if (opts.getString("world") == null) {
+                System.out.println("Spinning up real world...");
+                Tracker tracker = new Tracker(config, true, null);
+                ArmDriver driver = new ArmDriver(config);
+                (new Thread(driver)).start();
+            } else {
+                System.out.println("Spinning up simulation...");
+                SimWorld world = new SimWorld(opts.getString("world"),
+                                              new Config());
+                Tracker tracker = new Tracker(config, false, world);
+                SimArm simArm = new SimArm(config, world);
+            }
             ArmController controller = new ArmController(config);
-            ArmDemo demo = new ArmDemo(config, opts.getBoolean("sim"));
+            ArmDemo demo = new ArmDemo(config);
         } catch (IOException ioex) {
-            System.err.println("ERR: Error reading arm config");
+            System.err.println("ERR: Could not start up arm debugging interface");
+            ioex.printStackTrace();
         }
     }
 }

@@ -27,6 +27,7 @@ public class ArmStatus implements LCMSubscriber
     private LCM lcm = LCM.getSingleton();
 
     Config config;
+    String prefix;
 
     private ArrayList<Joint> joints = new ArrayList<Joint>();
     private ArrayList<Double> armWidths = new ArrayList<Double>();
@@ -38,12 +39,21 @@ public class ArmStatus implements LCMSubscriber
 
     public ArmStatus(Config config_) throws IOException
     {
+        this(config_, "ARM");
+    }
+
+    /** Takes a channel prefix as an argument to identify which arm this
+     *  observer should listen in on.
+     */
+    public ArmStatus(Config config_, String prefix_) throws IOException
+    {
         // Construct config
         config = new ConfigFile(config_.getPath("robot.arm"));
+        prefix = prefix_;
 
         initArm();
 
-        lcm.subscribe("ARM_STATUS", this);
+        lcm.subscribe(prefix+"_STATUS", this);
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -59,7 +69,7 @@ public class ArmStatus implements LCMSubscriber
     public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
         throws IOException
     {
-        if (channel.equals("ARM_STATUS")) {
+        if (channel.equals(prefix+"_STATUS")) {
             // Handle arm status updates. Saves the status message for
             // consumption by user in addition to updating the arm model
             dynamixel_status_list_t dsl = new dynamixel_status_list_t(ins);
