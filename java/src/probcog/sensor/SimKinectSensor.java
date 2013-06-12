@@ -60,6 +60,11 @@ public class SimKinectSensor implements Sensor
             }
         }
 
+        if(minObj == null) {
+            double[] xyFloor = ray.intersectPlaneXY();
+            minDist = LinAlg.distance(ray.getSource(), xyFloor);
+        }
+
         // Object is too far away for a kinect to sense anything. Return an
         // empty point
         if (minDist >= 8.0) {
