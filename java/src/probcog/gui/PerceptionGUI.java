@@ -119,8 +119,13 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // Initialize object tracker
         tracker = new Tracker(config, opts.getBoolean("kinect"), simulator.getWorld());
 
-        // Raw kinect data view
-        kinectView = new KinectView(config);
+        // Spin up a virtual arm in sim world
+        if (!opts.getBoolean("kinect")) {
+            SimArm simArm = new SimArm(config, simulator.getWorld());
+        } else {
+            // Raw kinect data view
+            kinectView = new KinectView(config);
+        }
 
         // Initialize the JMenuBar
         createMenuBar();

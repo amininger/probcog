@@ -5,6 +5,7 @@ import java.io.*;
 import lcm.lcm.*;
 
 import april.config.*;
+import april.jmat.*;
 import april.sim.*;
 import april.util.*;
 
@@ -34,6 +35,8 @@ public class SimArm implements LCMSubscriber
     ArmStatus arm;
     ExpiringMessageCache<dynamixel_command_list_t> cmdCache =
         new ExpiringMessageCache<dynamixel_command_list_t>(0.25);
+
+    SimObject grabbed = null;
 
     // In the ideal world, we would actually have a better understanding of
     // which arm we were modeling and how it was constructed such that we could
@@ -109,7 +112,7 @@ public class SimArm implements LCMSubscriber
                         dynamixel_command_t cmd = cmds.commands[i];
                         // Rotation
                         double pos = arm.getActualPos(i);
-                        int sign = pos < cmd.position_radians ? 1 : -1;
+                        int sign = pos <= cmd.position_radians ? 1 : -1;
                         double dr = cmd.speed*DYNAMIXEL_MAX_SPEED*DYNAMIXEL_SPEED_INC;
                         if (sign > 0) {
                             status.position_radians = Math.min(pos + dr*dt,
@@ -120,10 +123,41 @@ public class SimArm implements LCMSubscriber
                         }
 
                         // Speed
-                        if (cmd.position_radians == pos) {
-                        } else {
+                        boolean stopped = cmd.position_radians == pos;
+                        if (!stopped) {
                             status.speed = cmd.speed;
                         }
+
+                        // Grabbing
+                        // If our hand joint has been set to be closed, we should
+                        // start checking to see if we collided w/ an object
+                        if (i == 5 && sign > 0 && !stopped) {
+                            for (SimObject so: simWorld.objects) {
+                                if (Collisions.collision(so.getShape(),
+                                                         so.getPose(),
+                                                         arm.getGripperShape(),
+                                                         arm.getGripperPose()))
+                                {
+                                    grabbed = so;
+                                }
+                            }
+                        } else if (i == 5 && sign < 0) {
+                            // Drop the object, if we're holding one
+                            if (grabbed != null) {
+                                // Gravity check. Drop object until it hits
+                                // the ground OR an object below it
+                                // XXX Need to actually implement this
+                                double[][] pose = grabbed.getPose();
+                                double[] xyzrpy = LinAlg.matrixToXyzrpy(pose);
+                                xyzrpy[2] = 0;
+                                grabbed.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+
+                                grabbed = null;
+                            }
+                        }
+
+                        if (grabbed != null)
+                            status.load = 0.3;
                     }
 
 
@@ -136,10 +170,13 @@ public class SimArm implements LCMSubscriber
                     //                     dynamixel_status_t.ERROR_ANGLE_LIMIT |
                     //                     dynamixel_status_t.ERROR_OVERHEAT;
 
-                    // XXX Grabbing
 
 
                     dsl.statuses[i] = status;
+                }
+
+                if (grabbed != null) {
+                    grabbed.setPose(LinAlg.xyzrpyToMatrix(arm.getGripperXYZRPY()));
                 }
 
                 lcm.publish(prefix+"_STATUS", dsl);
