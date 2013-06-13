@@ -59,6 +59,11 @@ public class KinectSegment
             kinect = new SimKinectSensor(world);
     }
 
+    /** Get the most recent frame from the Kinect and segment it into point
+     ** clouds of objects. Remove the floor plane and the segments that lie
+     ** where the arm is expected to be.
+     ** @return list of point clouds for each object segmented in the scene.
+     **/
     public ArrayList<PointCloud> getObjectPointClouds()
     {
         if (!kinect.stashFrame())
@@ -88,7 +93,6 @@ public class KinectSegment
         // Figure out where each of the joints are
         armPoints = arm.getArmPoints();
 
-        int nonBlack = 0;
         // Remove points that are either on the floor plane, below the plane,
         // or along the arm's position
         for(int i=0; i<points.size(); i++){
@@ -101,20 +105,8 @@ public class KinectSegment
                inArmRange(p))
             {
                 points.set(i, new double[4]);
-            } else {
-                nonBlack ++;
             }
         }
-
-        // XXX - Debug!!
-        /*
-        for(double x=-.5; x<.5; x+=.01){
-            for(double y=-.5; y<.5; y+=.01){
-                double z = (floorPlane[0]*x + floorPlane[1]*y + floorPlane[3])/-floorPlane[2];
-                double[] pt = new double[]{x,y,z,Color.BLUE.getRGB()};
-                points.add(pt);
-            }
-        }*/
         return true;
     }
 
