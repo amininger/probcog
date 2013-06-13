@@ -584,6 +584,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     	synchronized(tracker.stateLock){
 			for(Obj ob : tracker.getWorldState().values()){
 				ArrayList<double[]> points = ob.getPointCloud().getPoints();
+                //System.out.printf("Drawing object %d with %d pts\n", ob.getID(), points.size());
 				if(points != null && points.size() > 0){
 	    			VisColorData colors = new VisColorData();
 	    			VisVertexData vertexData = new VisVertexData();
