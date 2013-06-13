@@ -214,9 +214,10 @@ public class KinectSegment
     private boolean belowPlane(double[] p, double[] coef)
     {
         double eval = coef[0]*p[0] + coef[1]*p[1] + coef[2]*p[2] + coef[3];
-        if(eval < 0 && coef[3] > 0)
+        double aboveEval = coef[2]*10 + coef[3];
+        if(eval < 0 && aboveEval > 0)
             return true;
-        else if(eval > 0 && coef[3] < 0)
+        else if(eval > 0 && aboveEval < 0)
             return true;
         return false;
     }
