@@ -106,9 +106,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // XXX SEE ArmDemo for ideas for simulating arm
         controller = new ArmController(config);
 
-        // XXX Arm debugging
         if (opts.getBoolean("debug")) {
-            ArmDemo demo = new ArmDemo(config, false);  // XXX NO SIM
+            ArmDemo demo = new ArmDemo(config);
         }
 
         // Initialize sensable manager
