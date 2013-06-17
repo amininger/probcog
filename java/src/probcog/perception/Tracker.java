@@ -88,15 +88,14 @@ public class Tracker
                 double minDist = Double.MAX_VALUE;
                 int minID = -1;
 
-                for (Obj oldObj: soarObjects) {
-                    if (idSet.contains(oldObj.getID()))
+                for (Obj soarObj: soarObjects) {
+                    if (idSet.contains(soarObj.getID()))
                         continue;
-                    double dist = LinAlg.distance(newObj.getCentroid(),
-                                                  oldObj.getCentroid(),
-                                                  2);
-                    if (dist < thresh && dist < minDist) {
+
+                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid(), 2);
+                    if(dist < thresh && dist < minDist){
                         matched = true;
-                        minID = oldObj.getID();
+                        minID = soarObj.getID();
                         minDist = dist;
                     }
                 }
@@ -144,6 +143,7 @@ public class Tracker
 
         synchronized(soarLock) {
             if(soar_lcm != null) {
+
                 for(int i=0; i<soar_lcm.num_objects; i++) {
                     object_data_t odt = soar_lcm.objects[i];
                     Obj sObj = new Obj(odt.id);

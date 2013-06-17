@@ -188,16 +188,6 @@ public class Obj
         return labels;
     }
 
-    public void clearLabels()
-    {
-        labels = new HashMap<FeatureCategory, Classifications>();
-    }
-
-    public void clearLabels(FeatureCategory category)
-    {
-        labels.put(category, new Classifications());
-    }
-
     // Increasing ids
     private static int idGen = 0;
     public static int nextID()
