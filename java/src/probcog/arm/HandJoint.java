@@ -1,11 +1,12 @@
 package probcog.arm;
 
-import java.awt.*;
+import java.awt.Color;
 import javax.swing.*;
 
-import april.vis.*;
 import april.jmat.*;
+import april.sim.*;
 import april.util.*;
+import april.vis.*;
 
 import probcog.lcmtypes.*;
 
@@ -16,6 +17,9 @@ public class HandJoint implements Joint
 
     // Current VisObject
     VisObject vobj;
+
+    // Current shape
+    Shape shape;
 
     // State
     double[][] rotation;
@@ -80,6 +84,12 @@ public class HandJoint implements Joint
         return cmd;
     }
 
+    public Shape getShape()
+    {
+        updateVisObject();
+        return shape;
+    }
+
     // ===================
     private void updateVisObject()
     {
@@ -99,6 +109,13 @@ public class HandJoint implements Joint
         double msep     = 0.020;
         double width    = 0.012;
         double height   = 0.008;
+
+        BoxShape staticBox = new BoxShape(ssep+2*height, width, sfZ);
+        staticBox.transform(LinAlg.translate(0, soY, sfZ/2+soZ));
+        BoxShape mobileBox = new BoxShape(2*msep+3*height, mfY, width);
+        mobileBox.transform(LinAlg.rotateX(-params.aAngle));
+        mobileBox.transform(LinAlg.translate(0, mfY/2+moY, moZ));
+        shape = new CompoundShape(staticBox, mobileBox);
 
         VzBox finger = new VzBox(1,1,1, new VzMesh.Style(Color.blue));
         VzCylinder cyl = new VzCylinder(cr, ch, new VzMesh.Style(Color.red));

@@ -1,6 +1,6 @@
 package probcog.arm;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
@@ -8,6 +8,7 @@ import lcm.lcm.*;
 
 import april.config.*;
 import april.jmat.*;
+import april.sim.*;
 import april.util.*;
 import april.vis.*;
 
@@ -213,8 +214,14 @@ public class ArmStatus implements LCMSubscriber
 
     // ==============================================
 
-    /** Get the position of the gripper */
-    public double[] getGripperXYZRPY()
+    /** Get the shape of the arm's gripper */
+    public Shape getGripperShape()
+    {
+        return ((HandJoint)(joints.get(getNumJoints()-1))).getShape();
+    }
+
+    /** Get the current position of the arm's gripper */
+    public double[][] getGripperPose()
     {
         double[][] xform = LinAlg.translate(0,0,baseHeight);
         for (Joint j: joints) {
@@ -222,7 +229,13 @@ public class ArmStatus implements LCMSubscriber
             LinAlg.timesEquals(xform, j.getTranslation());
         }
 
-        return LinAlg.matrixToXyzrpy(xform);
+        return xform;
+    }
+
+    /** Get the position of the gripper */
+    public double[] getGripperXYZRPY()
+    {
+        return LinAlg.matrixToXyzrpy(getGripperPose());
     }
 
     /** Return a list of points designating the endpoints of arm segments

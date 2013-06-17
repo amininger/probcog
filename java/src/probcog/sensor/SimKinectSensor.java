@@ -20,8 +20,8 @@ import april.vis.VisCameraManager.CameraPosition;
 public class SimKinectSensor implements Sensor
 {
     // Sim Kinect parameters
-    public static final int WIDTH = 640;
-    public static final int HEIGHT = 480;
+    public static final int WIDTH = 320;
+    public static final int HEIGHT = (int)(WIDTH*.75);
     public static final double HFOV = 57.0;
     public static final double VFOV = 43.0;
 
@@ -68,21 +68,33 @@ public class SimKinectSensor implements Sensor
         vc.setSize(WIDTH, HEIGHT);
         //jf.add(vc);
         //jf.setVisible(true);
+
+        (new RenderThread()).start();
+    }
+
+    class RenderThread extends Thread
+    {
+        int Hz = 30;
+        public void run()
+        {
+            while (true) {
+                VisWorld.Buffer vb = vw.getBuffer("objs");
+                for (SimObject obj: sw.objects) {
+                    vb.addBack(new VisChain(obj.getPose(),
+                                            obj.getVisObject()));
+                }
+                vb.swap();
+                // I don't feel like this guarantees that we'll have our image data in
+                // time for color sampling...
+                vc.draw();
+                TimeUtil.sleep(1000/Hz);
+            }
+        }
     }
 
     /** Get the RGBXYZ point corresponding to virtual kinect pixel (ix,iy) */
     public double[] getXYZRGB(int ix, int iy)
     {
-        VisWorld.Buffer vb = vw.getBuffer("objs");
-        for (SimObject obj: sw.objects) {
-            vb.addBack(new VisChain(obj.getPose(),
-                                    obj.getVisObject()));
-        }
-        vb.swap();
-        // I don't feel like this guarantees that we'll have our image data in
-        // time for color sampling...
-        vc.draw();
-
         // XXX Infinite loop possibility
         BufferedImage im;
         do {
