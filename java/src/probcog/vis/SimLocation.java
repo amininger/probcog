@@ -9,6 +9,8 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 
+import probcog.util.Util;
+
 public class SimLocation implements SimObject
 {
     private VisObject model;
@@ -18,6 +20,7 @@ public class SimLocation implements SimObject
     private double size;
 
     private String name;
+    private int id;
     private Color color;
 
     private HashMap<String, String[]> possibleStates;
@@ -27,34 +30,77 @@ public class SimLocation implements SimObject
     public SimLocation(SimWorld sw)
     {
         size = .1;
+        shape = new BoxShape(new double[]{2*size, 2*size, 0});
+        id = Util.nextID();
         possibleStates = new HashMap<String, String[]>();
         currentStates = new HashMap<String, String>();
+    }
+
+    public void setColor(int[] rgb)
+    {
+        assert(rgb.length == 3);
+        color = new Color(rgb[0], rgb[1], rgb[2]);
+    }
+
+    public Color getColor()
+    {
+        return color;
+    }
+
+    public int getID()
+    {
+        return id;
     }
 
     public VisObject getVisObject()
     {
         return constructModel();
     }
+
     public Shape getShape()
     {
         return shape;
     }
+
+    public void setPose(double[] pose)
+    {
+        this.pose = pose;
+    }
+
+    public void setPose(double[][] poseMatrix)
+    {
+		pose = LinAlg.matrixToXyzrpy(poseMatrix);
+	}
+
     public double[][] getPose()
     {
 		return LinAlg.xyzrpyToMatrix(pose);
     }
-	public void setPose(double[][] poseMatrix)
+
+    public void setName(String name)
     {
-		pose = LinAlg.matrixToXyzrpy(poseMatrix);
-	}
+        this.name = name;
+    }
+
     public String getName()
     {
         return name;
     }
 
+    public void setPossibleStates(HashMap<String, String[]> possible)
+    {
+        possibleStates = possible;
+    }
+
+    public void setCurrentStates(HashMap<String, String> current)
+    {
+        currentStates = current;
+    }
+
+
     public String getProperties()
     {
-		String props = String.format("NAME=%s,", name);
+		String props = String.format("ID=%d,NAME=%s,", id, name);
 
         if(currentStates.size() > 0){
             StringBuilder properties = new StringBuilder();
@@ -147,7 +193,20 @@ public class SimLocation implements SimObject
     {
     	outs.writeComment("XY");
         outs.writeDoubles(new double[]{pose[0], pose[1]});
+        outs.writeString(name);
+
         outs.writeInts(new int[]{color.getRed(), color.getGreen(), color.getBlue()});
+
+        outs.writeInt(possibleStates.size());
+        for(String property : possibleStates.keySet()) {
+            String nameValues = property + "=" + currentStates.get(property);
+            for(String state : possibleStates.get(property)) {
+                if(!state.equals(currentStates.get(property))) {
+                    nameValues += "," + state;
+                }
+            }
+            outs.writeString(nameValues);
+        }
     }
 
     // Override for SimObject

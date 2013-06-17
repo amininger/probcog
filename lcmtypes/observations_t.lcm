@@ -5,6 +5,11 @@ struct observations_t
     // Object ID of the object the user last clicked on
     int32_t click_id;
 
+    // Observed objects
     int32_t nobs;
     object_data_t observations[nobs];
+
+    // Locations
+    int32_t num_locs;
+    string locations[num_locs];
 }
