@@ -21,6 +21,10 @@ public class HandJoint implements Joint
     // Current shape
     Shape shape;
 
+    // XXX DEBUG
+    public BoxShape staticBox;
+    public BoxShape mobileBox;
+
     // State
     double[][] rotation;
     double[][] translation;
@@ -110,12 +114,15 @@ public class HandJoint implements Joint
         double width    = 0.012;
         double height   = 0.008;
 
-        BoxShape staticBox = new BoxShape(ssep+2*height, width, sfZ);
-        staticBox.transform(LinAlg.translate(0, soY, sfZ/2+soZ));
-        BoxShape mobileBox = new BoxShape(2*msep+3*height, mfY, width);
-        mobileBox.transform(LinAlg.rotateX(-params.aAngle));
-        mobileBox.transform(LinAlg.translate(0, mfY/2+moY, moZ));
-        shape = new CompoundShape(staticBox, mobileBox);
+        staticBox = new BoxShape(ssep+2*height, width, sfZ);
+        staticBox = staticBox.transform(LinAlg.translate(0, soY, sfZ/2+soZ));
+        mobileBox = new BoxShape(2*msep+3*height, mfY, width);
+        double[][] rot = LinAlg.rotateX(-params.aAngle);
+        double[][] trans = LinAlg.translate(0,-mfY/2-moY,-moZ);
+        double[][] xform = LinAlg.matrixAB(rot, trans);
+        mobileBox = mobileBox.transform(xform);
+        //shape = new CompoundShape(staticBox, mobileBox);
+        shape = mobileBox;
 
         VzBox finger = new VzBox(1,1,1, new VzMesh.Style(Color.blue));
         VzCylinder cyl = new VzCylinder(cr, ch, new VzMesh.Style(Color.red));

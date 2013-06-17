@@ -29,6 +29,8 @@ public class SimArm implements LCMSubscriber
 
     Config config;
     SimWorld simWorld;
+    BoxShape groundPlane;
+    double[][] planePose = LinAlg.identity(4);
     String prefix;
 
     // Our model of the arm
@@ -58,6 +60,9 @@ public class SimArm implements LCMSubscriber
         config = config_;
         simWorld = sw_;
         prefix = prefix_;
+
+        // Construct a large ground plane comparable to our arm play area
+        groundPlane = new BoxShape(.9144, .9144, 0.001);
 
         arm = new ArmStatus(config_, prefix_);
 
@@ -97,7 +102,7 @@ public class SimArm implements LCMSubscriber
 
                     // Load
                     //
-                    // XXX Needed for grabbing. Grabbing will want a load around
+                    // Needed for grabbing. Grabbing will want a load around
                     // .275 to .4 to consider a grip "stable"
                     status.load = 0;
 
@@ -136,28 +141,66 @@ public class SimArm implements LCMSubscriber
                                 if (Collisions.collision(so.getShape(),
                                                          so.getPose(),
                                                          arm.getGripperShape(),
-                                                         arm.getGripperPose()))
+                                                         arm.getPoseAt(5)))
                                 {
                                     grabbed = so;
+                                    System.out.println("Got obj");
                                 }
                             }
                         } else if (i == 5 && sign < 0) {
                             // Drop the object, if we're holding one
                             if (grabbed != null) {
-                                // Gravity check. Drop object until it hits
-                                // the ground OR an object below it
-                                // XXX Need to actually implement this
-                                double[][] pose = grabbed.getPose();
-                                double[] xyzrpy = LinAlg.matrixToXyzrpy(pose);
-                                xyzrpy[2] = 0;
-                                grabbed.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+                                // Insta-drop. Move object down step-by-step
+                                // while checking for collision with other
+                                // objects AND the ground plane. When contact
+                                // is made, stop.
+                                double dropStep = 0.005;
+                                while (true) {
+                                    boolean contact = false;
+                                    for (SimObject so: simWorld.objects) {
+                                        // No self collisions
+                                        if (so == grabbed)
+                                            continue;
+
+                                        if (Collisions.collision(so.getShape(),
+                                                                 so.getPose(),
+                                                                 grabbed.getShape(),
+                                                                 grabbed.getPose()))
+                                        {
+                                            contact = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (contact ||
+                                        Collisions.collision(groundPlane,
+                                                             planePose,
+                                                             grabbed.getShape(),
+                                                             grabbed.getPose()))
+                                    {
+                                        break;
+                                    }
+
+                                    double[][] pose = grabbed.getPose();
+                                    double[] xyzrpy = LinAlg.matrixToXyzrpy(pose);
+                                    xyzrpy[2] -= dropStep;
+                                    if (xyzrpy[2] < 0) {
+                                        break;
+                                    }
+
+                                    pose = LinAlg.xyzrpyToMatrix(xyzrpy);
+                                    synchronized (simWorld) {
+                                        grabbed.setPose(pose);
+                                    }
+                                }
 
                                 grabbed = null;
                             }
                         }
 
-                        if (grabbed != null)
+                        if (grabbed != null) {
                             status.load = 0.3;
+                        }
                     }
 
 
@@ -175,8 +218,13 @@ public class SimArm implements LCMSubscriber
                     dsl.statuses[i] = status;
                 }
 
-                if (grabbed != null) {
-                    grabbed.setPose(LinAlg.xyzrpyToMatrix(arm.getGripperXYZRPY()));
+                synchronized (simWorld) {
+                    if (grabbed != null) {
+                        // XXX This should be somehow offset based on
+                        // how the object was positioned when grabbed
+                        double[][] gripPose = arm.getGripperPose();
+                        grabbed.setPose(gripPose);
+                    }
                 }
 
                 lcm.publish(prefix+"_STATUS", dsl);
