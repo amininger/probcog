@@ -1,0 +1,306 @@
+package probcog.classify;
+
+import java.util.*;
+import java.io.*;
+
+import april.config.*;
+import april.util.*;
+
+import probcog.classify.Features.FeatureCategory;
+import probcog.lcmtypes.*;
+import probcog.perception.Obj;
+
+public class ClassifierManager
+{
+    // Undo/redo functionality
+    Object stateLock = new Object();
+    private LinkedList<StackEntry> undoStack = new LinkedList<StackEntry>();
+    private LinkedList<StackEntry> redoStack = new LinkedList<StackEntry>();
+    private class StackEntry
+    {
+        public CPoint point;
+        public FeatureCategory cat;
+        public String action;
+
+        // Only used when reading in
+        public StackEntry()
+        {
+
+        }
+
+        public StackEntry(CPoint point_, FeatureCategory cat_, String action_)
+        {
+            point = point_;
+            cat = cat_;
+            action = action_;
+        }
+
+        public void write(StructureWriter outs) throws IOException
+        {
+            outs.writeString(point.label);
+            outs.writeDoubles(point.coords);
+            outs.writeString(cat.name());
+            outs.writeString(action);
+        }
+
+        public void read(StructureReader ins) throws IOException
+        {
+            String label = ins.readString();
+            double[] coords = ins.readDoubles();
+            point = new CPoint(label, coords);
+
+            cat = FeatureCategory.valueOf(ins.readString());
+
+            action = ins.readString();
+        }
+    }
+
+    // The classfiers
+	private HashMap<FeatureCategory, Classifier> classifiers;
+
+    public ClassifierManager()
+    {
+    }
+
+	public ClassifierManager(Config config)
+    {
+        addClassifiers(config);
+	}
+
+    public void addClassifiers(Config config)
+    {
+        String colorDataFile = null, shapeDataFile = null, sizeDataFile = null;
+        colorDataFile = config.getString("training.color_data");
+        shapeDataFile = config.getString("training.shape_data");
+        //sizeDataFile = config.getString("training.size_data");
+
+		classifiers = new HashMap<FeatureCategory, Classifier>();
+
+        // New classification code
+        // For now, manually specified parameters on weight
+        GKNNClassifier colorKNN = new GKNNClassifier(10, 0.1);
+        colorKNN.setDataFile(colorDataFile);
+        classifiers.put(FeatureCategory.COLOR, colorKNN);
+
+        GKNNClassifier shapeKNN = new GKNNClassifier(10, .3);      // XXX Untested parameter
+        shapeKNN.setDataFile(shapeDataFile);
+        classifiers.put(FeatureCategory.SHAPE, shapeKNN);
+
+        GKNNClassifier sizeKNN  = new GKNNClassifier(5, .00003);      // XXX Needs revisiting, both in terms of
+        sizeKNN.setDataFile(sizeDataFile);      // XXX parameter and classification
+
+        classifiers.put(FeatureCategory.SIZE, sizeKNN);
+
+        reloadData();
+    }
+
+    public HashMap<FeatureCategory,Classifications> classifyAll(Obj objectToClassify)
+    {
+        HashMap<FeatureCategory,Classifications> results = new HashMap<FeatureCategory,Classifications>();
+        for(FeatureCategory fc : classifiers.keySet())
+            results.put(fc, classify(fc, objectToClassify));
+
+        return results;
+    }
+
+    public Classifications classify(FeatureCategory cat, Obj objToClassify)
+    {
+	Classifier classifier = classifiers.get(cat);
+	ArrayList<Double> features = Features.getFeatures(cat, objToClassify.getPointCloud());
+	objToClassify.addFeatures(cat, features);
+	
+	if(features == null){
+	    return null;
+	}
+	
+	Classifications classifications;
+	synchronized (stateLock) {
+	    classifications = classifier.classify(features);
+	    objToClassify.addClassifications(cat, classifications);
+	}
+	return classifications;
+    }
+    
+    public void addDataPoint(FeatureCategory cat, ArrayList<Double> features, String label){
+	Classifier classifier = classifiers.get(cat);
+	synchronized(stateLock){
+	    CPoint point = new CPoint(label, features);
+	    StackEntry entry = new StackEntry(point, cat, "ADD");
+	    classifier.add(point);
+	    undoStack.add(entry);
+	}
+    }
+    
+    public void clearData(){
+	for(Classifier classifier : classifiers.values()){
+	    synchronized(stateLock){
+		classifier.clearData();
+	    }
+	}
+    }
+    
+    public void reloadData(){
+	for(Classifier classifier : classifiers.values()){
+	    synchronized(stateLock){
+		classifier.clearData();
+		classifier.loadData();
+	    }
+	}
+    }
+    
+    public boolean hasUndo()
+    {
+        return undoStack.size() > 0;
+    }
+    
+    public boolean hasRedo()
+    {
+        return redoStack.size() > 0;
+    }
+
+    /** Undo function. Undoes the last action taken by the user */
+    public void undo()
+    {
+        synchronized (stateLock) {
+            if (undoStack.size() < 1)
+                return;
+            StackEntry entry = undoStack.pollLast();
+
+            if (entry.action.equals("ADD")) {
+                classifiers.get(entry.cat).removeLast();
+                redoStack.add(entry);
+            } else {
+                System.err.println("ERR: Unhandled undo case - "+entry.action);
+            }
+        }
+    }
+
+    /** Redo function. Takes the last undone action and redoes it */
+    public void redo()
+    {
+        synchronized (stateLock) {
+            if (redoStack.size() < 1)
+                return;
+            StackEntry entry = redoStack.pollLast();
+
+            if (entry.action.equals("ADD")) {
+                classifiers.get(entry.cat).add(entry.point);
+                undoStack.add(entry);
+            } else {
+                System.err.println("ERR: Unhandled redo case - "+entry.action);
+            }
+        }
+    }
+
+    public categorized_data_t[] getCategoryData(Obj ob)
+    {
+        categorized_data_t[] cat_dat = new categorized_data_t[classifiers.size()];
+        int j = 0;
+        for (FeatureCategory fc: classifiers.keySet()) {
+            cat_dat[j] = new categorized_data_t();
+            cat_dat[j].cat = new category_t();
+            cat_dat[j].cat.cat = Features.getLCMCategory(fc);
+            Classifier classifier = classifiers.get(fc);
+            Classifications cs = classifier.classify(ob.getFeatures(fc));
+            cs.sortLabels();    // Just to be nice
+            cat_dat[j].len = cs.size();
+            cat_dat[j].confidence = new double[cat_dat[j].len];
+            cat_dat[j].label = new String[cat_dat[j].len];
+
+            int k = 0;
+            for (Classifications.Label label: cs.labels) {
+                cat_dat[j].confidence[k] = label.weight;
+                cat_dat[j].label[k] = label.label;
+                k++;
+            }
+            j++;
+        }
+        return cat_dat;
+    }
+
+    // XXX Might want to spawn a backup thread to do this...
+    /** Write out a backup file of our current state. */
+    public void writeState(String filename) throws IOException
+    {
+        synchronized (stateLock) {
+            // As it stands, the undo/redo stacks possess all of the
+            // information necessary to back up the entire system
+            // state. Thus, the implementation of undo and redo
+            // are directly connected with our ability to load from
+            // this state
+            StructureWriter outs = new TextStructureWriter(new BufferedWriter(new FileWriter(filename)));
+
+            outs.writeString("undo");
+            outs.writeInt(undoStack.size());
+            outs.blockBegin();
+            for (StackEntry entry: undoStack) {
+                outs.blockBegin();
+                entry.write(outs);
+                outs.blockEnd();
+            }
+            outs.blockEnd();
+
+            outs.writeString("redo");
+            outs.writeInt(redoStack.size());
+            outs.blockBegin();
+            for (StackEntry entry: redoStack) {
+                outs.blockBegin();
+                entry.write(outs);
+                outs.blockEnd();
+            }
+            outs.blockEnd();
+
+            outs.close();
+        }
+    }
+
+    /** Read in a backup file of our current state,
+     *  resetting all state to match that of the file
+     */
+    public void readState(String filename) throws IOException
+    {
+        synchronized (stateLock) {
+            // Reset state
+            clearData();
+
+            // Again, based on the premise than undo and redo work a certain way
+            StructureReader ins = new TextStructureReader(new BufferedReader(new FileReader(filename)));
+
+            String undoString = ins.readString();
+            assert (undoString.equals("undo"));
+            int undoSize = ins.readInt();
+            ins.blockBegin();
+            for (int i = 0; i < undoSize; i++) {
+                ins.blockBegin();
+                StackEntry entry = new StackEntry();
+                entry.read(ins);
+
+                if (entry.action.equals("ADD")) {
+                    classifiers.get(entry.cat).add(entry.point);
+                }
+
+                undoStack.add(entry);
+
+                ins.blockEnd();
+            }
+            ins.blockEnd();
+
+            String redoString = ins.readString();
+            assert (redoString.equals("redo"));
+            int redoSize = ins.readInt();
+            ins.blockBegin();
+            for (int i = 0; i < redoSize; i++) {
+                ins.blockBegin();
+                StackEntry entry = new StackEntry();
+                entry.read(ins);
+
+                redoStack.add(entry);
+
+                ins.blockEnd();
+            }
+            ins.blockEnd();
+
+            ins.close();
+        }
+    }
+}
