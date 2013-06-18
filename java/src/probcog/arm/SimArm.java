@@ -119,7 +119,7 @@ public class SimArm implements LCMSubscriber
                         double pos = arm.getActualPos(i);
                         int sign = pos <= cmd.position_radians ? 1 : -1;
                         double dr = cmd.speed*DYNAMIXEL_MAX_SPEED*DYNAMIXEL_SPEED_INC;
-                        if (sign > 0) {
+                        if (sign > 0)  {
                             status.position_radians = Math.min(pos + dr*dt,
                                                                cmd.position_radians);
                         } else {
@@ -127,15 +127,21 @@ public class SimArm implements LCMSubscriber
                                                                cmd.position_radians);
                         }
 
+                        if (i == 5 && grabbed != null) {
+                            status.position_radians = pos;
+                        }
+
                         // Speed
-                        boolean stopped = cmd.position_radians == pos;
+                        boolean stopped = status.position_radians == pos;
                         if (!stopped) {
                             status.speed = cmd.speed;
                         }
 
                         // Grabbing
-                        // If our hand joint has been set to be closed, we should
-                        // start checking to see if we collided w/ an object
+                        // If the hand joint is moving in the positive direction,
+                        // check for object collisions and try to grab objects.
+                        // Otherwise, if the joint is opening and we're not
+                        // holding something, we should drop our object
                         if (i == 5 && sign > 0 && !stopped) {
                             for (SimObject so: simWorld.objects) {
                                 if (Collisions.collision(so.getShape(),
@@ -146,55 +152,53 @@ public class SimArm implements LCMSubscriber
                                     grabbed = so;
                                 }
                             }
-                        } else if (i == 5 && sign < 0) {
+                        } else if (i == 5 && sign < 0 && grabbed != null) {
                             // Drop the object, if we're holding one
-                            if (grabbed != null) {
-                                // Insta-drop. Move object down step-by-step
-                                // while checking for collision with other
-                                // objects AND the ground plane. When contact
-                                // is made, stop.
-                                double dropStep = 0.005;
-                                while (true) {
-                                    boolean contact = false;
-                                    for (SimObject so: simWorld.objects) {
-                                        // No self collisions
-                                        if (so == grabbed)
-                                            continue;
+                            // Insta-drop. Move object down step-by-step
+                            // while checking for collision with other
+                            // objects AND the ground plane. When contact
+                            // is made, stop.
+                            double dropStep = 0.005;
+                            while (true) {
+                                boolean contact = false;
+                                for (SimObject so: simWorld.objects) {
+                                    // No self collisions
+                                    if (so == grabbed)
+                                        continue;
 
-                                        if (Collisions.collision(so.getShape(),
-                                                                 so.getPose(),
-                                                                 grabbed.getShape(),
-                                                                 grabbed.getPose()))
-                                        {
-                                            contact = true;
-                                            break;
-                                        }
-                                    }
-
-                                    if (contact ||
-                                        Collisions.collision(groundPlane,
-                                                             planePose,
+                                    if (Collisions.collision(so.getShape(),
+                                                             so.getPose(),
                                                              grabbed.getShape(),
                                                              grabbed.getPose()))
                                     {
+                                        contact = true;
                                         break;
-                                    }
-
-                                    double[][] pose = grabbed.getPose();
-                                    double[] xyzrpy = LinAlg.matrixToXyzrpy(pose);
-                                    xyzrpy[2] -= dropStep;
-                                    if (xyzrpy[2] < 0) {
-                                        break;
-                                    }
-
-                                    pose = LinAlg.xyzrpyToMatrix(xyzrpy);
-                                    synchronized (simWorld) {
-                                        grabbed.setPose(pose);
                                     }
                                 }
 
-                                grabbed = null;
+                                if (contact ||
+                                    Collisions.collision(groundPlane,
+                                                         planePose,
+                                                         grabbed.getShape(),
+                                                         grabbed.getPose()))
+                                {
+                                    break;
+                                }
+
+                                double[][] pose = grabbed.getPose();
+                                double[] xyzrpy = LinAlg.matrixToXyzrpy(pose);
+                                xyzrpy[2] -= dropStep;
+                                if (xyzrpy[2] < 0) {
+                                    break;
+                                }
+
+                                pose = LinAlg.xyzrpyToMatrix(xyzrpy);
+                                synchronized (simWorld) {
+                                    grabbed.setPose(pose);
+                                }
                             }
+
+                            grabbed = null;
                         }
 
                         if (grabbed != null && i == 5) {
