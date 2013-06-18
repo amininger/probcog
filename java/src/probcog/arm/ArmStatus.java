@@ -220,6 +220,15 @@ public class ArmStatus implements LCMSubscriber
         return ((HandJoint)(joints.get(getNumJoints()-1))).getShape();
     }
 
+    /** Get the position of the mobile fingers */
+    public double[][] getFingerPose()
+    {
+        double[][] xform = getPoseAt(getNumJoints()-2);
+        LinAlg.timesEquals(xform,
+                           ((HandJoint)(joints.get(getNumJoints()-1))).getMobileFingerPose());
+        return xform;
+    }
+
     public double[][] getPoseAt(int joint)
     {
         double[][] xform = LinAlg.translate(0,0,baseHeight);
@@ -296,7 +305,7 @@ public class ArmStatus implements LCMSubscriber
         HandJoint hand = (HandJoint)joints.get(5);
         BoxShape b0 = (BoxShape)(hand.mobileBox);
 
-        vb.addBack(new VisChain(getPoseAt(5),
+        vb.addBack(new VisChain(getFingerPose(),
                                 new VzLines(new VisVertexData(b0.getVertices()),
                                             VzLines.LINE_LOOP,
                                             new VzLines.Style(Color.yellow, 2))));

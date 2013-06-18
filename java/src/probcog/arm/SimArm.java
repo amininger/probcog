@@ -141,10 +141,9 @@ public class SimArm implements LCMSubscriber
                                 if (Collisions.collision(so.getShape(),
                                                          so.getPose(),
                                                          arm.getGripperShape(),
-                                                         arm.getPoseAt(5)))
+                                                         arm.getFingerPose()))
                                 {
                                     grabbed = so;
-                                    System.out.println("Got obj");
                                 }
                             }
                         } else if (i == 5 && sign < 0) {
@@ -198,7 +197,7 @@ public class SimArm implements LCMSubscriber
                             }
                         }
 
-                        if (grabbed != null) {
+                        if (grabbed != null && i == 5) {
                             status.load = 0.3;
                         }
                     }

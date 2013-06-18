@@ -31,6 +31,22 @@ public class HandJoint implements Joint
 
     Parameters params;
 
+    // Finger length and positioning
+    // XXX Only good for one gripper this way
+    static final double mfY      = 0.100; //0.082;
+    static final double moZ      = 0.014;
+    static final double moY      = 0.014;
+    static final double sfZ      = 0.070;
+    static final double soZ      = 0.030;
+    static final double soY      = 0.050; //0.040;
+
+    // Finger separation and dimensions
+    static final double ssep     = 0.015;
+    static final double msep     = 0.020;
+    static final double width    = 0.012;
+    static final double height   = 0.008;
+
+
     static public class Parameters
     {
         public double dAngle = 0.0;
@@ -94,63 +110,70 @@ public class HandJoint implements Joint
         return shape;
     }
 
+    /** Return the general position of the static fingers */
+    public double[][] getStaticFingerPose()
+    {
+        double[][] xform = LinAlg.translate(0, soY, sfZ/2+soZ);
+        return xform;
+    }
+
+    /** Return the general position of the mobile fingers */
+    public double[][] getMobileFingerPose()
+    {
+        double[][] xform = LinAlg.rotateX(-params.aAngle);
+        LinAlg.timesEquals(xform, LinAlg.translate(0, -mfY/2-moY, -moZ));
+        return xform;
+    }
+
     // ===================
     private void updateVisObject()
     {
         double ch = 0.03;
         double cr = 0.01;
 
-        // Finger length and positioning
-        double mfY      = 0.082;
-        double sfZ      = 0.070;
-        double moZ      = 0.014;
-        double moY      = 0.014;
-        double soZ      = 0.030;
-        double soY      = 0.040;
-
-        // Finger separation and dimensions
-        double ssep     = 0.015;
-        double msep     = 0.020;
-        double width    = 0.012;
-        double height   = 0.008;
-
         staticBox = new BoxShape(ssep+2*height, width, sfZ);
-        staticBox = staticBox.transform(LinAlg.translate(0, soY, sfZ/2+soZ));
         mobileBox = new BoxShape(2*msep+3*height, mfY, width);
-        double[][] rot = LinAlg.rotateX(-params.aAngle);
-        double[][] trans = LinAlg.translate(0,-mfY/2-moY,-moZ);
-        double[][] xform = LinAlg.matrixAB(rot, trans);
-        mobileBox = mobileBox.transform(xform);
-        //shape = new CompoundShape(staticBox, mobileBox);
         shape = mobileBox;
 
         VzBox finger = new VzBox(1,1,1, new VzMesh.Style(Color.blue));
         VzCylinder cyl = new VzCylinder(cr, ch, new VzMesh.Style(Color.red));
 
+        double[][] staticPose = getStaticFingerPose();
+        double[][] mobilePose = getMobileFingerPose();
+
         // Static fingers
-        VisChain static0 = new VisChain(LinAlg.translate(0,0,sfZ/2),
-                                        LinAlg.translate(-ssep/2,soY,soZ),
+        VisChain static0 = new VisChain(staticPose,
+                                        LinAlg.translate(-ssep/2,0,0),
+                                        //LinAlg.translate(0,0,sfZ/2),
+                                        //LinAlg.translate(-ssep/2,soY,soZ),
                                         LinAlg.scale(height,width,sfZ),
                                         finger);
-        VisChain static1 = new VisChain(LinAlg.translate(0,0,sfZ/2),
-                                        LinAlg.translate(ssep/2,soY,soZ),
+        VisChain static1 = new VisChain(staticPose,
+                                        LinAlg.translate(ssep/2,0,0),
+                                        //LinAlg.translate(0,0,sfZ/2),
+                                        //LinAlg.translate(ssep/2,soY,soZ),
                                         LinAlg.scale(height,width,sfZ),
                                         finger);
 
         // Mobile Fingers
-        VisChain mobile0 = new VisChain(LinAlg.rotateX(-params.aAngle),
-                                        LinAlg.translate(0,-mfY/2,0),
-                                        LinAlg.translate(-msep,-moY,-moZ),
+        VisChain mobile0 = new VisChain(mobilePose,
+                                        LinAlg.translate(-msep,0,0),
+                                        //LinAlg.rotateX(-params.aAngle),
+                                        //LinAlg.translate(0,-mfY/2,0),
+                                        //LinAlg.translate(-msep,-moY,-moZ),
                                         LinAlg.scale(height,mfY,width),
                                         finger);
-        VisChain mobile1 = new VisChain(LinAlg.rotateX(-params.aAngle),
-                                        LinAlg.translate(0,-mfY/2,0),
-                                        LinAlg.translate(0,-moY,-moZ),
+        VisChain mobile1 = new VisChain(mobilePose,
+                                        //LinAlg.rotateX(-params.aAngle),
+                                        //LinAlg.translate(0,-mfY/2,0),
+                                        //LinAlg.translate(0,-moY,-moZ),
                                         LinAlg.scale(height,mfY,width),
                                         finger);
-        VisChain mobile2 = new VisChain(LinAlg.rotateX(-params.aAngle),
-                                        LinAlg.translate(0,-mfY/2,0),
-                                        LinAlg.translate(msep,-moY,-moZ),
+        VisChain mobile2 = new VisChain(mobilePose,
+                                        LinAlg.translate(msep,0,0),
+                                        //LinAlg.rotateX(-params.aAngle),
+                                        //LinAlg.translate(0,-mfY/2,0),
+                                        //LinAlg.translate(msep,-moY,-moZ),
                                         LinAlg.scale(height,mfY,width),
                                         finger);
 
