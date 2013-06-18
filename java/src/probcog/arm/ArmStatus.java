@@ -300,15 +300,10 @@ public class ArmStatus implements LCMSubscriber
         vb.swap();
 
         // XXX DEBUG
-        vb = vw.getBuffer("gripper");
-
-        HandJoint hand = (HandJoint)joints.get(5);
-        BoxShape b0 = (BoxShape)(hand.mobileBox);
-
-        vb.addBack(new VisChain(getFingerPose(),
-                                new VzLines(new VisVertexData(b0.getVertices()),
-                                            VzLines.LINE_LOOP,
-                                            new VzLines.Style(Color.yellow, 2))));
+        vb = vw.getBuffer("orientation");
+        vb.addBack(new VisChain(getGripperPose(),
+                                LinAlg.scale(0.1),
+                                new VzAxes()));
 
         vb.swap();
     }

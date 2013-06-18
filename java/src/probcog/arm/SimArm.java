@@ -77,6 +77,9 @@ public class SimArm implements LCMSubscriber
         int maxDelay = (int)(1000.0/Hz);    // [ms]
         double dt = 1.0/Hz;
 
+        double[][] lastPose = arm.getGripperPose();
+        double[][] deltaGrabbed = null;
+
         public void run()
         {
             System.out.println("ATTN: Starting simulation thread");
@@ -112,9 +115,11 @@ public class SimArm implements LCMSubscriber
                     // Voltage
                     status.voltage = 0; // XXX Unused
 
+
                     // Handle commands
                     if (cmds != null) {
                         dynamixel_command_t cmd = cmds.commands[i];
+                        //cmd.speed = 0.05; // DEBUG
                         // Rotation
                         double pos = arm.getActualPos(i);
                         int sign = pos <= cmd.position_radians ? 1 : -1;
@@ -142,7 +147,7 @@ public class SimArm implements LCMSubscriber
                         // check for object collisions and try to grab objects.
                         // Otherwise, if the joint is opening and we're not
                         // holding something, we should drop our object
-                        if (i == 5 && sign > 0 && !stopped) {
+                        if (i == 5 && sign > 0 && !stopped && grabbed == null) {
                             for (SimObject so: simWorld.objects) {
                                 if (Collisions.collision(so.getShape(),
                                                          so.getPose(),
@@ -150,6 +155,10 @@ public class SimArm implements LCMSubscriber
                                                          arm.getFingerPose()))
                                 {
                                     grabbed = so;
+                                    double[][] A = arm.getGripperPose();
+                                    double[][] S = so.getPose();
+                                    deltaGrabbed = LinAlg.matrixAB(LinAlg.inverse(A),
+                                                                   S);
                                 }
                             }
                         } else if (i == 5 && sign < 0 && grabbed != null) {
@@ -223,12 +232,12 @@ public class SimArm implements LCMSubscriber
 
                 synchronized (simWorld) {
                     if (grabbed != null) {
-                        // XXX This should be somehow offset based on
-                        // how the object was positioned when grabbed
-                        double[][] gripPose = arm.getGripperPose();
-                        grabbed.setPose(gripPose);
+                        double[][] currPose = arm.getGripperPose();
+
+                        grabbed.setPose(LinAlg.matrixAB(currPose, deltaGrabbed));
                     }
                 }
+                lastPose = arm.getGripperPose();
 
                 lcm.publish(prefix+"_STATUS", dsl);
 
