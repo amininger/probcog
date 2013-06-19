@@ -27,6 +27,7 @@ public class KinectSegment
     private double[] floorPlane;
     private int height, width;
 
+    private ArrayList<Sensor> sensors = new ArrayList<Sensor>();
     private Sensor kinect;
     private ArmStatus arm;
     private double baseHeight, wristHeight;
@@ -57,6 +58,8 @@ public class KinectSegment
             kinect = new KinectSensor(config_);
         else
             kinect = new SimKinectSensor(world);
+
+        sensors.add(kinect);    // XXX
     }
 
     /** Get the most recent frame from the Kinect and segment it into point
@@ -242,5 +245,12 @@ public class KinectSegment
         double diff = Math.abs((double)hsv1[0] - (double)hsv2[0]);
 
         return diff;
+    }
+
+    // === Provide access to the raw sensor === //
+    // XXX This seems a bit hacky to provide...
+    public ArrayList<Sensor> getSensors()
+    {
+        return sensors;
     }
 }

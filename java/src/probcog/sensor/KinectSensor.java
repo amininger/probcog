@@ -246,6 +246,12 @@ public class KinectSensor implements Sensor
         return LinAlg.resize(LinAlg.matrixAB(pt, k2wXform), p.length);
     }
 
+    /** Return the real world position/orientation of the camera */
+    public double[] getCameraXyzrpy()
+    {
+        return LinAlg.matrixToXyzrpy(k2wXform);
+    }
+
     /** Sensor interface to colored points */
     public double[] getXYZRGB(int ix, int iy)
     {

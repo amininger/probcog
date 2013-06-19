@@ -299,12 +299,13 @@ public class ArmStatus implements LCMSubscriber
         }
         vb.swap();
 
-        // XXX DEBUG
+        /*
         vb = vw.getBuffer("orientation");
         vb.addBack(new VisChain(getGripperPose(),
                                 LinAlg.scale(0.1),
                                 new VzAxes()));
 
         vb.swap();
+        */
     }
 }

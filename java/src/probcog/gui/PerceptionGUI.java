@@ -23,6 +23,7 @@ import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
+import probcog.sensor.*;
 import probcog.vis.*;
 
 // import abolt.collision.ShapeToVisObject;
@@ -569,6 +570,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
                 // Object drawing
                 drawObjects();
+                drawSensors();
                 arm.render(vw);
                 TimeUtil.sleep(1000/fps);
             }
@@ -589,6 +591,19 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
 		objectBuffer.swap();
 	}
+
+    public void drawSensors()
+    {
+        VisWorld.Buffer vb = vw.getBuffer("kinect");
+        ArrayList<Sensor> sensors = tracker.getSensors();
+        for (Sensor s: sensors) {
+            vb.addBack(new VisChain(LinAlg.xyzrpyToMatrix(s.getCameraXyzrpy()),
+                                    LinAlg.scale(0.1),
+                                    new VzAxes()));
+        }
+
+        vb.swap();
+    }
 
 	private void drawPointCloud(VisWorld.Buffer buffer)
     {
