@@ -29,6 +29,8 @@ public class SimArm implements LCMSubscriber
 
     Config config;
     SimWorld simWorld;
+    BoxShape groundPlane;
+    double[][] planePose = LinAlg.identity(4);
     String prefix;
 
     // Our model of the arm
@@ -59,6 +61,9 @@ public class SimArm implements LCMSubscriber
         simWorld = sw_;
         prefix = prefix_;
 
+        // Construct a large ground plane comparable to our arm play area
+        groundPlane = new BoxShape(.9144, .9144, 0.001);
+
         arm = new ArmStatus(config_, prefix_);
 
         lcm.subscribe(prefix+"_COMMAND", this);
@@ -71,6 +76,9 @@ public class SimArm implements LCMSubscriber
         int Hz = 15;
         int maxDelay = (int)(1000.0/Hz);    // [ms]
         double dt = 1.0/Hz;
+
+        double[][] lastPose = arm.getGripperPose();
+        double[][] deltaGrabbed = null;
 
         public void run()
         {
@@ -97,7 +105,7 @@ public class SimArm implements LCMSubscriber
 
                     // Load
                     //
-                    // XXX Needed for grabbing. Grabbing will want a load around
+                    // Needed for grabbing. Grabbing will want a load around
                     // .275 to .4 to consider a grip "stable"
                     status.load = 0;
 
@@ -107,14 +115,16 @@ public class SimArm implements LCMSubscriber
                     // Voltage
                     status.voltage = 0; // XXX Unused
 
+
                     // Handle commands
                     if (cmds != null) {
                         dynamixel_command_t cmd = cmds.commands[i];
+                        //cmd.speed = 0.05; // DEBUG
                         // Rotation
                         double pos = arm.getActualPos(i);
                         int sign = pos <= cmd.position_radians ? 1 : -1;
                         double dr = cmd.speed*DYNAMIXEL_MAX_SPEED*DYNAMIXEL_SPEED_INC;
-                        if (sign > 0) {
+                        if (sign > 0)  {
                             status.position_radians = Math.min(pos + dr*dt,
                                                                cmd.position_radians);
                         } else {
@@ -122,42 +132,87 @@ public class SimArm implements LCMSubscriber
                                                                cmd.position_radians);
                         }
 
+                        if (i == 5 && grabbed != null) {
+                            status.position_radians = pos;
+                        }
+
                         // Speed
-                        boolean stopped = cmd.position_radians == pos;
+                        boolean stopped = status.position_radians == pos;
                         if (!stopped) {
                             status.speed = cmd.speed;
                         }
 
                         // Grabbing
-                        // If our hand joint has been set to be closed, we should
-                        // start checking to see if we collided w/ an object
-                        if (i == 5 && sign > 0 && !stopped) {
+                        // If the hand joint is moving in the positive direction,
+                        // check for object collisions and try to grab objects.
+                        // Otherwise, if the joint is opening and we're not
+                        // holding something, we should drop our object
+                        if (i == 5 && sign > 0 && !stopped && grabbed == null) {
                             for (SimObject so: simWorld.objects) {
                                 if (Collisions.collision(so.getShape(),
                                                          so.getPose(),
                                                          arm.getGripperShape(),
-                                                         arm.getGripperPose()))
+                                                         arm.getFingerPose()))
                                 {
                                     grabbed = so;
+                                    double[][] A = arm.getGripperPose();
+                                    double[][] S = so.getPose();
+                                    deltaGrabbed = LinAlg.matrixAB(LinAlg.inverse(A),
+                                                                   S);
                                 }
                             }
-                        } else if (i == 5 && sign < 0) {
+                        } else if (i == 5 && sign < 0 && grabbed != null) {
                             // Drop the object, if we're holding one
-                            if (grabbed != null) {
-                                // Gravity check. Drop object until it hits
-                                // the ground OR an object below it
-                                // XXX Need to actually implement this
+                            // Insta-drop. Move object down step-by-step
+                            // while checking for collision with other
+                            // objects AND the ground plane. When contact
+                            // is made, stop.
+                            double dropStep = 0.005;
+                            while (true) {
+                                boolean contact = false;
+                                for (SimObject so: simWorld.objects) {
+                                    // No self collisions
+                                    if (so == grabbed)
+                                        continue;
+
+                                    if (Collisions.collision(so.getShape(),
+                                                             so.getPose(),
+                                                             grabbed.getShape(),
+                                                             grabbed.getPose()))
+                                    {
+                                        contact = true;
+                                        break;
+                                    }
+                                }
+
+                                if (contact ||
+                                    Collisions.collision(groundPlane,
+                                                         planePose,
+                                                         grabbed.getShape(),
+                                                         grabbed.getPose()))
+                                {
+                                    break;
+                                }
+
                                 double[][] pose = grabbed.getPose();
                                 double[] xyzrpy = LinAlg.matrixToXyzrpy(pose);
-                                xyzrpy[2] = 0;
-                                grabbed.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+                                xyzrpy[2] -= dropStep;
+                                if (xyzrpy[2] < 0) {
+                                    break;
+                                }
 
-                                grabbed = null;
+                                pose = LinAlg.xyzrpyToMatrix(xyzrpy);
+                                synchronized (simWorld) {
+                                    grabbed.setPose(pose);
+                                }
                             }
+
+                            grabbed = null;
                         }
 
-                        if (grabbed != null)
+                        if (grabbed != null && i == 5) {
                             status.load = 0.3;
+                        }
                     }
 
 
@@ -175,9 +230,14 @@ public class SimArm implements LCMSubscriber
                     dsl.statuses[i] = status;
                 }
 
-                if (grabbed != null) {
-                    grabbed.setPose(LinAlg.xyzrpyToMatrix(arm.getGripperXYZRPY()));
+                synchronized (simWorld) {
+                    if (grabbed != null) {
+                        double[][] currPose = arm.getGripperPose();
+
+                        grabbed.setPose(LinAlg.matrixAB(currPose, deltaGrabbed));
+                    }
                 }
+                lastPose = arm.getGripperPose();
 
                 lcm.publish(prefix+"_STATUS", dsl);
 

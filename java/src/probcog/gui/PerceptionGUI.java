@@ -32,6 +32,7 @@ import probcog.vis.*;
 
 public class PerceptionGUI extends JFrame implements LCMSubscriber
 {
+    private ArmStatus arm;
     private ArmController controller;
     private Tracker tracker;
     private ClassifierManager classifierManager;
@@ -101,10 +102,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         }
 
 
-        // TODO: sim arm stuff here
-        // Arm control...eventually should integrate with simulated arm?
-        // XXX SEE ArmDemo for ideas for simulating arm
+        // Arm control and arm monitor for rendering purposes
         controller = new ArmController(config);
+        arm = new ArmStatus(config);
 
         if (opts.getBoolean("debug")) {
             ArmDemo demo = new ArmDemo(config);
@@ -119,6 +119,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // Initialize object tracker
         tracker = new Tracker(config, opts.getBoolean("kinect"), simulator.getWorld());
 
+        // XXX Is this how we always want to do this?
         // Spin up a virtual arm in sim world
         if (!opts.getBoolean("kinect")) {
             SimArm simArm = new SimArm(config, simulator.getWorld());
@@ -132,8 +133,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         addToMenu(menuBar); // XXX Ew
         this.setJMenuBar(menuBar);
 
-        // XXX Something to do with the GUI
-        viewType = ViewType.SOAR;
+        // Set GUI modes
+        viewType = ViewType.POINT_CLOUD;
         clickType = ClickType.SELECT;
 
         // Subscribe to LCM
@@ -506,6 +507,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 	vw.getBuffer("selection").clear();
                 }
 
+
+                // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
             	CameraPosition camera = vl.cameraManager.getCameraTarget();
         		double[] forward = LinAlg.normalize(LinAlg.subtract(camera.eye, camera.lookat));
         		// Spherical coordinates
@@ -562,8 +565,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 }
                 textBuffer.swap();
 
+                // ==========================================================
+
                 // Object drawing
                 drawObjects();
+                arm.render(vw);
                 TimeUtil.sleep(1000/fps);
             }
         }

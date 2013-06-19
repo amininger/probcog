@@ -116,14 +116,16 @@ public class SimKinectSensor implements Sensor
         // If there is no point found, return all zeros
         double minDist = Double.MAX_VALUE;
         SimObject minObj = null;
-        for (SimObject obj: sw.objects) {
-            double dist = Collisions.collisionDistance(ray.getSource(),
-                                                       ray.getDir(),
-                                                       obj.getShape(),
-                                                       obj.getPose());
-            if (dist < minDist) {
-                minDist = dist;
-                minObj = obj;
+        synchronized (sw) {
+            for (SimObject obj: sw.objects) {
+                double dist = Collisions.collisionDistance(ray.getSource(),
+                                                           ray.getDir(),
+                                                           obj.getShape(),
+                                                           obj.getPose());
+                if (dist < minDist) {
+                    minDist = dist;
+                    minObj = obj;
+                }
             }
         }
 

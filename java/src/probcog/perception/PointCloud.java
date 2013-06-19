@@ -256,7 +256,7 @@ public class PointCloud
     public double[] getCentroidXY(ArrayList<double[]> points)
     {
         if (points == null || points.size() < 1)
-            return null;
+            return new double[2];
 
         return computeCentroid(isolateTopFace(points));
     }
