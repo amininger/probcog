@@ -24,6 +24,7 @@ import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
+import probcog.util.*;
 import probcog.vis.*;
 
 // import abolt.collision.ShapeToVisObject;
@@ -597,9 +598,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         VisWorld.Buffer vb = vw.getBuffer("kinect");
         ArrayList<Sensor> sensors = tracker.getSensors();
         for (Sensor s: sensors) {
-            vb.addBack(new VisChain(LinAlg.xyzrpyToMatrix(s.getCameraXyzrpy()),
+            vb.addBack(new VisChain(s.getCameraXform(),
                                     LinAlg.scale(0.1),
                                     new VzAxes()));
+            //CameraPosition camera = Util.getSensorPos(s);
+            //Util.printCamera(camera);
         }
 
         vb.swap();
