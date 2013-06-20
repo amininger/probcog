@@ -220,16 +220,30 @@ public class ArmStatus implements LCMSubscriber
         return ((HandJoint)(joints.get(getNumJoints()-1))).getShape();
     }
 
-    /** Get the current position of the arm's gripper */
-    public double[][] getGripperPose()
+    /** Get the position of the mobile fingers */
+    public double[][] getFingerPose()
+    {
+        double[][] xform = getPoseAt(getNumJoints()-2);
+        LinAlg.timesEquals(xform,
+                           ((HandJoint)(joints.get(getNumJoints()-1))).getMobileFingerPose());
+        return xform;
+    }
+
+    public double[][] getPoseAt(int joint)
     {
         double[][] xform = LinAlg.translate(0,0,baseHeight);
-        for (Joint j: joints) {
-            LinAlg.timesEquals(xform, j.getRotation());
-            LinAlg.timesEquals(xform, j.getTranslation());
+        for (int i = 0; i <= Math.min(joint, joints.size()-1); i++) {
+            LinAlg.timesEquals(xform, joints.get(i).getRotation());
+            LinAlg.timesEquals(xform, joints.get(i).getTranslation());
         }
 
         return xform;
+    }
+
+    /** Get the current position of the arm's gripper */
+    public double[][] getGripperPose()
+    {
+        return getPoseAt(joints.size()-1);
     }
 
     /** Get the position of the gripper */
@@ -284,5 +298,14 @@ public class ArmStatus implements LCMSubscriber
             LinAlg.timesEquals(xform, j.getTranslation());
         }
         vb.swap();
+
+        /*
+        vb = vw.getBuffer("orientation");
+        vb.addBack(new VisChain(getGripperPose(),
+                                LinAlg.scale(0.1),
+                                new VzAxes()));
+
+        vb.swap();
+        */
     }
 }

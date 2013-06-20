@@ -23,6 +23,7 @@ import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
+import probcog.sensor.*;
 import probcog.vis.*;
 
 // import abolt.collision.ShapeToVisObject;
@@ -32,6 +33,7 @@ import probcog.vis.*;
 
 public class PerceptionGUI extends JFrame implements LCMSubscriber
 {
+    private ArmStatus arm;
     private ArmController controller;
     private Tracker tracker;
     private ClassifierManager classifierManager;
@@ -101,10 +103,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         }
 
 
-        // TODO: sim arm stuff here
-        // Arm control...eventually should integrate with simulated arm?
-        // XXX SEE ArmDemo for ideas for simulating arm
+        // Arm control and arm monitor for rendering purposes
         controller = new ArmController(config);
+        arm = new ArmStatus(config);
 
         if (opts.getBoolean("debug")) {
             ArmDemo demo = new ArmDemo(config);
@@ -119,6 +120,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // Initialize object tracker
         tracker = new Tracker(config, opts.getBoolean("kinect"), simulator.getWorld());
 
+        // XXX Is this how we always want to do this?
         // Spin up a virtual arm in sim world
         if (!opts.getBoolean("kinect")) {
             SimArm simArm = new SimArm(config, simulator.getWorld());
@@ -132,8 +134,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         addToMenu(menuBar); // XXX Ew
         this.setJMenuBar(menuBar);
 
-        // XXX Something to do with the GUI
-        viewType = ViewType.SOAR;
+        // Set GUI modes
+        viewType = ViewType.POINT_CLOUD;
         clickType = ClickType.SELECT;
 
         // Subscribe to LCM
@@ -504,6 +506,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 	vw.getBuffer("selection").clear();
                 }
 
+
+                // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
             	CameraPosition camera = vl.cameraManager.getCameraTarget();
         		double[] forward = LinAlg.normalize(LinAlg.subtract(camera.eye, camera.lookat));
         		// Spherical coordinates
@@ -560,8 +564,12 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 }
                 textBuffer.swap();
 
+                // ==========================================================
+
                 // Object drawing
                 drawObjects();
+                drawSensors();
+                arm.render(vw);
                 TimeUtil.sleep(1000/fps);
             }
         }
@@ -581,6 +589,19 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
 		objectBuffer.swap();
 	}
+
+    public void drawSensors()
+    {
+        VisWorld.Buffer vb = vw.getBuffer("kinect");
+        ArrayList<Sensor> sensors = tracker.getSensors();
+        for (Sensor s: sensors) {
+            vb.addBack(new VisChain(LinAlg.xyzrpyToMatrix(s.getCameraXyzrpy()),
+                                    LinAlg.scale(0.1),
+                                    new VzAxes()));
+        }
+
+        vb.swap();
+    }
 
 	private void drawPointCloud(VisWorld.Buffer buffer)
     {

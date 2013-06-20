@@ -19,6 +19,7 @@ import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
+import probcog.sensor.*;
 
 public class Tracker
 {
@@ -320,6 +321,13 @@ public class Tracker
         }
 
         return od;
+    }
+
+    // === Methods for interacting with the sensor(s) attached to the system === //
+    // XXX This is kind of weird
+    public ArrayList<Sensor> getSensors()
+    {
+        return segmenter.getSensors();
     }
 
     /** Class that continually listens for messages from Soar about what objects

@@ -11,5 +11,8 @@ public interface Sensor
     /** Get a colored, 3D point of an object.**/
     public double[] getXYZRGB(int ix, int iy);
 
+    /** Get the current position of the camera */
+    public double[] getCameraXyzrpy();
+
     public boolean stashFrame();
 }
