@@ -42,6 +42,7 @@ public class KinectSensor implements Sensor
     // Kinect to world transformation and point filtering
     Config robot = null;
     double[][] k2wXform;
+    double[][] k2wXform_T;
     april.jmat.geom.Polygon poly;
 
     // Stash
@@ -110,6 +111,7 @@ public class KinectSensor implements Sensor
             k2wXform = LinAlg.identity(4);
             poly = null;    // A null polygon will not filter out any points
         }
+        k2wXform_T = LinAlg.transpose(k2wXform);
 
         // Spin up LCM listener
         new ListenerThread().start();
@@ -247,9 +249,9 @@ public class KinectSensor implements Sensor
     }
 
     /** Return the real world position/orientation of the camera */
-    public double[] getCameraXyzrpy()
+    public double[][] getCameraXform()
     {
-        return LinAlg.matrixToXyzrpy(k2wXform);
+        return k2wXform_T;
     }
 
     /** Sensor interface to colored points */
