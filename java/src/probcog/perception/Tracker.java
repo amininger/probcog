@@ -1,5 +1,6 @@
 package probcog.perception;
 
+import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
@@ -10,6 +11,7 @@ import april.jmat.*;
 import april.jmat.geom.*;
 import april.sim.*;
 import april.util.*;
+import april.vis.*;
 
 import lcm.lcm.*;
 
@@ -37,7 +39,8 @@ public class Tracker
 
     // World state, as decided by Soar and the perception system
     public Object stateLock;
-    HashMap<Integer, Obj> worldState = new HashMap<Integer, Obj>();
+    HashMap<Integer, Obj> worldState;
+    HashMap<Integer, Obj> permanentObj;
 
     public Tracker(Config config_, Boolean physicalKinect, SimWorld world) throws IOException
     {
@@ -52,6 +55,11 @@ public class Tracker
 
         soarLock = new Object();
         soar_lcm = null;
+
+        worldState = new HashMap<Integer, Obj>();
+        permanentObj = new HashMap<Integer, Obj>();
+        createImaginedObjects(new ConfigFile(config_.getPath("objects.locations")));
+
         new ListenerThread().start();
         new TrackingThread().start();
     }
@@ -109,6 +117,7 @@ public class Tracker
 
                 worldState.put(newObj.getID(), newObj);
             }
+            worldState.putAll(permanentObj);
         }
     }
 
@@ -164,6 +173,84 @@ public class Tracker
             }
         }
         return soarObjects;
+    }
+
+
+    //////////////
+    /// Deal with objects that we can't see through the kinect but want to
+    /// pretend are there (like locations)
+    public void createImaginedObjects(Config config)
+    {
+        System.out.println("Creating imagined objects.");
+        for(int i=0;;i++) {
+            System.out.println(i);
+            String name = config.getString("sim_locations.r"+i+".name",null);
+            double[] xyz = config.getDoubles("sim_locations.r"+i+".center",null);
+            double[] lwh = config.getDoubles("sim_locations.r"+i+".lwh",null);
+            int[] rgb = config.getInts("sim_locations.r"+i+".color",null);
+            int numAttr = config.getInt("sim_locations.r"+i+".num_attributes",0);
+
+            if(xyz == null)
+                break;
+
+            HashMap<String, String[]> possibleStates = new HashMap<String, String[]>();
+            HashMap<String, String> currentStates = new HashMap<String, String>();
+            for(int j=0; j<numAttr; j++){
+                String attr = config.getString("sim_locations.r"+i+".s"+j+".attribute",null);
+                String[] options = config.getStrings("sim_locations.r"+i+".s"+j+".options",null);
+
+                if(attr == null || options == null)
+                    continue;
+
+                if(options.length > 1) {
+                    possibleStates.put(attr, options);
+                    currentStates.put(attr, options[0]);
+                }
+            }
+
+            boolean assignID = true;
+            Obj permObj = new Obj(assignID);
+//            loc.setName(name);
+            permObj.setPose(new double[]{xyz[0], xyz[1], xyz[2], 0, 0, 0});
+            permObj.setCentroid(new double[]{xyz[0], xyz[1], xyz[2]});
+            permObj.setBoundingBox(new double[][]{{xyz[0]-lwh[0]/2.0, xyz[1]-lwh[1]/2.0, xyz[2]-lwh[2]/2.0},
+                                                  {xyz[0]+lwh[0]/2.0, xyz[1]+lwh[1]/2.0, xyz[2]+lwh[2]/2.0}});
+
+            Color color = new Color(rgb[0], rgb[1], rgb[2]);
+            VisChain model = new VisChain(LinAlg.translate(xyz),
+                                          LinAlg.scale(lwh[0], lwh[1], lwh[2]),
+                                          new VzBox(new VzMesh.Style(color)));
+            permObj.setVisObject(model);
+            permObj.setShape(new BoxShape(lwh));
+            permObj.setPossibleStates(possibleStates);
+            permObj.setCurrentStates(currentStates);
+            Classifications location = new Classifications();
+            location.add(name, 1.0);
+            permObj.addClassifications(FeatureCategory.LOCATION, location);
+            permanentObj.put(permObj.getID(), permObj);
+        }
+    }
+
+    public void performImaginedAction(String action)
+    {
+        String[] args = action.split(",");
+        if(args.length < 2) {
+            return;
+        }
+
+        String[] idArg = args[0].split("=");
+        if(idArg.length < 2 || !idArg[0].equals("ID")){
+            return;
+        }
+
+        int id = Integer.parseInt(idArg[1]);
+        Obj pObj = permanentObj.get(id);
+        if(pObj == null) {
+            return;
+        }
+
+        pObj.setState(args[1]);
+        permanentObj.put(id, pObj);
     }
 
     //////////////////////////////////////////////////////////////
@@ -276,6 +363,7 @@ public class Tracker
             } else if (channel.equals("ROBOT_COMMAND")) {
                 synchronized (armLock) {
                     robot_cmd = new robot_command_t(ins);
+                    performImaginedAction(robot_cmd.action);
                     armInterpreter.queueCommand(robot_cmd);
                 }
             }

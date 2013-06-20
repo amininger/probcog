@@ -46,8 +46,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     private Timer sendObservationTimer;
     private static final int OBSERVATION_RATE = 2; // # sent per second
 
-    private HashMap<Integer,SimLocation> locations;
-
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
 
@@ -161,8 +159,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         tasks.addFixedDelay(new MenuUpdateTask(), 0.2);
         tasks.setRunning(true);
         rt.start();
-
-        createLocations(config);
     }
 
 
@@ -247,7 +243,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
             // XXX Is this simulated arm stuff?
         	try {
         		robot_command_t command = new robot_command_t(ins);
-                performLocationAction(command.action);
         	}
             catch (IOException e) {
                 e.printStackTrace();
@@ -265,82 +260,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         	obs.click_id = getSelectedId();
         }
 
-        String[] locationStrings = new String[locations.size()];
-        int i=0;
-        for(SimLocation loc : locations.values()) {
-            locationStrings[i] = loc.getProperties();
-            i++;
-        }
-
-        obs.locations = locationStrings;
-        obs.num_locs = locations.size();
         obs.observations = tracker.getObjectData();
         obs.nobs = obs.observations.length;
 
         lcm.publish("OBSERVATIONS",obs);
     }
-
-
-    public void performLocationAction(String action)
-    {
-        String[] args = action.split(",");
-        if(args.length < 2) {
-            return;
-        }
-
-        String[] idArg = args[0].split("=");
-        if(idArg.length < 2 || !idArg[0].equals("ID")){
-            return;
-        }
-
-        int id = Integer.parseInt(idArg[1]);
-        SimLocation loc = locations.get(id);
-        if(loc == null) {
-            return;
-        }
-
-        loc.setState(args[1]);
-        locations.put(id, loc);
-    }
-
-    public void createLocations(Config config)
-    {
-        locations = new HashMap<Integer, SimLocation>();
-
-        for(int i=0;;i++) {
-            String name = config.getString("sim_locations.r"+i+".name",null);
-            double[] xy = config.getDoubles("sim_locations.r"+i+".center",null);
-            int[] rgb = config.getInts("sim_locations.r"+i+".color",null);
-            int numAttr = config.getInt("sim_locations.r"+i+".num_attributes",0);
-
-            if(name == null)
-                break;
-
-            HashMap<String, String[]> possibleStates = new HashMap<String, String[]>();
-            HashMap<String, String> currentStates = new HashMap<String, String>();
-            for(int j=0; j<numAttr; j++){
-                String attr = config.getString("sim_locations.r"+i+".s"+j+".attribute",null);
-                String[] options = config.getStrings("sim_locations.r"+i+".s"+j+".options",null);
-
-                if(attr == null || options == null)
-                    continue;
-
-                if(options.length > 1) {
-                    possibleStates.put(attr, options);
-                    currentStates.put(attr, options[0]);
-                }
-            }
-
-            SimLocation loc = new SimLocation(simulator.getWorld());
-            loc.setName(name);
-            loc.setPose(new double[]{xy[0], xy[1], 0});
-            loc.setColor(rgb);
-            loc.setPossibleStates(possibleStates);
-            loc.setCurrentStates(currentStates);
-            locations.put(loc.getID(), loc);
-        }
-    }
-
 
     /** AutoSave the classifier state */
     class AutoSaveTask implements PeriodicTasks.Task

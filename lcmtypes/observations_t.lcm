@@ -8,8 +8,4 @@ struct observations_t
     // Observed objects
     int32_t nobs;
     object_data_t observations[nobs];
-
-    // Locations
-    int32_t num_locs;
-    string locations[num_locs];
 }

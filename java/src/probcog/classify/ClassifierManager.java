@@ -108,11 +108,11 @@ public class ClassifierManager
 	Classifier classifier = classifiers.get(cat);
 	ArrayList<Double> features = Features.getFeatures(cat, objToClassify.getPointCloud());
 	objToClassify.addFeatures(cat, features);
-	
+
 	if(features == null){
 	    return null;
 	}
-	
+
 	Classifications classifications;
 	synchronized (stateLock) {
 	    classifications = classifier.classify(features);
@@ -120,7 +120,7 @@ public class ClassifierManager
 	}
 	return classifications;
     }
-    
+
     public void addDataPoint(FeatureCategory cat, ArrayList<Double> features, String label){
 	Classifier classifier = classifiers.get(cat);
 	synchronized(stateLock){
@@ -130,7 +130,7 @@ public class ClassifierManager
 	    undoStack.add(entry);
 	}
     }
-    
+
     public void clearData(){
 	for(Classifier classifier : classifiers.values()){
 	    synchronized(stateLock){
@@ -138,7 +138,7 @@ public class ClassifierManager
 	    }
 	}
     }
-    
+
     public void reloadData(){
 	for(Classifier classifier : classifiers.values()){
 	    synchronized(stateLock){
@@ -147,12 +147,12 @@ public class ClassifierManager
 	    }
 	}
     }
-    
+
     public boolean hasUndo()
     {
         return undoStack.size() > 0;
     }
-    
+
     public boolean hasRedo()
     {
         return redoStack.size() > 0;
@@ -200,8 +200,9 @@ public class ClassifierManager
             cat_dat[j] = new categorized_data_t();
             cat_dat[j].cat = new category_t();
             cat_dat[j].cat.cat = Features.getLCMCategory(fc);
-            Classifier classifier = classifiers.get(fc);
-            Classifications cs = classifier.classify(ob.getFeatures(fc));
+//            Classifier classifier = classifiers.get(fc);
+//            Classifications cs = classifier.classify(ob.getFeatures(fc));
+            Classifications cs = ob.getLabels(fc);
             cs.sortLabels();    // Just to be nice
             cat_dat[j].len = cs.size();
             cat_dat[j].confidence = new double[cat_dat[j].len];
