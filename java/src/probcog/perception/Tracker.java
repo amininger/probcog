@@ -86,14 +86,15 @@ public class Tracker
     {
         ArrayList<Obj> soarObjects = getSoarObjects();
         ArrayList<Obj> visibleObjects = getVisibleObjects();
+        ArrayList<Obj> previousFrame = new ArrayList<Obj>();
 
         // If we haven't started receiving messages from soar, use most recent frame
-        if(soarObjects.size() == 0 && worldState.size() > 0) {
-            for(Obj o : worldState.values()) {
+        for(Obj o : worldState.values()) {
+            previousFrame.add(o);
+            if(soarObjects.size() == 0 && worldState.size() > 0) {
                 soarObjects.add(o);
             }
         }
-
 
         synchronized (stateLock) {
             worldState = new HashMap<Integer, Obj>();
@@ -115,7 +116,7 @@ public class Tracker
                     if (idSet.contains(soarObj.getID()))
                         continue;
 
-                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid(), 2);
+                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid());
                     if(dist < thresh && dist < minDist){
                         matched = true;
                         minID = soarObj.getID();
@@ -125,17 +126,47 @@ public class Tracker
 
                 if (matched) {
                     newObj.setID(minID);
-                } else {
-                    newObj.setID(Obj.nextID());
+                }
+                else {
+                    if(previousFrame.size() > 0){
+
+                        double threshOld = .01;
+                        boolean matchedOld = false;
+                        double minDistOld = Double.MAX_VALUE;
+                        int minIDOld = -1;
+
+                        for (Obj oldObj: previousFrame) {
+                            if (idSet.contains(oldObj.getID()))
+                                continue;
+
+                            double dist = LinAlg.distance(newObj.getCentroid(), oldObj.getCentroid());
+                            if(dist < threshOld && dist < minDistOld){
+                                matchedOld = true;
+                                minIDOld = oldObj.getID();
+                                minDistOld = dist;
+                            }
+                        }
+                        if(matchedOld) {
+                            newObj.setID(minIDOld);
+                        }
+                        else {
+                            newObj.setID(Obj.nextID());
+                        }
+                    }
+
+                    else {
+                        newObj.setID(Obj.nextID());
+                    }
                 }
                 idSet.add(newObj.getID());
 
                 worldState.put(newObj.getID(), newObj);
             }
-            // ArrayList<Obj> imagined = createImaginedObjects(world, false);
-            // for(Obj o : imagined) {
-            //     worldState.put(o.getID(), o);
-            // }
+
+            ArrayList<Obj> imagined = createImaginedObjects(world, false);
+            for(Obj o : imagined) {
+                worldState.put(o.getID(), o);
+            }
         }
     }
 

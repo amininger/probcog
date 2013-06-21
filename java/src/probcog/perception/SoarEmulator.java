@@ -12,6 +12,7 @@ import probcog.lcmtypes.*;
 public class SoarEmulator
 {
     LCM lcm = LCM.getSingleton();
+    observations_t obs;
 
     public SoarEmulator()
     {
@@ -33,7 +34,20 @@ public class SoarEmulator
         public void run()
         {
             while (true) {
-                TimeUtil.sleep(1000/60);
+                TimeUtil.sleep(100);
+
+                if(obs != null) {
+                    synchronized (obs) {
+                        soar_objects_t soar = new soar_objects_t();
+                        soar.utime = TimeUtil.utime();
+                        soar.num_objects = obs.nobs;
+                        soar.objects = new object_data_t[soar.num_objects];
+                        for (int i = 0; i < soar.objects.length; i++) {
+                            soar.objects[i] = obs.observations[i];
+                        }
+                        lcm.publish("SOAR_OBJECTS", soar);
+                    }
+                }
             }
         }
 
@@ -51,15 +65,7 @@ public class SoarEmulator
             throws IOException
         {
             if (channel.equals("OBSERVATIONS")) {
-                observations_t obs = new observations_t(ins);
-                soar_objects_t soar = new soar_objects_t();
-                soar.utime = TimeUtil.utime();
-                soar.num_objects = obs.nobs;
-                soar.objects = new object_data_t[soar.num_objects];
-                for (int i = 0; i < soar.objects.length; i++) {
-                    soar.objects[i] = obs.observations[i];
-                }
-                lcm.publish("SOAR_OBJECTS", soar);
+                obs = new observations_t(ins);
             }
         }
     }
