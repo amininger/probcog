@@ -11,7 +11,7 @@ public class Features
 {
 	public enum FeatureCategory
     {
-		COLOR, SHAPE, SIZE
+		COLOR, SHAPE, SIZE, LOCATION
 	}
 
 	// Mapping from a FeatureCategory to the category_t enum
@@ -22,6 +22,7 @@ public class Features
 		featureToLCMCat.put(FeatureCategory.COLOR, category_t.CAT_COLOR);
 		featureToLCMCat.put(FeatureCategory.SHAPE, category_t.CAT_SHAPE);
 		featureToLCMCat.put(FeatureCategory.SIZE, category_t.CAT_SIZE);
+		featureToLCMCat.put(FeatureCategory.LOCATION, category_t.CAT_LOCATION);
 	}
 
 	public static Integer getLCMCategory(FeatureCategory cat)
@@ -37,6 +38,7 @@ public class Features
 		lcmToFeatureCat.put(category_t.CAT_COLOR, FeatureCategory.COLOR);
 		lcmToFeatureCat.put(category_t.CAT_SHAPE, FeatureCategory.SHAPE);
 		lcmToFeatureCat.put(category_t.CAT_SIZE, FeatureCategory.SIZE);
+		lcmToFeatureCat.put(category_t.CAT_LOCATION, FeatureCategory.LOCATION);
 	}
 
 	public static FeatureCategory getFeatureCategory(Integer lcmCat)

@@ -170,21 +170,26 @@ public class ArmDemo implements LCMSubscriber
                             for (categorized_data_t cat_data: od.cat_dat) {
                                 if (cat_data.cat.cat != category_t.CAT_COLOR)
                                     continue;
-                                String label = cat_data.label[0];
-                                if (label.contains("red")) {
-                                    color = Color.red;
-                                } else if (label.contains("orange")) {
-                                    color = Color.orange;
-                                } else if (label.contains("yellow")) {
-                                    color = Color.yellow;
-                                } else if (label.contains("green")) {
-                                    color = Color.green;
-                                } else if (label.contains("blue")) {
-                                    color = Color.blue;
-                                } else if (label.contains("purple")) {
-                                    color = Color.magenta;
-                                } else if (label.contains("black")) {
-                                    color = Color.black;
+                                if(cat_data.len > 0){
+                                    String label = cat_data.label[0];
+                                    if (label.contains("red")) {
+                                        color = Color.red;
+                                    } else if (label.contains("orange")) {
+                                        color = Color.orange;
+                                    } else if (label.contains("yellow")) {
+                                        color = Color.yellow;
+                                    } else if (label.contains("green")) {
+                                        color = Color.green;
+                                    } else if (label.contains("blue")) {
+                                        color = Color.blue;
+                                    } else if (label.contains("purple")) {
+                                        color = Color.magenta;
+                                    } else if (label.contains("black")) {
+                                        color = Color.black;
+                                    }
+                                }
+                                else{
+                                    color = Color.gray;
                                 }
                             }
                             if (color.equals(Color.black))

@@ -242,12 +242,12 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 e.printStackTrace();
                 return;
             }
-        } else if(channel.equals("ROBOT_COMMAND")){
+        } else if(channel.equals("ROBOT_COMMAND")) {
             // XXX Is this simulated arm stuff?
-        	try{
+        	try {
         		robot_command_t command = new robot_command_t(ins);
-        		//sensableManager.performAction(command.action); XXX -- Sensables?
-        	} catch (IOException e) {
+        	}
+            catch (IOException e) {
                 e.printStackTrace();
                 return;
             }
@@ -262,9 +262,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         synchronized(tracker.stateLock){
         	obs.click_id = getSelectedId();
         }
-        // XXX -- More commented out sensables
-        // obs.sensables = sensableManager.getSensableStrings();
-        // obs.nsens = obs.sensables.length;
+
         obs.observations = tracker.getObjectData();
         obs.nobs = obs.observations.length;
 

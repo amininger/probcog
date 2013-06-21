@@ -1,7 +1,9 @@
-"abolt.sim.SimLocation"
+"probcog.vis.SimLocation"
 {
-	vec 2
-	.2 .2
+	vec 3
+	.2 .2 0
+	vec 3
+	.2 .2 0.008
 	stove
   	ivec 3
 	0 0 255
@@ -9,29 +11,35 @@
 	door=closed,open
 	heat=off,on
 }
-"abolt.sim.SimLocation"
+"probcog.vis.SimLocation"
 {
-	vec 2
-	-.2 .2
+	vec 3
+	-.2 .2 0
+	vec 3
+	.2 .2 0.008
 	pantry
   	ivec 3
 	255 0 0
 	1
 	door=open,closed
 }
-"abolt.sim.SimLocation"
+"probcog.vis.SimLocation"
 {
-	vec 2
-	.2 -.2
+	vec 3
+	.2 -.2 0
+	vec 3
+	.2 .2 0.008
 	table
   	ivec 3
 	0 255 0
 	0
 }
-"abolt.sim.SimLocation"
+"probcog.vis.SimLocation"
 {
-	vec 2
-	-.2 -.2
+	vec 3
+	-.2 -.2 0
+	vec 3
+	.2 .2 0.008
 	garbage
   	ivec 3
 	255 255 0
