@@ -30,6 +30,7 @@ public class SimKinectSensor implements Sensor
     SimWorld sw;
 
     JFrame jf;
+    JImage jim;
     VisWorld vw;
     VisLayer vl;
     VisCanvas vc;
@@ -37,8 +38,16 @@ public class SimKinectSensor implements Sensor
     /** Takes as input the SimWorld from which point data is generated */
     public SimKinectSensor(SimWorld sw_)
     {
-        //jf = new JFrame("DEBUG WINDOW");
-        //jf.setSize(WIDTH,HEIGHT);
+        if (false) {
+            jf = new JFrame("DEBUG WINDOW");
+            jf.setSize(WIDTH,HEIGHT);
+            jim = new JImage(WIDTH,HEIGHT);
+            jim.setFlipY(true);
+            jf.add(jim);
+            //jf.add(vc);
+            jf.setVisible(true);
+        }
+
         sw = sw_;
 
         vw = new VisWorld();
@@ -49,7 +58,10 @@ public class SimKinectSensor implements Sensor
         // canvas, our view of the world will be accurate
         camera.eye = new double[] {0.6, 0, 1.0};    // Camera position
         camera.lookat = new double[3];              // Looks at origin
-        camera.up = new double[] {-1.0, 0, 0.6};    // Up vector
+        camera.up = new double[] {-1.0, 0, 1.0};    // Up vector
+        //camera.eye = new double[] {1, 1, 1};
+        //camera.lookat = new double[] {0, 0, 0};
+        //camera.up = new double[] {-1, -1, 1};
 
         camera.perspective_fovy_degrees = VFOV;
         camera.layerViewport = new int[] {0,0,WIDTH,HEIGHT};
@@ -59,6 +71,7 @@ public class SimKinectSensor implements Sensor
         cm.UI_ANIMATE_MS = 0;
         cm.BOOKMARK_ANIMATE_MS = 0;
         cm.FIT_ANIMATE_MS = 0;
+        cm.interfaceMode = 3.0;
 
         vl.cameraManager = cm;
         vl.cameraManager.goBookmark(camera);
@@ -66,8 +79,6 @@ public class SimKinectSensor implements Sensor
 
         vc = new VisCanvas(vl);
         vc.setSize(WIDTH, HEIGHT);
-        //jf.add(vc);
-        //jf.setVisible(true);
 
         (new RenderThread()).start();
     }
@@ -92,6 +103,33 @@ public class SimKinectSensor implements Sensor
         }
     }
 
+    /** Return the real-world position of the camera */
+    public double[][] getCameraXform()
+    {
+        double[][] camMatrix = new double[4][4];
+        // Kinect axes
+        double[] z = LinAlg.normalize(LinAlg.subtract(camera.lookat, camera.eye));
+        double[] y = LinAlg.normalize(LinAlg.scale(camera.up, -1));
+        double[] x = LinAlg.normalize(LinAlg.crossProduct(y, z));
+        y = LinAlg.normalize(LinAlg.crossProduct(z, x));
+
+        camMatrix[0][0] = x[0];
+        camMatrix[0][1] = y[0];
+        camMatrix[0][2] = z[0];
+        camMatrix[0][3] = camera.eye[0];
+        camMatrix[1][0] = x[1];
+        camMatrix[1][1] = y[1];
+        camMatrix[1][2] = z[1];
+        camMatrix[1][3] = camera.eye[1];
+        camMatrix[2][0] = x[2];
+        camMatrix[2][1] = y[2];
+        camMatrix[2][2] = z[2];
+        camMatrix[2][3] = camera.eye[2];
+        camMatrix[3][3] = 1.0;
+
+        return camMatrix;
+    }
+
     /** Get the RGBXYZ point corresponding to virtual kinect pixel (ix,iy) */
     public double[] getXYZRGB(int ix, int iy)
     {
@@ -102,6 +140,10 @@ public class SimKinectSensor implements Sensor
             if (im == null)
                 TimeUtil.sleep(10);
         } while (im == null);
+
+        if (false) {
+            jim.setImage(im);
+        }
 
         // XXX Currently only supports 3BYTE BGR
         byte[] buf = ((DataBufferByte)(im.getRaster().getDataBuffer())).getData();

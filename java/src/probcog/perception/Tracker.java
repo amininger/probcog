@@ -1,5 +1,6 @@
 package probcog.perception;
 
+import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
@@ -10,6 +11,7 @@ import april.jmat.*;
 import april.jmat.geom.*;
 import april.sim.*;
 import april.util.*;
+import april.vis.*;
 
 import lcm.lcm.*;
 
@@ -17,6 +19,8 @@ import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
+import probcog.sensor.*;
+import probcog.vis.SimLocation;
 
 public class Tracker
 {
@@ -36,22 +40,33 @@ public class Tracker
     private ArmCommandInterpreter armInterpreter;
 
     // World state, as decided by Soar and the perception system
+    private SimWorld world;
     public Object stateLock;
-    HashMap<Integer, Obj> worldState = new HashMap<Integer, Obj>();
+    HashMap<Integer, Obj> worldState;
 
     public Tracker(Config config_, Boolean physicalKinect, SimWorld world) throws IOException
     {
-        if(physicalKinect)
-            segmenter = new KinectSegment(config_);
-        else
-            segmenter = new KinectSegment(config_, world);
+        this.world = world;
+        worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(false);  // Debug off
 
-        stateLock = new Object();
+        if(physicalKinect) {
+            segmenter = new KinectSegment(config_);
+        }
+        else {
+            segmenter = new KinectSegment(config_, world);
+        }
 
+        ArrayList<Obj> locations = createImaginedObjects(world, true);
+        for(Obj ob : locations) {
+            worldState.put(ob.getID(), ob);
+        }
+
+        stateLock = new Object();
         soarLock = new Object();
         soar_lcm = null;
+
         new ListenerThread().start();
         new TrackingThread().start();
     }
@@ -69,8 +84,17 @@ public class Tracker
 
     public void compareObjects()
     {
-        ArrayList<Obj> visibleObjects = getVisibleObjects();
         ArrayList<Obj> soarObjects = getSoarObjects();
+        ArrayList<Obj> visibleObjects = getVisibleObjects();
+        ArrayList<Obj> previousFrame = new ArrayList<Obj>();
+
+        // If we haven't started receiving messages from soar, use most recent frame
+        for(Obj o : worldState.values()) {
+            previousFrame.add(o);
+            if(soarObjects.size() == 0 && worldState.size() > 0) {
+                soarObjects.add(o);
+            }
+        }
 
         synchronized (stateLock) {
             worldState = new HashMap<Integer, Obj>();
@@ -88,27 +112,60 @@ public class Tracker
                 double minDist = Double.MAX_VALUE;
                 int minID = -1;
 
-                for (Obj oldObj: soarObjects) {
-                    if (idSet.contains(oldObj.getID()))
+                for (Obj soarObj: soarObjects) {
+                    if (idSet.contains(soarObj.getID()))
                         continue;
-                    double dist = LinAlg.distance(newObj.getCentroid(),
-                                                  oldObj.getCentroid(),
-                                                  2);
-                    if (dist < thresh && dist < minDist) {
+
+                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid());
+                    if(dist < thresh && dist < minDist){
                         matched = true;
-                        minID = oldObj.getID();
+                        minID = soarObj.getID();
                         minDist = dist;
                     }
                 }
 
                 if (matched) {
                     newObj.setID(minID);
-                } else {
-                    newObj.setID(Obj.nextID());
+                }
+                else {
+                    if(previousFrame.size() > 0){
+
+                        double threshOld = .01;
+                        boolean matchedOld = false;
+                        double minDistOld = Double.MAX_VALUE;
+                        int minIDOld = -1;
+
+                        for (Obj oldObj: previousFrame) {
+                            if (idSet.contains(oldObj.getID()))
+                                continue;
+
+                            double dist = LinAlg.distance(newObj.getCentroid(), oldObj.getCentroid());
+                            if(dist < threshOld && dist < minDistOld){
+                                matchedOld = true;
+                                minIDOld = oldObj.getID();
+                                minDistOld = dist;
+                            }
+                        }
+                        if(matchedOld) {
+                            newObj.setID(minIDOld);
+                        }
+                        else {
+                            newObj.setID(Obj.nextID());
+                        }
+                    }
+
+                    else {
+                        newObj.setID(Obj.nextID());
+                    }
                 }
                 idSet.add(newObj.getID());
 
                 worldState.put(newObj.getID(), newObj);
+            }
+
+            ArrayList<Obj> imagined = createImaginedObjects(world, false);
+            for(Obj o : imagined) {
+                worldState.put(o.getID(), o);
             }
         }
     }
@@ -144,6 +201,7 @@ public class Tracker
 
         synchronized(soarLock) {
             if(soar_lcm != null) {
+
                 for(int i=0; i<soar_lcm.num_objects; i++) {
                     object_data_t odt = soar_lcm.objects[i];
                     Obj sObj = new Obj(odt.id);
@@ -164,6 +222,46 @@ public class Tracker
             }
         }
         return soarObjects;
+    }
+
+
+    //////////////
+    /// Deal with objects that we can't see through the kinect but want to
+    /// pretend are there (like locations)
+    public ArrayList<Obj> createImaginedObjects(SimWorld sw, boolean assignID)
+    {
+        ArrayList<Obj> imagined = new ArrayList<Obj>();
+        for(SimObject so : sw.objects)
+        {
+            if(so instanceof SimLocation) {
+                SimLocation sl = (SimLocation) so;
+                Obj locObj = sl.getObj(assignID);
+                imagined.add(locObj);
+            }
+        }
+        return imagined;
+    }
+
+    public void performImaginedAction(String action)
+    {
+        String[] args = action.split(",");
+        if(args.length < 2) {
+            return;
+        }
+
+        String[] idArg = args[0].split("=");
+        if(idArg.length < 2 || !idArg[0].equals("ID")){
+            return;
+        }
+
+        synchronized (worldState) {
+            int id = Integer.parseInt(idArg[1]);
+            Obj ob = worldState.get(id);
+            if(ob != null) {
+                ob.setState(args[1]);
+                worldState.put(id, ob);
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -224,7 +322,7 @@ public class Tracker
                 od[i].pos = ob.getPose();
                 od[i].bbox = ob.getBoundingBox();
 
-                categorized_data_t[] cat_dat = classyManager.getCategoryData(ob);
+                categorized_data_t[] cat_dat = ob.getCategoryData();
                 od[i].num_cat = cat_dat.length;
                 od[i].cat_dat = cat_dat;
 
@@ -233,6 +331,13 @@ public class Tracker
         }
 
         return od;
+    }
+
+    // === Methods for interacting with the sensor(s) attached to the system === //
+    // XXX This is kind of weird
+    public ArrayList<Sensor> getSensors()
+    {
+        return segmenter.getSensors();
     }
 
     /** Class that continually listens for messages from Soar about what objects
@@ -276,6 +381,7 @@ public class Tracker
             } else if (channel.equals("ROBOT_COMMAND")) {
                 synchronized (armLock) {
                     robot_cmd = new robot_command_t(ins);
+                    performImaginedAction(robot_cmd.action);
                     armInterpreter.queueCommand(robot_cmd);
                 }
             }

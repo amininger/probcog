@@ -23,6 +23,8 @@ import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
+import probcog.sensor.*;
+import probcog.util.*;
 import probcog.vis.*;
 
 // import abolt.collision.ShapeToVisObject;
@@ -240,12 +242,12 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 e.printStackTrace();
                 return;
             }
-        } else if(channel.equals("ROBOT_COMMAND")){
+        } else if(channel.equals("ROBOT_COMMAND")) {
             // XXX Is this simulated arm stuff?
-        	try{
+        	try {
         		robot_command_t command = new robot_command_t(ins);
-        		//sensableManager.performAction(command.action); XXX -- Sensables?
-        	} catch (IOException e) {
+        	}
+            catch (IOException e) {
                 e.printStackTrace();
                 return;
             }
@@ -260,9 +262,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         synchronized(tracker.stateLock){
         	obs.click_id = getSelectedId();
         }
-        // XXX -- More commented out sensables
-        // obs.sensables = sensableManager.getSensableStrings();
-        // obs.nsens = obs.sensables.length;
+
         obs.observations = tracker.getObjectData();
         obs.nobs = obs.observations.length;
 
@@ -569,6 +569,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
                 // Object drawing
                 drawObjects();
+                drawSensors();
                 arm.render(vw);
                 TimeUtil.sleep(1000/fps);
             }
@@ -589,6 +590,21 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
 		objectBuffer.swap();
 	}
+
+    public void drawSensors()
+    {
+        VisWorld.Buffer vb = vw.getBuffer("kinect");
+        ArrayList<Sensor> sensors = tracker.getSensors();
+        for (Sensor s: sensors) {
+            vb.addBack(new VisChain(s.getCameraXform(),
+                                    LinAlg.scale(0.1),
+                                    new VzAxes()));
+            //CameraPosition camera = Util.getSensorPos(s);
+            //Util.printCamera(camera);
+        }
+
+        vb.swap();
+    }
 
 	private void drawPointCloud(VisWorld.Buffer buffer)
     {
