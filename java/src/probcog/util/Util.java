@@ -112,7 +112,7 @@ public class Util
         camera.eye[0] = camMatrix[0][3];
         camera.eye[1] = camMatrix[1][3];
         camera.eye[2] = camMatrix[2][3];
-
+        camera.layerViewport = new int[4];
 
         double[] sx = new double[] {camMatrix[0][0],
                                     camMatrix[1][0],
@@ -130,6 +130,9 @@ public class Util
         {
             camera.lookat = LinAlg.add(camera.eye, sz);
             camera.up = LinAlg.scale(sy, -1);
+            camera.layerViewport[2] = sensor.getWidth();
+            camera.layerViewport[3] = sensor.getHeight();
+            camera.perspective_fovy_degrees = SimKinectSensor.VFOV;
         } else {
             camera.lookat = new double[3];
             camera.up = new double[3];
