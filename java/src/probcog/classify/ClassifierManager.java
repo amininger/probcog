@@ -192,33 +192,6 @@ public class ClassifierManager
         }
     }
 
-    public categorized_data_t[] getCategoryData(Obj ob)
-    {
-        categorized_data_t[] cat_dat = new categorized_data_t[classifiers.size()];
-        int j = 0;
-        for (FeatureCategory fc: classifiers.keySet()) {
-            cat_dat[j] = new categorized_data_t();
-            cat_dat[j].cat = new category_t();
-            cat_dat[j].cat.cat = Features.getLCMCategory(fc);
-//            Classifier classifier = classifiers.get(fc);
-//            Classifications cs = classifier.classify(ob.getFeatures(fc));
-            Classifications cs = ob.getLabels(fc);
-            cs.sortLabels();    // Just to be nice
-            cat_dat[j].len = cs.size();
-            cat_dat[j].confidence = new double[cat_dat[j].len];
-            cat_dat[j].label = new String[cat_dat[j].len];
-
-            int k = 0;
-            for (Classifications.Label label: cs.labels) {
-                cat_dat[j].confidence[k] = label.weight;
-                cat_dat[j].label[k] = label.label;
-                k++;
-            }
-            j++;
-        }
-        return cat_dat;
-    }
-
     // XXX Might want to spawn a backup thread to do this...
     /** Write out a backup file of our current state. */
     public void writeState(String filename) throws IOException

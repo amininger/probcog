@@ -10,6 +10,7 @@ import april.vis.*;
 
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
+import probcog.lcmtypes.*;
 
 public class Obj
 {
@@ -214,6 +215,32 @@ public class Obj
         return labels;
     }
 
+    public categorized_data_t[] getCategoryData()
+    {
+        categorized_data_t[] cat_dat = new categorized_data_t[labels.size()];
+        int j = 0;
+        for (FeatureCategory fc: labels.keySet()) {
+            cat_dat[j] = new categorized_data_t();
+            cat_dat[j].cat = new category_t();
+            cat_dat[j].cat.cat = Features.getLCMCategory(fc);
+            Classifications cs = labels.get(fc);
+            cs.sortLabels();    // Just to be nice
+            cat_dat[j].len = cs.size();
+            cat_dat[j].confidence = new double[cat_dat[j].len];
+            cat_dat[j].label = new String[cat_dat[j].len];
+
+            int k = 0;
+            for (Classifications.Label label: cs.labels) {
+                cat_dat[j].confidence[k] = label.weight;
+                cat_dat[j].label[k] = label.label;
+                k++;
+            }
+            j++;
+        }
+        return cat_dat;
+    }
+
+
     // ATTRIBUTES / STATES
     public void setPossibleStates(HashMap<String, String[]> possible)
     {
@@ -245,30 +272,6 @@ public class Obj
             currentStates.put(stateName, newState);
         }
     }
-
-    /** Create a string that has all the pertinent information about this
-     ** location in it. Information includes the ID, the name, the attributes
-     ** and their current states, and the location and bounding box.
-     **/
-    // public String getStateAttributes()
-    // {
-	// 	String props = String.format("ID=%d,NAME=%s,", id, name);
-
-    //     if(currentStates.size() > 0){
-    //         StringBuilder properties = new StringBuilder();
-    //         for(Map.Entry<String, String> state : currentStates.entrySet()){
-    //             properties.append(String.format("%s=%s,", state.getKey(), state.getValue()));
-    //         }
-    //         props += properties.substring(0, properties.length() - 1) + ",";
-    //     }
-
-	// 	props += String.format("POSE=[%f %f %f %f %f %f],", pose[0], pose[1], pose[2], pose[3], pose[4], pose[5]);
-	// 	props += String.format("BBOX=[%f %f %f %f %f %f]", bbox[0][0], bbox[0][1], bbox[0][2],
-    //                                                        bbox[1][0], bbox[1][1], bbox[1][2]);
-
-	// 	return props;
-	// }
-
 
 
 

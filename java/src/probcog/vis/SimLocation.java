@@ -33,9 +33,9 @@ public class SimLocation implements SimObject
 
     public SimLocation(SimWorld sw)
     {
+        id = -1;
         size = .1;
         shape = new BoxShape(new double[]{2*size, 2*size, 0});
-        id = Util.nextID();
         possibleStates = new HashMap<String, String[]>();
         currentStates = new HashMap<String, String>();
     }
@@ -103,7 +103,15 @@ public class SimLocation implements SimObject
 
     public Obj getObj(boolean assignID)
     {
-        Obj locObj = new Obj(assignID);
+        Obj locObj;
+        if(assignID || id < 0) {
+            locObj = new Obj(assignID);
+            id = locObj.getID();
+        }
+        else {
+            locObj = new Obj(id);
+        }
+
         locObj.setPose(pose);
         locObj.setCentroid(new double[]{pose[0], pose[1], pose[2]});
         locObj.setBoundingBox(new double[][]{{pose[0]-lwh[0]/2.0, pose[1]-lwh[1]/2.0, pose[2]-lwh[2]/2.0},

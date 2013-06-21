@@ -47,24 +47,25 @@ public class Tracker
     public Tracker(Config config_, Boolean physicalKinect, SimWorld world) throws IOException
     {
         this.world = world;
-
-        if(physicalKinect)
-            segmenter = new KinectSegment(config_);
-        else
-            segmenter = new KinectSegment(config_, world);
+        worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(false);  // Debug off
 
-        stateLock = new Object();
+        if(physicalKinect) {
+            segmenter = new KinectSegment(config_);
+        }
+        else {
+            segmenter = new KinectSegment(config_, world);
+        }
 
-        soarLock = new Object();
-        soar_lcm = null;
-
-        worldState = new HashMap<Integer, Obj>();
         ArrayList<Obj> locations = createImaginedObjects(world, true);
         for(Obj ob : locations) {
             worldState.put(ob.getID(), ob);
         }
+
+        stateLock = new Object();
+        soarLock = new Object();
+        soar_lcm = null;
 
         new ListenerThread().start();
         new TrackingThread().start();
@@ -85,7 +86,14 @@ public class Tracker
     {
         ArrayList<Obj> soarObjects = getSoarObjects();
         ArrayList<Obj> visibleObjects = getVisibleObjects();
-        visibleObjects.addAll(createImaginedObjects(world, false));
+
+        // If we haven't started receiving messages from soar, use most recent frame
+        if(soarObjects.size() == 0 && worldState.size() > 0) {
+            for(Obj o : worldState.values()) {
+                soarObjects.add(o);
+            }
+        }
+
 
         synchronized (stateLock) {
             worldState = new HashMap<Integer, Obj>();
@@ -124,7 +132,10 @@ public class Tracker
 
                 worldState.put(newObj.getID(), newObj);
             }
-             // worldState.putAll(permanentObj);
+            // ArrayList<Obj> imagined = createImaginedObjects(world, false);
+            // for(Obj o : imagined) {
+            //     worldState.put(o.getID(), o);
+            // }
         }
     }
 
@@ -202,24 +213,24 @@ public class Tracker
 
     public void performImaginedAction(String action)
     {
-        // String[] args = action.split(",");
-        // if(args.length < 2) {
-        //     return;
-        // }
+        String[] args = action.split(",");
+        if(args.length < 2) {
+            return;
+        }
 
-        // String[] idArg = args[0].split("=");
-        // if(idArg.length < 2 || !idArg[0].equals("ID")){
-        //     return;
-        // }
+        String[] idArg = args[0].split("=");
+        if(idArg.length < 2 || !idArg[0].equals("ID")){
+            return;
+        }
 
-        // int id = Integer.parseInt(idArg[1]);
-        // Obj pObj = permanentObj.get(id);
-        // if(pObj == null) {
-        //     return;
-        // }
-
-        // pObj.setState(args[1]);
-        // permanentObj.put(id, pObj);
+        synchronized (worldState) {
+            int id = Integer.parseInt(idArg[1]);
+            Obj ob = worldState.get(id);
+            if(ob != null) {
+                ob.setState(args[1]);
+                worldState.put(id, ob);
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -280,7 +291,7 @@ public class Tracker
                 od[i].pos = ob.getPose();
                 od[i].bbox = ob.getBoundingBox();
 
-                categorized_data_t[] cat_dat = classyManager.getCategoryData(ob);
+                categorized_data_t[] cat_dat = ob.getCategoryData();
                 od[i].num_cat = cat_dat.length;
                 od[i].cat_dat = cat_dat;
 
