@@ -266,6 +266,14 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         obs.observations = tracker.getObjectData();
         obs.nobs = obs.observations.length;
 
+        ArrayList<Sensor> sensors = tracker.getSensors();
+        assert (sensors.size() > 0);
+        Sensor s = sensors.get(0);
+        CameraPosition camera = Util.getSensorPos(s);
+        obs.eye = camera.eye;
+        obs.lookat = camera.lookat;
+        obs.up = camera.up;
+
         lcm.publish("OBSERVATIONS",obs);
     }
 
