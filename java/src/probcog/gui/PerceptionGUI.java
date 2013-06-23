@@ -553,9 +553,12 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                     	if(ob.isVisible()){
                     		for(FeatureCategory cat : FeatureCategory.values()){
                                 Classifications cs = ob.getLabels(cat);
-                        		labelString += String.format("%s%s:%.2f\n", tf,
-                                                             cs.getBestLabel().label,
-                                                             cs.getBestLabel().weight);
+                                Classifications.Label bestLabel = cs.getBestLabel();
+                                if(bestLabel != null){
+                            		labelString += String.format("%s%s:%.2f\n", tf,
+                                            bestLabel.label,
+                                            bestLabel.weight);
+                                }
                     		}
                     	}
                 		VzText text = new VzText(labelString);

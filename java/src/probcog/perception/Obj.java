@@ -45,6 +45,7 @@ public class Obj
         bbox = new double[2][3];
         centroid = new double[3];
         ptCloud = new PointCloud();
+        visible = true;
     }
 
     public Obj(boolean assignID, PointCloud ptCloud)
@@ -62,6 +63,7 @@ public class Obj
         bbox = ptCloud.getBoundingBox();
         centroid = ptCloud.getCentroid();
         pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
+        visible = true;
 
         double maxDim = Math.max(bbox[1][0]-bbox[0][0],
                                  Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
@@ -88,6 +90,7 @@ public class Obj
         bbox = new double[2][3];
         centroid = new double[3];
 		pose = new double[6];
+        visible = true;
         shape = new SphereShape(.01);
         model = null;
         ptCloud = new PointCloud();
