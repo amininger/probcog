@@ -60,7 +60,7 @@ public class KinectSensor implements Sensor
         ir = new ConfigFile(config_.getPath("kinect.calib_ir"));
         ir = ir.getChild("aprilCameraCalibration.camera0000");
 
-        if (config_.getPath("kinect.calib_robot") != null)
+        if (config_.getString("kinect.calib_robot") != null)
             robot = new ConfigFile(config_.getPath("kinect.calib_robot"));
 
         // Set IR Paremeters
