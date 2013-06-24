@@ -41,9 +41,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     private KinectView kinectView;
     private ProbCogSimulator simulator;
 
-    // objects for visualization
-    // private ArmSimulator armSimulator;
-
     // LCM
     static LCM lcm = LCM.getSingleton();
     private Timer sendObservationTimer;
@@ -123,11 +120,17 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
         // XXX Is this how we always want to do this?
         // Spin up a virtual arm in sim world
-        if (!opts.getBoolean("kinect")) {
-            SimArm simArm = new SimArm(config, simulator.getWorld());
+        if (opts.getBoolean("arm")) {
         } else {
             // Raw kinect data view
             kinectView = new KinectView(config);
+        }
+
+        if (opts.getBoolean("arm")) {
+            ArmDriver driver = new ArmDriver(config);
+            (new Thread(driver)).start();
+        } else {
+            SimArm simArm = new SimArm(config, simulator.getWorld());
         }
 
         // Initialize the JMenuBar
@@ -265,6 +268,14 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
         obs.observations = tracker.getObjectData();
         obs.nobs = obs.observations.length;
+
+        ArrayList<Sensor> sensors = tracker.getSensors();
+        assert (sensors.size() > 0);
+        Sensor s = sensors.get(0);
+        CameraPosition camera = Util.getSensorPos(s);
+        obs.eye = camera.eye;
+        obs.lookat = camera.lookat;
+        obs.up = camera.up;
 
         lcm.publish("OBSERVATIONS",obs);
     }
@@ -664,6 +675,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
+        opts.addBoolean('a', "arm", false, "Run with a phsyical arm");
         opts.addBoolean('k', "kinect", false, "Use a physical kinect");
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
         opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
