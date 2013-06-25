@@ -37,7 +37,7 @@ uint8_t *d_back_buf;
 uint8_t *rgb_back_buf;
 
 // Accelerometer
-double x,y,z;
+double x = 0,y = 0,z = 0;
 
 // OpenKinect references
 freenect_context *f_ctx;
@@ -252,11 +252,11 @@ int main(int argc, char **argv)
     }
 
     // Create accelerometer thread
-    printf("Create accelerometer thread...\n");
-    if (pthread_create(&accel_thread, NULL, accelup, NULL)) {
-        printf("failed to create accelerometer thread\n");
-        return 1;
-    }
+    //printf("Create accelerometer thread...\n");
+    //if (pthread_create(&accel_thread, NULL, accelup, NULL)) {
+    //    printf("failed to create accelerometer thread\n");
+    //    return 1;
+    //}
 
     // Create LCM thread
     printf("Create LCM processing thread...\n");
