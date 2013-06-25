@@ -120,10 +120,10 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
         // XXX Is this how we always want to do this?
         // Spin up a virtual arm in sim world
-        if (opts.getBoolean("arm")) {
-        } else {
+        if (opts.getBoolean("kinect")) {
             // Raw kinect data view
             kinectView = new KinectView(config);
+        } else {
         }
 
         if (opts.getBoolean("arm")) {

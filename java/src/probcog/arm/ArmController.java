@@ -361,8 +361,8 @@ public class ArmController implements LCMSubscriber
                     if (actionComplete()) {
                         setState(ActionState.GRAB_APPROACH);
                     }
-                    if(toGrab > -1)
-                        grabbedObject = toGrab; // Lauren
+                    //if(toGrab > -1)
+                    //    grabbedObject = toGrab; // Lauren
                     break;
                 case GRAB_APPROACH:
                     moveTo(behind, goalHeight + preGrabOffset);
