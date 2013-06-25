@@ -195,7 +195,7 @@ public class Tracker
      *  their most recent lcm message. Obj have information such as their center
      *  and features they were classified with. They do not have point clouds.
      **/
-    private ArrayList<Obj> getSoarObjects()
+    public ArrayList<Obj> getSoarObjects()
     {
         ArrayList<Obj> soarObjects = new ArrayList<Obj>();
 
@@ -207,6 +207,7 @@ public class Tracker
                     Obj sObj = new Obj(odt.id);
                     double[] xyzrpy = odt.pos;
                     sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
+                    sObj.setBoundingBox(odt.bbox);
 
                     for(int j=0; j<odt.num_cat; j++) {
                         categorized_data_t cat = odt.cat_dat[j];
