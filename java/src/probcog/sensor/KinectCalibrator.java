@@ -83,13 +83,16 @@ public class KinectCalibrator
                 } else if (name.equals("calib")) {
                     if (origin != null && px != null && py != null)
                         saveCalibration();
+                    else
+                        System.err.println("ERR: Can only save if you define "+
+                                           "calibration points");
                 } else if (name.equals("test")) {
                     mode = Mode.TEST;
                 } else if (name.equals("frame")) {
                     if (kinect.stashFrame()) {
                         updateImage();
                         poly = kinect.getPoly();
-                        flipPoly();
+                        poly = flipPoly();
                         updateWindow();
                     }
                 }
@@ -220,7 +223,7 @@ public class KinectCalibrator
                 System.out.println("updating frame...");
                 updateImage();
                 poly = kinect.getPoly();
-                flipPoly();
+                poly = flipPoly();
                 updateWindow();
             } else {
                 System.err.println("ERR: Failed to load new frame from kinect");
@@ -444,16 +447,20 @@ public class KinectCalibrator
         }
     }
 
+    // Need to do a deep copy!
     private april.jmat.geom.Polygon flipPoly()
     {
         assert (im != null && poly != null);
 
         ArrayList<double[]> points = poly.getPoints();
+        ArrayList<double[]> copyPoints = new ArrayList<double[]>();
         for (double[] p: points) {
-            p[1] = im.getHeight() - p[1];
+            double[] cp = LinAlg.copy(p);
+            cp[1] = im.getHeight() - cp[1];
+            copyPoints.add(cp);
         }
 
-        return new april.jmat.geom.Polygon(points);
+        return new april.jmat.geom.Polygon(copyPoints);
     }
 
     // ================================
