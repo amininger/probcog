@@ -212,6 +212,8 @@ public class KinectSensor implements Sensor
     /** Get the stashed RGB Image */
     public BufferedImage getImage()
     {
+        if (r_rgbIm == null)
+            return new BufferedImage(0,0,BufferedImage.TYPE_INT_RGB);
         return r_rgbIm;
     }
 
@@ -224,17 +226,15 @@ public class KinectSensor implements Sensor
     /** Get the width of our rectified images */
     public int getWidth()
     {
-        assert (r_rgbIm != null);
-        assert (r_rgbIm.getWidth() == r_depthIm.getWidth());
-
+        if (r_rgbIm == null)
+            return 0;
         return r_rgbIm.getWidth();
     }
 
     public int getHeight()
     {
-        assert (r_rgbIm != null);
-        assert (r_rgbIm.getHeight() == r_depthIm.getHeight());
-
+        if (r_rgbIm == null)
+            return 0;
         return r_rgbIm.getHeight();
     }
     // === Get points in the world coordinate system ===
