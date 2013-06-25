@@ -279,7 +279,7 @@ public class Obj
 
 
     // Increasing ids
-    private static int idGen = 0;
+    private static int idGen = 1;
     public static int nextID()
     {
         return idGen ++;
