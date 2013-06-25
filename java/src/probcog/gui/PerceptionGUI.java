@@ -122,7 +122,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // Spin up a virtual arm in sim world
         if (opts.getBoolean("kinect")) {
             // Raw kinect data view
-            kinectView = new KinectView(config);
+            // kinectView = new KinectView(config);
         } else {
         }
 
