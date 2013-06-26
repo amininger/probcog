@@ -131,7 +131,8 @@ public class BoundingBox
             bbox.lenxyz = LinAlg.subtract(max, min);
 
             // XXX Could wait until after volume check
-            bbox.xyzrpy = LinAlg.scale(LinAlg.subtract(max0, min0), 0.5);
+            bbox.xyzrpy = LinAlg.add(min0,
+                                     LinAlg.scale(LinAlg.subtract(max0, min0), 0.5));
             bbox.xyzrpy = LinAlg.resize(bbox.xyzrpy, 6);
             bbox.xyzrpy[5] = lx.getTheta();
 
@@ -144,6 +145,32 @@ public class BoundingBox
         return minBBox;
     }
 
+    // Utility for random point generation.
+    // It would be cool if this took parameters
+    static public MultiGaussian makeRandomGaussian3D(Random r)
+    {
+        double[][] P = new double[3][3];
+        double[] u = new double[3];
+
+        // Generate mean
+        u[0] = r.nextGaussian()*5;
+        u[1] = r.nextGaussian()*5;
+        u[2] = r.nextGaussian()*5;
+
+        // Generate diagonals
+        P[0][0] = Math.abs(r.nextGaussian()*10);
+        P[1][1] = Math.abs(r.nextGaussian()*10);
+        P[2][2] = Math.abs(r.nextGaussian()*10);
+
+        System.out.printf("u: [%f, %f, %f]\n", u[0], u[1], u[2]);
+        System.out.printf("P: [%f, %f, %f]\n"+
+                          "   [%f, %f, %f]\n"+
+                          "   [%f, %f, %f]\n", P[0][0], P[0][1], P[0][2],
+                                               P[1][0], P[1][1], P[1][2],
+                                               P[2][0], P[2][1], P[2][2]);
+
+        return new MultiGaussian(P, u);
+    }
 
     /** Test bounding boxes */
     static public void main(String[] args)
@@ -155,6 +182,7 @@ public class BoundingBox
 
         final Random r = new Random(1);
         final VisWorld vw = new VisWorld();
+        VzGrid.addGrid(vw);
         VisLayer vl = new VisLayer(vw);
         VisCanvas vc = new VisCanvas(vl);
         jf.add(vc, BorderLayout.CENTER);
@@ -176,17 +204,7 @@ public class BoundingBox
 
                 if (name.equals("generate")) {
                     // Make points and box them
-                    double[][] P = new double[3][3];
-                    P[0][0] = 1;
-                    P[1][1] = .2;
-                    P[2][2] = .2;
-                    P[0][1] = .1;
-                    P[1][0] = .1;
-
-                    double[] u = new double[] {r.nextGaussian(),
-                                               r.nextGaussian(),
-                                               r.nextGaussian()};
-                    MultiGaussian mg = new MultiGaussian(P, u);
+                    MultiGaussian mg = makeRandomGaussian3D(r);
                     ArrayList<double[]> points = mg.sampleMany(r,
                                                                pg.gi("num"));
 
