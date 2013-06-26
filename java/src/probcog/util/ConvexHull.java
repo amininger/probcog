@@ -79,18 +79,21 @@ public class ConvexHull
         extrema.add(maxy);
         extrema.add(miny);
 
-        // Check for colinearity
-        if (extrema.size() < 3)
-            return new ArrayList<double[]>();
-
-        // Filter points
-        april.jmat.geom.Polygon filter = new april.jmat.geom.Polygon(new ArrayList<double[]>(extrema));
         ArrayList<double[]> valid = new ArrayList<double[]>();
-        for (double[] p: points) {
-            if (extrema.contains(p) || !filter.contains(p)) {
-                valid.add(p);
+
+        // Filter out points, if appropriate
+        if (extrema.size() > 2) {
+            // Filter points
+            april.jmat.geom.Polygon filter = new april.jmat.geom.Polygon(new ArrayList<double[]>(extrema));
+            for (double[] p: points) {
+                if (extrema.contains(p) || !filter.contains(p)) {
+                    valid.add(p);
+                }
             }
+        } else {
+            valid = points;
         }
+
 
         // Construct hull from valid points
         // XXX Test efficiency with and without filtering
@@ -177,14 +180,16 @@ public class ConvexHull
         extrema.add(minz);
         extrema.add(maxz);
 
-        // Check for coplanarity
-        if (extrema.size() < 4)
-            return new ArrayList<double[]>();
 
-        // Filter points
-        // XXX
+        ArrayList<double[]> valid = new ArrayList<double[]>();
+        // Filter if possible
+        if (extrema.size() > 3) {
+            // XXX Filtering
+        } else {
+            valid = points;
+        }
 
-        return points;
+        return valid;
     }
 
     /** Return the minimum double array based on the value at index i. */
