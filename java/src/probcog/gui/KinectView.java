@@ -83,16 +83,9 @@ public class KinectView extends JFrame implements LCMSubscriber
             return;
 
         for (object_data_t ob: obs.observations) {
-            double[][] bbox = ob.bbox;
-            double[] pos = ob.pos;
-            double[][] scale = LinAlg.scale(bbox[1][0] - bbox[0][0],
-                                            bbox[1][1] - bbox[0][1],
-                                            bbox[1][2] - bbox[0][2]);
-            // This color really isn't necessary, but is convenient if we
-            // ever decide to add one, I suppose.
-            VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)),
-                                  new VzLines.Style(Color.cyan, 2));
-            buffer.addBack(new VisChain(LinAlg.translate(pos), scale, box));
+            BoundingBox bbox = new BoundingBox(ob.bbox_dim,
+                                               ob.bbox_xyzrpy);
+            buffer.addBack(bbox.getVis(new VzLines.Style(Color.cyan, 2)));
         }
 		buffer.swap();
     }

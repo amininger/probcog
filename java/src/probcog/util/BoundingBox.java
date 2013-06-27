@@ -24,6 +24,12 @@ public class BoundingBox
         xyzrpy = new double[6];     // Transforms box centered at origin
     }
 
+    public BoundingBox(double[] lenxyz_, double[] xyzrpy_)
+    {
+        lenxyz = lenxyz_;
+        xyzrpy = xyzrpy_;
+    }
+
     /** Compute the volume of the bounding box */
     public double volume()
     {
@@ -77,7 +83,7 @@ public class BoundingBox
      *
      *
      */
-    static BoundingBox getMinimalXY(ArrayList<double[]> points)
+    static public BoundingBox getMinimalXY(ArrayList<double[]> points)
     {
         // The minimal bounding box constrained to have a box with a face
         // parallel to the XY plane is roughly equivalent to finding the 2D

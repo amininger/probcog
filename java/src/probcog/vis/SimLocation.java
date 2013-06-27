@@ -1,4 +1,4 @@
-package probcog.vis; // XXX - Should it go here?
+package probcog.vis; // XXX - Should it go here? XXX Probably not
 
 import java.awt.Color;
 import java.io.IOException;
@@ -12,7 +12,7 @@ import april.vis.*;
 import probcog.classify.Classifications;
 import probcog.classify.Features.FeatureCategory;
 import probcog.perception.*;
-import probcog.util.Util;
+import probcog.util.*;
 
 public class SimLocation implements SimObject
 {
@@ -114,8 +114,9 @@ public class SimLocation implements SimObject
 
         locObj.setPose(pose);
         locObj.setCentroid(new double[]{pose[0], pose[1], pose[2]});
-        locObj.setBoundingBox(new double[][]{{pose[0]-lwh[0]/2.0, pose[1]-lwh[1]/2.0, pose[2]-lwh[2]/2.0},
-                                              {pose[0]+lwh[0]/2.0, pose[1]+lwh[1]/2.0, pose[2]+lwh[2]/2.0}});
+        //locObj.setBoundingBox(new double[][]{{pose[0]-lwh[0]/2.0, pose[1]-lwh[1]/2.0, pose[2]-lwh[2]/2.0},
+        //                                      {pose[0]+lwh[0]/2.0, pose[1]+lwh[1]/2.0, pose[2]+lwh[2]/2.0}});
+        locObj.setBoundingBox(new BoundingBox(lwh, pose));
 
         VisChain model = new VisChain(LinAlg.translate(pose),
                                       LinAlg.scale(lwh[0], lwh[1], lwh[2]),
