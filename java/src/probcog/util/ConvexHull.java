@@ -5,6 +5,7 @@ import javax.swing.*;
 import java.util.*;
 
 import april.jmat.*;
+import april.jmat.geom.*;
 import april.vis.*;
 import april.util.*;
 
@@ -31,8 +32,8 @@ public class ConvexHull
                 return 1;
 
             // Compare angles to the x-axis based on origin o. Lower is less.
-            double ta = MathUtil.atan2(a[1]-o[1], a[0]-o[0]);
-            double tb = MathUtil.atan2(b[1]-o[1], b[0]-o[0]);
+            double ta = Math.atan2(a[1]-o[1], a[0]-o[0]);
+            double tb = Math.atan2(b[1]-o[1], b[0]-o[0]);
             if (ta < tb)
                 return -1;
             else if (ta > tb)
@@ -54,6 +55,8 @@ public class ConvexHull
     /** Compute the convex hull for a set of 2D points. There must be at
      *  least 3 non-co-linear points to form a hull. In no such points
      *  exist, then an empty hull will be returned.
+     *
+     *  XXX Should return a polygon
      */
     static public ArrayList<double[]> getHull2D(ArrayList<double[]> points)
     {
@@ -81,7 +84,8 @@ public class ConvexHull
 
         ArrayList<double[]> valid = new ArrayList<double[]>();
 
-        // Filter out points, if appropriate
+        // Filter out points, if appropriate. This hugely helps performance for
+        // large numbers of points.
         if (extrema.size() > 2) {
             // Filter points
             april.jmat.geom.Polygon filter = new april.jmat.geom.Polygon(new ArrayList<double[]>(extrema));
@@ -94,9 +98,7 @@ public class ConvexHull
             valid = points;
         }
 
-
         // Construct hull from valid points
-        // XXX Test efficiency with and without filtering
         return grahamScan(valid);
     }
 
@@ -148,48 +150,15 @@ public class ConvexHull
     /** Compute the convex hull of a set of 3D points. There must be at least
      *  4 non-co-planar points to form a hull. If no such points exist, then
      *  an empty hull will be returned.
+     *
+     *  Returns a Polyhedron representing the hull
      */
-    static public ArrayList<double[]> getHull3D(ArrayList<double[]> points)
+    static public Polyhedron3D getHull3D(ArrayList<double[]> points)
     {
         if (points == null || points.size() < 4)
-            return new ArrayList<double[]>();
+            return new Polyhedron3D();
 
-        // Step 0: Filter points. Find the most extreme points, create a
-        // polyhedron from these, and discard all points inside the polyhedron
-        // (which is itself a convex hull to THOSE points)
-        double[] minx = new double[] {DMAX, 0, 0};
-        double[] maxx = new double[] {DMIN, 0, 0};
-        double[] miny = new double[] {0, DMAX, 0};
-        double[] maxy = new double[] {0, DMIN, 0};
-        double[] minz = new double[] {0, 0, DMAX};
-        double[] maxz = new double[] {0, 0, DMIN};
-        for (double[] p: points) {
-            minx = min(minx, p, 0);
-            maxx = max(maxx, p, 0);
-            miny = min(miny, p, 1);
-            maxy = max(maxy, p, 1);
-            minz = min(minz, p, 2);
-            maxz = max(maxz, p, 2);
-        }
-
-        Set<double[]> extrema = new HashSet<double[]>();
-        extrema.add(minx);
-        extrema.add(maxx);
-        extrema.add(miny);
-        extrema.add(maxy);
-        extrema.add(minz);
-        extrema.add(maxz);
-
-
-        ArrayList<double[]> valid = new ArrayList<double[]>();
-        // Filter if possible
-        if (extrema.size() > 3) {
-            // XXX Filtering
-        } else {
-            valid = points;
-        }
-
-        return valid;
+        return Quickhull.getHull(points);
     }
 
     /** Return the minimum double array based on the value at index i. */
@@ -231,7 +200,7 @@ public class ConvexHull
 
         ParameterGUI pg = new ParameterGUI();
         // Covariance stuff
-        pg.addIntSlider("num", "Num Points", 4, 10000, 100);
+        pg.addIntSlider("num", "Num Points", 4, 10000, 6);
         pg.addDoubleSlider("xy", "Cov_xy", -1.9, 1.9, 0);
         pg.addDoubleSlider("xz", "Cov_xz", -2.9, 2.9, 0);
         pg.addDoubleSlider("yz", "Cov_yz", -1.9, 1.9, 0);
@@ -253,7 +222,7 @@ public class ConvexHull
 
                     double[] u = new double[3];
                     MultiGaussian mg = new MultiGaussian(P, u);
-                    ArrayList<double[]> points = mg.sampleMany(new Random(),
+                    ArrayList<double[]> points = mg.sampleMany(new Random(498172521),
                                                                pg.gi("num"));
 
                     // Render points
@@ -268,6 +237,12 @@ public class ConvexHull
                     vb.addBack(new VzLines(new VisVertexData(hull2D),
                                            VzLines.LINE_LOOP,
                                            new VzLines.Style(Color.yellow, 1)));
+                    vb.swap();
+
+                    vb = vw.getBuffer("hull3D");
+                    Polyhedron3D hull3D = getHull3D(points);
+                    vb.addBack(hull3D.getVis(new VzLines.Style(Color.cyan, 1)));
+
                     vb.swap();
 
                 }

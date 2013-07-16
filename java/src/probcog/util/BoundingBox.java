@@ -222,6 +222,7 @@ public class BoundingBox
 
                     // Create the bound box
                     BoundingBox bbox = new BoundingBox();
+                    Tic tic = new Tic();
                     if (pg.gb("box_align"))
                         bbox = getAxisAligned(points);
                     else if (pg.gb("box_minz"))
@@ -231,6 +232,8 @@ public class BoundingBox
                     else
                         System.err.println("ERR: unrecognized bounding box type");
                     //bbox.print();
+                    double time = tic.toc();
+                    System.out.printf("Computed bounding box in %f s\n", time);
 
                     vb = vw.getBuffer("bbox");
                     vb.addBack(bbox.getVis(new VzLines.Style(Color.yellow, 1)));
