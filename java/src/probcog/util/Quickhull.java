@@ -203,15 +203,29 @@ public class Quickhull
         }
     }
 
+    /** Construct the convex hull of a set of 3D points. Must supply a minimum
+     *  of 4 non-coplanar points.
+     */
     public static Polyhedron3D getHull(ArrayList<double[]> points)
     {
+        if (points.size() < 4)
+            return new Polyhedron3D();  // XXX Error message?
+
+
         // Constuct the initial simplex. Find the extreme 6 points.
         // The most distant two make our initial line. The point most distant
         // from this line makes up the 3rd point and forms the inital face.
         // The 4th and final point is whichever point is most distant from
         // this face.
-        int[] ex = new int[6];
-        for (int i = 1; i < points.size(); i++) {
+        HashSet<Integer> pointSet = new HashSet<Integer>();
+        for (int i = 0; i < 4; i++) {
+            pointSet.add(i);    // Guarantees 4 points to choose from
+        }
+        Integer[] ex = new Integer[6];
+        for (int i = 0; i < ex.length; i++) {
+            ex[i] = new Integer(0);
+        }
+        for (int i = 0; i < points.size(); i++) {
             double[] p = points.get(i);
             if (points.get(ex[0])[0] > p[0])
                 ex[0] = i;
@@ -226,8 +240,13 @@ public class Quickhull
             if (points.get(ex[5])[2] < p[2])
                 ex[5] = i;
         }
+        for (int i = 0; i < ex.length; i++) {
+            pointSet.add(ex[i]);
+        }
+        ex = pointSet.toArray(new Integer[pointSet.size()]);
 
-        // Make baseline
+        // Find points to make initial baseline. These
+        // are the most distant two points.
         int v0 = 0, v1 = 1;
         double dist = 0;
         for (int i = 0; i < ex.length; i++) {
@@ -242,7 +261,8 @@ public class Quickhull
             }
         }
 
-        // Make face
+        // Expand the baseline to make a face by finding the point
+        // that is the farthest away from the baseline.
         GLine3D line = new GLine3D(points.get(v0), points.get(v1));
         int v2 = -1;
         dist = 0;
@@ -265,13 +285,14 @@ public class Quickhull
             double d = face.distance(ex[i], points);
             if (Math.abs(d) > dist) {
                 v3 = ex[i];
-                dist = d;
+                dist = Math.abs(d);
                 dir = d > 0 ? 1 : -1;
             }
         }
 
-        //System.out.printf("%d %d %d %d %d %d\n", ex[0], ex[1], ex[2], ex[3], ex[4], ex[5]);
+
         //System.out.printf("%d %d %d %d\n", v0, v1, v2, v3);
+        //assert (v3 != -1);
 
         // Build the initial hull (in this case, a simplex)
         HashSet<Facet> facets = new HashSet<Facet>();

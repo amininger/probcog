@@ -222,7 +222,7 @@ public class ConvexHull
 
                     double[] u = new double[3];
                     MultiGaussian mg = new MultiGaussian(P, u);
-                    ArrayList<double[]> points = mg.sampleMany(new Random(498172521),
+                    ArrayList<double[]> points = mg.sampleMany(new Random(),
                                                                pg.gi("num"));
 
                     // Render points
@@ -236,7 +236,7 @@ public class ConvexHull
                     vb = vw.getBuffer("hull2D");
                     vb.addBack(new VzLines(new VisVertexData(hull2D),
                                            VzLines.LINE_LOOP,
-                                           new VzLines.Style(Color.yellow, 1)));
+                                           new VzLines.Style(Color.yellow, 2)));
                     vb.swap();
 
                     vb = vw.getBuffer("hull3D");
