@@ -179,14 +179,13 @@ public class BoundingBox
     static public BoundingBox getFastMinimal(ArrayList<double[]> points)
     {
         Polyhedron3D hull = ConvexHull.getHull3D(points);
+        BoundingBox minBBox = new BoundingBox();
 
         // Iterate through the faces of the hull. Find the minimal bounding box
         // with a face flush with a face of the hull.
         ArrayList<double[]> vertices = hull.getVertices();
         ArrayList<int[]> faces = hull.getFaces();
         ArrayList<double[]> normals = hull.getNormals();
-        double[] xyzrpy = new double[6];
-        double[] lenxyz = new double[3];
         double minVolume = Double.POSITIVE_INFINITY;
         for (int i = 0; i < faces.size(); i++) {
             double[] n = normals.get(i);
@@ -196,26 +195,48 @@ public class BoundingBox
             double[] yaxis = LinAlg.normalize(LinAlg.crossProduct(n, xaxis));
 
             ArrayList<double[]> projectedPoints = new ArrayList<double[]>();
+            double dist = 0;
             for (double[] q: hull.getVertices()) {
                 // Find opposite plane face
                 double d = Math.abs(LinAlg.dotProduct(LinAlg.subtract(q, p0), n));
+                dist = Math.max(dist, d);
 
-                // Project points of hull onto plane, use 2D box method. Define
-                // an arbitrary planar coordinate system based on an edge of the
-                // face with p0 as the origin.
+                // Project points onto the 2D plane defined by this face
                 double[] xy = new double[2];
                 xy[0] = LinAlg.dotProduct(LinAlg.subtract(q, p0), xaxis);
                 xy[1] = LinAlg.dotProduct(LinAlg.subtract(q, p0), yaxis);
                 projectedPoints.add(xy);
-
-
-
-
             }
 
+            // Find the minimal bounding rectangle for the 2D points.
+            double[] rect = getBoundingRectangle(projectedPoints);
+            double[] lenxyz = new double[] {rect[0],
+                                            rect[1],
+                                            dist};
+            //double[] center = LinAlg.add(p0, LinAlg.scale(xaxis, rect[2]));
+            //LinAlg.plusEquals(center, LinAlg.scale(yaxis, rect[3]));
+            //LinAlg.plusEquals(center, LinAlg.scale(n, dist*0.5));
+            //double[] xyzrpy = LinAlg.resize(center, 6);
+            double[] xyzrpy = new double[6];
+
+            // XXX This is wrong. QuatCompute certainly.
+            //double[] quat0 = LinAlg.quatCompute(new double[] {0,0,-1}, n);
+            //double[] quat1 = LinAlg.angleAxisToQuat(-rect[4], n);
+            //double[] rpy = LinAlg.quatToRollPitchYaw(LinAlg.quatMultiply(quat0,
+            //                                                             quat1));
+            //xyzrpy[3] = rpy[0];
+            //xyzrpy[4] = rpy[1];
+            //xyzrpy[5] = rpy[2];
+
+
+            BoundingBox bbox = new BoundingBox(lenxyz,
+                                               xyzrpy);
+
+            if (minBBox.volume() <= 0 || minBBox.volume() > bbox.volume())
+                minBBox = bbox;
         }
 
-        return new BoundingBox();
+        return minBBox;
     }
 
     // Utility for random point generation.
@@ -225,10 +246,10 @@ public class BoundingBox
         double[][] P = new double[3][3];
         double[] u = new double[3];
 
-        // Generate mean
-        u[0] = r.nextGaussian()*5;
-        u[1] = r.nextGaussian()*5;
-        u[2] = r.nextGaussian()*5;
+        // Generate mean XXX
+        //u[0] = r.nextGaussian()*5;
+        //u[1] = r.nextGaussian()*5;
+        //u[2] = r.nextGaussian()*5;
 
         // Generate diagonals
         P[0][0] = Math.abs(r.nextGaussian()*10);
@@ -295,7 +316,7 @@ public class BoundingBox
                     else if (pg.gb("box_minz"))
                         bbox = getMinimalXY(points);
                     else if (pg.gb("box_min"))
-                        System.err.println("ERR: minimal boxes not yet supported");
+                        bbox = getFastMinimal(points);
                     else
                         System.err.println("ERR: unrecognized bounding box type");
                     //bbox.print();
