@@ -78,6 +78,57 @@ public class BoundingBox
         return bbox;
     }
 
+    /** Assumes in the XY plane. Returns xlen, ylen, xcenter, ycenter, yaw */
+    static private double[] getBoundingRectangle(ArrayList<double[]> hull2D)
+    {
+        double area = Double.POSITIVE_INFINITY;
+        double[] best = new double[5];
+        for (int i = 0; i < hull2D.size(); i++) {
+            double[] p0 = hull2D.get(i);
+            double[] p1 = hull2D.get((i+1)%hull2D.size());
+            GLine2D lx = new GLine2D(p0, p1);
+            GLine2D ly = lx.perpendicularLine();
+
+            double[] min = new double[] {DMAX, DMAX};
+            double[] max = new double[] {DMIN, DMIN};
+            for (double[] p: hull2D) {
+                double xcoord = lx.getLineCoordinate(p);
+                double ycoord = ly.getLineCoordinate(p);
+                min[0] = Math.min(min[0], xcoord);
+                max[0] = Math.max(max[0], xcoord);
+                min[1] = Math.min(min[1], ycoord);
+                max[1] = Math.max(max[1], ycoord);
+            }
+
+            // Project coordinates back into space to find centroid
+            GLine2D ly0 = lx.perpendicularLineThrough(lx.getPointOfCoordinate(min[0]));
+            GLine2D ly1 = lx.perpendicularLineThrough(lx.getPointOfCoordinate(max[0]));
+            GLine2D lx0 = ly.perpendicularLineThrough(ly.getPointOfCoordinate(min[1]));
+            GLine2D lx1 = ly.perpendicularLineThrough(ly.getPointOfCoordinate(max[1]));
+
+            double[] min0 = lx0.intersectionWith(ly0);
+            double[] max0 = lx1.intersectionWith(ly1);
+
+            double[] lenxy = LinAlg.subtract(max, min);
+
+            if (area < lenxy[0] * lenxy[1])
+                continue;
+
+            area = lenxy[0] * lenxy[1];
+            best[0] = lenxy[0];
+            best[1] = lenxy[1];
+
+            double[] center = LinAlg.add(min0,
+                                         LinAlg.scale(LinAlg.subtract(max0, min0), 0.5));
+
+            best[2] = center[0];
+            best[3] = center[1];
+            best[4] = lx.getTheta();
+        }
+
+        return best;
+    }
+
     /** Return the minimal bounding box for a supplied set of points such that
      *  one side of the box is constrained to be parallel to the XY plane.
      *
@@ -104,50 +155,17 @@ public class BoundingBox
         // Consider each edge of the polygon forming the hull of our box in
         // turn and compute the minimal bounding box with an edge aligned with
         // said edge.
-        BoundingBox minBBox = new BoundingBox();
-        for (int i = 0; i < hull2D.size(); i++) {
-            double[] p0 = hull2D.get(i);
-            double[] p1 = hull2D.get((i+1)%hull2D.size());
-            GLine2D lx = new GLine2D(p0, p1);
-            GLine2D ly = lx.perpendicularLine();
+        double[] rect = getBoundingRectangle(hull2D);
 
-            double[] min = new double[] {DMAX, DMAX, zmin};
-            double[] max = new double[] {DMIN, DMIN, zmax};
-            for (double[] p: hull2D) {
-                double xcoord = lx.getLineCoordinate(p);
-                double ycoord = ly.getLineCoordinate(p);
-                min[0] = Math.min(min[0], xcoord);
-                max[0] = Math.max(max[0], xcoord);
-                min[1] = Math.min(min[1], ycoord);
-                max[1] = Math.max(max[1], ycoord);
-            }
-
-            // Project coordinates back into space to find centroid
-            GLine2D ly0 = lx.perpendicularLineThrough(lx.getPointOfCoordinate(min[0]));
-            GLine2D ly1 = lx.perpendicularLineThrough(lx.getPointOfCoordinate(max[0]));
-            GLine2D lx0 = ly.perpendicularLineThrough(ly.getPointOfCoordinate(min[1]));
-            GLine2D lx1 = ly.perpendicularLineThrough(ly.getPointOfCoordinate(max[1]));
-
-            double[] min0 = LinAlg.resize(lx0.intersectionWith(ly0), 3);
-            min0[2] = zmin;
-            double[] max0 = LinAlg.resize(lx1.intersectionWith(ly1), 3);
-            max0[2] = zmax;
-
-            BoundingBox bbox = new BoundingBox();
-            bbox.lenxyz = LinAlg.subtract(max, min);
-
-            // XXX Could wait until after volume check
-            bbox.xyzrpy = LinAlg.add(min0,
-                                     LinAlg.scale(LinAlg.subtract(max0, min0), 0.5));
-            bbox.xyzrpy = LinAlg.resize(bbox.xyzrpy, 6);
-            bbox.xyzrpy[5] = lx.getTheta();
-
-            if (minBBox.volume() <= 0)
-                minBBox = bbox;
-            if (minBBox.volume() > bbox.volume())
-                minBBox = bbox;
-        }
-
+        BoundingBox minBBox = new BoundingBox(new double[] {rect[0],
+                                                            rect[1],
+                                                            zmax-zmin},
+                                              new double[] {rect[2],
+                                                            rect[3],
+                                                            zmin + (zmax-zmin)*0.5,
+                                                            0,
+                                                            0,
+                                                            rect[4]});
         return minBBox;
     }
 
@@ -164,11 +182,36 @@ public class BoundingBox
 
         // Iterate through the faces of the hull. Find the minimal bounding box
         // with a face flush with a face of the hull.
+        ArrayList<double[]> vertices = hull.getVertices();
+        ArrayList<int[]> faces = hull.getFaces();
         ArrayList<double[]> normals = hull.getNormals();
         double[] xyzrpy = new double[6];
         double[] lenxyz = new double[3];
         double minVolume = Double.POSITIVE_INFINITY;
-        for (double[] normal: normals) {
+        for (int i = 0; i < faces.size(); i++) {
+            double[] n = normals.get(i);
+            double[] p0 = vertices.get(faces.get(i)[0]);
+            double[] p1 = vertices.get(faces.get(i)[1]);
+            double[] xaxis = LinAlg.normalize(LinAlg.subtract(p1, p0));
+            double[] yaxis = LinAlg.normalize(LinAlg.crossProduct(n, xaxis));
+
+            ArrayList<double[]> projectedPoints = new ArrayList<double[]>();
+            for (double[] q: hull.getVertices()) {
+                // Find opposite plane face
+                double d = Math.abs(LinAlg.dotProduct(LinAlg.subtract(q, p0), n));
+
+                // Project points of hull onto plane, use 2D box method. Define
+                // an arbitrary planar coordinate system based on an edge of the
+                // face with p0 as the origin.
+                double[] xy = new double[2];
+                xy[0] = LinAlg.dotProduct(LinAlg.subtract(q, p0), xaxis);
+                xy[1] = LinAlg.dotProduct(LinAlg.subtract(q, p0), yaxis);
+                projectedPoints.add(xy);
+
+
+
+
+            }
 
         }
 
