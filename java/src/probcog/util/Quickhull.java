@@ -203,20 +203,13 @@ public class Quickhull
         }
     }
 
-    /** Construct the convex hull of a set of 3D points. Must supply a minimum
-     *  of 4 non-coplanar points.
+    /** Construct a simplex from a set of points. This is the inital shape
+     *  that we will build our convex hull around. A good simplex will
+     *  contain a large portion of the points, removing them from consideration
+     *  as vertices in the convex hull.
      */
-    public static Polyhedron3D getHull(ArrayList<double[]> points)
+    private static HashSet<Facet> constructSimplex(ArrayList<double[]> points)
     {
-        if (points.size() < 4)
-            return new Polyhedron3D();  // XXX Error message?
-
-
-        // Constuct the initial simplex. Find the extreme 6 points.
-        // The most distant two make our initial line. The point most distant
-        // from this line makes up the 3rd point and forms the inital face.
-        // The 4th and final point is whichever point is most distant from
-        // this face.
         HashSet<Integer> pointSet = new HashSet<Integer>();
         for (int i = 0; i < 4; i++) {
             pointSet.add(i);    // Guarantees 4 points to choose from
@@ -323,6 +316,19 @@ public class Quickhull
             unassigned.removeAll(facet.getOutsideSet());
         }
 
+        return facets;
+    }
+
+    /** Construct the convex hull of a set of 3D points. Must supply a minimum
+     *  of 4 non-coplanar points.
+     */
+    public static Polyhedron3D getHull(ArrayList<double[]> points)
+    {
+        if (points.size() < 4)
+            return new Polyhedron3D();  // XXX Error message?
+
+        HashSet<Facet> facets = constructSimplex(points);
+
         // Expand hull. For each facet with a non-empty outside set,
         // find the furthest point in its outside set and add it to the hull,
         // updating facets accordingly.
@@ -340,7 +346,7 @@ public class Quickhull
 
                 // Find furthest point from facet
                 int furthest = -1;
-                dist = 0;
+                double dist = 0;
                 for (int i: facet.getOutsideSet()) {
                     double d = facet.distance(i, points);
                     if (d > dist) {
@@ -403,19 +409,7 @@ public class Quickhull
                     }
                 }
 
-                //System.out.println(size + " >= " + count);
-                assert (size >= count);
-
-                //System.out.println("VISIBLE FACETS: " + visibleSet.size());
-                //for (Facet visible: visibleSet) {
-                //    visible.print();
-                //}
                 facets.removeAll(visibleSet);
-                //System.out.println("AFTER REMOVAL: " + facets.size());
-                //System.out.println("NEW FACETS: " + newFacets.size());
-                //for (Facet newFacet: newFacets) {
-                //    newFacet.print();
-                //}
                 facets.addAll(newFacets);
 
                 break;

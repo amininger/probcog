@@ -151,6 +151,30 @@ public class BoundingBox
         return minBBox;
     }
 
+    /** Get an approximate minimal bounding box for a set of points.
+     *  Exact minimal bounding boxes can be found in O(n^3) time for
+     *  a convex hull bounding the points of size n. However, a bounding
+     *  box no more than two times this volume may be found with an
+     *  incredibly straightforward algorithm in O(n^2). This is an
+     *  implementation of the latter.
+     **/
+    static public BoundingBox getFastMinimal(ArrayList<double[]> points)
+    {
+        Polyhedron3D hull = ConvexHull.getHull3D(points);
+
+        // Iterate through the faces of the hull. Find the minimal bounding box
+        // with a face flush with a face of the hull.
+        ArrayList<double[]> normals = hull.getNormals();
+        double[] xyzrpy = new double[6];
+        double[] lenxyz = new double[3];
+        double minVolume = Double.POSITIVE_INFINITY;
+        for (double[] normal: normals) {
+
+        }
+
+        return new BoundingBox();
+    }
+
     // Utility for random point generation.
     // It would be cool if this took parameters
     static public MultiGaussian makeRandomGaussian3D(Random r)
