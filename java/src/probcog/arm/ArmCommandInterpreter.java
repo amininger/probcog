@@ -372,7 +372,7 @@ public class ArmCommandInterpreter
 
         return bcmd;
     }
-
+   
     private double clampAngle(double theta)
     {
         theta = MathUtil.mod2pi(theta);
