@@ -426,10 +426,10 @@ public class ArmController implements LCMSubscriber
                         setState(ActionState.HOME);
                     } else if (gripper_status.load <= 0.0 && load < minLoad) {
                         //System.out.println("Grip moar");
-                        arm.setPos(5, gripper_status.position_radians + gripIncr);
+                        //arm.setPos(5, gripper_status.position_radians + gripIncr);
                     } else if (gripper_status.load <= 0.0 && load > maxLoad) {
                         //System.out.println("Grip less");
-                        arm.setPos(5, gripper_status.position_radians - gripIncr);
+                        //arm.setPos(5, gripper_status.position_radians - gripIncr);
                     }
 
                     break;

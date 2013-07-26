@@ -574,17 +574,24 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                     	String labelString = "";
                 		String tf="<<monospaced,black,dropshadow=false>>";
                 		labelString += String.format("%s%d\n", tf, ob.getID());
+                		boolean hasLabel = false;
                     	if(ob.isVisible()){
                     		for(FeatureCategory cat : FeatureCategory.values()){
                                 Classifications cs = ob.getLabels(cat);
-                        		labelString += String.format("%s%s:%.2f\n", tf,
-                                                             cs.getBestLabel().label,
-                                                             cs.getBestLabel().weight);
+                                Classifications.Label bestLabel = cs.getBestLabel();
+                                if(bestLabel != null && cat != FeatureCategory.LOCATION){
+                            		labelString += String.format("%s%s:%.2f\n", tf,
+                                            bestLabel.label,
+                                            bestLabel.weight);
+                            		hasLabel = true;
+                                }
                     		}
                     	}
-                		VzText text = new VzText(labelString);
-                		double[] textLoc = new double[]{ob.getPose()[0], ob.getPose()[1], ob.getPose()[2] + .1};
-                        textBuffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.002), text));
+                    	if(hasLabel){
+                    		VzText text = new VzText(labelString);
+                    		double[] textLoc = new double[]{ob.getPose()[0], ob.getPose()[1], ob.getPose()[2] + .1};
+                            //textBuffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.002), text));
+                    	}
                     }
                 }
                 textBuffer.swap();
@@ -593,9 +600,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
                 // Object drawing
                 drawObjects();
+                drawSoarObjects(faceCamera);
                 drawSensors();
                 arm.render(vw);
                 TimeUtil.sleep(1000/fps);
+                
             }
         }
     }
@@ -651,6 +660,29 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         }
 
         vb.swap();
+    }
+    
+    public void drawSoarObjects(double[][] faceCamera){
+    	VisWorld.Buffer soarBuffer = vw.getBuffer("soarobjects");
+    	VisWorld.Buffer soarTextBuffer = vw.getBuffer("soarobjtext");
+    	ArrayList<Obj> soarObjects;
+    	synchronized(tracker.stateLock){
+    		soarObjects = tracker.getSoarObjects();
+    		for(Obj obj : soarObjects){
+    			double[][] bbox = obj.getBoundingBox();
+    			double[][] scale = LinAlg.scale(bbox[1][0] - bbox[0][0], bbox[1][1] - bbox[0][1], bbox[1][2] - bbox[0][2]);
+    			VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)), new VzLines.Style(Color.black, 2));
+    			soarBuffer.addBack(new VisChain(LinAlg.translate(obj.getCentroid()), scale, box));
+    			
+        		String tf="<<monospaced,black,dropshadow=false>>";
+        		String labelString = String.format("%s%d\n", tf, obj.getID());
+        		VzText text = new VzText(labelString);
+        		double[] textLoc = new double[]{bbox[0][0], bbox[0][1], bbox[0][2]};
+        		soarTextBuffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.002), text));
+    		}
+    	}
+    	soarBuffer.swap();
+    	soarTextBuffer.swap();
     }
 
 	private void drawPointCloud(VisWorld.Buffer buffer)
