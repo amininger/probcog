@@ -244,28 +244,6 @@ public class Tracker
         return imagined;
     }
 
-    public void performImaginedAction(String action)
-    {
-        String[] args = action.split(",");
-        if(args.length < 2) {
-            return;
-        }
-
-        String[] idArg = args[0].split("=");
-        if(idArg.length < 2 || !idArg[0].equals("ID")){
-            return;
-        }
-
-        synchronized (worldState) {
-            int id = Integer.parseInt(idArg[1]);
-            Obj ob = worldState.get(id);
-            if(ob != null) {
-                ob.setState(args[1]);
-                worldState.put(id, ob);
-            }
-        }
-    }
-
     //////////////////////////////////////////////////////////////
     // Methods for interacting with the classifierManager (used through guis)
     public void clearClassificationData()
@@ -322,9 +300,13 @@ public class Tracker
                 od[i].utime = utime;
                 od[i].id = ob.getID();
                 od[i].pos = ob.getPose();
+
                 BoundingBox bbox = ob.getBoundingBox();
                 od[i].bbox_dim = bbox.lenxyz;
                 od[i].bbox_xyzrpy = bbox.xyzrpy;
+                
+                od[i].state_values = ob.getStates();
+                od[i].num_states = od[i].state_values.length;
 
                 categorized_data_t[] cat_dat = ob.getCategoryData();
                 od[i].num_cat = cat_dat.length;
@@ -343,6 +325,17 @@ public class Tracker
     {
         return segmenter.getSensors();
     }
+    
+    // Given a command from soar to set the state for an object, 
+    //   sets the state if a valid command
+    private void processSetStateCommand(set_state_command_t setState){
+    	synchronized(stateLock){
+    		Obj obj = worldState.get(setState.obj_id);
+    		if(obj != null){
+    			obj.setState(setState.state_name, setState.state_val);
+    		}
+    	}
+    }
 
     /** Class that continually listens for messages from Soar about what objects
      *  it believes exists in the world. The received lcm message is stored so it
@@ -356,6 +349,7 @@ public class Tracker
         {
             lcm.subscribe("SOAR_OBJECTS", this);
             lcm.subscribe("ROBOT_COMMAND", this);
+            lcm.subscribe("SET_STATE_COMMAND", this);
         }
 
         public void run()
@@ -385,9 +379,11 @@ public class Tracker
             } else if (channel.equals("ROBOT_COMMAND")) {
                 synchronized (armLock) {
                     robot_cmd = new robot_command_t(ins);
-                    performImaginedAction(robot_cmd.action);
                     armInterpreter.queueCommand(robot_cmd);
                 }
+            } else if(channel.equals("SET_STATE_COMMAND")){
+            	set_state_command_t setState = new set_state_command_t(ins);
+            	processSetStateCommand(setState);
             }
         }
     }

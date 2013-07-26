@@ -74,7 +74,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
     ViewType viewType;
     ClickType clickType;
-
+    Boolean showSoarObjects;
 
     public PerceptionGUI(GetOpt opts) throws IOException
     {
@@ -141,6 +141,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // Set GUI modes
         viewType = ViewType.POINT_CLOUD;
         clickType = ClickType.SELECT;
+        showSoarObjects = false;
 
         // Subscribe to LCM
         lcm.subscribe("TRAINING_DATA", this);
@@ -339,8 +340,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     	addViewTypeMenu(simMenu);
     	simMenu.addSeparator();
     	addClickTypeMenu(simMenu);
-
-    	menuBar.add(simMenu);
+        menuBar.add(simMenu);
     }
 
     private void addClickTypeMenu(JMenu menu)
@@ -387,23 +387,36 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
     	JRadioButtonMenuItem pointView = new JRadioButtonMenuItem("Point Cloud View");
     	pointView.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				setView(ViewType.POINT_CLOUD);
-			}
-    	});
+                @Override
+                public void actionPerformed(ActionEvent arg0) {
+                    setView(ViewType.POINT_CLOUD);
+                }
+            });
     	viewGroup.add(pointView);
     	menu.add(pointView);
 
     	JRadioButtonMenuItem soarView = new JRadioButtonMenuItem("Soar View");
     	soarView.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				setView(ViewType.SOAR);
-			}
-    	});
+                @Override
+                public void actionPerformed(ActionEvent arg0) {
+                    setView(ViewType.SOAR);
+                }
+            });
     	viewGroup.add(soarView);
     	menu.add(soarView);
+
+        JCheckBox soarObj = new JCheckBox("Soar Predictions");
+        soarObj.addItemListener(new ItemListener() {
+                public void itemStateChanged(ItemEvent e) {
+                    if(e.getStateChange() == ItemEvent.DESELECTED) {
+                        showSoarObjects = false;
+                    }
+                    else if(e.getStateChange() == ItemEvent.SELECTED) {
+                        showSoarObjects = true;
+                    }
+                }
+            });
+        menu.add(soarObj);
     }
 
     private void setView(ViewType view)
@@ -608,8 +621,31 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 			break;
 		}
 
+        if(showSoarObjects) {
+            VisWorld.Buffer soarBuffer = vw.getBuffer("soar");
+            drawSoarPredictions(soarBuffer);
+            soarBuffer.swap();
+        }
+
 		objectBuffer.swap();
 	}
+
+    public void drawSoarPredictions(VisWorld.Buffer buffer)
+    {
+        for(Obj ob : tracker.getSoarObjects()) {
+            double[][] bbox = ob.getBoundingBox();
+            double[] lwh = new double[]{bbox[1][0]-bbox[0][0],
+                                        bbox[1][1]-bbox[0][1],
+                                        bbox[1][2]-bbox[0][2]};
+            double[] center = new double[]{bbox[0][0]+lwh[0]/2.0,
+                                           bbox[0][1]+lwh[1]/2.0,
+                                           bbox[0][2]+lwh[2]/2.0};
+
+            VzBox objFrame = new VzBox(lwh[0], lwh[1], lwh[2],
+                                       new VzLines.Style(Color.MAGENTA, 1));
+            buffer.addBack(new VisChain(LinAlg.translate(center), objFrame));
+        }
+    }
 
     public void drawSensors()
     {

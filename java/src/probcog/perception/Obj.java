@@ -231,9 +231,20 @@ public class Obj
                 cat_dat[j].label[k] = label.label;
                 k++;
             }
+            
+           
             j++;
         }
         return cat_dat;
+    }
+    
+    public String[] getStates(){
+    	String[] stateVals = new String[currentStates.size()]; 
+    	int i = 0;
+    	for(Map.Entry<String, String> stateVal : currentStates.entrySet()){
+    		stateVals[i++] = stateVal.getKey() + "=" + stateVal.getValue();
+        }
+        return stateVals;
     }
 
 
@@ -248,25 +259,14 @@ public class Obj
         currentStates = current;
     }
 
-    /** Given a string with an "action" that Soar considers the robot to have
-     ** made and which has been passed over lcm, update the state of the location.
-     **/
-    public void setState(String keyValueString)
+    public void setState(String stateName, String stateVal)
     {
-        String[] keyValuePair = keyValueString.split("=");
-        if(keyValuePair.length < 2)
-            return;
-
-        String stateName = keyValuePair[0].toLowerCase();
-        String newState = keyValuePair[1].toLowerCase();
-
-        String[] states = possibleStates.get(stateName);
-        if(states == null) {
+        String[] states = possibleStates.get(stateName.toLowerCase());
+        if(states == null || !Arrays.asList(states).contains(stateVal.toLowerCase())) {
+        	// Either the stateName or stateVal is not recognized
             return;
         }
-        else if(currentStates.containsKey(newState)) {
-            currentStates.put(stateName, newState);
-        }
+        currentStates.put(stateName.toLowerCase(), stateVal.toLowerCase());
     }
 
 
