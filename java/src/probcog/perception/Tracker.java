@@ -21,6 +21,7 @@ import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.sensor.*;
 import probcog.vis.SimLocation;
+import probcog.util.*;
 
 public class Tracker
 {
@@ -321,7 +322,9 @@ public class Tracker
                 od[i].utime = utime;
                 od[i].id = ob.getID();
                 od[i].pos = ob.getPose();
-                od[i].bbox = ob.getBoundingBox();
+                BoundingBox bbox = ob.getBoundingBox();
+                od[i].bbox_dim = bbox.lenxyz;
+                od[i].bbox_xyzrpy = bbox.xyzrpy;
 
                 categorized_data_t[] cat_dat = ob.getCategoryData();
                 od[i].num_cat = cat_dat.length;
