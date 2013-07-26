@@ -5,7 +5,8 @@ import javax.swing.*;
 import java.util.*;
 
 import april.jmat.*;
-import april.jmat.geom.*;
+//import april.jmat.geom.*;
+import april.jmat.geom.GLine2D;
 import april.util.*;
 import april.vis.*;
 
