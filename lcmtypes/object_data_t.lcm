@@ -1,0 +1,19 @@
+struct object_data_t
+{
+    int64_t utime;
+
+    int32_t id;
+
+    int32_t num_cat;
+    categorized_data_t cat_dat[num_cat];
+
+    double pos[6]; // xyzrpy
+
+		int32_t num_states;
+		string state_values[num_states];
+
+    // Bounding box.
+    double bbox_dim[3];         // Bounding box dimensions
+    double bbox_xyzrpy[6];      // Transformation of box centered at origin to
+                                // position in world
+}

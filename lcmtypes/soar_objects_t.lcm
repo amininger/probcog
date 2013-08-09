@@ -1,0 +1,7 @@
+struct soar_objects_t
+{
+    int64_t utime;
+
+    int32_t num_objects;
+    object_data_t objects[num_objects];
+}
