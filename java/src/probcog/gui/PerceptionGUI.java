@@ -44,7 +44,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     // LCM
     static LCM lcm = LCM.getSingleton();
     private Timer sendObservationTimer;
-    private static final int OBSERVATION_RATE = 2; // # sent per second
+    private static final int OBSERVATION_RATE = 10; // # sent per second
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
@@ -277,6 +277,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         obs.eye = camera.eye;
         obs.lookat = camera.lookat;
         obs.up = camera.up;
+
 
         lcm.publish("OBSERVATIONS",obs);
     }
