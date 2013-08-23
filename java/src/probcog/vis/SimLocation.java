@@ -35,7 +35,7 @@ public class SimLocation implements SimObject
     {
         id = -1;
         size = .1;
-        shape = new BoxShape(new double[]{2*size, 2*size, 0});
+        shape = new SphereShape(0);
         possibleStates = new HashMap<String, String[]>();
         currentStates = new HashMap<String, String>();
     }
@@ -133,26 +133,6 @@ public class SimLocation implements SimObject
     }
 
 
-    public String getProperties()
-    {
-        String props = String.format("ID=%d,NAME=%s,", id, name);
-
-        if(currentStates.size() > 0){
-            StringBuilder properties = new StringBuilder();
-            for(Map.Entry<String, String> state : currentStates.entrySet()){
-                properties.append(String.format("%s=%s,", state.getKey(), state.getValue()));
-            }
-            props += properties.substring(0, properties.length() - 1) + ",";
-        }
-
-        props += String.format("POSE=[%f %f %f %f %f %f],",
-                               pose[0], pose[1], pose[2],
-                               pose[3], pose[4], pose[5]);
-        props += String.format("BBOX=[%f %f %f %f %f %f]",
-                               -size, -size, -size, size, size, size);
-
-        return props;
-    }
 
 
     public void setState(String keyValueString)
@@ -179,7 +159,7 @@ public class SimLocation implements SimObject
 
         // The larger box making up the background of the object
         objs.add(new VisChain(LinAlg.translate(0,0,.001),
-                              LinAlg.scale(size), new VzRectangle(new VzMesh.Style(color))));
+                              LinAlg.scale(lwh[0]/2, lwh[1]/2, lwh[2]/2), new VzRectangle(new VzMesh.Style(color))));
 
         // The name of the location
         objs.add(new VisChain(LinAlg.rotateZ(Math.PI/2), LinAlg.translate(0,-.8*size,.007),
@@ -189,7 +169,7 @@ public class SimLocation implements SimObject
         // The smaller inner box is only drawn if there is a door and it's open
         if(currentStates.containsKey("door") && currentStates.get("door").equals("open")) {
             objs.add(new VisChain(LinAlg.translate(0,0,.004),
-                                  LinAlg.scale(size*.9),
+                                  LinAlg.scale(lwh[0]*.45, lwh[1]*.45, lwh[2]/2),
                                   new VzRectangle(new VzMesh.Style(Color.DARK_GRAY))));
         }
 
@@ -224,8 +204,6 @@ public class SimLocation implements SimObject
                 currentStates.put(nameVals[0].toLowerCase(), allowedStates[0]);
             }
         }
-
-        shape = new BoxShape(new double[]{2*size, 2*size, 0});
     }
 
     public void write(StructureWriter outs) throws IOException
