@@ -19,6 +19,15 @@ import april.vis.VisCameraManager.CameraPosition;
  */
 public class SimKinectSensor implements Sensor
 {
+	public class SimPixel{
+		public SimObject target;
+		public double[] pixelVal;
+		public SimPixel(){
+			target = null;
+			pixelVal = new double[4];
+		}
+	}
+	
     // Sim Kinect parameters
     public static final int WIDTH = 320;
     public static final int HEIGHT = (int)(WIDTH*.75);
@@ -129,11 +138,11 @@ public class SimKinectSensor implements Sensor
 
         return camMatrix;
     }
-
-    /** Get the RGBXYZ point corresponding to virtual kinect pixel (ix,iy) */
-    public double[] getXYZRGB(int ix, int iy)
-    {
-        // XXX Infinite loop possibility
+    
+    public SimPixel getPixel(int ix, int iy){
+    	SimPixel pixel = new SimPixel();
+    	
+    	// XXX Infinite loop possibility
         BufferedImage im;
         do {
             im = vc.getLatestFrame();
@@ -170,7 +179,8 @@ public class SimKinectSensor implements Sensor
                 }
             }
         }
-
+        
+        pixel.target = minObj;
         if(minObj == null) {
             double[] xyFloor = ray.intersectPlaneXY();
             minDist = LinAlg.distance(ray.getSource(), xyFloor);
@@ -179,7 +189,8 @@ public class SimKinectSensor implements Sensor
         // Object is too far away for a kinect to sense anything. Return an
         // empty point
         if (minDist >= 8.0) {
-            return new double[4];
+        	pixel.target = null;
+            return pixel;
         }
 
         // Compute the point in space we collide with the object at
@@ -196,8 +207,16 @@ public class SimKinectSensor implements Sensor
                   (b & 0xff) |
                   (g & 0xff) << 8 |
                   (r & 0xff) << 16;
+        
+        pixel.pixelVal = xyzc;
+        return pixel;
+    }
 
-        return xyzc;
+    /** Get the RGBXYZ point corresponding to virtual kinect pixel (ix,iy) */
+    public double[] getXYZRGB(int ix, int iy)
+    {
+    	SimPixel pixel = getPixel(ix, iy);
+    	return pixel.pixelVal;
     }
 
     public int getWidth()
@@ -208,10 +227,5 @@ public class SimKinectSensor implements Sensor
     public int getHeight()
     {
         return HEIGHT;
-    }
-
-    public boolean stashFrame()
-    {
-        return true;
     }
 }

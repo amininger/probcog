@@ -13,6 +13,4 @@ public interface Sensor
 
     /** Get the matrix that transforms from camera coords to world coords */
     public double[][] getCameraXform();
-
-    public boolean stashFrame();
 }

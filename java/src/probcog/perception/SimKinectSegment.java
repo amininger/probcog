@@ -1,20 +1,20 @@
 package probcog.perception;
 
-import java.awt.Color;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.awt.*;
+import java.io.*;
+import java.util.*;
 
-import probcog.arm.ArmStatus;
-import probcog.sensor.KinectSensor;
-import probcog.sensor.Sensor;
+import april.config.*;
+import april.jmat.*;
+import april.jmat.geom.*;
+import april.sim.*;
+import april.util.*;
+
+import probcog.arm.*;
+import probcog.sensor.*;
 import probcog.util.Util;
-import april.config.Config;
-import april.jmat.LinAlg;
-import april.jmat.geom.GLine3D;
-import april.util.UnionFindSimple;
 
-public class KinectSegment
+public class SimKinectSegment implements Segmenter
 {
     final static double COLOR_THRESH = .02;//30;
     final static double DISTANCE_THRESH = 0.01;
@@ -28,7 +28,7 @@ public class KinectSegment
     private int height, width;
 
     private ArrayList<Sensor> sensors = new ArrayList<Sensor>();
-    private KinectSensor kinect;
+    private SimKinectSensor kinect;
     private ArmStatus arm;
     private double baseHeight, wristHeight;
     private ArrayList<Double> armWidths;
@@ -40,17 +40,31 @@ public class KinectSegment
         0xff0099CC, 0xffD1FF47, 0xffC2FF0A, 0xffCC9900,
         0xff00CC99, 0xff00CC33, 0xff33CC00, 0xff99CC00};
 
-    public KinectSegment(Config config_) throws IOException
+    public SimKinectSegment(Config config_) throws IOException
     {
+        this(config_, null);
+    }
+
+    public SimKinectSegment(Config config_, SimWorld world) throws IOException
+    {
+        // Get stuff ready for removing arms
         arm = new ArmStatus(config_);
         baseHeight = arm.baseHeight;
         wristHeight = arm.wristHeight;
         armWidths = arm.getArmSegmentWidths();
 
         points = new ArrayList<double[]>();
-        kinect = new KinectSensor(config_);
+        kinect = new SimKinectSensor(world);
 
         sensors.add(kinect);    // XXX
+    }
+    
+    public ArrayList<Obj> getSegmentedObjects(){
+    	
+    	
+    	
+    	ArrayList<Obj> segmentedObjs = new ArrayList<Obj>();
+    	return segmentedObjs;    	
     }
 
     /** Get the most recent frame from the Kinect and segment it into point
@@ -58,24 +72,38 @@ public class KinectSegment
      ** where the arm is expected to be.
      ** @return list of point clouds for each object segmented in the scene.
      **/
-    public ArrayList<Obj> getSegmentedObjects()
+    public ArrayList<PointCloud> getObjectPointClouds()
     {
+    	HashMap<SimObject, PointCloud> pointClouds = new HashMap<SimObject, PointCloud>();  
+    	
+    	
+        ArrayList<double[]> points = new ArrayList<double[]>();
+        int height = kinect.getHeight();
+        int width = kinect.getWidth();
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                double[] xyzrgb = kinect.getXYZRGB(x,y);
+                if (xyzrgb == null)
+                    continue;
+                //System.out.printf("%f %f %f\n", xyzrgb[0], xyzrgb[1], xyzrgb[2]);
+
+                points.add(xyzrgb);
+            }
+        }
+        return points;
+    	
+    	
+    	
         if (!kinect.stashFrame())
-            return new ArrayList<Obj>();
+            return new ArrayList<PointCloud>();
 
         width = kinect.getWidth();
         height = kinect.getHeight();
 
         points = Util.extractPoints(kinect);
         removeFloorAndArmPoints();
-        
-        ArrayList<PointCloud> pointClouds = unionFind();
-        
-        ArrayList<Obj> segmentedObjects = new ArrayList<Obj>();
-        for(PointCloud pc : pointClouds){
-        	segmentedObjects.add(new Obj(false, pc));
-        }
-        return segmentedObjects;
+        return unionFind();
     }
 
 
