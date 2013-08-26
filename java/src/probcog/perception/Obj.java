@@ -4,6 +4,7 @@ import java.awt.*;
 import java.util.*;
 
 import april.jmat.*;
+import april.sim.SimObject;
 import april.sim.SphereShape;
 import april.sim.Shape;
 import april.vis.*;
@@ -11,6 +12,7 @@ import april.vis.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
+import probcog.sim.ISimStateful;
 import probcog.util.*;
 
 public class Obj
@@ -33,6 +35,10 @@ public class Obj
 	private VisObject model;
     private double[] pose;
     private boolean visible;
+    
+    // If the object was created from a simulated object,
+    //   This is the backwards pointer
+    private SimObject sourceSimObj = null;
 
     public Obj(boolean assignID)
     {
@@ -102,6 +108,14 @@ public class Obj
     {
         return id;
     }
+    
+    public void setSourceSimObject(SimObject obj){
+    	this.sourceSimObj = obj;
+    }
+    public SimObject getSourceSimObject(){
+    	return this.sourceSimObj;
+    }
+    
     public void setPointCloud(PointCloud ptCloud)
     {
         this.ptCloud = ptCloud;
@@ -239,37 +253,16 @@ public class Obj
     }
     
     public String[] getStates(){
-    	String[] stateVals = new String[currentStates.size()]; 
-    	int i = 0;
-    	for(Map.Entry<String, String> stateVal : currentStates.entrySet()){
-    		stateVals[i++] = stateVal.getKey() + "=" + stateVal.getValue();
-        }
+    	if(sourceSimObj == null || !(sourceSimObj instanceof ISimStateful)){
+    		return new String[0];
+    	}
+    	String[][] currentState = ((ISimStateful)sourceSimObj).getCurrentState();
+    	String[] stateVals = new String[currentState.length]; 
+    	for(int i = 0; i < currentState.length; i++){
+    		stateVals[i] = currentState[i][0] + "=" + currentState[i][1];
+    	}
         return stateVals;
     }
-
-
-    // ATTRIBUTES / STATES
-    public void setPossibleStates(HashMap<String, String[]> possible)
-    {
-        possibleStates = possible;
-    }
-
-    public void setCurrentStates(HashMap<String, String> current)
-    {
-        currentStates = current;
-    }
-
-    public void setState(String stateName, String stateVal)
-    {
-        String[] states = possibleStates.get(stateName.toLowerCase());
-        if(states == null || !Arrays.asList(states).contains(stateVal.toLowerCase())) {
-        	// Either the stateName or stateVal is not recognized
-            return;
-        }
-        currentStates.put(stateName.toLowerCase(), stateVal.toLowerCase());
-    }
-
-
 
     // Increasing ids
     private static int idGen = 1;

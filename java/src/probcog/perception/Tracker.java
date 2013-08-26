@@ -20,7 +20,8 @@ import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.sensor.*;
-import probcog.vis.SimLocation;
+import probcog.sim.ISimStateful;
+import probcog.sim.SimLocation;
 import probcog.util.*;
 
 public class Tracker
@@ -37,7 +38,7 @@ public class Tracker
     private Object armLock = new Object();
     private robot_command_t robot_cmd;
 
-    private KinectSegment segmenter;
+    private Segmenter segmenter;
     private ArmCommandInterpreter armInterpreter;
 
     // World state, as decided by Soar and the perception system
@@ -51,12 +52,17 @@ public class Tracker
         worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(false);  // Debug off
+        
+        Boolean perfectSegmentation = true;
 
         if(physicalKinect) {
             segmenter = new KinectSegment(config_);
         }
+        else if(perfectSegmentation){
+            segmenter = new SimKinectSegment(config_, world);
+        } 
         else {
-            segmenter = new KinectSegment(config_, world);
+        	segmenter = new KinectSegment(config_, world);
         }
 
         ArrayList<Obj> locations = createImaginedObjects(world, true);
@@ -173,22 +179,16 @@ public class Tracker
 
 
     /** Returns a list of objects that the kinect sees on the table. The objects
-     *  are returned as pointClouds from the segmenter, and are passed to the
+     *  are returned as Obj's from the segmenter, and are passed to the
      *  classifiers. The resulting point clouds, their locations, and the
      *  classifications are returned.
      **/
     private ArrayList<Obj> getVisibleObjects()
     {
-        ArrayList<Obj> visibleObjects = new ArrayList<Obj>();
-        boolean assignID = false;
-
-        ArrayList<PointCloud> ptClouds = segmenter.getObjectPointClouds();
-        for(PointCloud ptCloud : ptClouds) {
-            Obj vObj = new Obj(assignID, ptCloud);
-            vObj.addAllClassifications(classyManager.classifyAll(vObj));
-            visibleObjects.add(vObj);
+        ArrayList<Obj> visibleObjects = segmenter.getSegmentedObjects();
+        for(Obj obj : visibleObjects){
+        	obj.addAllClassifications(classyManager.classifyAll(obj));
         }
-
         return visibleObjects;
     }
 
@@ -332,7 +332,10 @@ public class Tracker
     	synchronized(stateLock){
     		Obj obj = worldState.get(setState.obj_id);
     		if(obj != null){
-    			obj.setState(setState.state_name, setState.state_val);
+    			SimObject src = obj.getSourceSimObject();
+    			if(src != null && src instanceof ISimStateful){
+    				((ISimStateful)src).setState(setState.state_name, setState.state_val);
+    			}
     		}
     	}
     }

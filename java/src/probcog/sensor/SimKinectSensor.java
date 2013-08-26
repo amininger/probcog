@@ -21,10 +21,10 @@ public class SimKinectSensor implements Sensor
 {
 	public class SimPixel{
 		public SimObject target;
-		public double[] pixelVal;
+		public double[] point;
 		public SimPixel(){
 			target = null;
-			pixelVal = new double[4];
+			point = new double[4];
 		}
 	}
 	
@@ -208,7 +208,7 @@ public class SimKinectSensor implements Sensor
                   (g & 0xff) << 8 |
                   (r & 0xff) << 16;
         
-        pixel.pixelVal = xyzc;
+        pixel.point = xyzc;
         return pixel;
     }
 
@@ -216,7 +216,7 @@ public class SimKinectSensor implements Sensor
     public double[] getXYZRGB(int ix, int iy)
     {
     	SimPixel pixel = getPixel(ix, iy);
-    	return pixel.pixelVal;
+    	return pixel.point;
     }
 
     public int getWidth()
@@ -227,5 +227,10 @@ public class SimKinectSensor implements Sensor
     public int getHeight()
     {
         return HEIGHT;
+    }
+    
+    public boolean stashFrame()
+    {
+    	return true;
     }
 }

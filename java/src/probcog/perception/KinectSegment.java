@@ -8,13 +8,15 @@ import java.util.HashMap;
 import probcog.arm.ArmStatus;
 import probcog.sensor.KinectSensor;
 import probcog.sensor.Sensor;
+import probcog.sensor.SimKinectSensor;
 import probcog.util.Util;
 import april.config.Config;
 import april.jmat.LinAlg;
 import april.jmat.geom.GLine3D;
+import april.sim.SimWorld;
 import april.util.UnionFindSimple;
 
-public class KinectSegment
+public class KinectSegment implements Segmenter
 {
     final static double COLOR_THRESH = .02;//30;
     final static double DISTANCE_THRESH = 0.01;
@@ -28,7 +30,7 @@ public class KinectSegment
     private int height, width;
 
     private ArrayList<Sensor> sensors = new ArrayList<Sensor>();
-    private KinectSensor kinect;
+    private Sensor kinect;
     private ArmStatus arm;
     private double baseHeight, wristHeight;
     private ArrayList<Double> armWidths;
@@ -42,13 +44,23 @@ public class KinectSegment
 
     public KinectSegment(Config config_) throws IOException
     {
+    	this(config_, null);
+    }
+    
+    public KinectSegment(Config config_, SimWorld world) throws IOException
+    {
+    	// Get stuff ready for moving arms
         arm = new ArmStatus(config_);
         baseHeight = arm.baseHeight;
         wristHeight = arm.wristHeight;
         armWidths = arm.getArmSegmentWidths();
 
         points = new ArrayList<double[]>();
-        kinect = new KinectSensor(config_);
+        if(world == null){
+            kinect = new KinectSensor(config_);
+        } else {
+        	kinect = new SimKinectSensor(world);
+        }
 
         sensors.add(kinect);    // XXX
     }
