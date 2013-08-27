@@ -541,7 +541,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                     		Obj selectedObject = worldState.get(selectedId);
                             double[] xyz = LinAlg.resize(LinAlg.matrixToXyzrpy(selectedObject.getPoseMatrix()), 3);
                             double br = Math.abs(selectedObject.getShape().getBoundingRadius());
-                            animation = new SelectionAnimation(xyz, br*1.2);
+                            //animation = new SelectionAnimation(xyz, br*1.2);
+                            animation = new SelectionAnimation(selectedObject);
                 		}
                 	}
                     // XXX -- DIE SENSABLES - might want to reconsider later
