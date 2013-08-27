@@ -12,7 +12,7 @@ public class SelectionAnimation implements VisObject
     double[][] bbox;    // XXX Old bbox. Eventual replacement in other branch.
 
     // Animation
-    int topColor = 0x55ffffff;    // translucent white
+    int topColor = 0x33ffffff;    // translucent white
     int botColor = 0x00ffffff;
     int color = botColor;
     static final double TARGET_TIME = 1;    // [s]
