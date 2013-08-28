@@ -1,47 +1,41 @@
-"probcog.vis.SimLocation"
+"probcog.sim.SimLocation"
 {
-	vec 3
-	.2 .2 0
-	vec 3
-	.2 .2 0.008
-	stove
-  	ivec 3
-	0 0 255
-	2
-	door=closed,open
-	heat=off,on
-}
-"probcog.vis.SimLocation"
-{
-	vec 3
-	-.2 .2 0
-	vec 3
-	.2 .2 0.008
-	pantry
-  	ivec 3
-	255 0 0
+	vec 6
+	0.2 0.2 0.0 0.0 0.0 0.0
+	0.1
+	vec 4
+	0.0 0.0 1.0 1.0
 	1
-	door=open,closed
+	door=closed,open
+	pantry
 }
-"probcog.vis.SimLocation"
+"probcog.sim.SimLocation"
 {
-	vec 3
-	.2 -.2 0
-	vec 3
-	.2 .2 0.008
+	vec 6
+	0.2 -0.2 0.0 0.0 0.0 0.0
+	0.1
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
 	table
-  	ivec 3
-	0 255 0
-	0
 }
-"probcog.vis.SimLocation"
+"probcog.sim.SimLocation"
 {
-	vec 3
-	-.2 -.2 0
-	vec 3
-	.2 .2 0.008
-	garbage
-  	ivec 3
-	255 255 0
+	vec 6
+	-0.2 0.2 0.0 0.0 0.0 0.0
+	0.1
+	vec 4
+	1.0 0.0 0.0 1.0
 	0
+	garbage
+}
+"probcog.sim.SimStove"
+{
+	vec 6
+	-0.2 -0.2 0.0 0.0 0.0 0.0
+	0.1
+	vec 4
+	1.0 1.0 0.0 1.0
+	0
+	stove
 }
