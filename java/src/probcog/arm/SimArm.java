@@ -214,6 +214,7 @@ public class SimArm implements LCMSubscriber
                                 }
                             }
 
+                            // XXX: AM: Hack so that grabbed objects aren't viewed (only in perfect segmentation)
                             if(grabbed instanceof SimObjectPC){
                             	((SimObjectPC)grabbed).setVisible(true);
                             }
@@ -244,7 +245,15 @@ public class SimArm implements LCMSubscriber
                     if (grabbed != null) {
                         double[][] currPose = arm.getGripperPose();
 
-                        grabbed.setPose(LinAlg.matrixAB(currPose, deltaGrabbed));
+                        double[][] objPose = LinAlg.matrixAB(currPose, deltaGrabbed);
+                        
+                        // XXX: AM: Hack so sim objects don't get rotated except along yaw
+                        double[] xyzrpy = LinAlg.matrixToXyzrpy(objPose);
+                        xyzrpy[3] = 0;
+                        xyzrpy[4] = 0;
+                        grabbed.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+                        
+                        // XXX: AM: Hack so that grabbed objects aren't viewed (only in perfect segmentation)
                         if(grabbed instanceof SimObjectPC){
                         	((SimObjectPC)grabbed).setVisible(false);
                         }
