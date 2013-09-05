@@ -116,7 +116,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         simulator = new ProbCogSimulator(opts, vw, vl, vc);
 
         // Initialize object tracker
-        tracker = new Tracker(config, opts.getBoolean("kinect"), simulator.getWorld());
+        tracker = new Tracker(config, opts.getBoolean("kinect"), opts.getBoolean("perfectseg"), simulator.getWorld());
 
         // XXX Is this how we always want to do this?
         // Spin up a virtual arm in sim world
@@ -727,6 +727,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         opts.addBoolean('k', "kinect", false, "Use a physical kinect");
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
         opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
+        opts.addBoolean('p', "perfectseg", false, "If true, perfect segmentation is done in simulation");
         opts.addString('\0', "backup", null, "Load from backup file");
 
         if (!opts.parse(args)) {

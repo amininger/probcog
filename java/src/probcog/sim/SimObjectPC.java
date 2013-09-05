@@ -21,6 +21,8 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     
     protected HashMap<String, String[]> possibleStates;
     protected HashMap<String, String> currentState;
+    
+    protected boolean visible = true;
 
     public SimObjectPC(SimWorld sw)
     {
@@ -36,6 +38,13 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     public void setPose(double T[][])
     {
         this.T = LinAlg.copy(T);
+    }
+    
+    public boolean getVisible(){
+    	return visible;
+    }
+    public void setVisible(boolean visible){
+    	this.visible = visible;
     }
 
     public abstract Shape getShape();

@@ -11,6 +11,7 @@ import april.util.*;
 
 // import probcog.sim.*;
 import probcog.lcmtypes.*;
+import probcog.sim.SimObjectPC;
 
 /** Simulates the movements of the robotic arm through the environment based
  *  on observed arm commands. Produces arm_status_t messages on the designated
@@ -213,6 +214,9 @@ public class SimArm implements LCMSubscriber
                                 }
                             }
 
+                            if(grabbed instanceof SimObjectPC){
+                            	((SimObjectPC)grabbed).setVisible(true);
+                            }
                             grabbed = null;
                         }
 
@@ -241,6 +245,9 @@ public class SimArm implements LCMSubscriber
                         double[][] currPose = arm.getGripperPose();
 
                         grabbed.setPose(LinAlg.matrixAB(currPose, deltaGrabbed));
+                        if(grabbed instanceof SimObjectPC){
+                        	((SimObjectPC)grabbed).setVisible(false);
+                        }
                     }
                 }
                 lastPose = arm.getGripperPose();

@@ -9,6 +9,7 @@ import probcog.sensor.Sensor;
 import probcog.sensor.SimKinectSensor;
 import probcog.sensor.SimKinectSensor.SimPixel;
 import probcog.sim.SimLocation;
+import probcog.sim.SimObjectPC;
 import april.config.Config;
 import april.sim.SimObject;
 import april.sim.SimWorld;
@@ -76,6 +77,12 @@ public class SimKinectSegment implements Segmenter
         // Turn the segmented point clouds into Obj's
     	ArrayList<Obj> segmentedObjs = new ArrayList<Obj>();
     	for(Map.Entry<SimObject, PointCloud> entry : pointClouds.entrySet()){
+    		if(entry.getValue().getPoints().size() == 0){
+    			continue;
+    		} else if(entry.getKey() instanceof SimObjectPC && 
+    				!((SimObjectPC)entry.getKey()).getVisible()){
+    			continue;
+    		}
     		Obj obj = new Obj(false, entry.getValue());
     		obj.setSourceSimObject(entry.getKey());
     		segmentedObjs.add(obj);

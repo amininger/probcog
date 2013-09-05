@@ -46,14 +46,12 @@ public class Tracker
     public Object stateLock;
     HashMap<Integer, Obj> worldState;
 
-    public Tracker(Config config_, Boolean physicalKinect, SimWorld world) throws IOException
+    public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException
     {
         this.world = world;
         worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(false);  // Debug off
-        
-        Boolean perfectSegmentation = true;
 
         if(physicalKinect) {
             segmenter = new KinectSegment(config_);
