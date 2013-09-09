@@ -5,7 +5,7 @@ import java.util.*;
 
 import april.jmat.*;
 import april.sim.SimObject;
-import april.sim.SphereShape;
+import april.sim.BoxShape;
 import april.sim.Shape;
 import april.vis.*;
 
@@ -72,9 +72,10 @@ public class Obj
         pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
         visible = true;
 
-        double maxDim = Math.max(bbox.lenxyz[0],
-                                 Math.max(bbox.lenxyz[1], bbox.lenxyz[2]));
-        shape = new SphereShape(maxDim);
+        //double maxDim = Math.max(bbox[1][0]-bbox[0][0],
+        //                         Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
+        //shape = new SphereShape(maxDim);
+		shape = new BoxShape(bbox.lenxyz[0], bbox.lenxyz[1], bbox.lenxyz[2]);
 
         int[] avgRGB = ptCloud.getAvgRGB();
         Color color = new Color(avgRGB[0], avgRGB[1], avgRGB[2]);
@@ -94,7 +95,7 @@ public class Obj
         centroid = new double[3];
 		pose = new double[6];
         visible = true;
-        shape = new SphereShape(.01);
+        shape = new BoxShape(.01, .01, .01);
         model = null;
         ptCloud = new PointCloud();
     }
@@ -122,9 +123,12 @@ public class Obj
         bbox = ptCloud.getBoundingBox();
         centroid = ptCloud.getCentroid();
         pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
-        double maxDim = Math.max(bbox.lenxyz[0],
-                                 Math.max(bbox.lenxyz[1], bbox.lenxyz[2]));
-        shape = new SphereShape(maxDim);
+
+        //double maxDim = Math.max(bbox[1][0]-bbox[0][0],
+        //                         Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
+        //shape = new SphereShape(maxDim);
+		shape = new BoxShape(bbox.lenxyz[0], bbox.lenxyz[1], bbox.lenxyz[2]);
+
 
         int[] avgRGB = ptCloud.getAvgRGB();
         Color color = new Color(avgRGB[0], avgRGB[1], avgRGB[2]);
