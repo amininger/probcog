@@ -23,11 +23,19 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     protected HashMap<String, String> currentState;
     
     protected boolean visible = true;
+    
+    protected int id;
+    protected static int nextID = 1;
 
     public SimObjectPC(SimWorld sw)
     {
     	possibleStates = new HashMap<String, String[]>();
     	currentState = new HashMap<String, String>();
+    	id = nextID++;
+    }
+    
+    public int getID(){
+    	return id;
     }
 
     public double[][] getPose()

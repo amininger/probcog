@@ -22,6 +22,7 @@ import probcog.lcmtypes.*;
 import probcog.sensor.*;
 import probcog.sim.ISimStateful;
 import probcog.sim.SimLocation;
+import probcog.sim.SimObjectPC;
 import probcog.util.*;
 
 public class Tracker
@@ -45,10 +46,13 @@ public class Tracker
     private SimWorld world;
     public Object stateLock;
     HashMap<Integer, Obj> worldState;
+    
+    private boolean perfectSegmentation;
 
     public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException
     {
         this.world = world;
+        this.perfectSegmentation = perfectSegmentation;
         worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(false);  // Debug off
@@ -92,6 +96,8 @@ public class Tracker
         ArrayList<Obj> soarObjects = getSoarObjects();
         ArrayList<Obj> visibleObjects = getVisibleObjects();
         ArrayList<Obj> previousFrame = new ArrayList<Obj>();
+        
+        
 
         // If we haven't started receiving messages from soar, use most recent frame
         for(Obj o : worldState.values()) {
@@ -103,6 +109,24 @@ public class Tracker
 
         synchronized (stateLock) {
             worldState = new HashMap<Integer, Obj>();
+            
+            // Perfect segmentation, relies on the ID's inherent in the source Sim objects
+            if(perfectSegmentation){
+            	for(Obj obj : visibleObjects){
+            		if(obj.getSourceSimObject() != null && obj.getSourceSimObject() instanceof SimObjectPC){
+            			SimObjectPC simObj = ((SimObjectPC)obj.getSourceSimObject());
+            			obj.setID(simObj.getID());
+            			worldState.put(obj.getID(), obj);
+            		}
+            	}
+            	
+            	ArrayList<Obj> imagined = createImaginedObjects(world, false);
+                for(Obj o : imagined) {
+                    worldState.put(o.getID(), o);
+                }
+                
+                return;
+            }
 
             // XXX - Need better matching code here.
             //
