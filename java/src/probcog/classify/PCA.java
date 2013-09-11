@@ -20,7 +20,7 @@ public class PCA
      */
     public static double getFeature(ArrayList<double[]> pixels, double[] start, double[] dir)
     {
-        double res = 8.0;
+        double res = 5.0;
         GridMap gm = GridMap.makeMeters(0, 0, 1, 1, 1.0/res, 0);
         for (double[] p: pixels) {
             gm.setValue(p[0], p[1], (byte)1);
@@ -48,13 +48,11 @@ public class PCA
 
     /** Modified get faetures method tossing out buffered image. Also, doesn't
      * do real PCA...*/
-    // XXX HACK
     public static ArrayList<Double> getFeatures(ArrayList<double[]> pixels, int numFeatures)
     {
 	    ArrayList<Double> features = new ArrayList<Double>();
 	    //features.add((proj1[1] - proj1[0])/(proj2[1] - proj2[0]));
-        // XXX Original version set 2 values. Up and down. I will also do left
-        // and right
+        // Original version set 2 values. Up and down. Now also do left/right
 	    for(int i = 0; i < 4; i++){
 	    	// Start at bottom-left or top-left
 	    	double[] start = new double[2];
