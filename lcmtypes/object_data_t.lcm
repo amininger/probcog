@@ -7,6 +7,10 @@ struct object_data_t
     int32_t num_cat;
     categorized_data_t cat_dat[num_cat];
 
-    double pos[6]; // xytrpy
-    double bbox[2][3];// Min max axis aligned, {{x0, y0, z0}, {x1, y1, z1}};
+    double pos[6]; // xyzrpy
+
+    // Bounding box.
+    double bbox_dim[3];         // Bounding box dimensions
+    double bbox_xyzrpy[6];      // Transformation of box centered at origin to
+                                // position in world
 }

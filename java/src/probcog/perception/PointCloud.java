@@ -5,10 +5,13 @@ import java.util.*;
 
 import april.jmat.*;
 
+import probcog.util.*;
+
 public class PointCloud
 {
     private ArrayList<double[]> pts;
     private double[] centroid;
+    private BoundingBox bbox;
 
     /** Initiallize a point cloud with an empty list of points. **/
     public PointCloud()
@@ -49,26 +52,12 @@ public class PointCloud
         return centroid;
     }
 
-    /** Calculate an axis-aligned bounding box of the points in the pointcloud.
-     *  @return an array of the form {{minX, minY, minZ}, {maxX, maxY, maxZ}}
-     **/
-    public double[][] getBoundingBox()
+    /** Compute the bounding box of the point cloud */
+    public BoundingBox getBoundingBox()
     {
-        double[][] bbox = new double[2][3];
-        double[] min = new double[]{Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE};
-        double[] max = new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE};
-        for(double[] p : pts){
-            for(int i=0; i<min.length; i++){
-                if(p[i]<min[i])
-                    min[i] = p[i];
-                if(p[i] > max[i])
-                    max[i] = p[i];
-            }
-        }
-
-        bbox[0] = min;
-        bbox[1] = max;
-        return bbox;
+        // Currently implementation uses minimal bounding boxes constrained to
+        // have one plane parallel to XY
+        return BoundingBox.getMinimalXY(pts);
     }
 
 

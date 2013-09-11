@@ -7,6 +7,8 @@ import java.util.*;
 import april.jmat.LinAlg;
 import april.util.*;
 
+import probcog.util.*;
+
 public class PCA
 {
     /** A new version of get feature. This one takes a start point and direction
@@ -14,10 +16,11 @@ public class PCA
      *  unit box already.) We quantize them to an arbitrary resolution and
      *  then sweep in direction until we hit a filled box. We return the
      *  sweep distance as the feature
+     *
      */
     public static double getFeature(ArrayList<double[]> pixels, double[] start, double[] dir)
     {
-        double res = 16.0;
+        double res = 8.0;
         GridMap gm = GridMap.makeMeters(0, 0, 1, 1, 1.0/res, 0);
         for (double[] p: pixels) {
             gm.setValue(p[0], p[1], (byte)1);
