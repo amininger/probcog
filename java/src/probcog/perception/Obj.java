@@ -31,7 +31,7 @@ public class Obj
 	private Shape shape;
 	private VisChain model;
     private double[] pose;
-    private boolean visible;
+    private boolean visible = true; // XXX I think an object is always visible when first made?
 
     public Obj(boolean assignID)
     {

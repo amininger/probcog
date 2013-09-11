@@ -4,6 +4,7 @@ import java.util.*;
 
 public class Classifications
 {
+    static final Label defaultLabel = new Label("unknown", 0.0);
     static public class Label implements Comparable<Label>
     {
         public String label;
@@ -62,7 +63,7 @@ public class Classifications
     public Label getBestLabel()
     {
         if (labels.size() < 1) {
-            return null;    // XXX Return a null label type?
+            return defaultLabel;
         }
 
         if (!sorted) {

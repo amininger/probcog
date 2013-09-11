@@ -565,6 +565,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 		labelString += String.format("%s%d\n", tf, ob.getID());
                     	if(ob.isVisible()){
                     		for(FeatureCategory cat : FeatureCategory.values()){
+                                if (cat == FeatureCategory.LOCATION)
+                                    continue;   // These don't matter
                                 Classifications cs = ob.getLabels(cat);
                         		labelString += String.format("%s%s:%.2f\n", tf,
                                                              cs.getBestLabel().label,

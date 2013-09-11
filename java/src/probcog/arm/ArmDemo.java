@@ -113,21 +113,23 @@ public class ArmDemo implements LCMSubscriber
             classypg.addString("color", "Color", "red");
             classypg.addString("shape", "Shape", "square");
             classypg.addString("size", "Size", "small");
+            classypg.addButtons("b_color", "Set Color");
+            classypg.addButtons("b_shape", "Set Shape");
+            classypg.addButtons("b_size", "Set Size");
             classypg.addListener(new ParameterListener() {
                 public void parameterChanged(ParameterGUI pg, String name) {
                     String label = null;
                     FeatureCategory cat = null;
-                    if (name.equals("color")) {
+                    if (name.equals("b_color")) {
                         label = pg.gs("color");
                         cat = FeatureCategory.COLOR;
-                    } else if (name.equals("shape")) {
+                    } else if (name.equals("b_shape")) {
                         label = pg.gs("shape");
                         cat = FeatureCategory.SHAPE;
-                    } else if (name.equals("size")) {
+                    } else if (name.equals("b_size")) {
                         label = pg.gs("size");
                         cat = FeatureCategory.SIZE;
                     } else {
-                        System.err.println("ERR: Unknown label type");
                         return;
                     }
 
@@ -147,6 +149,7 @@ public class ArmDemo implements LCMSubscriber
                         return;
                     }
 
+                    System.out.println("Added training - "+label);
                     tracker.addTraining(cat, obj.getFeatures(cat), label);
                 }
             });
