@@ -82,7 +82,7 @@ public class ClassifierManager
         colorKNN.setDataFile(colorDataFile);
         classifiers.put(FeatureCategory.COLOR, colorKNN);
 
-        GKNNClassifier shapeKNN = new GKNNClassifier(10, .3);      // XXX Untested parameter
+        GKNNClassifier shapeKNN = new GKNNClassifier(10, 1);      // XXX Untested parameter
         shapeKNN.setDataFile(shapeDataFile);
         classifiers.put(FeatureCategory.SHAPE, shapeKNN);
 

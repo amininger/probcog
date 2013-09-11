@@ -446,6 +446,7 @@ public class ArmController implements LCMSubscriber
 
                     gripper_status = arm.getStatus(5);
                     if (gripper_status != null) {
+                    	System.out.println("GRIPPER: " + gripper_status.load);
                         if (!Util.equals(gripper_status.load, 0, 0.01)) {
                             grabbedObject = toGrab;
                             curAction = ActionMode.WAIT;

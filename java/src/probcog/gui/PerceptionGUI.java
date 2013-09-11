@@ -146,6 +146,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // Subscribe to LCM
         lcm.subscribe("TRAINING_DATA", this);
         lcm.subscribe("ROBOT_COMMAND", this);
+        lcm.subscribe("GUI_COMMAND", this);
 
         this.setVisible(true);
         class SendObservationTask extends TimerTask{
@@ -255,6 +256,18 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 e.printStackTrace();
                 return;
             }
+        } else if(channel.equals("GUI_COMMAND")){
+        	try {
+        		perception_command_t command = new perception_command_t(ins);
+        		String[] args = command.command.split("=");
+        		if(args.length > 1){
+        			selectedId = Integer.parseInt(args[1]);
+                	animation = null;
+        		}
+        	} catch (IOException e){
+        		e.printStackTrace();
+        		return;
+        	}
         }
     }
 

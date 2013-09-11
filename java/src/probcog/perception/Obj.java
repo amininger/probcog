@@ -1,19 +1,24 @@
 package probcog.perception;
 
-import java.awt.*;
-import java.util.*;
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-import april.jmat.*;
-import april.sim.SimObject;
+import probcog.classify.Classifications;
+import probcog.classify.Features;
+import probcog.classify.Features.FeatureCategory;
+import probcog.lcmtypes.categorized_data_t;
+import probcog.lcmtypes.category_t;
+import probcog.sim.ISimStateful;
+import probcog.sim.SimLocation;
+import probcog.sim.SimObjectPC;
+import probcog.util.BoundingBox;
+import april.jmat.LinAlg;
 import april.sim.BoxShape;
 import april.sim.Shape;
-import april.vis.*;
-
-import probcog.classify.*;
-import probcog.classify.Features.FeatureCategory;
-import probcog.lcmtypes.*;
-import probcog.sim.ISimStateful;
-import probcog.util.*;
+import april.sim.SimObject;
+import april.vis.VisObject;
+import april.vis.VzMesh;
 
 public class Obj
 {
@@ -231,29 +236,34 @@ public class Obj
 
     public categorized_data_t[] getCategoryData()
     {
-        categorized_data_t[] cat_dat = new categorized_data_t[labels.size()];
-        int j = 0;
-        for (FeatureCategory fc: labels.keySet()) {
-            cat_dat[j] = new categorized_data_t();
-            cat_dat[j].cat = new category_t();
-            cat_dat[j].cat.cat = Features.getLCMCategory(fc);
-            Classifications cs = labels.get(fc);
-            cs.sortLabels();    // Just to be nice
-            cat_dat[j].len = cs.size();
-            cat_dat[j].confidence = new double[cat_dat[j].len];
-            cat_dat[j].label = new String[cat_dat[j].len];
+    	if( this.sourceSimObj != null && !(sourceSimObj instanceof SimLocation)){
+    		// XXX: AM: MAJOR HACK!!!!!!
+    		return ((SimObjectPC)this.sourceSimObj).getCategorizedData();
+    	} else {
+            categorized_data_t[] cat_dat = new categorized_data_t[labels.size()];
+            int j = 0;
+            for (FeatureCategory fc: labels.keySet()) {
+                cat_dat[j] = new categorized_data_t();
+                cat_dat[j].cat = new category_t();
+                cat_dat[j].cat.cat = Features.getLCMCategory(fc);
+                Classifications cs = labels.get(fc);
+                cs.sortLabels();    // Just to be nice
+                cat_dat[j].len = cs.size();
+                cat_dat[j].confidence = new double[cat_dat[j].len];
+                cat_dat[j].label = new String[cat_dat[j].len];
 
-            int k = 0;
-            for (Classifications.Label label: cs.labels) {
-                cat_dat[j].confidence[k] = label.weight;
-                cat_dat[j].label[k] = label.label;
-                k++;
+                int k = 0;
+                for (Classifications.Label label: cs.labels) {
+                    cat_dat[j].confidence[k] = label.weight;
+                    cat_dat[j].label[k] = label.label;
+                    k++;
+                }
+                
+               
+                j++;
             }
-            
-           
-            j++;
-        }
-        return cat_dat;
+            return cat_dat;
+    	}
     }
     
     public String[] getStates(){

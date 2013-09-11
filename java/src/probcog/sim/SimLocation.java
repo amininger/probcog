@@ -17,17 +17,11 @@ import probcog.util.*;
 public class SimLocation extends SimObjectPC 
 {
     private String name;
-    private int id = -1;
     protected static double[] lwh = new double[]{1, 1, .01};
 
     public SimLocation(SimWorld sw)
     {
     	super(sw);
-    }
-
-    public int getID()
-    {
-        return id;
     }
 
     public VisObject getVisObject()
@@ -71,7 +65,7 @@ public class SimLocation extends SimObjectPC
     public Obj getObj(boolean assignID)
     {
         Obj locObj;
-        if(assignID || id < 0) {
+        if(assignID && id < 0) {
             locObj = new Obj(assignID);
             id = locObj.getID();
         }

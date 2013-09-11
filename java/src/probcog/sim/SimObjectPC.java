@@ -2,9 +2,16 @@ package probcog.sim;
 
 import java.awt.Color;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import probcog.classify.Classifications;
+import probcog.classify.Features;
+import probcog.lcmtypes.categorized_data_t;
+import probcog.lcmtypes.category_t;
+import probcog.perception.Obj;
 import april.jmat.LinAlg;
 import april.sim.Shape;
 import april.sim.SimObject;
@@ -25,13 +32,14 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     protected boolean visible = true;
     
     protected int id;
-    protected static int nextID = 1;
+    
+    protected List<categorized_data_t> cat_dat = new ArrayList<categorized_data_t>();
 
     public SimObjectPC(SimWorld sw)
     {
     	possibleStates = new HashMap<String, String[]>();
     	currentState = new HashMap<String, String>();
-    	id = nextID++;
+    	id = Obj.nextID();
     }
     
     public int getID(){
@@ -92,10 +100,35 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
 		return states;
 	}
 	
+	public categorized_data_t[] getCategorizedData(){
+		categorized_data_t[] cat_dat_a = new categorized_data_t[cat_dat.size()];
+		for(int i = 0; i < cat_dat.size(); i++){
+			cat_dat_a[i] = cat_dat.get(i);
+		}
+		return cat_dat_a;
+	}
+	
 	public void addNewState(String stateName, String[] possibleValues){
 		if(possibleValues.length == 0){
 			return;
 		}
+		if(stateName.equals("color") || stateName.equals("shape") || stateName.equals("size")){
+			categorized_data_t cd = new categorized_data_t();
+			cd.cat = new category_t();
+			if(stateName.equals("color")){
+				cd.cat.cat = category_t.CAT_COLOR;
+			} else if(stateName.equals("shape")){
+				cd.cat.cat = category_t.CAT_SHAPE;
+			} else {
+				cd.cat.cat = category_t.CAT_SIZE;
+			}
+			cd.len = 1;
+			cd.confidence = new double[]{1};
+			cd.label = new String[]{possibleValues[0]};
+			cat_dat.add(cd);
+			return;
+		}
+		
 		stateName = stateName.toLowerCase();
 		for(int i = 0; i < possibleValues.length; i++){
 			possibleValues[i] = possibleValues[i].toLowerCase();

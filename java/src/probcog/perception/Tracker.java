@@ -340,6 +340,25 @@ public class Tracker
 
         return od;
     }
+    
+    private void handlePerceptionCommand(perception_command_t command){
+    	if(command.command.toUpperCase().equals("SAVE_CLASSIFIERS")){
+    		try {
+        		classyManager.writeState("default.cls");  
+			} catch (IOException e) {
+				e.printStackTrace();
+			}  		
+    	} else if(command.command.toUpperCase().equals("LOAD_CLASSIFIERS")){
+    		try {
+				classyManager.readState("default.cls");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	} else if(command.command.toUpperCase().equals("CLEAR_CLASSIFIERS")){
+    		classyManager.clearData();
+    	}
+    
+    }
 
     // === Methods for interacting with the sensor(s) attached to the system === //
     // XXX This is kind of weird
@@ -375,6 +394,7 @@ public class Tracker
             lcm.subscribe("SOAR_OBJECTS", this);
             lcm.subscribe("ROBOT_COMMAND", this);
             lcm.subscribe("SET_STATE_COMMAND", this);
+            lcm.subscribe("PERCEPTION_COMMAND", this);
         }
 
         public void run()
@@ -409,6 +429,9 @@ public class Tracker
             } else if(channel.equals("SET_STATE_COMMAND")){
             	set_state_command_t setState = new set_state_command_t(ins);
             	processSetStateCommand(setState);
+            } else if(channel.equals("PERCEPTION_COMMAND")){
+            	perception_command_t command = new perception_command_t(ins);
+            	handlePerceptionCommand(command);
             }
         }
     }
