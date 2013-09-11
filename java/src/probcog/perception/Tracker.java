@@ -45,6 +45,11 @@ public class Tracker
     public Object stateLock;
     HashMap<Integer, Obj> worldState;
 
+    public double fps = 0;
+    ArrayList<Double> frameTimes = new ArrayList<Double>();
+    int frameIdx = 0;
+    final int frameTotal = 10;
+
     public Tracker(Config config_, Boolean physicalKinect, SimWorld world) throws IOException
     {
         this.world = world;
@@ -85,6 +90,7 @@ public class Tracker
 
     public void compareObjects()
     {
+        Tic tic = new Tic();
         ArrayList<Obj> soarObjects = getSoarObjects();
         ArrayList<Obj> visibleObjects = getVisibleObjects();
         ArrayList<Obj> previousFrame = new ArrayList<Obj>();
@@ -169,6 +175,26 @@ public class Tracker
                 worldState.put(o.getID(), o);
             }
         }
+        double time = tic.toc();
+        if (frameTimes.size() < frameTotal) {
+            frameTimes.add(time);
+        } else {
+            frameTimes.set(frameIdx, time);
+            frameIdx = (frameIdx+1)%frameTotal;
+        }
+        calcFPS();
+    }
+
+    private void calcFPS()
+    {
+        double sum = 0;
+        for (Double time: frameTimes)
+        {
+            sum += time;
+        }
+        sum /= frameTimes.size();
+
+        fps = 1.0/sum;
     }
 
 

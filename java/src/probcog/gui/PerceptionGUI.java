@@ -519,6 +519,19 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 	vw.getBuffer("selection").clear();
                 }
 
+                // Render sensor pipeline FPS.
+                Formatter f = new Formatter();
+                f.format("<<monospaced-128>>SENSOR FPS: %3.2f\n", tracker.fps);
+                VzText fpsText = new VzText(VzText.ANCHOR.TOP_LEFT,
+                                            f.toString());
+                VisChain fpsChain = new VisChain(LinAlg.scale(0.1),
+                                                 fpsText);
+                VisPixCoords sensorFPS = new VisPixCoords(VisPixCoords.ORIGIN.TOP_LEFT,
+                                                          fpsChain);
+                VisWorld.Buffer fpsBuffer = vw.getBuffer("sensor-fps");
+                fpsBuffer.addBack(sensorFPS);
+                fpsBuffer.swap();
+
 
                 // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
             	CameraPosition camera = vl.cameraManager.getCameraTarget();
