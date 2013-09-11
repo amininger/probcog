@@ -105,10 +105,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         controller = new ArmController(config);
         arm = new ArmStatus(config);
 
-        if (opts.getBoolean("debug")) {
-            ArmDemo demo = new ArmDemo(config);
-        }
-
         // Initialize sensable manager
         //sensableManager = SensableManager.getSingleton();
 
@@ -132,6 +128,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         } else {
             SimArm simArm = new SimArm(config, simulator.getWorld());
         }
+
+        if (opts.getBoolean("debug")) {
+            ArmDemo demo = new ArmDemo(config, tracker);
+        }
+
 
         // Initialize the JMenuBar
         createMenuBar();
