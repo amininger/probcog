@@ -39,11 +39,11 @@ public class Obj
 	private Shape shape;
 	private VisObject model;
     private double[] pose;
-    private boolean visible;
     
     // If the object was created from a simulated object,
     //   This is the backwards pointer
     private SimObject sourceSimObj = null;
+    private boolean visible = true; // XXX I think an object is always visible when first made?
 
     public Obj(boolean assignID)
     {
@@ -80,7 +80,9 @@ public class Obj
         //double maxDim = Math.max(bbox[1][0]-bbox[0][0],
         //                         Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
         //shape = new SphereShape(maxDim);
-		shape = new BoxShape(bbox.lenxyz[0], bbox.lenxyz[1], bbox.lenxyz[2]);
+        shape = new BoxShape(bbox.lenxyz[0],
+                             bbox.lenxyz[1],
+                             bbox.lenxyz[2]);
 
         int[] avgRGB = ptCloud.getAvgRGB();
         Color color = new Color(avgRGB[0], avgRGB[1], avgRGB[2]);
@@ -129,11 +131,11 @@ public class Obj
         centroid = ptCloud.getCentroid();
         pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
 
-        //double maxDim = Math.max(bbox[1][0]-bbox[0][0],
-        //                         Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
-        //shape = new SphereShape(maxDim);
 		shape = new BoxShape(bbox.lenxyz[0], bbox.lenxyz[1], bbox.lenxyz[2]);
 
+        shape = new BoxShape(bbox.lenxyz[0],
+                             bbox.lenxyz[1],
+                             bbox.lenxyz[2]);
 
         int[] avgRGB = ptCloud.getAvgRGB();
         Color color = new Color(avgRGB[0], avgRGB[1], avgRGB[2]);

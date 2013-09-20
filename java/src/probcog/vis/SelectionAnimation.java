@@ -6,11 +6,11 @@ import april.jmat.*;
 import april.vis.*;
 
 import probcog.perception.Obj;
-import probcog.util.BoundingBox;
+import probcog.util.*;
 
 public class SelectionAnimation implements VisObject
 {
-    BoundingBox bbox;    // XXX Old bbox. Eventual replacement in other branch.
+    BoundingBox bbox;
 
     // Animation
     int topColor = 0x33ffffff;    // translucent white
@@ -56,9 +56,12 @@ public class SelectionAnimation implements VisObject
 
     public void render(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GL gl)
     {
-        VzBox box = new VzBox(bbox.lenxyz[0]+0.01, bbox.lenxyz[1]+0.01, bbox.lenxyz[2]+0.01,
+        VzBox box = new VzBox(bbox.lenxyz[0]+0.01,
+                              bbox.lenxyz[1]+0.01,
+                              bbox.lenxyz[2]+0.01,
                               new VzMesh.Style(new Color(color, true)));
-        VisChain vch = new VisChain(LinAlg.xyzrpyToMatrix(bbox.xyzrpy), box);
+        VisChain vch = new VisChain(LinAlg.xyzrpyToMatrix(bbox.xyzrpy),
+                                    box);
         vch.render(vc, vl, rinfo, gl);
     }
 }

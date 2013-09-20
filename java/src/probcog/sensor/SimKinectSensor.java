@@ -3,6 +3,9 @@ package probcog.sensor;
 import java.awt.*;
 import java.awt.image.*;
 import javax.swing.*;
+
+import probcog.sim.SimObjectPC;
+
 import java.util.*;
 
 import april.jmat.*;
@@ -29,7 +32,7 @@ public class SimKinectSensor implements Sensor
 	}
 	
     // Sim Kinect parameters
-    public static final int WIDTH = 320;
+    public static final int WIDTH = (int)(240);
     public static final int HEIGHT = (int)(WIDTH*.75);
     public static final double HFOV = 57.0;
     public static final double VFOV = 43.0;
@@ -169,6 +172,10 @@ public class SimKinectSensor implements Sensor
         SimObject minObj = null;
         synchronized (sw) {
             for (SimObject obj: sw.objects) {
+            	if(obj instanceof SimObjectPC && ((SimObjectPC)obj).getVisible() == false){
+            		// Ignore objects that aren't visible
+            		continue;
+            	}
                 double dist = Collisions.collisionDistance(ray.getSource(),
                                                            ray.getDir(),
                                                            obj.getShape(),

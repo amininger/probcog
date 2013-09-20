@@ -50,9 +50,15 @@ public class Tracker
     private boolean perfectSegmentation;
     public static boolean SHOW_TIMERS = false;
     
+    public double fps = 0;
+    ArrayList<Double> frameTimes = new ArrayList<Double>();
+    int frameIdx = 0;
+    final int frameTotal = 10;
+    
 
-    public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException
-    {
+    public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException{
+	    
+
         this.world = world;
         this.perfectSegmentation = perfectSegmentation;
         worldState = new HashMap<Integer, Obj>();
@@ -95,6 +101,7 @@ public class Tracker
 
     public void compareObjects()
     {
+        Tic tic = new Tic();
     	long time = TimeUtil.utime();
     	
     	// Get Soar Objects
@@ -220,6 +227,26 @@ public class Tracker
             	time = TimeUtil.utime();
             }
         }
+        double frameTime = tic.toc();
+        if (frameTimes.size() < frameTotal) {
+            frameTimes.add(frameTime);
+        } else {
+            frameTimes.set(frameIdx, frameTime);
+            frameIdx = (frameIdx+1)%frameTotal;
+        }
+        calcFPS();
+    }
+
+    private void calcFPS()
+    {
+        double sum = 0;
+        for (Double time: frameTimes)
+        {
+            sum += time;
+        }
+        sum /= frameTimes.size();
+
+        fps = 1.0/sum;
     }
 
 
