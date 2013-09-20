@@ -49,7 +49,7 @@ public class SimLocation extends SimObjectPC
 
     public Shape getShape()
     {
-    	return new BoxShape(LinAlg.scale(lwh, scale));
+    	return new BoxShape(LinAlg.scale(lwh, scale*2));
     }
 
     public void setName(String name)
@@ -77,7 +77,7 @@ public class SimLocation extends SimObjectPC
 
         locObj.setPose(pose);
         locObj.setCentroid(new double[]{pose[0], pose[1], pose[2]});
-        locObj.setBoundingBox(new BoundingBox(LinAlg.scale(lwh, scale), pose));
+        locObj.setBoundingBox(new BoundingBox(LinAlg.scale(lwh, scale * 2), pose));
 
         locObj.setVisObject(getVisObject());
         locObj.setShape(getShape());

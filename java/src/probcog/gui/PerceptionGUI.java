@@ -24,6 +24,7 @@ import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
+import probcog.sim.SimLocation;
 import probcog.util.*;
 import probcog.vis.*;
 
@@ -605,6 +606,10 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 		labelString += String.format("%s%d\n", tf, ob.getID());
                 		boolean hasLabel = false;
                     	if(ob.isVisible()){
+                    		if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimLocation){
+                    			continue;
+                    		}
+                    		
                     		for(FeatureCategory cat : FeatureCategory.values()){
                                 if (cat == FeatureCategory.LOCATION)
                                     continue;   // These don't matter
@@ -688,6 +693,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         		String labelString = String.format("%s%d\n", tf, obj.getID());
         		VzText text = new VzText(labelString);
         		double[] textLoc = new double[]{bbox.xyzrpy[0], bbox.xyzrpy[1], bbox.xyzrpy[2]};
+        		textLoc[0] -= bbox.lenxyz[0] * .4f;
+        		textLoc[1] -= bbox.lenxyz[1] * .4f;
+        		textLoc[2] += bbox.lenxyz[2] * .55f;
         		soarTextBuffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.002), text));
     		}
     	}
