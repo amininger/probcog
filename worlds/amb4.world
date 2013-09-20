@@ -49,7 +49,7 @@
   	3
 	color=color-red
 	shape=shape-square
-	size=size-medium
+	size=size-large
 	vec 3
 	1 1 1
 }
@@ -63,7 +63,7 @@
 	3
 	color=color-blue
 	shape=shape-sphere
-	size=size-big
+	size=size-large
 }
 "probcog.sim.SimArchPC"
 {
@@ -75,7 +75,7 @@
   	3
 	color=color-green
 	shape=shape-arch
-	size=size-big
+	size=size-large
 }
 "probcog.sim.SimBoxPC"
 {
@@ -101,7 +101,7 @@
 	3
 	color=color-blue
 	shape=shape-sphere
-	size=size-big
+	size=size-medium
 }
 "probcog.sim.SimArchPC"
 {
@@ -113,5 +113,5 @@
   	3
 	color=color-green
 	shape=shape-arch
-	size=size-big
+	size=size-medium
 }

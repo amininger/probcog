@@ -48,6 +48,8 @@ public class Tracker
     HashMap<Integer, Obj> worldState;
     
     private boolean perfectSegmentation;
+    public static boolean SHOW_TIMERS = false;
+    
 
     public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException
     {
@@ -93,12 +95,25 @@ public class Tracker
 
     public void compareObjects()
     {
+    	long time = TimeUtil.utime();
+    	
+    	// Get Soar Objects
         ArrayList<Obj> soarObjects = getSoarObjects();
+        if(SHOW_TIMERS){
+        	System.out.println("  GET SOAR OBJECTS: " + (TimeUtil.utime() - time));
+        	time = TimeUtil.utime();
+        	System.out.println("  GET VISIBLE OBJECTS");
+        }
+        
+        // Get Visible Objects
         ArrayList<Obj> visibleObjects = getVisibleObjects();
+        if(SHOW_TIMERS){
+        	System.out.println("  GET VISIBLE OBJECTS: " + (TimeUtil.utime() - time));
+        	time = TimeUtil.utime();
+        }
+        
         ArrayList<Obj> previousFrame = new ArrayList<Obj>();
         
-        
-
         // If we haven't started receiving messages from soar, use most recent frame
         for(Obj o : worldState.values()) {
             previousFrame.add(o);
@@ -124,7 +139,11 @@ public class Tracker
                 for(Obj o : imagined) {
                     worldState.put(o.getID(), o);
                 }
-                
+
+                if(SHOW_TIMERS){
+                	System.out.println("  TRACKING: " + (TimeUtil.utime() - time));
+                	time = TimeUtil.utime();
+                }
                 return;
             }
 
@@ -196,6 +215,10 @@ public class Tracker
             for(Obj o : imagined) {
                 worldState.put(o.getID(), o);
             }
+            if(SHOW_TIMERS){
+            	System.out.println("  TRACKING: " + (TimeUtil.utime() - time));
+            	time = TimeUtil.utime();
+            }
         }
     }
 
@@ -207,9 +230,17 @@ public class Tracker
      **/
     private ArrayList<Obj> getVisibleObjects()
     {
+    	long time = TimeUtil.utime();
         ArrayList<Obj> visibleObjects = segmenter.getSegmentedObjects();
+        if(SHOW_TIMERS){
+        	System.out.println("    SEGMENTATION: " + (TimeUtil.utime() - time));
+        	time = TimeUtil.utime();
+        }
         for(Obj obj : visibleObjects){
         	obj.addAllClassifications(classyManager.classifyAll(obj));
+        }
+        if(SHOW_TIMERS){
+        	System.out.println("    CLASSIFICATION: " + (TimeUtil.utime() - time));
         }
         return visibleObjects;
     }
@@ -442,6 +473,11 @@ public class Tracker
         public void run()
         {
             while (true) {
+            	long startTime = TimeUtil.utime();
+            	if(SHOW_TIMERS){
+            		System.out.println("------------------------------");
+            		System.out.println("TRACKER");
+            	}
                 compareObjects();
                 HashMap<Integer, Obj> objs = getWorldState();
                 ArrayList<Obj> objsList = new ArrayList<Obj>();
@@ -449,6 +485,9 @@ public class Tracker
                     objsList.add(o);
                 synchronized (armLock) {
                     armInterpreter.updateWorld(objsList);
+                }
+                if(SHOW_TIMERS){
+                    System.out.println("TRACKER: " + (TimeUtil.utime() - startTime));
                 }
 
                 TimeUtil.sleep(1000/30);

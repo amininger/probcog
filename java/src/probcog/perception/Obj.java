@@ -236,34 +236,29 @@ public class Obj
 
     public categorized_data_t[] getCategoryData()
     {
-    	if( this.sourceSimObj != null && !(sourceSimObj instanceof SimLocation)){
-    		// XXX: AM: MAJOR HACK!!!!!!
-    		return ((SimObjectPC)this.sourceSimObj).getCategorizedData();
-    	} else {
-            categorized_data_t[] cat_dat = new categorized_data_t[labels.size()];
-            int j = 0;
-            for (FeatureCategory fc: labels.keySet()) {
-                cat_dat[j] = new categorized_data_t();
-                cat_dat[j].cat = new category_t();
-                cat_dat[j].cat.cat = Features.getLCMCategory(fc);
-                Classifications cs = labels.get(fc);
-                cs.sortLabels();    // Just to be nice
-                cat_dat[j].len = cs.size();
-                cat_dat[j].confidence = new double[cat_dat[j].len];
-                cat_dat[j].label = new String[cat_dat[j].len];
+        categorized_data_t[] cat_dat = new categorized_data_t[labels.size()];
+        int j = 0;
+        for (FeatureCategory fc: labels.keySet()) {
+            cat_dat[j] = new categorized_data_t();
+            cat_dat[j].cat = new category_t();
+            cat_dat[j].cat.cat = Features.getLCMCategory(fc);
+            Classifications cs = labels.get(fc);
+            cs.sortLabels();    // Just to be nice
+            cat_dat[j].len = cs.size();
+            cat_dat[j].confidence = new double[cat_dat[j].len];
+            cat_dat[j].label = new String[cat_dat[j].len];
 
-                int k = 0;
-                for (Classifications.Label label: cs.labels) {
-                    cat_dat[j].confidence[k] = label.weight;
-                    cat_dat[j].label[k] = label.label;
-                    k++;
-                }
-                
-               
-                j++;
+            int k = 0;
+            for (Classifications.Label label: cs.labels) {
+                cat_dat[j].confidence[k] = label.weight;
+                cat_dat[j].label[k] = label.label;
+                k++;
             }
-            return cat_dat;
-    	}
+            
+           
+            j++;
+        }
+        return cat_dat;
     }
     
     public String[] getStates(){
