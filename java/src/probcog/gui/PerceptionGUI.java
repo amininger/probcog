@@ -2,6 +2,7 @@ package probcog.gui;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import javax.swing.*;
 import java.text.*;
@@ -25,6 +26,7 @@ import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
 import probcog.sim.SimLocation;
+import probcog.sim.SimObjectPC;
 import probcog.util.*;
 import probcog.vis.*;
 
@@ -498,16 +500,20 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 		Obj ob = (Obj)selectedObject;
                 		switch(clickType){
                 		case CHANGE_ID:
-                			//if(obj.getInfo().createdFrom != null){  XXX - Not sure what this was doing...
-                            ob.setID(Obj.nextID());
-                                //}
+                			if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
+                        		SimObjectPC simObj = ((SimObjectPC)ob.getSourceSimObject());
+                        		simObj.setID(Obj.nextID());
+                        	}
                 			break;
                         case SELECT:
                         	animation = null;
                         	selectedId = ob.getID();
                         	break;
                         case VISIBLE:
-                    		ob.setVisible(!ob.isVisible());
+                        	if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
+                        		SimObjectPC simObj = ((SimObjectPC)ob.getSourceSimObject());
+                        		simObj.setVisible(!simObj.getVisible());
+                        	}
                         	break;
                         }
                 	}
@@ -606,8 +612,12 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 		labelString += String.format("%s%d\n", tf, ob.getID());
                 		boolean hasLabel = false;
                     	if(ob.isVisible()){
-                    		if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimLocation){
-                    			continue;
+                    		if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
+                    			// Skip locations and not visible objects
+                    			SimObjectPC simObj = ((SimObjectPC)ob.getSourceSimObject());
+                    			if(simObj instanceof SimLocation || simObj.getVisible() == false){
+                        			continue;
+                    			}
                     		}
                     		
                     		for(FeatureCategory cat : FeatureCategory.values()){
@@ -633,6 +643,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 textBuffer.swap();
 
                 // ==========================================================
+//                BufferedImage image = ((SimKinectSensor)tracker.getSensors().get(0)).getImage();
+//                VisWorld.Buffer imageBuffer = vw.getBuffer("image");
+//                imageBuffer.addBack(new VisChain(LinAlg.translate(new double[]{0, 0, .1}), faceCamera, LinAlg.scale(.001f), new VzImage(image)));
+//                imageBuffer.swap();
+                
 
                 // Object drawing
                 drawObjects();
@@ -727,17 +742,12 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     {
     	synchronized(tracker.stateLock){
 			for(Obj ob : tracker.getWorldState().values()){
-                // XXX - Pretty sure the below is all related to sim objects - needs to be uncommented and fixed
-				// if(ob.getInfo().createdFrom != null){
-				// 	ISimBoltObject simObj = obj.getInfo().createdFrom;
-				// 	ArrayList<VisObject> visObjs = ShapeToVisObject.getVisObjects(simObj.getAboltShape(), new VzMesh.Style(simObj.getColor()));
-				// 	for(VisObject visObj : visObjs){
-    			// 		buffer.addBack(new VisChain(simObj.getPose(), visObj));
-				// 	}
-				// }
-                // else {
-	    			buffer.addBack(ob.getVisObject());
-                    //}
+                if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
+                	if(((SimObjectPC)ob.getSourceSimObject()).getVisible() == false){
+                		continue;
+                	}
+                }
+	    		buffer.addBack(ob.getVisObject());
 	    	}
     	}
 	}

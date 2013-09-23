@@ -12,10 +12,15 @@ import april.camera.*;
 import april.camera.models.*;
 import april.config.*;
 import april.jmat.*;
+import april.sim.SimObject;
 import april.util.*;
 import april.vis.*;
 
 import probcog.lcmtypes.*;
+import probcog.perception.PointCloud;
+import probcog.sensor.SimKinectSensor.SimPixel;
+import probcog.sim.SimLocation;
+import probcog.util.Util;
 
 /** Provides access to the frames taken by the kinect. Only
  *  keeps track of the most recently received frame from the
@@ -252,6 +257,10 @@ public class KinectSensor implements Sensor
     public double[][] getCameraXform()
     {
         return k2wXform_T;
+    }
+    
+    public ArrayList<double[]> getAllXYZRGB(){
+    	return Util.extractPoints(this);   	
     }
 
     /** Sensor interface to colored points */

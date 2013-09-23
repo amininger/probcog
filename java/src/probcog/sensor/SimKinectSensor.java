@@ -1,19 +1,31 @@
 package probcog.sensor;
 
-import java.awt.*;
-import java.awt.image.*;
-import javax.swing.*;
+import java.awt.Color;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
+import javax.swing.JFrame;
+
+import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
-
-import java.util.*;
-
-import april.jmat.*;
-import april.jmat.geom.*;
-import april.sim.*;
-import april.util.*;
-import april.vis.*;
+import april.jmat.LinAlg;
+import april.jmat.geom.GRay3D;
+import april.sim.Collisions;
+import april.sim.SimObject;
+import april.sim.SimWorld;
+import april.util.JImage;
+import april.util.TimeUtil;
+import april.vis.DefaultCameraManager;
 import april.vis.VisCameraManager.CameraPosition;
+import april.vis.VisCanvas;
+import april.vis.VisChain;
+import april.vis.VisLayer;
+import april.vis.VisWorld;
 
 /** Provides KinectSensor-like access to the 3D world. Can return
  *  colors and points for objects in the world. Points that do not
@@ -32,8 +44,10 @@ public class SimKinectSensor implements Sensor
 	}
 	
     // Sim Kinect parameters
-    public static final int WIDTH = (int)(240);
-    public static final int HEIGHT = (int)(WIDTH*.75);
+    private static final int NUM_SUBREGIONS = 12; // To increase/decrease the resolution I recommend tuning this parameter only
+    private static final int GRID_DEPTH = 3;
+    public static final int WIDTH = (int)(4*Math.pow(2, GRID_DEPTH) * NUM_SUBREGIONS);
+    public static final int HEIGHT = (int)(3*Math.pow(2, GRID_DEPTH) * NUM_SUBREGIONS);
     public static final double HFOV = 57.0;
     public static final double VFOV = 43.0;
 
@@ -142,6 +156,143 @@ public class SimKinectSensor implements Sensor
         return camMatrix;
     }
     
+    /*********
+     * scanRegions(boolean[][] higherGrid, int depth, int maxDepth, SimPixel[] pixels)
+     * 
+     * Iterates over each region specified by the given grid that are marked true
+     * For each region, it splits it into 4 subregions and scans each one
+     * If a region contains an object, it marks it for further scanning in the lowerGrid
+     * and recurses until the depth = 1 (lowest)
+     */
+    public void scanRegions(boolean[][] higherGrid, int depth, int maxDepth, SimPixel[] pixels){
+    	int numRows = higherGrid.length;
+    	int numCols = higherGrid[0].length;
+    	boolean[][] lowerGrid = new boolean[numRows*2][numCols*2];
+    	int subregionWidth = WIDTH/numCols/2;
+    	int subregionHeight = HEIGHT/numRows/2;
+    	Rectangle subregion = new Rectangle(0, 0, subregionWidth, subregionHeight);
+    	for(int r = 0; r < higherGrid.length; r++){
+    		for(int c = 0; c < higherGrid[0].length; c++){
+    			if(!higherGrid[r][c]){
+    				continue;
+    			}
+    			for(int i = 0; i < 2; i++){
+    				for(int j = 0; j < 2; j++){
+    					subregion.y = (2*r+i) * subregionHeight;
+    					subregion.x = (2*c+j) * subregionWidth;
+    					if(scanRegion(subregion, depth, maxDepth, pixels)){
+    						markRegionsToScan(lowerGrid, 2*r+i, 2*c+j);
+    					}
+    				}
+    			}
+    		}
+    	}
+    	if(depth > 1){
+    		scanRegions(lowerGrid, depth-1, maxDepth, pixels);
+    	} else {
+    		scanRemaining(lowerGrid, pixels);
+    	}
+    }
+    
+    /*********
+     * boolean scanRegion(Rectangle region, int depth, int maxDepth, SimPixel[] pixels)
+     * 
+     * Scans the given region on the screen (given in pixel coordinates) and populates the given pixels array
+     * with the results of the ray tracing
+     * It uses the depth and max depth to determine how coarse of a scan to do, 
+     * I.e. a depth of 1 means a fine scan, a depth of 4 is coarser
+     */
+    public boolean scanRegion(Rectangle region, int depth, int maxDepth, SimPixel[] pixels){
+    	boolean hitObject = false;
+    	int startX = region.x + (int)Math.pow(2, depth-1) - 1;
+    	int startY = region.y + (int)Math.pow(2, depth-1) - 1;
+    	int endX = region.x + region.width;
+    	int endY = region.y + region.height;
+    	int stride = (int)Math.pow(2, depth);
+    	//System.out.println("REG:" + startX + ", " + startY + ", " + endX + ", " + endY + ", " + stride);
+    	for(int x = startX; x < endX; x += stride){
+    		for(int y = startY; y < endY; y += stride){
+    			hitObject = hitObject | scanPoint(x, y, pixels);
+    		}
+    	}
+    	return hitObject;
+    }
+    
+    /*********
+     * void markRegionsToScan(boolean[][] grid, int row, int col)
+     * 
+     * Marks the given row/col in the grid as true, as well as all the neighbors (8-connected)
+     */
+    public void markRegionsToScan(boolean[][] grid, int row, int col){
+    	int numRows = grid.length;
+    	int numCols = grid[0].length;
+    	
+    	for(int r = row-1; r <= row+1; r++){
+    		for(int c = col-1; c <= col+1; c++){
+    			if(r >= 0 && c >= 0 && r < numRows && c < numCols){
+    				grid[r][c] = true;
+    			}
+    		}
+    	}
+    }
+    
+    /**********
+     * void scanRemaining(boolean[][] grid, SimPixel[] pixels)
+     * 
+     * This iterates over all regions marked as true in the given grid
+     * In each region, it iterates over all pixels and scans them if they have not yet been scanned
+     */
+    public void scanRemaining(boolean[][] grid, SimPixel[] pixels){
+    	int numRows = grid.length;
+    	int numCols = grid[0].length;
+    	int regionWidth = WIDTH/numCols;
+    	int regionHeight = HEIGHT/numCols;
+    	for(int r = 0, startY = 0; r < numRows; r++, startY += regionHeight){
+    		for(int c = 0, startX = 0; c < numCols; c++, startX += regionWidth){
+    			if(grid[r][c] == false){
+    				continue;
+    			}
+    			
+    			int endX = startX + regionWidth;
+    			int endY = startY + regionHeight;
+    			for(int x = startX; x < endX; x++){
+    				for(int y = startY; y < endY; y++){
+    					int i = y * WIDTH + x;
+    					if(pixels[i] == null){
+    						scanPoint(x, y, pixels);
+    					}
+    				}
+    			}
+    		}
+    	}
+    }
+
+    
+    
+    /**********
+     * boolean scanPoint(int px, int py, SimPixel[] pixels)
+     * 
+     * Scans the scene at the given point (in pixel space) using ray tracing from the simulated kinect
+     * If it hits an object, it adds it at the appropriate index in the supplied array and returns true
+     * If it does not hit anything, it returns false and puts an empty SimPixel in the array (target = null and point = zero)
+     */
+    int numScans = 0;
+    public boolean scanPoint(int px, int py, SimPixel[] pixels){
+		int i = py * WIDTH + px;
+		numScans++;
+		pixels[i] = getPixel(px, py);
+    	if(pixels[i].target == null){
+    		// Ray didn't hit anything
+    		//pixels[i].point = new double[4];
+    		return false;
+    	}
+    	if(pixels[i].target instanceof SimLocation){
+    		// We aren't segmenting sim locations
+    		return false;
+    	}
+		return true;
+    }
+    
     public SimPixel getPixel(int ix, int iy){
     	SimPixel pixel = new SimPixel();
     	
@@ -172,10 +323,6 @@ public class SimKinectSensor implements Sensor
         SimObject minObj = null;
         synchronized (sw) {
             for (SimObject obj: sw.objects) {
-            	if(obj instanceof SimObjectPC && ((SimObjectPC)obj).getVisible() == false){
-            		// Ignore objects that aren't visible
-            		continue;
-            	}
                 double dist = Collisions.collisionDistance(ray.getSource(),
                                                            ray.getDir(),
                                                            obj.getShape(),
@@ -203,7 +350,7 @@ public class SimKinectSensor implements Sensor
         // Compute the point in space we collide with the object at
         double[] xyzc = ray.getPoint(minDist);
         xyzc = LinAlg.resize(xyzc, 4);
-
+        
         // If the object in question supports a color query, assign it
         // a color. Otherwise, default to white.
         int idx = iy*WIDTH + ix;
@@ -225,6 +372,62 @@ public class SimKinectSensor implements Sensor
     	SimPixel pixel = getPixel(ix, iy);
     	return pixel.point;
     }
+    
+    public SimPixel[] getAllPixels(){
+    	SimPixel[] pixels = new SimPixel[WIDTH*HEIGHT];
+    	numScans = 0;    
+    	
+    	// AM: Optimization here, tries to do a coarse initial scan over the scene, only doing
+    	//      finer scans when an object is hit. see scanSceneSubset for more details
+    	// Empirical testing on the simulator shows a 8-10 times speedup
+    	int numRegions = NUM_SUBREGIONS;
+		boolean[][] grid = new boolean[numRegions][numRegions];
+		for(int r = 0; r < numRegions; r++){
+			for(int c = 0; c < numRegions; c++){
+				grid[r][c] = true;
+			}
+		}
+		
+    	boolean scanSubsets = true;
+    	if(scanSubsets){
+    		scanRegions(grid, GRID_DEPTH, GRID_DEPTH, pixels);
+    	} else {
+    		// Scan Whole Scene (very slow)
+    		scanRegions(grid, 1, 1, pixels);
+    	}
+    	
+    	return pixels;
+    }
+    
+    public BufferedImage getImage(){
+    	ArrayList<double[]> points = getAllXYZRGB();
+    	BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+    	for(int y = 0; y < HEIGHT; y++){
+    		for(int x= 0; x < WIDTH; x++){
+    			int loc = y*WIDTH + x;
+    			image.setRGB(x, y, (int)points.get(loc)[3]);
+    		}
+    	}
+    	return image;    	
+    }
+    
+    public ArrayList<double[]> getAllXYZRGB(){
+    	SimPixel[] pixels = getAllPixels();
+    	ArrayList<double[]> points = new ArrayList<double[]>();
+
+    	int i = 0;
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++, i++) {
+            	if(pixels[i] == null){
+            		points.add(new double[4]);
+            	} else {
+            		points.add(pixels[i].point);
+            	}
+            }
+        }
+    	return points;
+    }
+
 
     public int getWidth()
     {

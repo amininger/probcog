@@ -48,7 +48,7 @@ public class Tracker
     HashMap<Integer, Obj> worldState;
     
     private boolean perfectSegmentation;
-    public static boolean SHOW_TIMERS = false;
+    public static boolean SHOW_TIMERS = false;//true; //AM: if true then print statements are produced that show timing information
     
     public double fps = 0;
     ArrayList<Double> frameTimes = new ArrayList<Double>();
@@ -250,7 +250,7 @@ public class Tracker
     }
 
 
-    /** Returns a list of objects that the kinect sees on the table. The objects
+    /** Returns a list of objects : " + (TimeUtil.utime() - time))that the kinect sees on the table. The objects
      *  are returned as Obj's from the segmenter, and are passed to the
      *  classifiers. The resulting point clouds, their locations, and the
      *  classifications are returned.
@@ -258,17 +258,25 @@ public class Tracker
     private ArrayList<Obj> getVisibleObjects()
     {
     	long time = TimeUtil.utime();
+    	
+    	// Get points and segment to get visible objects
+    	if(SHOW_TIMERS){
+         	System.out.println("    POINT EXTRACTION + SEG");
+        }
         ArrayList<Obj> visibleObjects = segmenter.getSegmentedObjects();
         if(SHOW_TIMERS){
-        	System.out.println("    SEGMENTATION: " + (TimeUtil.utime() - time));
+        	System.out.println("    POINT EXTRACTION + SEG: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
         }
+        
+        // Classify all visible objects
         for(Obj obj : visibleObjects){
         	obj.addAllClassifications(classyManager.classifyAll(obj));
         }
         if(SHOW_TIMERS){
         	System.out.println("    CLASSIFICATION: " + (TimeUtil.utime() - time));
         }
+        
         return visibleObjects;
     }
 
@@ -374,8 +382,20 @@ public class Tracker
 
         int i = 0;
         synchronized (stateLock) {
-            od = new object_data_t[worldState.size()];
+        	int numObjects = 0;
+        	for(Obj ob : worldState.values()){
+        		SimObject simObj = ob.getSourceSimObject();
+        		if(simObj == null || !(simObj instanceof SimObjectPC) || ((SimObjectPC)simObj).getVisible()){
+        			numObjects++;
+        		}
+        	}
+            od = new object_data_t[numObjects];
             for (Obj ob: worldState.values()) {
+        		SimObject simObj = ob.getSourceSimObject();
+            	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
+            		continue;
+        		}
+            	
                 od[i] = new object_data_t();
                 od[i].utime = utime;
                 od[i].id = ob.getID();
