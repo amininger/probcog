@@ -44,6 +44,7 @@ public class Obj
     //   This is the backwards pointer
     private SimObject sourceSimObj = null;
     private boolean visible = true; // XXX I think an object is always visible when first made?
+    private boolean confirmed = false;
 
     public Obj(boolean assignID)
     {
@@ -107,6 +108,13 @@ public class Obj
         ptCloud = new PointCloud();
     }
 
+    public boolean isConfirmed(){
+    	return confirmed;
+    }
+    public void setConfirmed(boolean isConfirmed){
+    	confirmed = isConfirmed;
+    }
+    
     // SET AND GET CALLS
     public void setID(int id)
     {

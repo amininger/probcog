@@ -181,6 +181,7 @@ public class Tracker
 
                 if (matched) {
                     newObj.setID(minID);
+                    newObj.setConfirmed(true);
                 }
                 else {
                     if(previousFrame.size() > 0){
