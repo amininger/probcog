@@ -46,18 +46,18 @@ public class Tracker
     private SimWorld world;
     public Object stateLock;
     HashMap<Integer, Obj> worldState;
-    
+
     private boolean perfectSegmentation;
     public static boolean SHOW_TIMERS = false;//true; //AM: if true then print statements are produced that show timing information
-    
+
     public double fps = 0;
     ArrayList<Double> frameTimes = new ArrayList<Double>();
     int frameIdx = 0;
     final int frameTotal = 10;
-    
+
 
     public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException{
-	    
+
 
         this.world = world;
         this.perfectSegmentation = perfectSegmentation;
@@ -70,7 +70,7 @@ public class Tracker
         }
         else if(perfectSegmentation){
             segmenter = new SimKinectSegment(config_, world);
-        } 
+        }
         else {
         	segmenter = new KinectSegment(config_, world);
         }
@@ -103,7 +103,7 @@ public class Tracker
     {
         Tic tic = new Tic();
     	long time = TimeUtil.utime();
-    	
+
     	// Get Soar Objects
         ArrayList<Obj> soarObjects = getSoarObjects();
         if(SHOW_TIMERS){
@@ -111,16 +111,16 @@ public class Tracker
         	time = TimeUtil.utime();
         	System.out.println("  GET VISIBLE OBJECTS");
         }
-        
+
         // Get Visible Objects
         ArrayList<Obj> visibleObjects = getVisibleObjects();
         if(SHOW_TIMERS){
         	System.out.println("  GET VISIBLE OBJECTS: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
         }
-        
+
         ArrayList<Obj> previousFrame = new ArrayList<Obj>();
-        
+
         // If we haven't started receiving messages from soar, use most recent frame
         for(Obj o : worldState.values()) {
             previousFrame.add(o);
@@ -131,7 +131,7 @@ public class Tracker
 
         synchronized (stateLock) {
             worldState = new HashMap<Integer, Obj>();
-            
+
             // Perfect segmentation, relies on the ID's inherent in the source Sim objects
             if(perfectSegmentation){
             	for(Obj obj : visibleObjects){
@@ -141,7 +141,7 @@ public class Tracker
             			worldState.put(obj.getID(), obj);
             		}
             	}
-            	
+
             	ArrayList<Obj> imagined = createImaginedObjects(world, false);
                 for(Obj o : imagined) {
                     worldState.put(o.getID(), o);
@@ -258,7 +258,7 @@ public class Tracker
     private ArrayList<Obj> getVisibleObjects()
     {
     	long time = TimeUtil.utime();
-    	
+
     	// Get points and segment to get visible objects
     	if(SHOW_TIMERS){
          	System.out.println("    POINT EXTRACTION + SEG");
@@ -268,7 +268,7 @@ public class Tracker
         	System.out.println("    POINT EXTRACTION + SEG: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
         }
-        
+
         // Classify all visible objects
         for(Obj obj : visibleObjects){
         	obj.addAllClassifications(classyManager.classifyAll(obj));
@@ -276,7 +276,7 @@ public class Tracker
         if(SHOW_TIMERS){
         	System.out.println("    CLASSIFICATION: " + (TimeUtil.utime() - time));
         }
-        
+
         return visibleObjects;
     }
 
@@ -389,13 +389,54 @@ public class Tracker
         			numObjects++;
         		}
         	}
+
+            // XXX HACK HACK HACK HACK HACK HACK HACK HACK
+            double fudge = 0.010; // Just for you, James
+            ArrayList<Obj> objs = new ArrayList<Obj>(worldState.values());
+            for (i = 0; i < objs.size(); i++) {
+                Shape shape0 = objs.get(i).getShape();
+                BoundingBox bbox0 = objs.get(i).getBoundingBox();
+                double[] c0 = objs.get(i).getCentroid();
+                for (int j = i+1; j < objs.size(); j++) {
+                    Shape shape1 = objs.get(j).getShape();
+                    BoundingBox bbox1 = objs.get(j).getBoundingBox();
+                    double[] c1 = objs.get(j).getCentroid();
+
+                    if (Collisions.collision(shape0, LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
+                                             shape1, LinAlg.xyzrpyToMatrix(bbox1.xyzrpy)))
+                    {
+                        // Adjust zlens in bounding box based on separation
+                        // between centroids. Don't forget to update shape!
+                        double dz = Math.abs(c1[2]-c0[2]);
+
+                        // Don't do horizontally overlapping boxes
+                        if (dz < 0.01)
+                            continue;
+
+                        bbox0.lenxyz[2] = dz - fudge;
+                        bbox1.lenxyz[2] = dz - fudge;
+                        //objs.get(i).setBoundingBox(bbox0);
+                        //objs.get(j).setBoundingBox(bbox1);
+
+                        objs.get(i).setShape(new BoxShape(bbox0.lenxyz[0],
+                                                          bbox0.lenxyz[1],
+                                                          bbox0.lenxyz[2]));
+                        objs.get(j).setShape(new BoxShape(bbox1.lenxyz[0],
+                                                          bbox0.lenxyz[1],
+                                                          bbox0.lenxyz[2]));
+                    }
+                }
+            }
+            // =========== END HACK ======================
+
+            i = 0;
             od = new object_data_t[numObjects];
             for (Obj ob: worldState.values()) {
         		SimObject simObj = ob.getSourceSimObject();
             	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
             		continue;
         		}
-            	
+
                 od[i] = new object_data_t();
                 od[i].utime = utime;
                 od[i].id = ob.getID();
@@ -404,7 +445,7 @@ public class Tracker
                 BoundingBox bbox = ob.getBoundingBox();
                 od[i].bbox_dim = bbox.lenxyz;
                 od[i].bbox_xyzrpy = bbox.xyzrpy;
-                
+
                 od[i].state_values = ob.getStates();
                 od[i].num_states = od[i].state_values.length;
 
@@ -418,14 +459,14 @@ public class Tracker
 
         return od;
     }
-    
+
     private void handlePerceptionCommand(perception_command_t command){
     	if(command.command.toUpperCase().equals("SAVE_CLASSIFIERS")){
     		try {
-        		classyManager.writeState("default.cls");  
+        		classyManager.writeState("default.cls");
 			} catch (IOException e) {
 				e.printStackTrace();
-			}  		
+			}
     	} else if(command.command.toUpperCase().equals("LOAD_CLASSIFIERS")){
     		try {
 				classyManager.readState("default.cls");
@@ -435,7 +476,7 @@ public class Tracker
     	} else if(command.command.toUpperCase().equals("CLEAR_CLASSIFIERS")){
     		classyManager.clearData();
     	}
-    
+
     }
 
     // === Methods for interacting with the sensor(s) attached to the system === //
@@ -444,8 +485,8 @@ public class Tracker
     {
         return segmenter.getSensors();
     }
-    
-    // Given a command from soar to set the state for an object, 
+
+    // Given a command from soar to set the state for an object,
     //   sets the state if a valid command
     private void processSetStateCommand(set_state_command_t setState){
     	synchronized(stateLock){

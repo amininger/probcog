@@ -544,14 +544,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
             Tic tic = new Tic();
             while (true) {
                 double dt = tic.toctic();
-                if (animation != null) {
-                    VisWorld.Buffer vb = vw.getBuffer("selection");
-                    animation.step(dt);
-                    vb.addBack(animation);
-                    vb.swap();
-                } else {
-                	vw.getBuffer("selection").clear();
-                }
+                
 
                 // Render sensor pipeline FPS.
                 Formatter f = new Formatter();
@@ -651,9 +644,18 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
                 // Object drawing
                 drawObjects();
+                if (animation != null) {
+                    VisWorld.Buffer vb = vw.getBuffer("selection");
+                    animation.step(dt);
+                    vb.addBack(animation);
+                    vb.swap();
+                } else {
+                	vw.getBuffer("selection").clear();
+                }
                 drawSoarObjects(faceCamera);
                 drawSensors();
                 arm.render(vw);
+                
                 TimeUtil.sleep(1000/fps);
                 
             }
