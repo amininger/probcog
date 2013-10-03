@@ -75,6 +75,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     ViewType viewType;
     ClickType clickType;
     Boolean showSoarObjects;
+    Boolean showSegmentedObjects;
 
     public PerceptionGUI(GetOpt opts) throws IOException
     {
@@ -142,6 +143,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         viewType = ViewType.POINT_CLOUD;
         clickType = ClickType.SELECT;
         showSoarObjects = false;
+        showSegmentedObjects = false;
 
         // Subscribe to LCM
         lcm.subscribe("TRAINING_DATA", this);
@@ -417,6 +419,19 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 }
             });
         menu.add(soarObj);
+
+        JCheckBox segObj = new JCheckBox("Segmentations");
+        segObj.addItemListener(new ItemListener() {
+                public void itemStateChanged(ItemEvent e) {
+                    if(e.getStateChange() == ItemEvent.DESELECTED) {
+                        showSegmentedObjects = false;
+                    }
+                    else if(e.getStateChange() == ItemEvent.SELECTED) {
+                        showSegmentedObjects = true;
+                    }
+                }
+            });
+        menu.add(segObj);
     }
 
     private void setView(ViewType view)
@@ -618,8 +633,31 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
             soarBuffer.swap();
         }
 
+        if(showSegmentedObjects) {
+            VisWorld.Buffer segBuffer = vw.getBuffer("segmented");
+            drawSegmentedObjects(segBuffer);
+            segBuffer.swap();
+        }
+
 		objectBuffer.swap();
 	}
+
+    public void drawSegmentedObjects(VisWorld.Buffer buffer)
+    {
+        for(Obj ob : tracker.getVisibleObjects()) {
+            double[][] bbox = ob.getBoundingBox();
+            double[] lwh = new double[]{bbox[1][0]-bbox[0][0],
+                                        bbox[1][1]-bbox[0][1],
+                                        bbox[1][2]-bbox[0][2]};
+            double[] center = new double[]{bbox[0][0]+lwh[0]/2.0,
+                                           bbox[0][1]+lwh[1]/2.0,
+                                           bbox[0][2]+lwh[2]/2.0};
+
+            VzBox objFrame = new VzBox(lwh[0], lwh[1], lwh[2],
+                                       new VzLines.Style(Color.CYAN, 1));
+            buffer.addBack(new VisChain(LinAlg.translate(center), objFrame));
+        }
+    }
 
     public void drawSoarPredictions(VisWorld.Buffer buffer)
     {

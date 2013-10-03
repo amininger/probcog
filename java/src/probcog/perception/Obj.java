@@ -102,7 +102,7 @@ public class Obj
     {
         return id;
     }
-    public void setPointCloud(PointCloud ptClout)
+    public void setPointCloud(PointCloud ptCloud)
     {
         this.ptCloud = ptCloud;
         bbox = ptCloud.getBoundingBox();
