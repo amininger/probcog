@@ -21,6 +21,7 @@ import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.sensor.*;
 import probcog.vis.SimLocation;
+import probcog.util.*;
 
 public class Tracker
 {
@@ -43,6 +44,11 @@ public class Tracker
     private SimWorld world;
     public Object stateLock;
     HashMap<Integer, Obj> worldState;
+
+    public double fps = 0;
+    ArrayList<Double> frameTimes = new ArrayList<Double>();
+    int frameIdx = 0;
+    final int frameTotal = 10;
 
     public Tracker(Config config_, Boolean physicalKinect, SimWorld world) throws IOException
     {
@@ -84,6 +90,7 @@ public class Tracker
 
     public void compareObjects()
     {
+        Tic tic = new Tic();
         ArrayList<Obj> soarObjects = getSoarObjects();
         ArrayList<Obj> visibleObjects = getVisibleObjects();
         ArrayList<Obj> previousFrame = new ArrayList<Obj>();
@@ -168,6 +175,26 @@ public class Tracker
                 worldState.put(o.getID(), o);
             }
         }
+        double time = tic.toc();
+        if (frameTimes.size() < frameTotal) {
+            frameTimes.add(time);
+        } else {
+            frameTimes.set(frameIdx, time);
+            frameIdx = (frameIdx+1)%frameTotal;
+        }
+        calcFPS();
+    }
+
+    private void calcFPS()
+    {
+        double sum = 0;
+        for (Double time: frameTimes)
+        {
+            sum += time;
+        }
+        sum /= frameTimes.size();
+
+        fps = 1.0/sum;
     }
 
 
@@ -321,7 +348,9 @@ public class Tracker
                 od[i].utime = utime;
                 od[i].id = ob.getID();
                 od[i].pos = ob.getPose();
-                od[i].bbox = ob.getBoundingBox();
+                BoundingBox bbox = ob.getBoundingBox();
+                od[i].bbox_dim = bbox.lenxyz;
+                od[i].bbox_xyzrpy = bbox.xyzrpy;
 
                 categorized_data_t[] cat_dat = ob.getCategoryData();
                 od[i].num_cat = cat_dat.length;

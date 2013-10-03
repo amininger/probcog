@@ -106,10 +106,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         controller = new ArmController(config);
         arm = new ArmStatus(config);
 
-        if (opts.getBoolean("debug")) {
-            ArmDemo demo = new ArmDemo(config);
-        }
-
         // Initialize sensable manager
         //sensableManager = SensableManager.getSingleton();
 
@@ -133,6 +129,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         } else {
             SimArm simArm = new SimArm(config, simulator.getWorld());
         }
+
+        if (opts.getBoolean("debug")) {
+            ArmDemo demo = new ArmDemo(config, tracker);
+        }
+
 
         // Initialize the JMenuBar
         createMenuBar();
@@ -546,6 +547,19 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 	vw.getBuffer("selection").clear();
                 }
 
+                // Render sensor pipeline FPS.
+                Formatter f = new Formatter();
+                f.format("<<monospaced-128>>SENSOR FPS: %3.2f\n", tracker.fps);
+                VzText fpsText = new VzText(VzText.ANCHOR.TOP_LEFT,
+                                            f.toString());
+                VisChain fpsChain = new VisChain(LinAlg.scale(0.1),
+                                                 fpsText);
+                VisPixCoords sensorFPS = new VisPixCoords(VisPixCoords.ORIGIN.TOP_LEFT,
+                                                          fpsChain);
+                VisWorld.Buffer fpsBuffer = vw.getBuffer("sensor-fps");
+                fpsBuffer.addBack(sensorFPS);
+                fpsBuffer.swap();
+
 
                 // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
             	CameraPosition camera = vl.cameraManager.getCameraTarget();
@@ -569,7 +583,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                     		Obj selectedObject = worldState.get(selectedId);
                             double[] xyz = LinAlg.resize(LinAlg.matrixToXyzrpy(selectedObject.getPoseMatrix()), 3);
                             double br = Math.abs(selectedObject.getShape().getBoundingRadius());
-                            animation = new SelectionAnimation(xyz, br*1.2);
+                            //animation = new SelectionAnimation(xyz, br*1.2);
+                            animation = new SelectionAnimation(selectedObject);
                 		}
                 	}
                     // XXX -- DIE SENSABLES - might want to reconsider later
@@ -591,6 +606,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 		labelString += String.format("%s%d\n", tf, ob.getID());
                     	if(ob.isVisible()){
                     		for(FeatureCategory cat : FeatureCategory.values()){
+                                if (cat == FeatureCategory.LOCATION)
+                                    continue;   // These don't matter
                                 Classifications cs = ob.getLabels(cat);
                         		labelString += String.format("%s%s:%.2f\n", tf,
                                                              cs.getBestLabel().label,

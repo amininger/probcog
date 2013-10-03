@@ -154,6 +154,12 @@ public class SimArm implements LCMSubscriber
                                                          arm.getGripperShape(),
                                                          arm.getFingerPose()))
                                 {
+                                    if (grabbed != null) {
+                                        double[] curxyzrpy = LinAlg.matrixToXyzrpy(grabbed.getPose());
+                                        double[] newxyzrpy = LinAlg.matrixToXyzrpy(so.getPose());
+                                        if (curxyzrpy[2] > newxyzrpy[2])
+                                            continue;
+                                    }
                                     grabbed = so;
                                     double[][] A = arm.getGripperPose();
                                     double[][] S = so.getPose();

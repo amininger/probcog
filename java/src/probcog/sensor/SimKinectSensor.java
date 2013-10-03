@@ -20,7 +20,7 @@ import april.vis.VisCameraManager.CameraPosition;
 public class SimKinectSensor implements Sensor
 {
     // Sim Kinect parameters
-    public static final int WIDTH = 320;
+    public static final int WIDTH = (int)(240);
     public static final int HEIGHT = (int)(WIDTH*.75);
     public static final double HFOV = 57.0;
     public static final double VFOV = 43.0;

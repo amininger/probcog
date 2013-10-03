@@ -4,13 +4,14 @@ import java.awt.*;
 import java.util.*;
 
 import april.jmat.*;
-import april.sim.SphereShape;
+import april.sim.BoxShape;
 import april.sim.Shape;
 import april.vis.*;
 
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
+import probcog.util.*;
 
 public class Obj
 {
@@ -18,7 +19,7 @@ public class Obj
 
     // Point cloud information
     private PointCloud ptCloud;
-    private double[][] bbox;
+    private BoundingBox bbox;
     private double[] centroid;
 
     // Labels and attributes of the object
@@ -29,9 +30,9 @@ public class Obj
 
     // Visualization information
 	private Shape shape;
-	private VisChain model;
+	private VisObject model;
     private double[] pose;
-    private boolean visible;
+    private boolean visible = true; // XXX I think an object is always visible when first made?
 
     public Obj(boolean assignID)
     {
@@ -42,7 +43,7 @@ public class Obj
         features = new HashMap<FeatureCategory, ArrayList<Double>>();
         possibleStates = new HashMap<String, String[]>();
         currentStates = new HashMap<String, String>();
-        bbox = new double[2][3];
+        bbox = new BoundingBox();
         centroid = new double[3];
         ptCloud = new PointCloud();
     }
@@ -63,17 +64,16 @@ public class Obj
         centroid = ptCloud.getCentroid();
         pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
 
-        double maxDim = Math.max(bbox[1][0]-bbox[0][0],
-                                 Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
-        shape = new SphereShape(maxDim);
+        //double maxDim = Math.max(bbox[1][0]-bbox[0][0],
+        //                         Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
+        //shape = new SphereShape(maxDim);
+        shape = new BoxShape(bbox.lenxyz[0],
+                             bbox.lenxyz[1],
+                             bbox.lenxyz[2]);
 
         int[] avgRGB = ptCloud.getAvgRGB();
         Color color = new Color(avgRGB[0], avgRGB[1], avgRGB[2]);
-        model = new VisChain(LinAlg.translate(centroid),
-                             LinAlg.scale(bbox[1][0]-bbox[0][0],
-                                          bbox[1][1]-bbox[0][1],
-                                          bbox[1][2]-bbox[0][2]),
-                             new VzBox(new VzMesh.Style(color)));
+        model = bbox.getVis(new VzMesh.Style(color));   // XXX outline, instead?
     }
 
     public Obj(int id)
@@ -85,10 +85,10 @@ public class Obj
         possibleStates = new HashMap<String, String[]>();
         currentStates = new HashMap<String, String>();
 
-        bbox = new double[2][3];
+        bbox = new BoundingBox();
         centroid = new double[3];
 		pose = new double[6];
-        shape = new SphereShape(.01);
+        shape = new BoxShape(.01, .01, .01);
         model = null;
         ptCloud = new PointCloud();
     }
@@ -108,28 +108,24 @@ public class Obj
         bbox = ptCloud.getBoundingBox();
         centroid = ptCloud.getCentroid();
         pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
-        double maxDim = Math.max(bbox[1][0]-bbox[0][0],
-                                 Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
-        shape = new SphereShape(maxDim);
+        shape = new BoxShape(bbox.lenxyz[0],
+                             bbox.lenxyz[1],
+                             bbox.lenxyz[2]);
 
         int[] avgRGB = ptCloud.getAvgRGB();
         Color color = new Color(avgRGB[0], avgRGB[1], avgRGB[2]);
-        model = new VisChain(LinAlg.translate(centroid),
-                             LinAlg.scale(bbox[1][0]-bbox[0][0],
-                                          bbox[1][1]-bbox[0][1],
-                                          bbox[1][2]-bbox[0][2]),
-                             new VzBox(new VzMesh.Style(color)));
+        model = bbox.getVis(new VzMesh.Style(color));   // XXX Lines?
 
     }
     public PointCloud getPointCloud()
     {
         return ptCloud;
     }
-    public void setBoundingBox(double[][] bbox)
+    public void setBoundingBox(BoundingBox bbox)
     {
         this.bbox = bbox;
     }
-    public double[][] getBoundingBox()
+    public BoundingBox getBoundingBox()
     {
         return bbox;
     }
@@ -170,11 +166,11 @@ public class Obj
     {
         this.visible = visible;
     }
-    public void setVisObject(VisChain model)
+    public void setVisObject(VisObject model)
     {
         this.model = model;
     }
-    public VisChain getVisObject()
+    public VisObject getVisObject()
     {
         return model;
     }

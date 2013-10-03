@@ -17,6 +17,8 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 
+import probcog.classify.*;
+import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 
@@ -24,6 +26,7 @@ public class ArmDemo implements LCMSubscriber
 {
     LCM lcm = LCM.getSingleton();
     ArmStatus arm;
+    Tracker tracker;
 
     // Rendering thread
     RenderThread rt;
@@ -31,9 +34,10 @@ public class ArmDemo implements LCMSubscriber
 
     ExpiringMessageCache<observations_t> observations = new ExpiringMessageCache<observations_t>(2.5, true);
 
-    public ArmDemo(Config config_) throws IOException
+    public ArmDemo(Config config_, Tracker tracker_) throws IOException
     {
         arm = new ArmStatus(config_);
+        tracker = tracker_;
 
         lcm.subscribe("OBSERVATIONS", this);
 
@@ -103,6 +107,53 @@ public class ArmDemo implements LCMSubscriber
 
             ArmStatusPanel statusPanel = new ArmStatusPanel();
             jf.add(statusPanel, BorderLayout.EAST);
+
+            // Add a classification debug bar
+            ParameterGUI classypg = new ParameterGUI();
+            classypg.addString("color", "Color", "red");
+            classypg.addString("shape", "Shape", "square");
+            classypg.addString("size", "Size", "small");
+            classypg.addButtons("b_color", "Set Color");
+            classypg.addButtons("b_shape", "Set Shape");
+            classypg.addButtons("b_size", "Set Size");
+            classypg.addListener(new ParameterListener() {
+                public void parameterChanged(ParameterGUI pg, String name) {
+                    String label = null;
+                    FeatureCategory cat = null;
+                    if (name.equals("b_color")) {
+                        label = pg.gs("color");
+                        cat = FeatureCategory.COLOR;
+                    } else if (name.equals("b_shape")) {
+                        label = pg.gs("shape");
+                        cat = FeatureCategory.SHAPE;
+                    } else if (name.equals("b_size")) {
+                        label = pg.gs("size");
+                        cat = FeatureCategory.SIZE;
+                    } else {
+                        return;
+                    }
+
+                    // Find the object
+                    observations_t obs = observations.get();
+                    if (obs == null) {
+                        return;
+                    }
+                    int id = obs.click_id;  // ID of the currently clicked object
+                    HashMap<Integer, Obj> state = tracker.getWorldState();
+                    Obj obj;
+                    synchronized (state) {
+                        obj = state.get(id);
+                    }
+                    if (obj == null) {
+                        System.err.println("ERR: No object with ID = "+id);
+                        return;
+                    }
+
+                    System.out.println("Added training - "+label);
+                    tracker.addTraining(cat, obj.getFeatures(cat), label);
+                }
+            });
+            jf.add(classypg, BorderLayout.WEST);
 
             // Grid
             VzGrid.addGrid(vw);
@@ -377,20 +428,21 @@ public class ArmDemo implements LCMSubscriber
 
         try {
             // Take the presence of a world file as a sign that we want a sim
+            Tracker tracker;
             if (opts.getString("world") == null) {
                 System.out.println("Spinning up real world...");
-                Tracker tracker = new Tracker(config, true, null);
+                tracker = new Tracker(config, true, null);
                 ArmDriver driver = new ArmDriver(config);
                 (new Thread(driver)).start();
             } else {
                 System.out.println("Spinning up simulation...");
                 SimWorld world = new SimWorld(opts.getString("world"),
                                               new Config());
-                Tracker tracker = new Tracker(config, false, world);
+                tracker = new Tracker(config, false, world);
                 SimArm simArm = new SimArm(config, world);
             }
             ArmController controller = new ArmController(config);
-            ArmDemo demo = new ArmDemo(config);
+            ArmDemo demo = new ArmDemo(config, tracker);
         } catch (IOException ioex) {
             System.err.println("ERR: Could not start up arm debugging interface");
             ioex.printStackTrace();
