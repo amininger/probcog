@@ -289,4 +289,9 @@ public class Obj
     {
         return idGen ++;
     }
+    public static void idAssigned(int id){
+    	if(id >= idGen){
+    		idGen = id+1;
+    	}
+    }
 }

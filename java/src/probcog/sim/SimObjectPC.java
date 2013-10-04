@@ -39,7 +39,7 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     {
     	possibleStates = new HashMap<String, String[]>();
     	currentState = new HashMap<String, String>();
-    	id = Obj.nextID();
+    	id = -1;
     }
     
     public int getID(){
@@ -151,6 +151,13 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     /** Restore state that was previously written **/
     public void read(StructureReader ins) throws IOException
     {
+    	id = ins.readInt();
+    	if(id == -1){
+    		id = Obj.nextID();
+    	} else {
+    		Obj.idAssigned(id);
+    	}
+    	
     	// 6 doubles for pose information (XYZRPY)
         double xyzrpy[] = ins.readDoubles();
         this.T = LinAlg.xyzrpyToMatrix(xyzrpy);
@@ -179,6 +186,7 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
      * is allowed to consist of just an asterisk. **/
     public void write(StructureWriter outs) throws IOException
     {
+    	outs.writeInt(id);
         outs.writeDoubles(LinAlg.matrixToXyzrpy(T));
         outs.writeDouble(scale);
         float f[] = color.getRGBComponents(null);
