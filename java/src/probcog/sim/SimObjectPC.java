@@ -9,6 +9,7 @@ import java.util.Map;
 
 import probcog.classify.Classifications;
 import probcog.classify.Features;
+import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.categorized_data_t;
 import probcog.lcmtypes.category_t;
 import probcog.perception.Obj;
@@ -33,12 +34,13 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     
     protected int id;
     
-    protected List<categorized_data_t> cat_dat = new ArrayList<categorized_data_t>();
+    protected HashMap<FeatureCategory, String> simClassifications;
 
     public SimObjectPC(SimWorld sw)
     {
     	possibleStates = new HashMap<String, String[]>();
     	currentState = new HashMap<String, String>();
+    	simClassifications = new HashMap<FeatureCategory, String>();
     	id = -1;
     }
     
@@ -103,32 +105,17 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
 		return states;
 	}
 	
-	public categorized_data_t[] getCategorizedData(){
-		categorized_data_t[] cat_dat_a = new categorized_data_t[cat_dat.size()];
-		for(int i = 0; i < cat_dat.size(); i++){
-			cat_dat_a[i] = cat_dat.get(i);
-		}
-		return cat_dat_a;
+	public HashMap<FeatureCategory, String> getSimClassifications(){
+		return simClassifications;
 	}
 	
 	public void addNewState(String stateName, String[] possibleValues){
 		if(possibleValues.length == 0){
 			return;
 		}
-		if(stateName.equals("color") || stateName.equals("shape") || stateName.equals("size")){
-			categorized_data_t cd = new categorized_data_t();
-			cd.cat = new category_t();
-			if(stateName.equals("color")){
-				cd.cat.cat = category_t.CAT_COLOR;
-			} else if(stateName.equals("shape")){
-				cd.cat.cat = category_t.CAT_SHAPE;
-			} else {
-				cd.cat.cat = category_t.CAT_SIZE;
-			}
-			cd.len = 1;
-			cd.confidence = new double[]{1};
-			cd.label = new String[]{possibleValues[0]};
-			cat_dat.add(cd);
+		FeatureCategory fc = Features.getFeatureCategory(stateName);
+		if(fc != null){
+			simClassifications.put(fc, possibleValues[0]);
 			return;
 		}
 		

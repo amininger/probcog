@@ -3,6 +3,7 @@ package probcog.perception;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import probcog.classify.Classifications;
 import probcog.classify.Features;
@@ -39,13 +40,15 @@ public class Obj
 	private Shape shape;
 	private VisObject model;
     private double[] pose;
+
+    private boolean confirmed = false;
+
     
     // If the object was created from a simulated object,
     //   This is the backwards pointer
     private SimObject sourceSimObj = null;
     private boolean visible = true; // XXX I think an object is always visible when first made?
-    private boolean confirmed = false;
-
+    
     public Obj(boolean assignID)
     {
         if(assignID)
@@ -130,6 +133,13 @@ public class Obj
     }
     public SimObject getSourceSimObject(){
     	return this.sourceSimObj;
+    }
+    public SimObjectPC getSourceSimObjectPC(){
+    	if(this.sourceSimObj != null && this.sourceSimObj instanceof SimObjectPC){
+    		return (SimObjectPC)sourceSimObj;
+    	} else {
+    		return null;
+    	}
     }
     
     public void setPointCloud(PointCloud ptCloud)
@@ -222,13 +232,22 @@ public class Obj
 
     public void addClassifications(FeatureCategory category, Classifications cs)
     {
+    	SimObjectPC simObj = getSourceSimObjectPC();
+    	if(simObj != null){
+        	HashMap<FeatureCategory, String> simClassifications = simObj.getSimClassifications();
+        	if(simClassifications.containsKey(category)){
+        		cs = new Classifications();
+        		cs.add(simClassifications.get(category), 1.0f);
+        	}
+    	}
         labels.put(category, cs);
     }
 
     public void addAllClassifications(HashMap<FeatureCategory, Classifications> allCS)
     {
-        for(FeatureCategory fc : allCS.keySet())
-            labels.put(fc, allCS.get(fc));
+    	for(Map.Entry<FeatureCategory, Classifications> e : allCS.entrySet()){
+    		addClassifications(e.getKey(), e.getValue());
+    	}
     }
 
     public Classifications getLabels(FeatureCategory category)
@@ -252,6 +271,8 @@ public class Obj
             cat_dat[j] = new categorized_data_t();
             cat_dat[j].cat = new category_t();
             cat_dat[j].cat.cat = Features.getLCMCategory(fc);
+            
+        	// Report the real classification(s)
             Classifications cs = labels.get(fc);
             cs.sortLabels();    // Just to be nice
             cat_dat[j].len = cs.size();

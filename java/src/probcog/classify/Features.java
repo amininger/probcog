@@ -45,6 +45,18 @@ public class Features
     {
 		return lcmToFeatureCat.get(lcmCat);
 	}
+	
+	// Mapping from strings to FeatureCategory
+	private static HashMap<String, FeatureCategory> nameToFeatureCat;
+	static{
+		nameToFeatureCat = new HashMap<String, FeatureCategory>();
+		nameToFeatureCat.put("color", FeatureCategory.COLOR);
+		nameToFeatureCat.put("shape", FeatureCategory.SHAPE);
+		nameToFeatureCat.put("size", FeatureCategory.SIZE);
+	}
+	public static FeatureCategory getFeatureCategory(String catName){
+		return nameToFeatureCat.get(catName);
+	}
 
 	public static ArrayList<Double> getFeatures(FeatureCategory cat,
 			PointCloud cloud)

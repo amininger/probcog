@@ -20,12 +20,7 @@ public class SimSteak extends SimBoxPC{
     /** Restore state that was previously written **/
     public void read(StructureReader ins) throws IOException
     {
-    	// 6 doubles for pose information (XYZRPY)
-        double xyzrpy[] = ins.readDoubles();
-        this.T = LinAlg.xyzrpyToMatrix(xyzrpy);
-        
-        // 1 double for scale
-        this.scale = ins.readDouble();
+    	super.read(ins);
         
         // Boolean for cooked (false = raw)
         this.isCooked = ins.readString().equals("true");
