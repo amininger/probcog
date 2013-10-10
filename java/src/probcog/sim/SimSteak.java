@@ -10,6 +10,9 @@ import april.util.StructureReader;
 import april.util.StructureWriter;
 
 public class SimSteak extends SimBoxPC{
+	protected static Color cookedColor = new Color(1.0f, .7f, .6f, 1.0f);
+	protected static Color rawColor = new Color(.4f, .2f, .1f, 1.0f);
+
 	protected Boolean isCooked = false;
 	protected int temp = 0;
 	
@@ -23,17 +26,8 @@ public class SimSteak extends SimBoxPC{
     	super.read(ins);
         
         // Boolean for cooked (false = raw)
-        this.isCooked = ins.readString().equals("true");
         this.addNewState("cooked", new String[]{"false", "true"});
-        
-        if(isCooked){
-        	// Dark Brown
-        	this.color = new Color(0.4f, 0.2f, 0.1f, 1.0f);
-        	this.setState("cooked", "true");
-        } else {
-        	// Pink
-        	this.color = new Color(1.0f, .7f, .6f, 1.0f);
-        }
+				this.setState("cooked", ins.readString());
     }
 
     /** Write one or more lines that serialize this instance. No line
@@ -51,10 +45,21 @@ public class SimSteak extends SimBoxPC{
     			temp++;
     			if(temp > 60){
     				isCooked = true;
-    	        	this.color = new Color(0.4f, 0.2f, 0.1f, 1.0f);
+    	        	this.color = cookedColor;
     	        	super.setState("cooked", "true");
     			}
     		}
-    	}
+				return;
+    	} else if(stateName.equals("cooked")){
+				isCooked = (stateVal.equals("true"));
+				if(isCooked){
+					temp = 60;
+					color = cookedColor;
+				} else {
+					temp = 0;
+					color = rawColor;
+				}
+			}
+			super.setState(stateName, stateVal);
     }
 }
