@@ -10,8 +10,8 @@ import april.util.StructureReader;
 import april.util.StructureWriter;
 
 public class SimSteak extends SimBoxPC{
-	protected static Color cookedColor = new Color(1.0f, .7f, .6f, 1.0f);
-	protected static Color rawColor = new Color(.4f, .2f, .1f, 1.0f);
+	protected static Color rawColor = new Color(1.0f, .7f, .6f, 1.0f);
+	protected static Color cookedColor = new Color(.4f, .2f, .1f, 1.0f);
 
 	protected Boolean isCooked = false;
 	protected int temp = 0;
