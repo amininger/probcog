@@ -141,6 +141,7 @@ public class SimArm implements LCMSubscriber
                         if (!stopped) {
                             status.speed = cmd.speed;
                         }
+                        //System.out.println("SPEED " + i + " == " + status.speed);
 
                         // Grabbing
                         // If the hand joint is moving in the positive direction,

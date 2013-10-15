@@ -64,10 +64,10 @@ public class KinectSensor implements Sensor
             robot = new ConfigFile(config_.getPath("kinect.calib_robot"));
 
         // Set RGB Parameters (XXX)
-        Cirx = rgb.requireDoubles("intrinsics.cc")[0];
-        Ciry = rgb.requireDoubles("intrinsics.cc")[1];
-        Firx = rgb.requireDoubles("intrinsics.fc")[0];
-        Firy = rgb.requireDoubles("intrinsics.fc")[1];
+        Cirx = color.requireDoubles("intrinsics.cc")[0];
+        Ciry = color.requireDoubles("intrinsics.cc")[1];
+        Firx = color.requireDoubles("intrinsics.fc")[0];
+        Firy = color.requireDoubles("intrinsics.fc")[1];
 
         // Create the input view
         System.err.println("NFO: Initializing kinect calibration");

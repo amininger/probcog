@@ -40,13 +40,14 @@ public class ArmController implements LCMSubscriber
         DROP_UP_CURR, DROP_UP_OVER, DROP_AT, DROP_RELEASE,
             DROP_RETREAT, DROP_WAITING,
         HOME, HOMING,
+        EXACT, EXACT_WAITING,
     }
     private ActionState state = ActionState.HOME;
 
     // Track the current mode for LCM messages
     enum ActionMode
     {
-        WAIT, HOME, GRAB, POINT, DROP, FAILURE
+        WAIT, HOME, GRAB, POINT, DROP, EXACT, FAILURE // XXX EXACT only used for calibration
     }
     private ActionMode curAction = ActionMode.WAIT;
     private int grabbedObject = -1;
@@ -118,6 +119,8 @@ public class ArmController implements LCMSubscriber
                     } else if (cmd.action.contains("RESET") ||
                                cmd.action.contains("HOME")) {
                         curAction = ActionMode.HOME;
+                    } else if (cmd.action.contains("EXACT")) {
+                        curAction = ActionMode.EXACT;
                     }
                 }
 
@@ -148,6 +151,8 @@ public class ArmController implements LCMSubscriber
                             setState(ActionState.HOME);
                             curAction = ActionMode.WAIT;
                         }
+                    } else if (last_cmd.action.contains("EXACT")) {
+                        exactStateMachine(); // Calibration only
                     }
                 }
                 newAction = false;
@@ -239,6 +244,7 @@ public class ArmController implements LCMSubscriber
                         setState(ActionState.POINT_UP_OVER);
                         break;
                     case POINT_WAITING:
+                    case EXACT:
                         setState(ActionState.POINT_UP_CURR);
                         break;
                 }
@@ -304,6 +310,7 @@ public class ArmController implements LCMSubscriber
                         setState(ActionState.GRAB_UP_BEHIND);
                         break;
                     case POINT_WAITING:
+                    case EXACT:
                         setState(ActionState.GRAB_UP_CURR);
                         break;
                 }
@@ -477,6 +484,7 @@ public class ArmController implements LCMSubscriber
                         setState(ActionState.DROP_UP_OVER);
                         break;
                     case POINT_WAITING:
+                    case EXACT:
                         setState(ActionState.DROP_UP_CURR);
                         break;
                 }
@@ -545,6 +553,28 @@ public class ArmController implements LCMSubscriber
                 default:
                     // XXX DEBUG
                     System.err.println("ERR: Drop state "+state.toString()+" does not exist");
+            }
+        }
+
+        // Move arm to directly to the exact position requested
+        private void exactStateMachine()
+        {
+            if (state != ActionState.EXACT)
+                setState(ActionState.EXACT);
+
+            switch (state) {
+                case EXACT:
+                    moveTo(goal, goalHeight);
+
+                    if (actionComplete()) {
+                        curAction = ActionMode.WAIT;
+                        setState(ActionState.EXACT_WAITING);
+                    }
+                    break;
+                case EXACT_WAITING:
+                    break;
+                default:
+                    System.err.println("ERR: Should never be here in EXACT");
             }
         }
 
@@ -672,7 +702,7 @@ public class ArmController implements LCMSubscriber
             arm.setPos(4, last_cmd.wrist);  // XXX Persistent wrist command?
         }
 
-        // Just point the arm towards the goal...Points a little low. XXX Controller?
+        // Just point the arm towards the goal...Points a little low.
         private void outOfRange(double r, double[] goal)
         {
             double[] t = new double[5];
