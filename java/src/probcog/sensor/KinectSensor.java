@@ -69,10 +69,15 @@ public class KinectSensor implements Sensor
             robot = new ConfigFile(config_.getPath("kinect.calib_robot"));
 
         // Set IR Paremeters
-        Cirx = ir.requireDoubles("intrinsics.cc")[0];
+        /*Cirx = ir.requireDoubles("intrinsics.cc")[0];
         Ciry = ir.requireDoubles("intrinsics.cc")[1];
         Firx = ir.requireDoubles("intrinsics.fc")[0];
         Firy = ir.requireDoubles("intrinsics.fc")[1];
+        Cirx = ir.requireDoubles("intrinsics.cc")[0];*/
+        Cirx = color.requireDoubles("intrinsics.cc")[0];
+        Ciry = color.requireDoubles("intrinsics.cc")[1];
+        Firx = color.requireDoubles("intrinsics.fc")[0];
+        Firy = color.requireDoubles("intrinsics.fc")[1];
 
         // Create the input view
         System.err.println("NFO: Initializing kinect calibration");
@@ -258,9 +263,9 @@ public class KinectSensor implements Sensor
     {
         return k2wXform_T;
     }
-    
+
     public ArrayList<double[]> getAllXYZRGB(){
-    	return Util.extractPoints(this);   	
+    	return Util.extractPoints(this);
     }
 
     /** Sensor interface to colored points */
