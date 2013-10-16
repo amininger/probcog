@@ -84,8 +84,8 @@ public class CalibrateArm implements LCMSubscriber
         double maxR = 0.30;
         double stepR = 0.049;
 
-        double minT = 0;
-        double maxT = Math.toRadians(360);
+        double minT = -Math.PI+0.0001;
+        double maxT = Math.PI;
         double stepT = Math.toRadians(29.9);
 
         double minH = 0.05;

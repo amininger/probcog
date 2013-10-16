@@ -1,11 +1,16 @@
 package probcog.arm;
 
+import java.awt.*;
 import java.io.*;
+import javax.swing.*;
 import java.util.*;
 
 import april.config.*;
 import april.jmat.*;
 import april.util.*;
+import april.vis.*;
+
+import probcog.gui.*;
 
 /** Given a set correspondences between requested arm positions
  *  and actual executions of those requests, provides a function that
@@ -24,8 +29,8 @@ public class ArmCalibration
 
     Matrix K;
 
-    ArrayList<double[]> actual;
-    ArrayList<double[]> requested;
+    ArrayList<double[]> actual = null;
+    ArrayList<double[]> requested = null;
 
 
     public ArmCalibration(String filename)
@@ -52,7 +57,6 @@ public class ArmCalibration
         } catch (IOException ioex) {
             System.err.println("ERR: Could not read in file");
             ioex.printStackTrace();
-            System.exit(1);
         }
 
         buildK();
@@ -69,6 +73,9 @@ public class ArmCalibration
 
     private void buildK()
     {
+        if (actual == null || requested == null)
+            return;
+
         // f(actual) = requested
         //
         // Feed in where you want to wind up to get a request
@@ -186,6 +193,9 @@ public class ArmCalibration
     // GP based prediction of function mapping desired position to requests
     public double[] map(double[] in)
     {
+        if (K == null)
+            return in;
+
         double[] K_ = makeK_(in);
         double C = kernel(in, in);
 
@@ -200,5 +210,141 @@ public class ArmCalibration
         }
 
         return LinAlg.add(in, out);
+    }
+
+    static public class CalibrationListener implements ParameterListener
+    {
+        VisWorld vw;
+        ArmCalibration ac;
+
+        public CalibrationListener(ArmCalibration ac, VisWorld vw)
+        {
+            this.ac = ac;
+            this.vw = vw;
+        }
+
+        public void parameterChanged(ParameterGUI pg, String name)
+        {
+            if (name.equals("enableSlider")) {
+                pg.setEnabled("z", pg.gb("enableSlider"));
+            }
+            if (pg.gb("enableSlider")) {
+                // Slice sample
+                renderRange(pg.gd("z"), pg.gd("z"), pg.gd("z-step"),
+                            .1, .4, pg.gd("r-step"),
+                            0, Math.toRadians(360), Math.toRadians(pg.gi("t-step")),
+                            pg.gb("relativeMap"));
+            } else {
+                // Full sampling
+                renderRange(0, .3, pg.gd("z-step"),
+                            .1, .4, pg.gd("r-step"),
+                            0, Math.toRadians(360), Math.toRadians(pg.gi("t-step")),
+                            pg.gb("relativeMap"));
+            }
+        }
+
+        /** Renders the specified range of values as a heatmap based on
+         *  the difference between the requested position and the mapped
+         *  position.
+         *
+         *  No knowledge of the actual results provided.
+         **/
+        private void renderRange(double minZ, double maxZ, double zstep,
+                                 double minR, double maxR, double rstep,
+                                 double minT, double maxT, double tstep,
+                                 boolean useRelativeMapping)
+        {
+            // Color map generated with HeatMapGenerator
+            // Lower error == blue
+            // Higher error == orange
+            // Middling == purple
+            int[] map = {
+                0xff0000,
+                0x0066ff};
+
+            ArrayList<double[]> points = new ArrayList<double[]>();
+            ArrayList<double[]> errors = new ArrayList<double[]>();
+            double minErr = Double.POSITIVE_INFINITY;
+            double maxErr = Double.NEGATIVE_INFINITY;
+            for (double t = minT; t <= maxT; t += tstep) {
+                for (double r = minR; r <= maxR; r += rstep) {
+                    for (double z = minZ; z <= maxZ; z += zstep) {
+                        double[] xyz_r = new double[] {r*Math.cos(t),
+                                                       r*Math.sin(t),
+                                                       z};
+                        double[] xyz_c = ac.map(xyz_r);
+
+                        double[] xyze = LinAlg.resize(xyz_r, 4);
+                        xyze[3] = LinAlg.magnitude(LinAlg.subtract(xyz_r,
+                                                                   xyz_c));
+                        minErr = Math.min(xyze[3], minErr);
+                        maxErr = Math.max(xyze[3], maxErr);
+
+                        points.add(xyz_r);
+                        errors.add(xyze);
+                    }
+                }
+            }
+
+            ColorMapper colorMapper;
+            if (useRelativeMapping)
+                colorMapper = new ColorMapper(map, minErr, maxErr);
+            else
+                colorMapper = new ColorMapper(map, 0, 0.05);
+            VisColorData vcd = colorMapper.makeColorData(errors, 3);    // XXX
+
+            VisWorld.Buffer vb = vw.getBuffer("errorMap");
+            vb.addBack(new VisLighting(false,
+                                       new VzPoints(new VisVertexData(points),
+                                                    new VzPoints.Style(vcd, 2))));
+            vb.swap();
+        }
+    }
+
+    /** Validation/make figures */
+    static public void main(String[] args)
+    {
+        GetOpt opts = new GetOpt();
+        opts.addBoolean('h',"help",false,"Show this help screen");
+        opts.addString('w',"world",null,"Sim world");
+        opts.addString('a',"arm",null,"Arm calibration");
+
+        if (!opts.parse(args)) {
+            System.err.println("ERR: Error parsing args - "+opts.getReason());
+            System.exit(1);
+        }
+
+        if (opts.getBoolean("help"))
+        {
+            opts.doHelp();
+            System.exit(0);
+        }
+
+        JFrame jf = new JFrame("Calibration Visualizer");
+        jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        jf.setLayout(new BorderLayout());
+        jf.setSize(800, 600);
+
+        VisWorld vw = new VisWorld();
+        VisLayer vl = new VisLayer(vw);
+        VisCanvas vc = new VisCanvas(vl);
+        jf.add(vc, BorderLayout.CENTER);
+
+        assert (opts.getString("arm") != null);
+        ArmCalibration calibration = new ArmCalibration(opts.getString("arm"));
+        ProbCogSimulator simulator = new ProbCogSimulator(opts, vw, vl, vc);
+
+        ParameterGUI pg = new ParameterGUI();
+        pg.addBoolean("relativeMap", "Relative color mapping", false);
+        pg.addBoolean("enableSlider", "Enable Slider", false);
+        pg.addDoubleSlider("z-step", "Z step", .01, .1, 0.025);
+        pg.addIntSlider("t-step", "Theta step", 1, 30, 15);
+        pg.addDoubleSlider("r-step", "R step", .01, .1, 0.025);
+        pg.addDoubleSlider("z", "Z-level", 0, .3, 0);
+        pg.setEnabled("z", false);
+        pg.addListener(new CalibrationListener(calibration, vw));
+        jf.add(pg, BorderLayout.SOUTH);
+
+        jf.setVisible(true);
     }
 }

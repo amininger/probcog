@@ -119,7 +119,7 @@ public class SimArm implements LCMSubscriber
                     // Handle commands
                     if (cmds != null) {
                         dynamixel_command_t cmd = cmds.commands[i];
-                        cmd.speed = 1.0; // DEBUG XXX
+                        //cmd.speed = 1.0; // DEBUG XXX
                         // Rotation
                         double pos = arm.getActualPos(i);
                         int sign = pos <= cmd.position_radians ? 1 : -1;
