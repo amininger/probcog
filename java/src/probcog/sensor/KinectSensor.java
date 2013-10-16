@@ -41,7 +41,7 @@ public class KinectSensor implements Sensor
     View output;
     Rasterizer rasterizer;
 
-    // IR Camera parameters, pulled from config
+    // RGB (XXX) Camera parameters, pulled from config
     double Cirx, Ciry, Firx, Firy;
 
     // Kinect to world transformation and point filtering
@@ -62,18 +62,13 @@ public class KinectSensor implements Sensor
         // Pull out config files
         color = new ConfigFile(config_.getPath("kinect.calib_rgb"));
         color = color.getChild("aprilCameraCalibration.camera0000");
-        ir = new ConfigFile(config_.getPath("kinect.calib_ir"));
-        ir = ir.getChild("aprilCameraCalibration.camera0000");
+        //ir = new ConfigFile(config_.getPath("kinect.calib_ir"));
+        //ir = ir.getChild("aprilCameraCalibration.camera0000");
 
         if (config_.getString("kinect.calib_robot") != null)
             robot = new ConfigFile(config_.getPath("kinect.calib_robot"));
 
-        // Set IR Paremeters
-        /*Cirx = ir.requireDoubles("intrinsics.cc")[0];
-        Ciry = ir.requireDoubles("intrinsics.cc")[1];
-        Firx = ir.requireDoubles("intrinsics.fc")[0];
-        Firy = ir.requireDoubles("intrinsics.fc")[1];
-        Cirx = ir.requireDoubles("intrinsics.cc")[0];*/
+        // Set RGB Parameters (XXX)
         Cirx = color.requireDoubles("intrinsics.cc")[0];
         Ciry = color.requireDoubles("intrinsics.cc")[1];
         Firx = color.requireDoubles("intrinsics.fc")[0];
