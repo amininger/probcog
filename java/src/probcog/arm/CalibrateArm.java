@@ -41,7 +41,7 @@ public class CalibrateArm implements LCMSubscriber
     public CalibrateArm(String filename)
     {
         calibration = new ArmCalibration(filename);
-        validateCalibration();
+        calibration.validate();
     }
 
 
@@ -52,7 +52,8 @@ public class CalibrateArm implements LCMSubscriber
         lcm.subscribe("ROBOT_ACTION", this);
 
         calibrationDance();
-        validateCalibration();
+        calibration.validate();
+        //validateCalibration();
     }
 
     /** Handle incoming LCM messages */

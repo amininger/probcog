@@ -84,7 +84,59 @@ public class ArmCalibration
         }
 
         K = (new Matrix(M)).inverse();
+    }
 
+    /** Evaluate the calibration */
+    public void validate()
+    {
+        double err2Actual = 0;
+        double err2Calib = 0;
+        for (int i = 0; i < requested.size(); i++) {
+            double[] req = requested.get(i);
+            double[] act = actual.get(i);
+            double[] cal = map(requested.get(i));
+            // XXX DEBUG
+            if (true) {
+                System.out.printf("pre-cal:  [%f, %f, %f] --> [%f, %f, %f]\n",
+                                  req[0], req[1], req[2],
+                                  act[0], act[1], act[2]);
+                System.out.printf("post-cal: [%f, %f, %f] --> [%f, %f, %f]\n",
+                                  req[0], req[1], req[2],
+                                  cal[0], cal[1], cal[2]);
+            }
+            err2Actual += LinAlg.magnitude(LinAlg.subtract(req, act));
+            err2Calib += LinAlg.magnitude(LinAlg.subtract(req, cal));
+        }
+
+
+        // Validate on novel positions
+        double err2Novel = 0;
+        int examples = 0;
+        for (double x = -.3; x <= .3; x += 0.02) {
+            for (double y = .1; y <= .3; y+= 0.02) {
+                for (double z = 0.05; z <= 0.15; z += 0.02) {
+                    double[] xyz_r = new double[] {x,y,z};
+                    double[] xyz_c = map(xyz_r);
+                    err2Novel += LinAlg.magnitude(LinAlg.subtract(xyz_r, xyz_c));
+                    examples++;
+
+                    if (true) {
+                        System.out.printf("[%2.4f, %2.4f, %2.4f] --> [%2.4f, %2.4f, %2.4f]\n",
+                                          xyz_r[0], xyz_r[1], xyz_r[2],
+                                          xyz_c[0], xyz_c[1], xyz_c[2]);
+                    }
+                }
+            }
+        }
+        System.out.println();
+        System.out.println("Initial Data Validation results");
+        System.out.println("===============================");
+        System.out.printf( "err^2 pre-calibration:  %.5f\n", err2Actual/requested.size());
+        System.out.printf( "err^2 post-calibration: %.5f\n", err2Calib/requested.size());
+        System.out.println();
+        System.out.println("Novel Data Validation results");
+        System.out.println("===============================");
+        System.out.printf( "err^2 post-calibration: %.5f\n", err2Novel/examples);
     }
 
     public void save(String filename)
@@ -142,9 +194,11 @@ public class ArmCalibration
         double[] w = K.times(K_);
         assert (w.length == requested.size());
         for (int i = 0; i < w.length; i++) {
-            LinAlg.plusEquals(out, requested.get(i), w[i]);
+            LinAlg.plusEquals(out,
+                              LinAlg.subtract(actual.get(i), requested.get(i)),
+                              w[i]);
         }
 
-        return out;
+        return LinAlg.add(in, out);
     }
 }
