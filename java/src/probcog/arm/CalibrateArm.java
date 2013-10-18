@@ -53,7 +53,6 @@ public class CalibrateArm implements LCMSubscriber
 
         calibrationDance();
         calibration.validate();
-        //validateCalibration();
     }
 
     /** Handle incoming LCM messages */
@@ -80,23 +79,25 @@ public class CalibrateArm implements LCMSubscriber
     private void calibrationDance()
     {
         // Parameters
-        double minR = 0.15;
+        double minR = 0.12;
         double maxR = 0.30;
-        double stepR = 0.049;
+        double stepR = 0.05;//0.029;
 
-        double minT = -Math.PI+0.0001;
+        double minT = -Math.PI+0.1;
         double maxT = Math.PI;
-        double stepT = Math.toRadians(29.9);
+        double stepT = Math.toRadians(14.9);
 
-        double minH = 0.05;
-        double maxH = 0.15;
-        double stepH = 0.049;
+        double minH = 0.02;
+        double maxH = 0.22;
+        double stepH = 0.05;//0.029;
 
         // Exhaustively enumerate all positions defined by the parameters
         // and compute mappings of requested positions to actual
         byte cmd_id = 0;
         ArrayList<double[]> requested = new ArrayList<double[]>();
+        ArrayList<double[]> requestedServo = new ArrayList<double[]>();
         ArrayList<double[]> actual = new ArrayList<double[]>();
+        ArrayList<double[]> actualServo = new ArrayList<double[]>();
         for (double t = minT; t <= maxT; t += stepT) {
             for (double r = minR; r <= maxR; r += stepR) {
                 for (double h = minH; h <= maxH; h += stepH) {
@@ -104,85 +105,82 @@ public class CalibrateArm implements LCMSubscriber
                     xyz_r[0] = r*Math.cos(t);
                     xyz_r[1] = r*Math.sin(t);
                     xyz_r[2] = h;
-
-                    bolt_arm_command_t cmd = new bolt_arm_command_t();
-                    cmd.utime = TimeUtil.utime();
-                    cmd.cmd_id = cmd_id++;
-                    cmd.action = "EXACT";
-                    cmd.xyz = xyz_r;
-                    cmd.wrist = 0;
-                    cmd.obj_id = -1;
-
                     requested.add(xyz_r);
-                    lcm.publish("BOLT_ARM_COMMAND", cmd);
-
-                    // Wait for the arm to finish executing the command. This
-                    // will be signalled by a return to WAIT mode in the robot
-                    // action message
-                    int pauseMilli = 50;
-                    long waitTime = 10*1000000;
-                    long lastTime = TimeUtil.utime();
-
-                    boolean sawExact = false;
-                    while (true) {
-                        arm.render(vw);
-                        long currTime = TimeUtil.utime();
-                        waitTime -= (currTime - lastTime);
-                        lastTime = currTime;
-                        if (waitTime < 0) {
-                            System.err.println("ERR: Timed out waiting for robot to complete action");
-                            System.exit(1);
-                        }
-                        synchronized (actionLock) {
-                            if (lastAction == null) {
-                                TimeUtil.sleep(pauseMilli);
-                                continue;
-                            }
-                            if (lastAction.action.equals("EXACT")) {
-                                sawExact = true;
-                            }
-                            if (sawExact && lastAction.action.equals("WAIT")) {
-                                break;
-                            }
-                        }
-                    }
-
-                    // Get arm position. We've finished our action
-                    double[] xyz_c = LinAlg.resize(arm.getGripperXYZRPY(), 3);
-                    actual.add(xyz_c);
-
-                    // XXX DEBUG
-                    //System.out.printf("[%2.4f, %2.4f, %2.4f] --> [%2.4f, %2.4f, %2.4f]\n",
-                    //                  xyz_r[0], xyz_r[1], xyz_r[2],
-                    //                  xyz_c[0], xyz_c[1], xyz_c[2]);
                 }
             }
+        }
+
+        Collections.shuffle(requested);
+        for (double[] xyz_r: requested) {
+            bolt_arm_command_t cmd = new bolt_arm_command_t();
+            cmd.utime = TimeUtil.utime();
+            cmd.cmd_id = cmd_id++;
+            cmd.action = "EXACT";
+            cmd.xyz = xyz_r;
+            cmd.wrist = 0;
+            cmd.obj_id = -1;
+
+            lcm.publish("BOLT_ARM_COMMAND", cmd);
+
+            // Wait for the arm to finish executing the command. This
+            // will be signalled by a return to WAIT mode in the robot
+            // action message
+            int pauseMilli = 50;
+            long waitTime = 10*1000000;
+            long lastTime = TimeUtil.utime();
+
+            boolean sawExact = false;
+            while (true) {
+                arm.render(vw);
+                long currTime = TimeUtil.utime();
+                waitTime -= (currTime - lastTime);
+                lastTime = currTime;
+                if (waitTime < 0) {
+                    System.err.println("ERR: Timed out waiting for robot to complete action");
+                    System.exit(1);
+                }
+                synchronized (actionLock) {
+                    if (lastAction == null) {
+                        TimeUtil.sleep(pauseMilli);
+                        continue;
+                    }
+                    if (lastAction.action.equals("EXACT")) {
+                        sawExact = true;
+                    }
+                    if (sawExact && lastAction.action.equals("WAIT")) {
+                        break;
+                    }
+                }
+            }
+
+            // Get arm position. We've finished our action.
+            // Also, for servo commands, get ordered servo position
+            // from commands to the arm
+            double[] servo_r = new double[6];
+            double[] servo_c = new double[6];
+            for (int i = 0; i < servo_r.length; i++) {
+                dynamixel_status_t status = arm.getStatus(i);
+                dynamixel_command_t command = arm.getMostRecentCommand(i);
+                if (status != null)
+                    servo_c[i] = status.position_radians;
+                if (command != null)
+                    servo_r[i] = command.position_radians;
+            }
+            double[] xyz_c = LinAlg.resize(arm.getGripperXYZRPY(), 3);
+            actual.add(xyz_c);
+            actualServo.add(servo_c);
+            requestedServo.add(servo_r);
+
+            // XXX DEBUG
+            //System.out.printf("[%2.4f, %2.4f, %2.4f] --> [%2.4f, %2.4f, %2.4f]\n",
+            //                  xyz_r[0], xyz_r[1], xyz_r[2],
+            //                  xyz_c[0], xyz_c[1], xyz_c[2]);
         }
 
         // At this point we do something with the calibration
-        calibration = new ArmCalibration(requested, actual);
-        calibration.save("arm_calibration.cal");
-    }
-
-    private void validateCalibration()
-    {
-        // XXX This is, at the moment, only a pseudo validation. Not a real
-        // evaluation of the system so much as proof that it's doing the
-        // right thing.
-        System.out.println("Validating calibration...");
-        for (double x = -.3; x <= .3; x += 0.05) {
-            for (double y = .1; y <= .3; y+= 0.5) {
-                for (double z = 0.05; z <= 0.15; z += 0.25) {
-                    double[] xyz_r = new double[] {x,y,z};
-                    double[] xyz_c = calibration.map(xyz_r);
-
-                    // XXX DEBUG
-                    System.out.printf("[%2.4f, %2.4f, %2.4f] --> [%2.4f, %2.4f, %2.4f]\n",
-                                      xyz_r[0], xyz_r[1], xyz_r[2],
-                                      xyz_c[0], xyz_c[1], xyz_c[2]);
-                }
-            }
-        }
+        //calibration = new ArmCalibration(requested, actual);
+        calibration = new ArmCalibration(requestedServo, actualServo);
+        calibration.save("arm_calibration_servo.cal");
     }
 
     static public void main(String[] args)

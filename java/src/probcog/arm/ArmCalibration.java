@@ -24,7 +24,7 @@ public class ArmCalibration
     double sigma_f2 = sigma_f*sigma_f;
     double sigma_n = 0.01; // We expect our positions to be pretty repeatable for a given command
     double sigma_n2 = sigma_n*sigma_n;
-    double length = 0.3; // We don't take a lot of samples, so look at a lot of neighbors when considering impact
+    double length = 0.5; // We don't take a lot of samples, so look at a lot of neighbors when considering impact
     double length_2 = length*length;
 
     Matrix K;
@@ -102,22 +102,13 @@ public class ArmCalibration
             double[] req = requested.get(i);
             double[] act = actual.get(i);
             double[] cal = map(requested.get(i));
-            // XXX DEBUG
-            if (true) {
-                System.out.printf("pre-cal:  [%f, %f, %f] --> [%f, %f, %f]\n",
-                                  req[0], req[1], req[2],
-                                  act[0], act[1], act[2]);
-                System.out.printf("post-cal: [%f, %f, %f] --> [%f, %f, %f]\n",
-                                  req[0], req[1], req[2],
-                                  cal[0], cal[1], cal[2]);
-            }
             err2Actual += LinAlg.magnitude(LinAlg.subtract(req, act));
             err2Calib += LinAlg.magnitude(LinAlg.subtract(req, cal));
         }
 
 
         // Validate on novel positions
-        double err2Novel = 0;
+        /*double err2Novel = 0;
         int examples = 0;
         for (double x = -.3; x <= .3; x += 0.02) {
             for (double y = .1; y <= .3; y+= 0.02) {
@@ -126,12 +117,6 @@ public class ArmCalibration
                     double[] xyz_c = map(xyz_r);
                     err2Novel += LinAlg.magnitude(LinAlg.subtract(xyz_r, xyz_c));
                     examples++;
-
-                    if (true) {
-                        System.out.printf("[%2.4f, %2.4f, %2.4f] --> [%2.4f, %2.4f, %2.4f]\n",
-                                          xyz_r[0], xyz_r[1], xyz_r[2],
-                                          xyz_c[0], xyz_c[1], xyz_c[2]);
-                    }
                 }
             }
         }
@@ -144,6 +129,7 @@ public class ArmCalibration
         System.out.println("Novel Data Validation results");
         System.out.println("===============================");
         System.out.printf( "err^2 post-calibration: %.5f\n", err2Novel/examples);
+        */
     }
 
     public void save(String filename)
@@ -199,17 +185,48 @@ public class ArmCalibration
         double[] K_ = makeK_(in);
         double C = kernel(in, in);
 
-        double[] out = new double[3];
+        // f(desired) = error, where desired maps to the actual results
+        // from testing. We want to determine what command to ACTUALLY
+        // issue based on our desired end location. This is determined
+        // by seeing where arm actually went for given (requested)
+        // commands.
+        //
+        // The actual position we will command the arm to based on our
+        // desired endpoint is:
+        //
+        // issued = desired + error
+        //
+        // where error denotes some correction term based on our past
+        // experiences. In this case, error is the difference between
+        // the end position and the command that will get it there
+        // (or actual - requested)
+        double[] out = new double[in.length];
 
         double[] w = K.times(K_);
         assert (w.length == requested.size());
         for (int i = 0; i < w.length; i++) {
+            double[] diff = LinAlg.subtract(requested.get(i),
+                                            actual.get(i));
+            //double[] diff = LinAlg.subtract(actual.get(i),
+            //                                requested.get(i));
             LinAlg.plusEquals(out,
-                              LinAlg.subtract(actual.get(i), requested.get(i)),
+                              diff,
                               w[i]);
         }
 
-        return LinAlg.add(in, out);
+        out = LinAlg.add(in, out);
+        System.out.printf("||w||=%f\n",LinAlg.magnitude(w));
+        for (int j = 0; j < out.length; j++) {
+            System.out.printf("%f, ",in[j]);
+        }
+        System.out.printf(" --> ");
+        for (int j = 0; j < out.length; j++) {
+            System.out.printf("%f, ",out[j]);
+        }
+        System.out.println();
+
+
+        return out;
     }
 
     static public class CalibrationListener implements ParameterListener
@@ -228,18 +245,21 @@ public class ArmCalibration
             if (name.equals("enableSlider")) {
                 pg.setEnabled("z", pg.gb("enableSlider"));
             }
+            if (name.equals("relativeMap")) {
+                pg.setEnabled("map-max", !pg.gb("relativeMap"));
+            }
             if (pg.gb("enableSlider")) {
                 // Slice sample
                 renderRange(pg.gd("z"), pg.gd("z"), pg.gd("z-step"),
                             .1, .4, pg.gd("r-step"),
                             0, Math.toRadians(360), Math.toRadians(pg.gi("t-step")),
-                            pg.gb("relativeMap"));
+                            pg.gb("relativeMap"), pg.gd("map-max"));
             } else {
                 // Full sampling
                 renderRange(0, .3, pg.gd("z-step"),
                             .1, .4, pg.gd("r-step"),
                             0, Math.toRadians(360), Math.toRadians(pg.gi("t-step")),
-                            pg.gb("relativeMap"));
+                            pg.gb("relativeMap"), pg.gd("map-max"));
             }
         }
 
@@ -252,7 +272,7 @@ public class ArmCalibration
         private void renderRange(double minZ, double maxZ, double zstep,
                                  double minR, double maxR, double rstep,
                                  double minT, double maxT, double tstep,
-                                 boolean useRelativeMapping)
+                                 boolean useRelativeMapping, double max)
         {
             // Color map generated with HeatMapGenerator
             // Lower error == blue
@@ -290,7 +310,7 @@ public class ArmCalibration
             if (useRelativeMapping)
                 colorMapper = new ColorMapper(map, minErr, maxErr);
             else
-                colorMapper = new ColorMapper(map, 0, 0.05);
+                colorMapper = new ColorMapper(map, 0, max);
             VisColorData vcd = colorMapper.makeColorData(errors, 3);    // XXX
 
             VisWorld.Buffer vb = vw.getBuffer("errorMap");
@@ -337,6 +357,7 @@ public class ArmCalibration
         ParameterGUI pg = new ParameterGUI();
         pg.addBoolean("relativeMap", "Relative color mapping", false);
         pg.addBoolean("enableSlider", "Enable Slider", false);
+        pg.addDoubleSlider("map-max", "Map Max", .001, 0.2, 0.05);
         pg.addDoubleSlider("z-step", "Z step", .01, .1, 0.025);
         pg.addIntSlider("t-step", "Theta step", 1, 30, 15);
         pg.addDoubleSlider("r-step", "R step", .01, .1, 0.025);

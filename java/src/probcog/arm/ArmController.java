@@ -638,19 +638,19 @@ public class ArmController implements LCMSubscriber
                 // Do nothing, we can't plan at this range
             } else if (r < maxSR) {
                 goal_[2] = heightS;
-                simplePlan(r, calibration.map(goal_));
+                simplePlan(r, goal_);
             } else if (r < maxCR) {
                 goal_[2] = heightC;
-                complexPlan(r, calibration.map(goal_));
+                complexPlan(r, goal_);
             } else {
-                outOfRange(r, calibration.map(goal_));
+                outOfRange(r, goal_);
             }
         }
 
         // Plans with the wrist DOWN for ease of object grabbing
         private void simplePlan(double r, double[] goal)
         {
-            double[] t = new double[5];
+            double[] t = new double[6];
             t[0] = MathUtil.atan2(goal[1], goal[0]);
 
             double h = (l[3]+l[4]+l[5]+goal[2]) - (l[0]+arm.baseHeight);
@@ -671,6 +671,7 @@ public class ArmController implements LCMSubscriber
             t[3] = Math.PI - g2 - g4;
 
             //t[5] = Math.toRadians(112.0); XXX
+            t = calibration.map(t);
 
             for (int i = 0; i < 4; i++) {
                 arm.setPos(i, t[i]);
@@ -681,7 +682,7 @@ public class ArmController implements LCMSubscriber
         // Plans with wrist able to take different orientations
         private void complexPlan(double r, double[] goal)
         {
-            double[] t = new double[5];
+            double[] t = new double[6];
             t[0] = MathUtil.atan2(goal[1], goal[0]);
             double h = (l[0]+arm.baseHeight) - goal[2];
             double lp = Math.sqrt(h*h + r*r);
@@ -701,6 +702,7 @@ public class ArmController implements LCMSubscriber
             t[3] = Math.PI - g2;
 
             //t[5] = Math.toRadians(112.0); XXX
+            t = calibration.map(t);
 
             for (int i = 0; i < 4; i++) {
                 arm.setPos(i, t[i]);
@@ -711,7 +713,7 @@ public class ArmController implements LCMSubscriber
         // Just point the arm towards the goal...Points a little low.
         private void outOfRange(double r, double[] goal)
         {
-            double[] t = new double[5];
+            double[] t = new double[6];
             double tiltFactor = 45;
             t[0] = MathUtil.atan2(goal[1], goal[0]);
             t[1] = Math.PI/2 - Math.toRadians(tiltFactor);
@@ -724,6 +726,7 @@ public class ArmController implements LCMSubscriber
             //t[3] = MathUtil.atan2(l1, r-l2);
 
             //t[5] = Math.toRadians(112.0); XXX
+            t = calibration.map(t);
 
             for (int i = 0; i < 4; i++) {
                 arm.setPos(i, t[i]);
