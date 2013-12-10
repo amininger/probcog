@@ -14,10 +14,10 @@ import probcog.classify.Features.FeatureCategory;
 import probcog.perception.*;
 import probcog.util.*;
 
-public class SimLocation extends SimObjectPC 
+public class SimLocation extends SimObjectPC
 {
     private String name;
-    protected static double[] lwh = new double[]{1, 1, .01};
+    protected static double[] lwh = new double[]{1, 1, 1};
 
     public SimLocation(SimWorld sw)
     {
@@ -30,7 +30,7 @@ public class SimLocation extends SimObjectPC
 
         // The larger box making up the background of the object
         objs.add(new VisChain(LinAlg.translate(0,0,.001),
-                              LinAlg.scale(lwh[0]*scale, lwh[1]*scale, 1), new VzRectangle(new VzMesh.Style(color))));
+                              LinAlg.scale(lwh[0]*scale, lwh[1]*scale, lwh[2]*scale), new VzRectangle(new VzMesh.Style(color))));
 
         // The smaller inner box is only drawn if there is a door and it's open
         if(currentState.containsKey("door") && currentState.get("door").equals("open")) {
@@ -43,7 +43,7 @@ public class SimLocation extends SimObjectPC
         objs.add(new VisChain(LinAlg.rotateZ(Math.PI/2), LinAlg.translate(0,-.8*scale,.003),
                               LinAlg.scale(0.002),
                               new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", name))));
-        
+
         return new VisChain(objs.toArray());
     }
 
@@ -72,7 +72,7 @@ public class SimLocation extends SimObjectPC
         else {
             locObj = new Obj(id);
         }
-        
+
         double[] pose = LinAlg.matrixToXyzrpy(T);
 
         locObj.setPose(pose);
@@ -87,7 +87,7 @@ public class SimLocation extends SimObjectPC
         locObj.addClassifications(FeatureCategory.LOCATION, location);
 
         return locObj;
-    }        
+    }
 
     public void read(StructureReader ins) throws IOException
     {
@@ -99,7 +99,7 @@ public class SimLocation extends SimObjectPC
     public void write(StructureWriter outs) throws IOException
     {
     	super.write(outs);
-    	
+
         outs.writeString(name);
     }
 
