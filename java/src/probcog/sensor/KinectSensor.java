@@ -41,7 +41,7 @@ public class KinectSensor implements Sensor
     View output;
     Rasterizer rasterizer;
 
-    // IR Camera parameters, pulled from config
+    // RGB (XXX) Camera parameters, pulled from config
     double Cirx, Ciry, Firx, Firy;
 
     // Kinect to world transformation and point filtering
@@ -54,25 +54,38 @@ public class KinectSensor implements Sensor
     kinect_status_t stash_ks;
     BufferedImage r_rgbIm;
     BufferedImage r_depthIm;
+    
+    private boolean listenToLcm;
 
-    public KinectSensor(Config config_) throws IOException
+    public KinectSensor(Config config_) throws IOException{
+    	listenToLcm = true;
+    	init(config_);
+    	
+    }
+    
+    public KinectSensor(Config config_, boolean listenToLcm) throws IOException
     {
+    	this.listenToLcm = listenToLcm;
+    	init(config_);
+    }
+    
+    private void init(Config config_) throws IOException{
         config = config_;
 
         // Pull out config files
         color = new ConfigFile(config_.getPath("kinect.calib_rgb"));
         color = color.getChild("aprilCameraCalibration.camera0000");
-        ir = new ConfigFile(config_.getPath("kinect.calib_ir"));
-        ir = ir.getChild("aprilCameraCalibration.camera0000");
+        //ir = new ConfigFile(config_.getPath("kinect.calib_ir"));
+        //ir = ir.getChild("aprilCameraCalibration.camera0000");
 
         if (config_.getString("kinect.calib_robot") != null)
             robot = new ConfigFile(config_.getPath("kinect.calib_robot"));
 
-        // Set IR Paremeters
-        Cirx = ir.requireDoubles("intrinsics.cc")[0];
-        Ciry = ir.requireDoubles("intrinsics.cc")[1];
-        Firx = ir.requireDoubles("intrinsics.fc")[0];
-        Firy = ir.requireDoubles("intrinsics.fc")[1];
+        // Set RGB Parameters (XXX)
+        Cirx = color.requireDoubles("intrinsics.cc")[0];
+        Ciry = color.requireDoubles("intrinsics.cc")[1];
+        Firx = color.requireDoubles("intrinsics.fc")[0];
+        Firy = color.requireDoubles("intrinsics.fc")[1];
 
         // Create the input view
         System.err.println("NFO: Initializing kinect calibration");
@@ -118,8 +131,18 @@ public class KinectSensor implements Sensor
         }
         k2wXform_T = LinAlg.transpose(k2wXform);
 
-        // Spin up LCM listener
-        new ListenerThread().start();
+        if(listenToLcm){
+            // Spin up LCM listener
+            new ListenerThread().start();
+        }
+    }
+    
+    public double[][] getTransform(){
+    	return k2wXform;
+    }
+    
+    public double[] getParams(){
+    	return new double[]{Cirx, Ciry, Firx, Firy};
     }
 
     //static int cnt = 0;
@@ -213,6 +236,11 @@ public class KinectSensor implements Sensor
 
         return true;
     }
+    
+    public void stashFrame(kinect_status_t stash_ks){
+    	ks = stash_ks;
+    	stashFrame();
+    }
 
     /** Get the stashed RGB Image */
     public BufferedImage getImage()
@@ -258,9 +286,9 @@ public class KinectSensor implements Sensor
     {
         return k2wXform_T;
     }
-    
+
     public ArrayList<double[]> getAllXYZRGB(){
-    	return Util.extractPoints(this);   	
+    	return Util.extractPoints(this);
     }
 
     /** Sensor interface to colored points */

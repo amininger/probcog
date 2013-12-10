@@ -63,7 +63,7 @@ public class Tracker
         this.perfectSegmentation = perfectSegmentation;
         worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
-        armInterpreter = new ArmCommandInterpreter(false);  // Debug off
+        armInterpreter = new ArmCommandInterpreter(config_, false);  // Debug off
 
         if(physicalKinect) {
             segmenter = new KinectSegment(config_);
