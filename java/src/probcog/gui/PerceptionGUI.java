@@ -602,8 +602,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                     for(Obj ob : tracker.getWorldState().values()){
                     	String labelString = "";
                 		String tf="<<monospaced,black,dropshadow=false>>";
-                		labelString += String.format("%s%d\n", tf, ob.getID());
-                		boolean hasLabel = false;
+                		labelString += String.format("%sP:%d\n", tf, ob.getID());
+                		boolean hasLabel = true;
                     	if(ob.isVisible()){
                     		if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
                     			// Skip locations and not visible objects
@@ -619,9 +619,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                                 Classifications cs = ob.getLabels(cat);
                                 Classifications.Label bestLabel = cs.getBestLabel();
                                 if(bestLabel != null && cat != FeatureCategory.LOCATION){
-                            		labelString += String.format("%s%s:%.2f\n", tf,
-                                            bestLabel.label,
-                                            bestLabel.weight);
+                            		//labelString += String.format("%s%s:%.2f\n", tf,
+                                 //           bestLabel.label,
+                                  //          bestLabel.weight);
                             		hasLabel = true;
                                 }
                     		}
@@ -703,7 +703,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     			double[] s = bbox.lenxyz;
     			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);
     			double[][] trans = LinAlg.xyzrpyToMatrix(bbox.xyzrpy);
-    			VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)), new VzLines.Style(Color.black, 2));
+    			VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)), new VzLines.Style(Color.black, 4));
     			soarBuffer.addBack(new VisChain(trans, scale, box));
     			
         		String tf="<<monospaced,black,dropshadow=false>>";
@@ -713,7 +713,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         		textLoc[0] -= bbox.lenxyz[0] * .4f;
         		textLoc[1] -= bbox.lenxyz[1] * .4f;
         		textLoc[2] += bbox.lenxyz[2] * .55f;
-        		soarTextBuffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.002), text));
+        		soarTextBuffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.004), text));
     		}
     	}
     	soarBuffer.swap();

@@ -50,6 +50,8 @@ public class SimKinectSensor implements Sensor
     public static final int HEIGHT = (int)(3*Math.pow(2, GRID_DEPTH) * NUM_SUBREGIONS);
     public static final double HFOV = 57.0;
     public static final double VFOV = 43.0;
+    public static final double POS_NOISE = .001;
+    public static final int COLOR_NOISE = 2;
 
     CameraPosition camera = new CameraPosition();
 
@@ -293,6 +295,13 @@ public class SimKinectSensor implements Sensor
 		return true;
     }
     
+    // returns a random number between -1 and 1, more biased towards 0
+    private double getNoiseScale(){
+    	double rand = (Math.random() - .5) * 2; // -1 to 1
+    	rand = Math.signum(rand) * rand * rand;  // square to give it more of a curve
+    	return rand;
+    }
+    
     public SimPixel getPixel(int ix, int iy){
     	SimPixel pixel = new SimPixel();
     	
@@ -351,12 +360,32 @@ public class SimKinectSensor implements Sensor
         double[] xyzc = ray.getPoint(minDist);
         xyzc = LinAlg.resize(xyzc, 4);
         
+        // Add random noise
+        for(int i = 0; i < 3; i++){
+        	xyzc[i] += getNoiseScale() * POS_NOISE;
+        }
+        
         // If the object in question supports a color query, assign it
         // a color. Otherwise, default to white.
         int idx = iy*WIDTH + ix;
         int b = buf[3*idx + 0];
         int g = buf[3*idx + 1];
         int r = buf[3*idx + 2];
+        if(b < 0){
+            b = LinAlg.clamp(b + (int)(getNoiseScale() * COLOR_NOISE), -128, -1);
+        } else {
+            b = LinAlg.clamp(b + (int)(getNoiseScale() * COLOR_NOISE), 0, 127);
+        }
+        if(g < 0){
+            g = LinAlg.clamp(g + (int)(getNoiseScale() * COLOR_NOISE), -128, -1);
+        } else {
+            g = LinAlg.clamp(g + (int)(getNoiseScale() * COLOR_NOISE), 0, 127);
+        }
+        if(r < 0){
+            r = LinAlg.clamp(r + (int)(getNoiseScale() * COLOR_NOISE), -128, -1);
+        } else {
+            r = LinAlg.clamp(r + (int)(getNoiseScale() * COLOR_NOISE), 0, 127);
+        }
         xyzc[3] = 0xff000000 |
                   (b & 0xff) |
                   (g & 0xff) << 8 |

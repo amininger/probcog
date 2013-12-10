@@ -266,6 +266,79 @@ public class BoundingBox
 
         return new MultiGaussian(P, u);
     }
+    
+    static public double estimateIntersectionVolume(BoundingBox a, BoundingBox b){
+    	return estimateIntersectionVolume(a, b, 8);
+    }
+    
+    static public double estimateIntersectionVolume(BoundingBox a, BoundingBox b, int samplesPerDim){
+    	// One of the volumes is 0, return 0
+    	if(LinAlg.min(a.lenxyz) < .000000001){
+    		return 0;
+    	}
+    	if(LinAlg.min(b.lenxyz) < .000000001){
+    		return 0;
+    	}
+    	// quick test to see if there's even a possibility of intersection
+    	
+    	// Bounding sphere radius of each box, squared
+    	// (Largest edge = c, radius = sqrt(c^2 + c^2 + c^2) = sqrt(3c^2)
+    	double ra2 = 3*Math.pow(LinAlg.max(a.lenxyz)/2, 2);
+    	double rb2 = 3*Math.pow(LinAlg.max(b.lenxyz)/2, 2);
+
+    	// Squared Distance between the centers
+    	double dx = a.xyzrpy[0] - b.xyzrpy[0];
+    	double dy = a.xyzrpy[1] - b.xyzrpy[1];
+    	double dz = a.xyzrpy[2] - b.xyzrpy[2];
+    	double d2 = dx*dx + dy*dy + dz*dz;
+    	
+    	if(d2 > ra2 + rb2){
+    		// No possible intersection, return 0;
+    		return 0;
+    	}
+    	
+    	// Caculate the transformation matrix from b into a's coordinate frame
+    	double[][] m = LinAlg.identity(4);
+    	
+    	// First, transform from box b into world coords
+    	m = LinAlg.matrixAB(LinAlg.scale(b.lenxyz[0], b.lenxyz[1], b.lenxyz[2]), m);
+    	m = LinAlg.matrixAB(LinAlg.xyzrpyToMatrix(b.xyzrpy), m);
+    	
+    	// Then transform from world into box a
+    	m = LinAlg.matrixAB(LinAlg.translate(-a.xyzrpy[0], -a.xyzrpy[1], -a.xyzrpy[2]), m);
+    	double[] qa = LinAlg.rollPitchYawToQuat(new double[]{a.xyzrpy[3], a.xyzrpy[4], a.xyzrpy[5]});
+    	m = LinAlg.matrixAB(LinAlg.quatToMatrix(LinAlg.quatInverse(qa)), m);
+    	m = LinAlg.matrixAB(LinAlg.scale(1/a.lenxyz[0], 1/a.lenxyz[1], 1/a.lenxyz[2]), m);
+    	
+    	double numSamples = 0;
+    	double numContained = 0;
+    	
+    	double sampleWidth = 1.0/samplesPerDim;
+    	double sampleStart = -.5 + sampleWidth/2;
+    	double[] pb = new double[]{0, 0, 0, 1};
+    	for(int i = 0; i < samplesPerDim; i++){
+    		pb[0] = sampleStart + i * sampleWidth;
+    		for(int j = 0; j < samplesPerDim; j++){
+    			pb[1] = sampleStart + j * sampleWidth;
+    			for(int k = 0; k < samplesPerDim; k++){
+    				pb[2] = sampleStart + k * sampleWidth;
+    				double[] pa = LinAlg.matrixAB(m, pb);
+    				//System.out.println("Sample " + numSamples);
+    				//System.out.println("  B: " + pb[0] + ", " + pb[1] + ", " + pb[2]);
+    				//System.out.println("  A: " + pa[0] + ", " + pa[1] + ", " + pa[2]);
+    				if(pa[0] >= -.5 && pa[0] <= .5 && 
+    					pa[1] >= -.5 && pa[1] <= .5 && 
+    					pa[2] >= -.5 && pa[2] <= .5){
+    					numContained++;
+    				}
+    				numSamples++;
+    			}
+
+    		}
+    	}
+    	
+    	return (numContained/numSamples) * b.lenxyz[0] * b.lenxyz[1] * b.lenxyz[2];
+    }
 
     /** Test bounding boxes */
     static public void main(String[] args)

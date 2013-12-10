@@ -98,6 +98,7 @@ public class Tracker
     {
         return worldState.get(id);
     }
+    
 
     public void compareObjects()
     {
@@ -162,48 +163,80 @@ public class Tracker
             // been taken by another object, take a new ID
             Set<Integer> idSet = new HashSet<Integer>();
             double thresh = 0.02;
+            double overlapThresh = .04;
             for (Obj newObj: visibleObjects) {
+            	double newObjVol = newObj.getBoundingBox().volume();
                 boolean matched = false;
-                double minDist = Double.MAX_VALUE;
-                int minID = -1;
-
+                double maxOverlapped = -1;   // How much the object is overlapped by a soar object
+                int maxID = -1;
+                
+               // double minDist = Double.MAX_VALUE;
                 for (Obj soarObj: soarObjects) {
                     if (idSet.contains(soarObj.getID()))
                         continue;
-
-                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid());
-                    if(dist < thresh && dist < minDist){
-                        matched = true;
-                        minID = soarObj.getID();
-                        minDist = dist;
+                    
+                    double soarObjVol = soarObj.getBoundingBox().volume();
+                    double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), soarObj.getBoundingBox(), 8);
+                    if(iVol == 0){
+                    	continue;
                     }
+
+                    double overlapped = newObjVol/iVol * soarObjVol / iVol;
+                    if(overlapped > overlapThresh && overlapped >= maxOverlapped){
+                    	matched = true;
+                    	maxOverlapped = overlapped;
+                    	maxID = soarObj.getID();
+                    }
+
+//                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid());
+//                    if(dist < thresh && dist < minDist){
+//                        matched = true;
+//                        minID = soarObj.getID();
+//                        minDist = dist;
+//                    }
                 }
 
                 if (matched) {
-                    newObj.setID(minID);
+                    newObj.setID(maxID);
                     newObj.setConfirmed(true);
                 }
                 else {
                     if(previousFrame.size() > 0){
-
-                        double threshOld = .01;
-                        boolean matchedOld = false;
-                        double minDistOld = Double.MAX_VALUE;
-                        int minIDOld = -1;
+                    	matched = false;
+                    	maxOverlapped = -1;
+                    	maxID = -1;
+//
+//                        double threshOld = .01;
+//                        boolean matchedOld = false;
+//                        double minDistOld = Double.MAX_VALUE;
+//                        int minIDOld = -1;
 
                         for (Obj oldObj: previousFrame) {
                             if (idSet.contains(oldObj.getID()))
                                 continue;
-
-                            double dist = LinAlg.distance(newObj.getCentroid(), oldObj.getCentroid());
-                            if(dist < threshOld && dist < minDistOld){
-                                matchedOld = true;
-                                minIDOld = oldObj.getID();
-                                minDistOld = dist;
+                            
+                            double oldObjVol = oldObj.getBoundingBox().volume();
+                            double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), oldObj.getBoundingBox(), 8);
+                            if(iVol == 0){
+                            	continue;
                             }
+
+                            double overlapped = newObjVol/iVol * oldObjVol/iVol;
+                            if(overlapped > overlapThresh && overlapped >= maxOverlapped){
+                            	matched = true;
+                            	maxOverlapped = overlapped;
+                            	maxID = oldObj.getID();
+                            }
+
+//                            double dist = LinAlg.distance(newObj.getCentroid(), oldObj.getCentroid());
+//                            if(dist < threshOld && dist < minDistOld){
+//                                matchedOld = true;
+//                                minIDOld = oldObj.getID();
+//                                minDistOld = dist;
+//                            }
                         }
-                        if(matchedOld) {
-                            newObj.setID(minIDOld);
+                        if(matched) {
+                            newObj.setID(maxID);
                         }
                         else {
                             newObj.setID(Obj.nextID());
