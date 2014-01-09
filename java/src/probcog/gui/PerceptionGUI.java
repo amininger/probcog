@@ -695,10 +695,10 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     public void drawSoarObjects(double[][] faceCamera){
     	VisWorld.Buffer soarBuffer = vw.getBuffer("soarobjects");
     	VisWorld.Buffer soarTextBuffer = vw.getBuffer("soarobjtext");
-    	ArrayList<Obj> soarObjects;
+    	HashMap<Integer, Obj> soarObjects;
     	synchronized(tracker.stateLock){
     		soarObjects = tracker.getSoarObjects();
-    		for(Obj obj : soarObjects){
+    		for(Obj obj : soarObjects.values()){
     			BoundingBox bbox = obj.getBoundingBox();
     			double[] s = bbox.lenxyz;
     			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);

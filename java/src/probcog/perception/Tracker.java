@@ -99,6 +99,40 @@ public class Tracker
         return worldState.get(id);
     }
     
+    private int matchObject(Obj obj, HashMap<Integer, Obj> candidates){
+        // Iterate through our existing objects. If there is an object
+        // sharing any single label within a fixed distance of an existing
+        // object, take the existing object's ID. If the ID has already
+        // been taken by another object, take a new ID
+        double thresh = 0.02;
+        double overlapThresh = .04;
+        
+    	double objVol = obj.getBoundingBox().volume();
+    	double maxOverlapped = -1;
+        int maxID = -1;
+        
+       // double minDist = Double.MAX_VALUE;
+        for (Obj cand: candidates.values()) {
+            double candVol = cand.getBoundingBox().volume();
+            double iVol = BoundingBox.estimateIntersectionVolume(obj.getBoundingBox(), cand.getBoundingBox(), 8);
+            if(iVol == 0){
+            	continue;
+            }
+
+            double overlapped = iVol/objVol * iVol/candVol;
+            if(overlapped > overlapThresh && overlapped >= maxOverlapped){
+//            	System.out.println("== NEW BEST ==");
+//            	System.out.println("  NEW VOL:   " + objVol);
+//            	System.out.println("  SOAR VOL:  " + candVol);
+//            	System.out.println("  INTERSXN:  " + iVol);
+//            	System.out.println("  OVERLAP:   " + overlapped);
+            	maxOverlapped = overlapped;
+            	maxID = cand.getID();
+            }
+        }
+        return maxID;
+    }
+    
 
     public void compareObjects()
     {
@@ -106,7 +140,7 @@ public class Tracker
     	long time = TimeUtil.utime();
 
     	// Get Soar Objects
-        ArrayList<Obj> soarObjects = getSoarObjects();
+        HashMap<Integer, Obj> soarObjects = getSoarObjects();
         if(SHOW_TIMERS){
         	System.out.println("  GET SOAR OBJECTS: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
@@ -120,14 +154,13 @@ public class Tracker
         	time = TimeUtil.utime();
         }
 
-        ArrayList<Obj> previousFrame = new ArrayList<Obj>();
-
-        // If we haven't started receiving messages from soar, use most recent frame
-        for(Obj o : worldState.values()) {
-            previousFrame.add(o);
-            if(soarObjects.size() == 0 && worldState.size() > 0) {
-                soarObjects.add(o);
-            }
+        HashMap<Integer, Obj> previousFrame = new HashMap<Integer, Obj>();
+        
+        for(Obj obj : soarObjects.values()){
+        	previousFrame.put(obj.getID(), obj);
+        }
+        for(Obj obj : worldState.values()){
+        	previousFrame.put(obj.getID(), obj);
         }
 
         synchronized (stateLock) {
@@ -161,96 +194,122 @@ public class Tracker
             // sharing any single label within a fixed distance of an existing
             // object, take the existing object's ID. If the ID has already
             // been taken by another object, take a new ID
-            Set<Integer> idSet = new HashSet<Integer>();
-            double thresh = 0.02;
-            double overlapThresh = .04;
-            for (Obj newObj: visibleObjects) {
-            	double newObjVol = newObj.getBoundingBox().volume();
-                boolean matched = false;
-                double maxOverlapped = -1;   // How much the object is overlapped by a soar object
-                int maxID = -1;
-                
-               // double minDist = Double.MAX_VALUE;
-                for (Obj soarObj: soarObjects) {
-                    if (idSet.contains(soarObj.getID()))
-                        continue;
-                    
-                    double soarObjVol = soarObj.getBoundingBox().volume();
-                    double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), soarObj.getBoundingBox(), 8);
-                    if(iVol == 0){
-                    	continue;
-                    }
-
-                    double overlapped = newObjVol/iVol * soarObjVol / iVol;
-                    if(overlapped > overlapThresh && overlapped >= maxOverlapped){
-                    	matched = true;
-                    	maxOverlapped = overlapped;
-                    	maxID = soarObj.getID();
-                    }
-
-//                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid());
-//                    if(dist < thresh && dist < minDist){
-//                        matched = true;
-//                        minID = soarObj.getID();
-//                        minDist = dist;
-//                    }
-                }
-
-                if (matched) {
-                    newObj.setID(maxID);
-                    newObj.setConfirmed(true);
-                }
-                else {
-                    if(previousFrame.size() > 0){
-                    	matched = false;
-                    	maxOverlapped = -1;
-                    	maxID = -1;
-//
-//                        double threshOld = .01;
-//                        boolean matchedOld = false;
-//                        double minDistOld = Double.MAX_VALUE;
-//                        int minIDOld = -1;
-
-                        for (Obj oldObj: previousFrame) {
-                            if (idSet.contains(oldObj.getID()))
-                                continue;
-                            
-                            double oldObjVol = oldObj.getBoundingBox().volume();
-                            double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), oldObj.getBoundingBox(), 8);
-                            if(iVol == 0){
-                            	continue;
-                            }
-
-                            double overlapped = newObjVol/iVol * oldObjVol/iVol;
-                            if(overlapped > overlapThresh && overlapped >= maxOverlapped){
-                            	matched = true;
-                            	maxOverlapped = overlapped;
-                            	maxID = oldObj.getID();
-                            }
-
-//                            double dist = LinAlg.distance(newObj.getCentroid(), oldObj.getCentroid());
-//                            if(dist < threshOld && dist < minDistOld){
-//                                matchedOld = true;
-//                                minIDOld = oldObj.getID();
-//                                minDistOld = dist;
-//                            }
-                        }
-                        if(matched) {
-                            newObj.setID(maxID);
-                        }
-                        else {
-                            newObj.setID(Obj.nextID());
-                        }
-                    }
-
-                    else {
-                        newObj.setID(Obj.nextID());
-                    }
-                }
-                idSet.add(newObj.getID());
-
+            
+            for(Obj newObj: visibleObjects){
+            	int id = matchObject(newObj, previousFrame);
+            	if(id == -1){
+            		id = matchObject(newObj, soarObjects);
+            	}
+            	if(id != -1){
+            		newObj.setID(id);
+            		newObj.setConfirmed(true);
+            		if(previousFrame.containsKey(id)){
+            			previousFrame.remove(id);
+            		}
+            		if(soarObjects.containsKey(id)){
+            			soarObjects.remove(id);
+            		}
+            	} else {
+            		newObj.setID(Obj.nextID());
+            	}
                 worldState.put(newObj.getID(), newObj);
             }
+            
+            
+//            double thresh = 0.02;
+//            double overlapThresh = .04;
+//            for (Obj newObj: visibleObjects) {
+//            	double newObjVol = newObj.getBoundingBox().volume();
+//                boolean matched = false;
+//                double maxOverlapped = -1;   // How much the object is overlapped by a soar object
+//                int maxID = -1;
+//                
+//               // double minDist = Double.MAX_VALUE;
+//                for (Obj soarObj: soarObjects) {
+//                    if (idSet.contains(soarObj.getID()))
+//                        continue;
+//                    
+//                    double soarObjVol = soarObj.getBoundingBox().volume();
+//                    double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), soarObj.getBoundingBox(), 8);
+//                    if(iVol == 0){
+//                    	continue;
+//                    }
+//
+//                    double overlapped = iVol/newObjVol * iVol/soarObjVol;
+//                    if(overlapped > overlapThresh && overlapped >= maxOverlapped){
+//                    	System.out.println("== NEW BEST ==");
+//                    	System.out.println("  NEW VOL:   " + newObjVol);
+//                    	System.out.println("  SOAR VOL:  " + soarObjVol);
+//                    	System.out.println("  INTERSXN:  " + iVol);
+//                    	System.out.println("  OVERLAP:   " + overlapped);
+//                    	matched = true;
+//                    	maxOverlapped = overlapped;
+//                    	maxID = soarObj.getID();
+//                    }
+//
+////                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid());
+////                    if(dist < thresh && dist < minDist){
+////                        matched = true;
+////                        minID = soarObj.getID();
+////                        minDist = dist;
+////                    }
+//                }
+//
+//                if (matched) {
+//                    newObj.setID(maxID);
+//                    newObj.setConfirmed(true);
+//                }
+//                else {
+//                    if(previousFrame.size() > 0){
+//                    	matched = false;
+//                    	maxOverlapped = -1;
+//                    	maxID = -1;
+////
+////                        double threshOld = .01;
+////                        boolean matchedOld = false;
+////                        double minDistOld = Double.MAX_VALUE;
+////                        int minIDOld = -1;
+//
+//                        for (Obj oldObj: previousFrame) {
+//                            if (idSet.contains(oldObj.getID()))
+//                                continue;
+//                            
+//                            double oldObjVol = oldObj.getBoundingBox().volume();
+//                            double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), oldObj.getBoundingBox(), 8);
+//                            if(iVol == 0){
+//                            	continue;
+//                            }
+//
+//                            double overlapped = newObjVol/iVol * oldObjVol/iVol;
+//                            index            if(overlapped > overlapThresh && overlapped >= maxOverlapped){
+//                            	matched = true;
+//                            	maxOverlapped = overlapped;
+//                            	maxID = oldObj.getID();
+//                            }
+//
+////                            double dist = LinAlg.distance(newObj.getCentroid(), oldObj.getCentroid());
+////                            if(dist < threshOld && dist < minDistOld){
+////                                matchedOld = true;
+////                                minIDOld = oldObj.getID();
+////                                minDistOld = dist;
+////                            }
+//                        }
+//                        if(matched) {
+//                            newObj.setID(maxID);
+//                        }
+//                        else {
+//                            newObj.setID(Obj.nextID());
+//                        }
+//                    }
+//
+//                    else {
+//                        newObj.setID(Obj.nextID());
+//                    }
+//                }
+//                idSet.add(newObj.getID());
+//
+//                worldState.put(newObj.getID(), newObj);
+//            }
 
             ArrayList<Obj> imagined = createImaginedObjects(world, false);
             for(Obj o : imagined) {
@@ -318,9 +377,9 @@ public class Tracker
      *  their most recent lcm message. Obj have information such as their center
      *  and features they were classified with. They do not have point clouds.
      **/
-    public ArrayList<Obj> getSoarObjects()
+    public HashMap<Integer, Obj> getSoarObjects()
     {
-        ArrayList<Obj> soarObjects = new ArrayList<Obj>();
+        HashMap<Integer, Obj> soarObjects = new HashMap<Integer, Obj>();
 
         synchronized(soarLock) {
             if(soar_lcm != null) {
@@ -341,7 +400,7 @@ public class Tracker
 
                         sObj.addClassifications(fc, cs);
                     }
-                    soarObjects.add(sObj);
+                    soarObjects.put(sObj.getID(), sObj);
                 }
             }
         }
