@@ -286,6 +286,17 @@ public class Obj
                 k++;
             }
             
+            ArrayList<Double> fs = this.features.get(fc);
+            if(fs == null || Features.isVisualFeature(fc)){
+            	cat_dat[j].num_features = 0;
+            	cat_dat[j].features = new double[0];
+            } else {
+	            cat_dat[j].num_features = fs.size();
+	            cat_dat[j].features = new double[cat_dat[j].num_features];
+	            for(int i = 0; i < cat_dat[j].num_features; i++){
+	            	cat_dat[j].features[i] = fs.get(i);
+	            }
+            }
            
             j++;
         }

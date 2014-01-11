@@ -10,9 +10,16 @@ public class TemperatureFeatureExtractor
 {
     public static ArrayList<Double> getFeatures(PointCloud cloud)
     {
+    	// Temperature right now is based on color
+    	// Where red is the highest (1) and blue/purple is the coldest (0)
         ArrayList<Double> features = new ArrayList<Double>();
-        double[] hsv = ColorFeatureExtractor.avgHSV(cloud.getPoints());
-        features.add(hsv[0]);
+        double hue = ColorFeatureExtractor.avgHSV(cloud.getPoints())[0];
+        hue += 1.0/12.0; // Shift right so red is min and purple is max
+        if(hue > 1){
+        	hue -= 1;
+        }
+
+        features.add(1-hue);
 
 		return features;
     }
