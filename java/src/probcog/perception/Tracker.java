@@ -163,7 +163,7 @@ public class Tracker
             // been taken by another object, take a new ID
             Set<Integer> idSet = new HashSet<Integer>();
             double thresh = 0.02;
-            double overlapThresh = .04;
+            double overlapThresh = .125;
             for (Obj newObj: visibleObjects) {
             	double newObjVol = newObj.getBoundingBox().volume();
                 boolean matched = false;
@@ -181,7 +181,7 @@ public class Tracker
                     	continue;
                     }
 
-                    double overlapped = newObjVol/iVol * soarObjVol / iVol;
+                    double overlapped = iVol / newObjVol * iVol / soarObjVol;
                     if(overlapped > overlapThresh && overlapped >= maxOverlapped){
                     	matched = true;
                     	maxOverlapped = overlapped;
@@ -221,7 +221,7 @@ public class Tracker
                             	continue;
                             }
 
-                            double overlapped = newObjVol/iVol * oldObjVol/iVol;
+                            double overlapped = iVol/newObjVol * iVol/oldObjVol;
                             if(overlapped > overlapThresh && overlapped >= maxOverlapped){
                             	matched = true;
                             	maxOverlapped = overlapped;
