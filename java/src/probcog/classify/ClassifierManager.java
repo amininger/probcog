@@ -90,6 +90,12 @@ public class ClassifierManager
         sizeKNN.setDataFile(sizeDataFile);      // XXX parameter and classification
 
         classifiers.put(FeatureCategory.SIZE, sizeKNN);
+        
+        GKNNClassifier weightKNN = new GKNNClassifier(1, .0001);
+        classifiers.put(FeatureCategory.WEIGHT, weightKNN);
+        
+        GKNNClassifier temperatureKNN = new GKNNClassifier(1, .01);
+        classifiers.put(FeatureCategory.TEMPERATURE, temperatureKNN);
 
         reloadData();
     }
@@ -97,28 +103,37 @@ public class ClassifierManager
     public HashMap<FeatureCategory,Classifications> classifyAll(Obj objectToClassify)
     {
         HashMap<FeatureCategory,Classifications> results = new HashMap<FeatureCategory,Classifications>();
-        for(FeatureCategory fc : classifiers.keySet())
-            results.put(fc, classify(fc, objectToClassify));
+        for(FeatureCategory fc : classifiers.keySet()){
+        	Classifications c = classify(fc, objectToClassify);
+        	if(c != null){
+        		results.put(fc, c);
+        	}
+        }
 
         return results;
     }
 
     public Classifications classify(FeatureCategory cat, Obj objToClassify)
     {
-	Classifier classifier = classifiers.get(cat);
-	ArrayList<Double> features = Features.getFeatures(cat, objToClassify.getPointCloud());
-	objToClassify.addFeatures(cat, features);
+    	Classifier classifier = classifiers.get(cat);
+    	ArrayList<Double> features;
+    	if(Features.isVisualFeature(cat)){
+    		features = Features.getFeatures(cat, objToClassify.getPointCloud());
+    		objToClassify.addFeatures(cat, features);
+    	} else {
+    		features = objToClassify.getFeatures(cat);
+    	}
 
-	if(features == null){
-	    return null;
-	}
-
-	Classifications classifications;
-	synchronized (stateLock) {
-	    classifications = classifier.classify(features);
-	    objToClassify.addClassifications(cat, classifications);
-	}
-	return classifications;
+		if(classifier == null || features == null){
+		    return null;
+		}
+	
+		Classifications classifications;
+		synchronized (stateLock) {
+		    classifications = classifier.classify(features);
+		    objToClassify.addClassifications(cat, classifications);
+		}
+		return classifications;
     }
 
     public void addDataPoint(FeatureCategory cat, ArrayList<Double> features, String label){

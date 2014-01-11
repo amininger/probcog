@@ -2,6 +2,8 @@ package probcog.sim;
 
 import java.io.IOException;
 
+import probcog.perception.Obj;
+
 import april.jmat.LinAlg;
 import april.sim.SimWorld;
 import april.util.StructureReader;
@@ -11,9 +13,14 @@ public class SimStove extends SimLocation implements ISimEffector{
 	public SimStove(SimWorld sw) {
 		super(sw);
 	}
-
+	
 	@Override
-	public void checkObject(SimObjectPC obj) {
+	public void checkObject(Obj obj){
+		SimObjectPC simObj = obj.getSourceSimObjectPC();
+		if(simObj == null || !(simObj instanceof ISimStateful)){
+			return;
+		}
+
 		// Door must be closed
 		if(!currentState.containsKey("door") || !currentState.get("door").equals("closed")){
 			return;
@@ -22,17 +29,13 @@ public class SimStove extends SimLocation implements ISimEffector{
 		if(!currentState.containsKey("heat") || !currentState.get("heat").equals("on")){
 			return;
 		}
-		// Must be able to set the state of the object
-		if(!(obj instanceof ISimStateful)){
-			return;
-		}
 		
-		double[] diff = LinAlg.subtract(LinAlg.matrixToXyzrpy(T), LinAlg.matrixToXyzrpy(obj.getPose()));
+		double[] diff = LinAlg.subtract(LinAlg.matrixToXyzrpy(T), LinAlg.matrixToXyzrpy(simObj.getPose()));
 		double dx = Math.abs(diff[0]);
 		double dy = Math.abs(diff[1]);
 		if(dx < lwh[0] * scale && dy < lwh[1] * scale){
 			// Center of object is over the stove, cook it!
-			((ISimStateful)obj).setState("cooking", "true");
+			((ISimStateful)simObj).setState("cooking", "true");
 		}
 	}
 	

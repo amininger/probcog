@@ -93,17 +93,17 @@ public class ProbCogSimulator implements VisConsole.Listener
     {
 		@Override
 		public void run() {
-			for(SimObject obj : world.objects){
-				if(!(obj instanceof ISimEffector)){
-					continue;
-				}
-				for(SimObject target : world.objects){
-					if(target == obj || !(target instanceof SimObjectPC)){
-						continue;
-					}
-					((ISimEffector)obj).checkObject((SimObjectPC)target);
-				}
-			}
+//			for(SimObject obj : world.objects){
+//				if(!(obj instanceof ISimEffector)){
+//					continue;
+//				}
+//				for(SimObject target : world.objects){
+//					if(target == obj || !(target instanceof SimObjectPC)){
+//						continue;
+//					}
+//					((ISimEffector)obj).checkObject((SimObjectPC)target);
+//				}
+//			}
 			
 		}
     }

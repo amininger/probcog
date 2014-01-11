@@ -20,6 +20,7 @@ import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.sensor.*;
+import probcog.sim.ISimEffector;
 import probcog.sim.ISimStateful;
 import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
@@ -362,6 +363,14 @@ public class Tracker
         	time = TimeUtil.utime();
         }
 
+        for(SimObject so : world.objects){
+            if(so instanceof ISimEffector) {
+            	ISimEffector effector = (ISimEffector)so;
+            	for(Obj obj : visibleObjects){
+            		effector.checkObject(obj);
+            	}
+            }
+        }
         // Classify all visible objects
         for(Obj obj : visibleObjects){
         	obj.addAllClassifications(classyManager.classifyAll(obj));
