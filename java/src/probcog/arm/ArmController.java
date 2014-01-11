@@ -29,6 +29,7 @@ public class ArmController implements LCMSubscriber
     //BoltArm arm = BoltArm.getSingleton();
     double[] l;
     ArmStatus arm;
+    ArmCalibration calibration;
 
     // State Tracking
     enum ActionState
@@ -40,13 +41,14 @@ public class ArmController implements LCMSubscriber
         DROP_UP_CURR, DROP_UP_OVER, DROP_AT, DROP_RELEASE,
             DROP_RETREAT, DROP_WAITING,
         HOME, HOMING,
+        EXACT, EXACT_WAITING,
     }
     private ActionState state = ActionState.HOME;
 
     // Track the current mode for LCM messages
     enum ActionMode
     {
-        WAIT, HOME, GRAB, POINT, DROP, FAILURE
+        WAIT, HOME, GRAB, POINT, DROP, EXACT, FAILURE // XXX EXACT only used for calibration
     }
     private ActionMode curAction = ActionMode.WAIT;
     private int grabbedObject = -1;
@@ -118,6 +120,8 @@ public class ArmController implements LCMSubscriber
                     } else if (cmd.action.contains("RESET") ||
                                cmd.action.contains("HOME")) {
                         curAction = ActionMode.HOME;
+                    } else if (cmd.action.contains("EXACT")) {
+                        curAction = ActionMode.EXACT;
                     }
                 }
 
@@ -148,6 +152,8 @@ public class ArmController implements LCMSubscriber
                             setState(ActionState.HOME);
                             curAction = ActionMode.WAIT;
                         }
+                    } else if (last_cmd.action.contains("EXACT")) {
+                        exactStateMachine(); // Calibration only
                     }
                 }
                 newAction = false;
@@ -239,6 +245,7 @@ public class ArmController implements LCMSubscriber
                         setState(ActionState.POINT_UP_OVER);
                         break;
                     case POINT_WAITING:
+                    case EXACT:
                         setState(ActionState.POINT_UP_CURR);
                         break;
                 }
@@ -304,6 +311,7 @@ public class ArmController implements LCMSubscriber
                         setState(ActionState.GRAB_UP_BEHIND);
                         break;
                     case POINT_WAITING:
+                    case EXACT:
                         setState(ActionState.GRAB_UP_CURR);
                         break;
                 }
@@ -478,6 +486,7 @@ public class ArmController implements LCMSubscriber
                         setState(ActionState.DROP_UP_OVER);
                         break;
                     case POINT_WAITING:
+                    case EXACT:
                         setState(ActionState.DROP_UP_CURR);
                         break;
                 }
@@ -549,6 +558,28 @@ public class ArmController implements LCMSubscriber
             }
         }
 
+        // Move arm to directly to the exact position requested
+        private void exactStateMachine()
+        {
+            if (state != ActionState.EXACT)
+                setState(ActionState.EXACT);
+
+            switch (state) {
+                case EXACT:
+                    moveTo(goal, goalHeight);
+
+                    if (actionComplete()) {
+                        curAction = ActionMode.WAIT;
+                        setState(ActionState.EXACT_WAITING);
+                    }
+                    break;
+                case EXACT_WAITING:
+                    break;
+                default:
+                    System.err.println("ERR: Should never be here in EXACT");
+            }
+        }
+
         // ======================================================
 
         private void homeArm()
@@ -601,24 +632,28 @@ public class ArmController implements LCMSubscriber
             // Collision check: make sure we haven't gotten stopped by something
             // before reaching our goal XXX
 
+            double[] goal_ = new double[] {goal[0], goal[1], 0};
+
             if (r < minR) {
                 // Do nothing, we can't plan at this range
             } else if (r < maxSR) {
-                simplePlan(r, goal, heightS);
+                goal_[2] = heightS;
+                simplePlan(r, goal_);
             } else if (r < maxCR) {
-                complexPlan(r, goal, heightC);
+                goal_[2] = heightC;
+                complexPlan(r, goal_);
             } else {
-                outOfRange(r, goal);
+                outOfRange(r, goal_);
             }
         }
 
         // Plans with the wrist DOWN for ease of object grabbing
-        private void simplePlan(double r, double[] goal, double height)
+        private void simplePlan(double r, double[] goal)
         {
-            double[] t = new double[5];
+            double[] t = new double[6];
             t[0] = MathUtil.atan2(goal[1], goal[0]);
 
-            double h = (l[3]+l[4]+l[5]+height) - (l[0]+arm.baseHeight);
+            double h = (l[3]+l[4]+l[5]+goal[2]) - (l[0]+arm.baseHeight);
             double lp = Math.sqrt(h*h + r*r);
 
             double l1_2 = l[1]*l[1];
@@ -636,6 +671,7 @@ public class ArmController implements LCMSubscriber
             t[3] = Math.PI - g2 - g4;
 
             //t[5] = Math.toRadians(112.0); XXX
+            t = calibration.map(t);
 
             for (int i = 0; i < 4; i++) {
                 arm.setPos(i, t[i]);
@@ -644,11 +680,11 @@ public class ArmController implements LCMSubscriber
         }
 
         // Plans with wrist able to take different orientations
-        private void complexPlan(double r, double[] goal, double height)
+        private void complexPlan(double r, double[] goal)
         {
-            double[] t = new double[5];
+            double[] t = new double[6];
             t[0] = MathUtil.atan2(goal[1], goal[0]);
-            double h = (l[0]+arm.baseHeight) - height;
+            double h = (l[0]+arm.baseHeight) - goal[2];
             double lp = Math.sqrt(h*h + r*r);
 
             double l1 = l[1]+l[2];
@@ -666,6 +702,7 @@ public class ArmController implements LCMSubscriber
             t[3] = Math.PI - g2;
 
             //t[5] = Math.toRadians(112.0); XXX
+            t = calibration.map(t);
 
             for (int i = 0; i < 4; i++) {
                 arm.setPos(i, t[i]);
@@ -673,10 +710,10 @@ public class ArmController implements LCMSubscriber
             arm.setPos(4, last_cmd.wrist);  // XXX Persistent wrist command?
         }
 
-        // Just point the arm towards the goal...Points a little low. XXX Controller?
+        // Just point the arm towards the goal...Points a little low.
         private void outOfRange(double r, double[] goal)
         {
-            double[] t = new double[5];
+            double[] t = new double[6];
             double tiltFactor = 45;
             t[0] = MathUtil.atan2(goal[1], goal[0]);
             t[1] = Math.PI/2 - Math.toRadians(tiltFactor);
@@ -689,6 +726,7 @@ public class ArmController implements LCMSubscriber
             //t[3] = MathUtil.atan2(l1, r-l2);
 
             //t[5] = Math.toRadians(112.0); XXX
+            t = calibration.map(t);
 
             for (int i = 0; i < 4; i++) {
                 arm.setPos(i, t[i]);
@@ -700,6 +738,12 @@ public class ArmController implements LCMSubscriber
     public ArmController(Config config) throws IOException
     {
         arm = new ArmStatus(config);
+
+        // Initialize calibration
+        String filename = config.getPath("robot.calibration", "");
+
+        calibration = new ArmCalibration(filename);
+
         initArm();
 
         // Start independent control thread.

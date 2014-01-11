@@ -7,6 +7,7 @@ import javax.swing.*;
 
 import lcm.lcm.*;
 
+import april.config.*;
 import april.jmat.*;
 import april.util.*;
 import april.vis.*;
@@ -23,6 +24,9 @@ import probcog.util.*;
 public class ArmCommandInterpreter
 {
     LCM lcm = LCM.getSingleton();
+
+    // Arm info
+    ArmStatus arm;
 
     // Queue up messages as we receive them, assuming we'll get
     // only one of each
@@ -45,6 +49,7 @@ public class ArmCommandInterpreter
 
     // State on held object
     double heldHeight = 0;
+    double gripWidth = 0;
 
     class InterpreterThread extends Thread
     {
@@ -183,18 +188,20 @@ public class ArmCommandInterpreter
         }
     }
 
-    public ArmCommandInterpreter()
+    public ArmCommandInterpreter(Config config_) throws IOException
     {
-        this(false);
+        this(config_, false);
     }
 
-    public ArmCommandInterpreter(boolean debug_)
+    public ArmCommandInterpreter(Config config_, boolean debug_) throws IOException
     {
         debug = debug_;
         if (debug) {
             dthread = new DebugThread();
             dthread.start();
         }
+
+        arm = new ArmStatus(config_);
 
         // Thread waits for new commands to arrive, processing them and
         // sending them on to the arm, having now grounded the command
@@ -332,6 +339,8 @@ public class ArmCommandInterpreter
                 bcmd.xyz[2] = zMax - Math.min(zMax - zMid, grabOffset);
 
                 heldHeight = bcmd.xyz[2] - zMin; // Height above the ground we grabbed at
+                BoundingBox bbox = obj.getBoundingBox();
+                gripWidth = Math.min(bbox.lenxyz[0], bbox.lenxyz[1]);
 
                 // XXX Eventually a lot of this stuff should move OUT of here
                 double minBoxRot = getMinimalRotation(xyPoints);
@@ -372,7 +381,7 @@ public class ArmCommandInterpreter
 
         return bcmd;
     }
-   
+
     private double clampAngle(double theta)
     {
         theta = MathUtil.mod2pi(theta);
@@ -397,6 +406,51 @@ public class ArmCommandInterpreter
 
         bcmd.obj_id = 0; // XXX - not true
         bcmd.xyz = LinAlg.resize(cmd.dest, 3);
+
+        // Adjust drop position based on how closed the gripper is.
+        /*
+        dynamixel_status_t stat = arm.getStatus(5);
+        if (stat != null) {
+            // XXX Hardcoded gripper parameters
+            double frot = Math.toRadians(0);    // Guess at angle of fingers
+            double foff = 0.015;    // Offset of finger rotation point from center
+            double foff2 = 0.010;   // Offset of the finger tips from our modeled tips
+            double flen = 0.090;    // Mobile finger length
+            double sdist = 0.050;   // Distance between static finger and gripper center
+            double delta = 0;       // Amount we're going to shift our arm position
+
+            double rad = stat.position_radians - frot;
+            foff2 *= Math.cos(rad);
+
+            if (rad > 0 && rad <= Math.PI/2) {
+                double x = foff2 + foff + flen*Math.cos(rad);
+                delta = sdist - x;
+            } else if (rad > Math.PI/2) {
+                double x = foff2 + foff - flen*Math.sin(rad - Math.PI/2);
+                delta = sdist - x;
+            }
+
+            delta /= 2;
+
+            // Adjust arm position based on delta.
+            double theta = Math.atan2(bcmd.xyz[1], bcmd.xyz[0]);
+            System.out.printf("Before\n");
+            LinAlg.print(bcmd.xyz);
+            bcmd.xyz[0] -= delta*Math.sin(theta);
+            bcmd.xyz[1] -= delta*Math.cos(theta);
+            System.out.printf("After\n");
+            LinAlg.print(bcmd.xyz);
+        }*/
+        double defaultGripWidth = 0.080;
+        if (gripWidth > 0) {
+            double delta = (gripWidth - defaultGripWidth)/2;
+            double theta = Math.atan2(bcmd.xyz[1], bcmd.xyz[0]);
+
+            bcmd.xyz[0] += -delta*Math.sin(theta);
+            bcmd.xyz[1] += delta*Math.cos(theta);
+
+            gripWidth = 0;
+        }
 
         // Find height of place we're putting down object.
         // This is our naive attempt to stack reasonably.
@@ -690,8 +744,8 @@ public class ArmCommandInterpreter
 
     // ==========================
 
-    static public void main(String[] args)
+/*    static public void main(String[] args)
     {
         ArmCommandInterpreter aci = new ArmCommandInterpreter(true);
-    }
+    }*/
 }

@@ -120,7 +120,7 @@ public class SimArm implements LCMSubscriber
                     // Handle commands
                     if (cmds != null) {
                         dynamixel_command_t cmd = cmds.commands[i];
-                        //cmd.speed = 0.05; // DEBUG
+                        //cmd.speed = 1.0; // DEBUG XXX
                         // Rotation
                         double pos = arm.getActualPos(i);
                         int sign = pos <= cmd.position_radians ? 1 : -1;
@@ -142,6 +142,7 @@ public class SimArm implements LCMSubscriber
                         if (!stopped) {
                             status.speed = cmd.speed;
                         }
+                        //System.out.println("SPEED " + i + " == " + status.speed);
 
                         // Grabbing
                         // If the hand joint is moving in the positive direction,
