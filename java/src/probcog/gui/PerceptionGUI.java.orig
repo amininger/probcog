@@ -126,7 +126,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         // Spin up a virtual arm in sim world
         if (opts.getBoolean("kinect")) {
             // Raw kinect data view
-            // kinectView = new KinectView(config);
+            //kinectView = new KinectView(config);
         } else {
         }
 
@@ -413,6 +413,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 if(e.getStateChange() == ItemEvent.DESELECTED) {
                 	drawPerceptionObjects = false;
                 	vw.getBuffer("perc-objects").swap();
+                	vw.getBuffer("perc-labels").swap();
                 }
                 else if(e.getStateChange() == ItemEvent.SELECTED) {
                 	drawPerceptionObjects = true;
@@ -458,7 +459,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
             public void itemStateChanged(ItemEvent e) {
                 if(e.getStateChange() == ItemEvent.DESELECTED) {
                 	drawPointClouds = false;
-                	vw.getBuffer("object-view").swap();
                 }
                 else if(e.getStateChange() == ItemEvent.SELECTED) {
                 	drawPointClouds = true;
@@ -581,21 +581,21 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 if(drawPointClouds){
                     drawPointCloud();
                 } else {
-                	//drawObjectBoxes();
+                	drawObjectBoxes();
                 }
                 drawSelection(dt);
                 if(drawPerceptionObjects){
                 	drawPerceptionObjects();
                 }
-                double[][] faceCamera = calcFaceCameraMatrix();
                 if(drawBeliefObjects){
                 	drawBeliefObjects();
                 }
+                double[][] faceCamera = calcFaceCameraMatrix();
+                if(drawPerceptionObjects){
+                	drawPerceptionLabels(faceCamera);
+                }
                 if(drawBeliefObjects){
                 	drawBeliefLabels(faceCamera);
-                }
-                if(drawPropertyLabels){
-                	drawPerceptionLabels(faceCamera);
                 }
 
                 arm.render(vw);
@@ -636,6 +636,32 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         fpsBuffer.addBack(sensorFPS);
         fpsBuffer.swap();
     }
+<<<<<<< HEAD
+    
+    public void drawSoarObjects(double[][] faceCamera){
+    	VisWorld.Buffer soarBuffer = vw.getBuffer("soarobjects");
+    	VisWorld.Buffer soarTextBuffer = vw.getBuffer("soarobjtext");
+    	HashMap<Integer, Obj> soarObjects;
+    	synchronized(tracker.stateLock){
+    		soarObjects = tracker.getSoarObjects();
+    		for(Obj obj : soarObjects.values()){
+    			BoundingBox bbox = obj.getBoundingBox();
+    			double[] s = bbox.lenxyz;
+    			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);
+    			double[][] trans = LinAlg.xyzrpyToMatrix(bbox.xyzrpy);
+    			VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)), new VzLines.Style(Color.black, 4));
+    			soarBuffer.addBack(new VisChain(trans, scale, box));
+    			
+        		String tf="<<monospaced,black,dropshadow=false>>";
+        		String labelString = String.format("%s%d\n", tf, obj.getID());
+        		VzText text = new VzText(labelString);
+        		double[] textLoc = new double[]{bbox.xyzrpy[0], bbox.xyzrpy[1], bbox.xyzrpy[2]};
+        		textLoc[0] -= bbox.lenxyz[0] * .4f;
+        		textLoc[1] -= bbox.lenxyz[1] * .4f;
+        		textLoc[2] += bbox.lenxyz[2] * .55f;
+        		soarTextBuffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.004), text));
+    		}
+=======
 
     private void drawObjectBoxes(){
     	VisWorld.Buffer buffer = vw.getBuffer("object-view");
@@ -645,6 +671,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
             		buffer.addBack(ob.getVisObject());
             	}
 	    	}
+>>>>>>> probcog2/obj-tracking
     	}
     	buffer.swap();
     }
@@ -749,9 +776,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                             continue;   // These don't matter
                         Classifications cs = obj.getLabels(cat);
                         Classifications.Label bestLabel = cs.getBestLabel();
-                        if(bestLabel.label.equals("unknown")){
-                        	continue;
-                        }
                         if(bestLabel != null && cat != FeatureCategory.LOCATION){
                     		labelString += String.format("%s%s:%.2f\n", tf,
                                     bestLabel.label,
@@ -770,10 +794,10 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
     private void drawBeliefObjects(){
     	VisWorld.Buffer buffer = vw.getBuffer("belief-objects");
-    	HashMap<Integer, Obj> soarObjects;
+    	ArrayList<Obj> soarObjects;
     	synchronized(tracker.stateLock){
     		soarObjects = tracker.getSoarObjects();
-    		for(Obj obj : soarObjects.values()){
+    		for(Obj obj : soarObjects){
     			BoundingBox bbox = obj.getBoundingBox();
     			double[] s = bbox.lenxyz;
     			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);
@@ -787,10 +811,10 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
     private void drawBeliefLabels(double[][] faceCamera){
     	VisWorld.Buffer buffer = vw.getBuffer("belief-labels");
-    	HashMap<Integer, Obj> soarObjects;
+    	ArrayList<Obj> soarObjects;
     	synchronized(tracker.stateLock){
     		soarObjects = tracker.getSoarObjects();
-    		for(Obj obj : soarObjects.values()){
+    		for(Obj obj : soarObjects){
     			BoundingBox bbox = obj.getBoundingBox();
         		String tf="<<monospaced,black,dropshadow=#FFFFFFFF>>";
         		String labelString = String.format("%s%d\n", tf, obj.getID());
