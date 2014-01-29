@@ -55,6 +55,8 @@ public class Tracker
     ArrayList<Double> frameTimes = new ArrayList<Double>();
     int frameIdx = 0;
     final int frameTotal = 10;
+    
+    long soarTime = 0;
 
 
     public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException{
@@ -87,6 +89,14 @@ public class Tracker
 
         new ListenerThread().start();
         new TrackingThread().start();
+    }
+    
+    public long getSoarTime(){
+    	return soarTime;
+    }
+    
+    public void resetSoarTime(){
+    	soarTime = 0;
     }
 
     public HashMap<Integer, Obj> getWorldState()
@@ -186,6 +196,7 @@ public class Tracker
                 	System.out.println("  TRACKING: " + (TimeUtil.utime() - time));
                 	time = TimeUtil.utime();
                 }
+    			
                 return;
             }
 
@@ -479,46 +490,44 @@ public class Tracker
      */
     public object_data_t[] getObjectData()
     {
-        object_data_t[] od;
         long utime = TimeUtil.utime();
+        ArrayList<object_data_t> objList = new ArrayList<object_data_t>();
 
         int i = 0;
         synchronized (stateLock) {
-        	int numObjects = 0;
-        	for(Obj ob : worldState.values()){
-        		SimObject simObj = ob.getSourceSimObject();
-        		if(simObj == null || !(simObj instanceof SimObjectPC) || ((SimObjectPC)simObj).getVisible()){
-        			numObjects++;
-        		}
-        	}
-
             // XXX HACK HACK HACK HACK HACK HACK HACK HACK
-            double fudge = 0.010; // Just for you, James
+            double fudge = 0.0010; // Just for you, James
             ArrayList<Obj> objs = new ArrayList<Obj>(worldState.values());
             for (i = 0; i < objs.size(); i++) {
-                Shape shape0 = objs.get(i).getShape();
-                BoundingBox bbox0 = objs.get(i).getBoundingBox();
-                double[] c0 = objs.get(i).getCentroid();
+            	Shape shape0 = objs.get(i).getShape();
+            	BoundingBox bbox0 = objs.get(i).getBoundingBox();
                 for (int j = i+1; j < objs.size(); j++) {
-                    Shape shape1 = objs.get(j).getShape();
-                    BoundingBox bbox1 = objs.get(j).getBoundingBox();
-                    double[] c1 = objs.get(j).getCentroid();
-
+                	Shape shape1 = objs.get(j).getShape();
+                	BoundingBox bbox1 = objs.get(j).getBoundingBox();
                     if (Collisions.collision(shape0, LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
                                              shape1, LinAlg.xyzrpyToMatrix(bbox1.xyzrpy)))
                     {
+                    	double c0 = objs.get(i).getBoundingBox().xyzrpy[2];		// Center
+                    	double h0 = objs.get(i).getBoundingBox().lenxyz[2]/2;	// Height (half)
+                    	
+                    	double c1 = objs.get(j).getBoundingBox().xyzrpy[2]; 	// Center
+                    	double h1 = objs.get(j).getBoundingBox().lenxyz[2]/2; 	// Height (half)
+                    	
                         // Adjust zlens in bounding box based on separation
                         // between centroids. Don't forget to update shape!
-                        double dz = Math.abs(c1[2]-c0[2]);
-
-                        // Don't do horizontally overlapping boxes
-                        if (dz < 0.01)
-                            continue;
-
-                        bbox0.lenxyz[2] = dz - fudge;
-                        bbox1.lenxyz[2] = dz - fudge;
-                        //objs.get(i).setBoundingBox(bbox0);
-                        //objs.get(j).setBoundingBox(bbox1);
+                    	
+                    	double dz = Math.abs(c1 - c0);
+                    	// The adjustment is how much the bboxes needed to be backed up so the boxes are separated on z
+                    	double adjustment = h0 + h1 + fudge - dz;
+                    	if(adjustment > 0){
+                    		if(h0 + h1 < adjustment){
+                    			// Already too small to do anything about (or horizontally overlapping)
+                    			continue;
+                    		}
+                    		
+                    		bbox0.lenxyz[2] -=  h0 / (h0 + h1) * adjustment;
+                    		bbox1.lenxyz[2] -=  h1 / (h0 + h1) * adjustment;
+                    	}
 
                         objs.get(i).setShape(new BoxShape(bbox0.lenxyz[0],
                                                           bbox0.lenxyz[1],
@@ -532,34 +541,36 @@ public class Tracker
             // =========== END HACK ======================
 
             i = 0;
-            od = new object_data_t[numObjects];
             for (Obj ob: worldState.values()) {
         		SimObject simObj = ob.getSourceSimObject();
             	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
             		continue;
         		}
+            	object_data_t od = new object_data_t();
 
-                od[i] = new object_data_t();
-                od[i].utime = utime;
-                od[i].id = ob.getID();
-                od[i].pos = ob.getPose();
+                od.utime = utime;
+                od.id = ob.getID();
+                od.pos = ob.getPose();
 
                 BoundingBox bbox = ob.getBoundingBox();
-                od[i].bbox_dim = bbox.lenxyz;
-                od[i].bbox_xyzrpy = bbox.xyzrpy;
+                od.bbox_dim = bbox.lenxyz;
+                od.bbox_xyzrpy = bbox.xyzrpy;
 
-                od[i].state_values = ob.getStates();
-                od[i].num_states = od[i].state_values.length;
+                od.state_values = ob.getStates();
+                od.num_states = od.state_values.length;
 
                 categorized_data_t[] cat_dat = ob.getCategoryData();
-                od[i].num_cat = cat_dat.length;
-                od[i].cat_dat = cat_dat;
+                od.num_cat = cat_dat.length;
+                od.cat_dat = cat_dat;
+                
+                objList.add(od);
 
                 i++;
             }
         }
-
-        return od;
+        
+        object_data_t[] objArray = objList.toArray(new object_data_t[objList.size()]);
+        return objArray;
     }
 
     private void handlePerceptionCommand(perception_command_t command){
@@ -641,6 +652,7 @@ public class Tracker
             if (channel.equals("SOAR_OBJECTS")) {
                 synchronized (soarLock) {
                     soar_lcm = new soar_objects_t(ins);
+                    soarTime = Math.max(soarTime, soar_lcm.utime);
                 }
             } else if (channel.equals("ROBOT_COMMAND")) {
                 synchronized (armLock) {
@@ -650,9 +662,11 @@ public class Tracker
             } else if(channel.equals("SET_STATE_COMMAND")){
             	set_state_command_t setState = new set_state_command_t(ins);
             	processSetStateCommand(setState);
+                soarTime = Math.max(soarTime, setState.utime);
             } else if(channel.equals("PERCEPTION_COMMAND")){
             	perception_command_t command = new perception_command_t(ins);
             	handlePerceptionCommand(command);
+                soarTime = Math.max(soarTime, command.utime);
             }
         }
     }
@@ -676,6 +690,7 @@ public class Tracker
                 synchronized (armLock) {
                     armInterpreter.updateWorld(objsList);
                 }
+    			
                 if(SHOW_TIMERS){
                     System.out.println("TRACKER: " + (TimeUtil.utime() - startTime));
                 }

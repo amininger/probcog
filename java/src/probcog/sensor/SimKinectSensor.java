@@ -289,6 +289,7 @@ public class SimKinectSensor implements Sensor
     		return false;
     	}
     	if(pixels[i].target instanceof SimLocation){
+    		pixels[i].target = null;
     		// We aren't segmenting sim locations
     		return false;
     	}
@@ -304,6 +305,7 @@ public class SimKinectSensor implements Sensor
     
     public SimPixel getPixel(int ix, int iy){
     	SimPixel pixel = new SimPixel();
+    	pixel.target = null;
     	
     	// XXX Infinite loop possibility
         BufferedImage im;
@@ -343,18 +345,18 @@ public class SimKinectSensor implements Sensor
             }
         }
         
-        pixel.target = minObj;
-        if(minObj == null) {
-            double[] xyFloor = ray.intersectPlaneXY();
-            minDist = LinAlg.distance(ray.getSource(), xyFloor);
+        if(minObj == null){
+        	return pixel;
+        } else if(minDist >= 8.0){
+        	return pixel;
+        } else {
+        	pixel.target = minObj;
         }
-
-        // Object is too far away for a kinect to sense anything. Return an
-        // empty point
-        if (minDist >= 8.0) {
-        	pixel.target = null;
-            return pixel;
-        }
+//        pixel.target = minObj;
+//        if(minObj == null) {
+//            double[] xyFloor = ray.intersectPlaneXY();
+//            minDist = LinAlg.distance(ray.getSource(), xyFloor);
+//        }
 
         // Compute the point in space we collide with the object at
         double[] xyzc = ray.getPoint(minDist);

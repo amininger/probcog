@@ -149,9 +149,12 @@ public class BoundingBox
         double zmin = DMAX;
         double zmax = DMIN;
         for (double[] p: points) {
+//        	System.out.println(String.format("%+.10f,  %+.10f, %+.10f", p[0], p[1], p[2]));
             zmin = Math.min(zmin, p[2]);
             zmax = Math.max(zmax, p[2]);
         }
+//        System.out.println("Z MIN: " + zmin + ", ZMAX: " + zmax);
+//        System.out.println("DIFF: " + (zmax - zmin));
 
         // Consider each edge of the polygon forming the hull of our box in
         // turn and compute the minimal bounding box with an edge aligned with
@@ -188,6 +191,7 @@ public class BoundingBox
         ArrayList<int[]> faces = hull.getFaces();
         ArrayList<double[]> normals = hull.getNormals();
         double minVolume = Double.POSITIVE_INFINITY;
+        
         for (int i = 0; i < faces.size(); i++) {
             double[] n = normals.get(i);
             double[] p0 = vertices.get(faces.get(i)[0]);
@@ -232,6 +236,7 @@ public class BoundingBox
 
             BoundingBox bbox = new BoundingBox(lenxyz,
                                                xyzrpy);
+            
 
             if (minBBox.volume() <= 0 || minBBox.volume() > bbox.volume())
                 minBBox = bbox;

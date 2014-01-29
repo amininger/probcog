@@ -83,6 +83,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     Boolean drawBeliefObjects = true;
     Boolean drawPropertyLabels = true;
     Boolean drawPointClouds = true;
+    
+    long soarTime = 0;
 
     public PerceptionGUI(GetOpt opts) throws IOException
     {
@@ -154,7 +156,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
         // Subscribe to LCM
         lcm.subscribe("TRAINING_DATA", this);
-        lcm.subscribe("ROBOT_COMMAND", this);
         lcm.subscribe("GUI_COMMAND", this);
 
         this.setVisible(true);
@@ -252,27 +253,25 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                         }
                     }
                 }
+                soarTime = Math.max(soarTime, training.utime);
             }catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-        } else if(channel.equals("ROBOT_COMMAND")) {
-            // XXX Is this simulated arm stuff?
-        	try {
-        		robot_command_t command = new robot_command_t(ins);
-        	}
-            catch (IOException e) {
                 e.printStackTrace();
                 return;
             }
         } else if(channel.equals("GUI_COMMAND")){
         	try {
         		perception_command_t command = new perception_command_t(ins);
-        		String[] args = command.command.split("=");
+        		String[] args = command.command.toLowerCase().split("=");
         		if(args.length > 1){
-        			selectedId = Integer.parseInt(args[1]);
-                	animation = null;
+        			if(args[0].equals("select")){
+        				selectedId = Integer.parseInt(args[1]);
+                		animation = null;
+        			} else if(args[0].equals("reset")){
+        				soarTime = 0;
+        				tracker.resetSoarTime();
+        			}
         		}
+                soarTime = Math.max(soarTime, command.utime);
         	} catch (IOException e){
         		e.printStackTrace();
         		return;
@@ -284,7 +283,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     public void sendMessage()
     {
         observations_t obs = new observations_t();
-        obs.utime = TimeUtil.utime();
+        obs.utime = Math.max(soarTime, tracker.getSoarTime());
         synchronized(tracker.stateLock){
         	obs.click_id = getSelectedId();
         }
@@ -300,8 +299,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         obs.lookat = camera.lookat;
         obs.up = camera.up;
 
-
-        lcm.publish("OBSERVATIONS",obs);
+        try{
+        	lcm.publish("OBSERVATIONS",obs);
+        } catch (NullPointerException e){
+        	System.out.println("ERROR PUBLISHING STUFF");
+        }
     }
 
     /** AutoSave the classifier state */
@@ -583,6 +585,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 } else {
                 	//drawObjectBoxes();
                 }
+                
                 drawSelection(dt);
                 if(drawPerceptionObjects){
                 	drawPerceptionObjects();
@@ -599,9 +602,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 }
 
                 arm.render(vw);
-
+                
                 TimeUtil.sleep(1000/fps);
-
+                
             }
         }
     }
@@ -720,6 +723,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
             	// Draw box outline
                 BoundingBox bbox = obj.getBoundingBox();
+               // System.out.println(String.format("%d H: %+.5f   Z: %+.5f", obj.getID(), bbox.lenxyz[2], bbox.xyzrpy[2]));
     			double[] s = bbox.lenxyz;
     			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);
     			double[][] trans = LinAlg.xyzrpyToMatrix(bbox.xyzrpy);

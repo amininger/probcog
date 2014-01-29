@@ -1,0 +1,116 @@
+"probcog.sim.SimLocation"
+{
+	1
+	vec 6
+	0.2 -0.2 -0.08 0.0 0.0 0.0
+	0.08
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	bin-1
+}
+"probcog.sim.SimLocation"
+{
+	2
+	vec 6
+	0.2 0.0 -0.08 0.0 0.0 0.0
+	0.08
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	bin-2
+}
+"probcog.sim.SimLocation"
+{
+	3
+	vec 6
+	0.2 0.2 -0.08 0.0 0.0 0.0
+	0.08
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	bin-3
+}
+"probcog.sim.SimScale"
+{
+	4
+	vec 6
+	0.0 0.2 -0.08 0.0 0.0 0.0 0.0
+	0.08
+	vec 4
+	1.0 1.0 0.0 1.0
+	0
+  scale	
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	.2 -.2 0.03 0.0 0.0 0.0
+	0.06
+	vec 4
+	1.0 0.0 0.0 1.0
+	0
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	.2 -.2 0.09 0.0 0.0 0.0
+	0.06
+	vec 4
+	0.0 1.0 1.0 1.0
+	0
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	.2 0.0 0.03 0.0 0.0 0.0
+	0.06
+	vec 4
+	1.0 1.0 0.0 1.0
+	0
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	.2 0.0 0.09 0.0 0.0 0.0
+	0.06
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	.2 0.2 0.03 0.0 0.0 0.0
+	0.06
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	.2 .2 0.09 0.0 0.0 0.0
+	0.06
+	vec 4
+	1.0 0.0 1.0 1.0
+	0
+	vec 3
+	1 1 1
+}
