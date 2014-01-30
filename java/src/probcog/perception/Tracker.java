@@ -323,6 +323,8 @@ public class Tracker
 //                worldState.put(newObj.getID(), newObj);
 //            }
 
+            adjustBoundingBoxes(new ArrayList<Obj>(worldState.values()));
+            
             ArrayList<Obj> imagined = createImaginedObjects(world, false);
             for(Obj o : imagined) {
                 worldState.put(o.getID(), o);
@@ -332,6 +334,7 @@ public class Tracker
             	time = TimeUtil.utime();
             }
         }
+        
         double frameTime = tic.toc();
         if (frameTimes.size() < frameTotal) {
             frameTimes.add(frameTime);
@@ -445,6 +448,60 @@ public class Tracker
         return imagined;
     }
 
+    private void adjustBoundingBoxes(ArrayList<Obj> objs){
+        // XXX HACK HACK HACK HACK HACK HACK HACK HACK
+        double fudge = 0.0010; // Just for you, James
+        for (int i = 0; i < objs.size(); i++) {
+        	Obj obj0 = objs.get(i);
+        	Shape shape0 = obj0.getShape();
+        	BoundingBox bbox0 = obj0.getBoundingBox();
+            for (int j = i+1; j < objs.size(); j++) {
+            	Obj obj1 = objs.get(j);
+            	Shape shape1 = obj1.getShape();
+            	BoundingBox bbox1 = obj1.getBoundingBox();
+                if (Collisions.collision(shape0, LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
+                                         shape1, LinAlg.xyzrpyToMatrix(bbox1.xyzrpy)))
+                {
+                	double c0 = bbox0.xyzrpy[2];		// Center
+                	double h0 = bbox0.lenxyz[2]/2;	// Height (half)
+                	
+                	double c1 = bbox1.xyzrpy[2]; 	// Center
+                	double h1 = bbox1.lenxyz[2]/2; 	// Height (half)
+                	
+                    // Adjust zlens in bounding box based on separation
+                    // between centroids. Don't forget to update shape!
+                	
+                	double dz = Math.abs(c1 - c0);
+                	// The adjustment is how much the bboxes needed to be backed up so the boxes are separated on z
+                	double adjustment = h0 + h1 + fudge - dz;
+                	if(adjustment > 0){
+                		if(h0 + h1 < adjustment){
+                			// Already too small to do anything about (or horizontally overlapping)
+                			continue;
+                		}
+                		
+                		bbox0.lenxyz[2] -=  2 * h0 / (h0 + h1) * adjustment;
+                		bbox1.lenxyz[2] -=  2 * h1 / (h0 + h1) * adjustment;
+
+                        obj0.setShape(new BoxShape(bbox0.lenxyz[0],
+                                                      bbox0.lenxyz[1],
+                                                      bbox0.lenxyz[2]));
+                        obj1.setShape(new BoxShape(bbox1.lenxyz[0],
+                                                      bbox1.lenxyz[1],
+                                                      bbox1.lenxyz[2]));
+                        if (Collisions.collision(obj0.getShape(), LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
+                                obj1.getShape(), LinAlg.xyzrpyToMatrix(bbox1.xyzrpy))){
+                        	System.out.println("STILL A COLLISION");
+                        	
+                        }
+                	}
+                }
+            }
+        }
+        // =========== END HACK ======================
+    	
+    }
+    
     //////////////////////////////////////////////////////////////
     // Methods for interacting with the classifierManager (used through guis)
     public void clearClassificationData()
@@ -493,54 +550,7 @@ public class Tracker
         long utime = TimeUtil.utime();
         ArrayList<object_data_t> objList = new ArrayList<object_data_t>();
 
-        int i = 0;
         synchronized (stateLock) {
-            // XXX HACK HACK HACK HACK HACK HACK HACK HACK
-            double fudge = 0.0010; // Just for you, James
-            ArrayList<Obj> objs = new ArrayList<Obj>(worldState.values());
-            for (i = 0; i < objs.size(); i++) {
-            	Shape shape0 = objs.get(i).getShape();
-            	BoundingBox bbox0 = objs.get(i).getBoundingBox();
-                for (int j = i+1; j < objs.size(); j++) {
-                	Shape shape1 = objs.get(j).getShape();
-                	BoundingBox bbox1 = objs.get(j).getBoundingBox();
-                    if (Collisions.collision(shape0, LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
-                                             shape1, LinAlg.xyzrpyToMatrix(bbox1.xyzrpy)))
-                    {
-                    	double c0 = objs.get(i).getBoundingBox().xyzrpy[2];		// Center
-                    	double h0 = objs.get(i).getBoundingBox().lenxyz[2]/2;	// Height (half)
-                    	
-                    	double c1 = objs.get(j).getBoundingBox().xyzrpy[2]; 	// Center
-                    	double h1 = objs.get(j).getBoundingBox().lenxyz[2]/2; 	// Height (half)
-                    	
-                        // Adjust zlens in bounding box based on separation
-                        // between centroids. Don't forget to update shape!
-                    	
-                    	double dz = Math.abs(c1 - c0);
-                    	// The adjustment is how much the bboxes needed to be backed up so the boxes are separated on z
-                    	double adjustment = h0 + h1 + fudge - dz;
-                    	if(adjustment > 0){
-                    		if(h0 + h1 < adjustment){
-                    			// Already too small to do anything about (or horizontally overlapping)
-                    			continue;
-                    		}
-                    		
-                    		bbox0.lenxyz[2] -=  h0 / (h0 + h1) * adjustment;
-                    		bbox1.lenxyz[2] -=  h1 / (h0 + h1) * adjustment;
-                    	}
-
-                        objs.get(i).setShape(new BoxShape(bbox0.lenxyz[0],
-                                                          bbox0.lenxyz[1],
-                                                          bbox0.lenxyz[2]));
-                        objs.get(j).setShape(new BoxShape(bbox1.lenxyz[0],
-                                                          bbox0.lenxyz[1],
-                                                          bbox0.lenxyz[2]));
-                    }
-                }
-            }
-            // =========== END HACK ======================
-
-            i = 0;
             for (Obj ob: worldState.values()) {
         		SimObject simObj = ob.getSourceSimObject();
             	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
@@ -564,8 +574,6 @@ public class Tracker
                 od.cat_dat = cat_dat;
                 
                 objList.add(od);
-
-                i++;
             }
         }
         
