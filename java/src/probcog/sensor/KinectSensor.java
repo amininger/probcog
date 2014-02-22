@@ -225,7 +225,7 @@ public class KinectSensor implements Sensor
         }
 
         r_rgbIm = rasterizer.rectifyImage(rgbIm);
-        r_depthIm = rasterizer.rectifyImage(depthIm);
+        r_depthIm = rasterizer.rectifyImage(depthIm); // XXX This is wrong
         //r_rgbIm = rgbIm;
         //r_depthIm = depthIm;
         //

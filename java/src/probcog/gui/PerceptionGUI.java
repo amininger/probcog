@@ -604,69 +604,12 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 }
 
                 arm.render(vw);
-
                 TimeUtil.sleep(1000/fps);
 
             }
         }
     }
 
-	public void drawObjects()
-    {
-		VisWorld.Buffer objectBuffer = vw.getBuffer("objects");
-		switch(viewType){
-		case POINT_CLOUD:
-			drawPointCloud();
-			break;
-		case SOAR:
-			drawSoarPredictions(objectBuffer);
-			break;
-		}
-
-        if(showSoarObjects) {
-            VisWorld.Buffer soarBuffer = vw.getBuffer("soar");
-            drawSoarPredictions(soarBuffer);
-            soarBuffer.swap();
-        }
-
-        if(showSegmentedObjects) {
-            VisWorld.Buffer segBuffer = vw.getBuffer("segmented");
-            drawSegmentedObjects(segBuffer);
-            segBuffer.swap();
-        }
-
-		objectBuffer.swap();
-	}
-
-    public void drawSegmentedObjects(VisWorld.Buffer buffer)
-    {
-        for(Obj ob : tracker.getVisibleObjects()) {
-            BoundingBox bbox = ob.getBoundingBox();
-            double[] lwh = bbox.lenxyz;
-            double[] center = new double[]{bbox.xyzrpy[0],
-                                           bbox.xyzrpy[1],
-                                           bbox.xyzrpy[2]};
-
-            VzBox objFrame = new VzBox(lwh[0], lwh[1], lwh[2],
-                                       new VzLines.Style(Color.CYAN, 1));
-            buffer.addBack(new VisChain(LinAlg.translate(center), objFrame));
-        }
-    }
-
-    public void drawSoarPredictions(VisWorld.Buffer buffer)
-    {
-        for(Obj ob : tracker.getSoarObjects().values()) {
-            BoundingBox bbox = ob.getBoundingBox();
-            double[] lwh = bbox.lenxyz;
-            double[] center = new double[]{bbox.xyzrpy[0],
-                                           bbox.xyzrpy[1],
-                                           bbox.xyzrpy[2]};
-
-            VzBox objFrame = new VzBox(lwh[0], lwh[1], lwh[2],
-                                       new VzLines.Style(Color.MAGENTA, 1));
-            buffer.addBack(new VisChain(LinAlg.translate(center), objFrame));
-        }
-    }
     public double[][] calcFaceCameraMatrix(){
         // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
     	CameraPosition camera = vl.cameraManager.getCameraTarget();

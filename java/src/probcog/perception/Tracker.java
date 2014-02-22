@@ -412,7 +412,8 @@ public class Tracker
                     Obj sObj = new Obj(odt.id);
                     double[] xyzrpy = odt.pos;
                     sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
-                    sObj.setBoundingBox(new BoundingBox(odt.bbox_dim, odt.bbox_xyzrpy));
+                    sObj.setBoundingBox(new BoundingBox(odt.bbox_dim,
+                                                        odt.bbox_xyzrpy));
 
                     for(int j=0; j<odt.num_cat; j++) {
                         categorized_data_t cat = odt.cat_dat[j];
