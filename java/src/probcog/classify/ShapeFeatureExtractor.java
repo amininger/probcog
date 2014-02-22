@@ -14,7 +14,7 @@ public class ShapeFeatureExtractor
         ArrayList<double[]> flat = cloud.flattenXY(face);
         ArrayList<double[]> normalized = cloud.normalize(flat);
         ArrayList<Double> features = PCA.getFeatures(normalized, 7);
-
+       
         return features;
     }
 }

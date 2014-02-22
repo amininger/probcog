@@ -11,7 +11,7 @@ public class Features
 {
 	public enum FeatureCategory
     {
-		COLOR, SHAPE, SIZE, LOCATION
+		COLOR, SHAPE, SIZE, LOCATION, WEIGHT, TEMPERATURE
 	}
 
 	// Mapping from a FeatureCategory to the category_t enum
@@ -23,6 +23,8 @@ public class Features
 		featureToLCMCat.put(FeatureCategory.SHAPE, category_t.CAT_SHAPE);
 		featureToLCMCat.put(FeatureCategory.SIZE, category_t.CAT_SIZE);
 		featureToLCMCat.put(FeatureCategory.LOCATION, category_t.CAT_LOCATION);
+		featureToLCMCat.put(FeatureCategory.WEIGHT, category_t.CAT_WEIGHT);
+		featureToLCMCat.put(FeatureCategory.TEMPERATURE, category_t.CAT_TEMPERATURE);
 	}
 
 	public static Integer getLCMCategory(FeatureCategory cat)
@@ -39,11 +41,27 @@ public class Features
 		lcmToFeatureCat.put(category_t.CAT_SHAPE, FeatureCategory.SHAPE);
 		lcmToFeatureCat.put(category_t.CAT_SIZE, FeatureCategory.SIZE);
 		lcmToFeatureCat.put(category_t.CAT_LOCATION, FeatureCategory.LOCATION);
+		lcmToFeatureCat.put(category_t.CAT_WEIGHT, FeatureCategory.WEIGHT);
+		lcmToFeatureCat.put(category_t.CAT_TEMPERATURE, FeatureCategory.TEMPERATURE);
 	}
 
 	public static FeatureCategory getFeatureCategory(Integer lcmCat)
     {
 		return lcmToFeatureCat.get(lcmCat);
+	}
+	
+	// Mapping from strings to FeatureCategory
+	private static HashMap<String, FeatureCategory> nameToFeatureCat;
+	static{
+		nameToFeatureCat = new HashMap<String, FeatureCategory>();
+		nameToFeatureCat.put("color", FeatureCategory.COLOR);
+		nameToFeatureCat.put("shape", FeatureCategory.SHAPE);
+		nameToFeatureCat.put("size", FeatureCategory.SIZE);
+		nameToFeatureCat.put("weight", FeatureCategory.WEIGHT);
+		nameToFeatureCat.put("temperature", FeatureCategory.TEMPERATURE);
+	}
+	public static FeatureCategory getFeatureCategory(String catName){
+		return nameToFeatureCat.get(catName);
 	}
 
 	public static ArrayList<Double> getFeatures(FeatureCategory cat,
@@ -56,7 +74,22 @@ public class Features
 			return SizeFeatureExtractor.getFeatures(cloud);
 		case SHAPE:
 			return ShapeFeatureExtractor.getFeatures(cloud);
+		case WEIGHT:
+			return WeightFeatureExtractor.getFeatures(cloud);
+		case TEMPERATURE:
+			return TemperatureFeatureExtractor.getFeatures(cloud);
 		}
 		return null;
+	}
+	
+	public static boolean isVisualFeature(FeatureCategory cat){
+		switch(cat){
+		case COLOR:
+		case SIZE:
+		case SHAPE:
+			return true;
+		default:
+			return false;
+		}
 	}
 }

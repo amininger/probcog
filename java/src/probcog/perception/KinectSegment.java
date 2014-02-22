@@ -1,20 +1,23 @@
 package probcog.perception;
 
-import java.awt.*;
-import java.io.*;
-import java.util.*;
+import java.awt.Color;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-import april.config.*;
-import april.jmat.*;
-import april.jmat.geom.*;
-import april.sim.*;
-import april.util.*;
-
-import probcog.arm.*;
-import probcog.sensor.*;
+import probcog.arm.ArmStatus;
+import probcog.sensor.KinectSensor;
+import probcog.sensor.Sensor;
+import probcog.sensor.SimKinectSensor;
 import probcog.util.Util;
+import april.config.Config;
+import april.jmat.LinAlg;
+import april.jmat.geom.GLine3D;
+import april.sim.SimWorld;
+import april.util.TimeUtil;
+import april.util.UnionFindSimple;
 
-public class KinectSegment
+public class KinectSegment implements Segmenter
 {
     final static double COLOR_THRESH = .02;//30;
     final static double DISTANCE_THRESH = 0.01;
@@ -42,22 +45,23 @@ public class KinectSegment
 
     public KinectSegment(Config config_) throws IOException
     {
-        this(config_, null);
+    	this(config_, null);
     }
-
+    
     public KinectSegment(Config config_, SimWorld world) throws IOException
     {
-        // Get stuff ready for removing arms
+    	// Get stuff ready for moving arms
         arm = new ArmStatus(config_);
         baseHeight = arm.baseHeight;
         wristHeight = arm.wristHeight;
         armWidths = arm.getArmSegmentWidths();
 
         points = new ArrayList<double[]>();
-        if(world == null)
+        if(world == null){
             kinect = new KinectSensor(config_);
-        else
-            kinect = new SimKinectSensor(world);
+        } else {
+        	kinect = new SimKinectSensor(world);
+        }
 
         sensors.add(kinect);    // XXX
     }
@@ -67,17 +71,41 @@ public class KinectSegment
      ** where the arm is expected to be.
      ** @return list of point clouds for each object segmented in the scene.
      **/
-    public ArrayList<PointCloud> getObjectPointClouds()
+    public ArrayList<Obj> getSegmentedObjects()
     {
         if (!kinect.stashFrame())
-            return new ArrayList<PointCloud>();
+            return new ArrayList<Obj>();
 
         width = kinect.getWidth();
         height = kinect.getHeight();
 
-        points = Util.extractPoints(kinect);
+        // Get points from camera
+        long time = TimeUtil.utime();
+        points = kinect.getAllXYZRGB();
+        if(Tracker.SHOW_TIMERS){
+        	System.out.println("      TRACING: " + (TimeUtil.utime() - time));
+        	time = TimeUtil.utime();
+        }
+        
+        // Remove floor and arm points
         removeFloorAndArmPoints();
-        return unionFind();
+        if(Tracker.SHOW_TIMERS){
+        	System.out.println("      REMOVE POINTS: " + (TimeUtil.utime() - time));
+        	time = TimeUtil.utime();
+        }
+        
+        // Do a union find to do segmentation
+        ArrayList<PointCloud> pointClouds = unionFind();
+        if(Tracker.SHOW_TIMERS){
+        	System.out.println("      SEGMENTATION: " + (TimeUtil.utime() - time));
+        	time = TimeUtil.utime();
+        }
+        
+        ArrayList<Obj> segmentedObjects = new ArrayList<Obj>();
+        for(PointCloud pc : pointClouds){
+        	segmentedObjects.add(new Obj(false, pc));
+        }
+        return segmentedObjects;
     }
 
 

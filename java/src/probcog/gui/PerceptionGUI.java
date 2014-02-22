@@ -2,6 +2,7 @@ package probcog.gui;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import javax.swing.*;
 import java.text.*;
@@ -24,6 +25,8 @@ import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
+import probcog.sim.SimLocation;
+import probcog.sim.SimObjectPC;
 import probcog.util.*;
 import probcog.vis.*;
 
@@ -44,7 +47,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     // LCM
     static LCM lcm = LCM.getSingleton();
     private Timer sendObservationTimer;
-    private static final int OBSERVATION_RATE = 2; // # sent per second
+    private static final int OBSERVATION_RATE = 10; // # sent per second
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
@@ -76,6 +79,13 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     ClickType clickType;
     Boolean showSoarObjects;
     Boolean showSegmentedObjects;
+
+    Boolean drawPerceptionObjects = true;
+    Boolean drawBeliefObjects = true;
+    Boolean drawPropertyLabels = true;
+    Boolean drawPointClouds = true;
+
+    long soarTime = 0;
 
     public PerceptionGUI(GetOpt opts) throws IOException
     {
@@ -113,7 +123,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         simulator = new ProbCogSimulator(opts, vw, vl, vc);
 
         // Initialize object tracker
-        tracker = new Tracker(config, opts.getBoolean("kinect"), simulator.getWorld());
+        tracker = new Tracker(config, opts.getBoolean("kinect"), opts.getBoolean("perfectseg"), simulator.getWorld());
 
         // XXX Is this how we always want to do this?
         // Spin up a virtual arm in sim world
@@ -148,7 +158,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
         // Subscribe to LCM
         lcm.subscribe("TRAINING_DATA", this);
-        lcm.subscribe("ROBOT_COMMAND", this);
+        lcm.subscribe("GUI_COMMAND", this);
 
         this.setVisible(true);
         class SendObservationTask extends TimerTask{
@@ -245,19 +255,29 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                         }
                     }
                 }
+                soarTime = Math.max(soarTime, training.utime);
             }catch (IOException e) {
                 e.printStackTrace();
                 return;
             }
-        } else if(channel.equals("ROBOT_COMMAND")) {
-            // XXX Is this simulated arm stuff?
+        } else if(channel.equals("GUI_COMMAND")){
         	try {
-        		robot_command_t command = new robot_command_t(ins);
+        		perception_command_t command = new perception_command_t(ins);
+        		String[] args = command.command.toLowerCase().split("=");
+        		if(args.length > 1){
+        			if(args[0].equals("select")){
+        				selectedId = Integer.parseInt(args[1]);
+                		animation = null;
+        			} else if(args[0].equals("reset")){
+        				soarTime = 0;
+        				tracker.resetSoarTime();
+        			}
+        		}
+                soarTime = Math.max(soarTime, command.utime);
+        	} catch (IOException e){
+        		e.printStackTrace();
+        		return;
         	}
-            catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
         }
     }
 
@@ -265,7 +285,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     public void sendMessage()
     {
         observations_t obs = new observations_t();
-        obs.utime = TimeUtil.utime();
+        obs.utime = Math.max(soarTime, tracker.getSoarTime());
         synchronized(tracker.stateLock){
         	obs.click_id = getSelectedId();
         }
@@ -281,7 +301,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         obs.lookat = camera.lookat;
         obs.up = camera.up;
 
-        lcm.publish("OBSERVATIONS",obs);
+        try{
+        	lcm.publish("OBSERVATIONS",obs);
+        } catch (NullPointerException e){
+        	System.out.println("ERROR PUBLISHING STUFF");
+        }
     }
 
     /** AutoSave the classifier state */
@@ -386,53 +410,67 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     private void addViewTypeMenu(JMenu menu)
     {
     	menu.add(new JLabel("Change Simulator View"));
-    	ButtonGroup viewGroup = new ButtonGroup();
 
-    	JRadioButtonMenuItem pointView = new JRadioButtonMenuItem("Point Cloud View");
-    	pointView.addActionListener(new ActionListener(){
-                @Override
-                public void actionPerformed(ActionEvent arg0) {
-                    setView(ViewType.POINT_CLOUD);
+    	JCheckBox percObjs = new JCheckBox("Perception Objects");
+    	percObjs.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                if(e.getStateChange() == ItemEvent.DESELECTED) {
+                	drawPerceptionObjects = false;
+                	vw.getBuffer("perc-objects").swap();
                 }
-            });
-    	viewGroup.add(pointView);
-    	menu.add(pointView);
+                else if(e.getStateChange() == ItemEvent.SELECTED) {
+                	drawPerceptionObjects = true;
+                }
+            }
+        });
+    	percObjs.setSelected(true);
+    	menu.add(percObjs);
 
-    	JRadioButtonMenuItem soarView = new JRadioButtonMenuItem("Soar View");
-    	soarView.addActionListener(new ActionListener(){
-                @Override
-                public void actionPerformed(ActionEvent arg0) {
-                    setView(ViewType.SOAR);
+    	JCheckBox propLabels = new JCheckBox("Property Labels");
+    	propLabels.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                if(e.getStateChange() == ItemEvent.DESELECTED) {
+                	drawPropertyLabels = false;
+                	vw.getBuffer("perc-labels").swap();
                 }
-            });
-    	viewGroup.add(soarView);
-    	menu.add(soarView);
+                else if(e.getStateChange() == ItemEvent.SELECTED) {
+                	drawPropertyLabels = true;
+                }
+            }
+        });
+    	propLabels.setSelected(true);
+    	menu.add(propLabels);
 
-        JCheckBox soarObj = new JCheckBox("Soar Predictions");
-        soarObj.addItemListener(new ItemListener() {
-                public void itemStateChanged(ItemEvent e) {
-                    if(e.getStateChange() == ItemEvent.DESELECTED) {
-                        showSoarObjects = false;
-                    }
-                    else if(e.getStateChange() == ItemEvent.SELECTED) {
-                        showSoarObjects = true;
-                    }
+    	JCheckBox beliefObjs = new JCheckBox("Belief Objects");
+    	beliefObjs.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                if(e.getStateChange() == ItemEvent.DESELECTED) {
+                	drawBeliefObjects = false;
+                	vw.getBuffer("belief-objects").swap();
+                	vw.getBuffer("belief-labels").swap();
                 }
-            });
-        menu.add(soarObj);
+                else if(e.getStateChange() == ItemEvent.SELECTED) {
+                	drawBeliefObjects = true;
+                }
+            }
+        });
+    	beliefObjs.setSelected(true);
+    	menu.add(beliefObjs);
 
-        JCheckBox segObj = new JCheckBox("Segmentations");
-        segObj.addItemListener(new ItemListener() {
-                public void itemStateChanged(ItemEvent e) {
-                    if(e.getStateChange() == ItemEvent.DESELECTED) {
-                        showSegmentedObjects = false;
-                    }
-                    else if(e.getStateChange() == ItemEvent.SELECTED) {
-                        showSegmentedObjects = true;
-                    }
+    	JCheckBox pointClouds = new JCheckBox("Point Clouds");
+    	pointClouds.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                if(e.getStateChange() == ItemEvent.DESELECTED) {
+                	drawPointClouds = false;
+                	vw.getBuffer("object-view").swap();
                 }
-            });
-        menu.add(segObj);
+                else if(e.getStateChange() == ItemEvent.SELECTED) {
+                	drawPointClouds = true;
+                }
+            }
+        });
+    	pointClouds.setSelected(true);
+    	menu.add(pointClouds);
     }
 
     private void setView(ViewType view)
@@ -498,16 +536,20 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 		Obj ob = (Obj)selectedObject;
                 		switch(clickType){
                 		case CHANGE_ID:
-                			//if(obj.getInfo().createdFrom != null){  XXX - Not sure what this was doing...
-                            ob.setID(Obj.nextID());
-                                //}
+                			if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
+                        		SimObjectPC simObj = ((SimObjectPC)ob.getSourceSimObject());
+                        		simObj.setID(Obj.nextID());
+                        	}
                 			break;
                         case SELECT:
                         	animation = null;
                         	selectedId = ob.getID();
                         	break;
                         case VISIBLE:
-                    		ob.setVisible(!ob.isVisible());
+                        	if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
+                        		SimObjectPC simObj = ((SimObjectPC)ob.getSourceSimObject());
+                        		simObj.setVisible(!simObj.getVisible());
+                        	}
                         	break;
                         }
                 	}
@@ -538,154 +580,234 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
             Tic tic = new Tic();
             while (true) {
                 double dt = tic.toctic();
-                if (animation != null) {
-                    VisWorld.Buffer vb = vw.getBuffer("selection");
-                    animation.step(dt);
-                    vb.addBack(animation);
-                    vb.swap();
+
+                drawFPS();
+                if(drawPointClouds){
+                    drawPointCloud();
                 } else {
-                	vw.getBuffer("selection").clear();
+                	//drawObjectBoxes();
                 }
 
-                // Render sensor pipeline FPS.
-                Formatter f = new Formatter();
-                f.format("<<monospaced-128>>SENSOR FPS: %3.2f\n", tracker.fps);
-                VzText fpsText = new VzText(VzText.ANCHOR.TOP_LEFT,
-                                            f.toString());
-                VisChain fpsChain = new VisChain(LinAlg.scale(0.1),
-                                                 fpsText);
-                VisPixCoords sensorFPS = new VisPixCoords(VisPixCoords.ORIGIN.TOP_LEFT,
-                                                          fpsChain);
-                VisWorld.Buffer fpsBuffer = vw.getBuffer("sensor-fps");
-                fpsBuffer.addBack(sensorFPS);
-                fpsBuffer.swap();
-
-
-                // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
-            	CameraPosition camera = vl.cameraManager.getCameraTarget();
-        		double[] forward = LinAlg.normalize(LinAlg.subtract(camera.eye, camera.lookat));
-        		// Spherical coordinates
-                double psi = Math.PI/2.0 - Math.asin(forward[2]);   // psi = Pi/2 - asin(z)
-                double theta = Math.atan2(forward[1], forward[0]);  // theta = atan(y/x)
-                if(forward[0] == 0 && forward[1] == 0){
-                	theta = -Math.PI/2;
+                drawSelection(dt);
+                if(drawPerceptionObjects){
+                	drawPerceptionObjects();
                 }
-                double[][] tilt = LinAlg.rotateX(psi); 				// tilt up or down to face the camera vertically
-                double[][] rot = LinAlg.rotateZ(theta + Math.PI/2); // rotate flat to face the camera horizontally
-                double[][] faceCamera = LinAlg.matrixAB(rot, tilt);
-                VisWorld.Buffer textBuffer = vw.getBuffer("textbuffer");
-
-                synchronized(tracker.stateLock){
-                    HashMap<Integer, Obj> worldState = tracker.getWorldState();
-
-                	if(worldState.containsKey(selectedId)){
-                		if(animation == null){
-                    		Obj selectedObject = worldState.get(selectedId);
-                            double[] xyz = LinAlg.resize(LinAlg.matrixToXyzrpy(selectedObject.getPoseMatrix()), 3);
-                            double br = Math.abs(selectedObject.getShape().getBoundingRadius());
-                            //animation = new SelectionAnimation(xyz, br*1.2);
-                            animation = new SelectionAnimation(selectedObject);
-                		}
-                	}
-                    // XXX -- DIE SENSABLES - might want to reconsider later
-                    // else if(SensableManager.getSingleton().getSensables().containsKey(selectedId)){
-            		// 	SimSensable obj = SensableManager.getSingleton().getSensables().get(selectedId);
-                	// 	if(obj instanceof SimObject && animation == null){
-                    //         double[] xyz = LinAlg.resize(LinAlg.matrixToXyzrpy(((SimObject)obj).getPose()), 3);
-                    //         double br = Math.abs(((SimObject)obj).getShape().getBoundingRadius());
-                    //         animation = new SelectionAnimation(xyz, br*1.2);
-                	// 	}
-                	// }
-                    else {
-                		animation = null;
-                	}
-
-                    for(Obj ob : tracker.getWorldState().values()){
-                    	String labelString = "";
-                		String tf="<<monospaced,black,dropshadow=false>>";
-                		labelString += String.format("%s%d\n", tf, ob.getID());
-                    	if(ob.isVisible()){
-                    		for(FeatureCategory cat : FeatureCategory.values()){
-                                if (cat == FeatureCategory.LOCATION)
-                                    continue;   // These don't matter
-                                Classifications cs = ob.getLabels(cat);
-                        		labelString += String.format("%s%s:%.2f\n", tf,
-                                                             cs.getBestLabel().label,
-                                                             cs.getBestLabel().weight);
-                    		}
-                    	}
-                		VzText text = new VzText(labelString);
-                		double[] textLoc = new double[]{ob.getPose()[0], ob.getPose()[1], ob.getPose()[2] + .1};
-                        textBuffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.002), text));
-                    }
+                double[][] faceCamera = calcFaceCameraMatrix();
+                if(drawBeliefObjects){
+                	drawBeliefObjects();
                 }
-                textBuffer.swap();
+                if(drawBeliefObjects){
+                	drawBeliefLabels(faceCamera);
+                }
+                if(drawPropertyLabels){
+                	drawPerceptionLabels(faceCamera);
+                }
 
-                // ==========================================================
-
-                // Object drawing
-                drawObjects();
-                drawSensors();
                 arm.render(vw);
+
                 TimeUtil.sleep(1000/fps);
+
             }
         }
     }
 
-	public void drawObjects()
-    {
-		VisWorld.Buffer objectBuffer = vw.getBuffer("objects");
-		switch(viewType){
-		case POINT_CLOUD:
-			drawPointCloud(objectBuffer);
-			break;
-		case SOAR:
-			drawSoarView(objectBuffer);
-			break;
-		}
-
-        if(showSoarObjects) {
-            VisWorld.Buffer soarBuffer = vw.getBuffer("soar");
-            drawSoarPredictions(soarBuffer);
-            soarBuffer.swap();
+    public double[][] calcFaceCameraMatrix(){
+        // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
+    	CameraPosition camera = vl.cameraManager.getCameraTarget();
+		double[] forward = LinAlg.normalize(LinAlg.subtract(camera.eye, camera.lookat));
+		// Spherical coordinates
+        double psi = Math.PI/2.0 - Math.asin(forward[2]);   // psi = Pi/2 - asin(z)
+        double theta = Math.atan2(forward[1], forward[0]);  // theta = atan(y/x)
+        if(forward[0] == 0 && forward[1] == 0){
+        	theta = -Math.PI/2;
         }
-
-        if(showSegmentedObjects) {
-            VisWorld.Buffer segBuffer = vw.getBuffer("segmented");
-            drawSegmentedObjects(segBuffer);
-            segBuffer.swap();
-        }
-
-		objectBuffer.swap();
-	}
-
-    public void drawSegmentedObjects(VisWorld.Buffer buffer)
-    {
-        for(Obj ob : tracker.getVisibleObjects()) {
-            BoundingBox bbox = ob.getBoundingBox();
-            double[] lwh = bbox.lenxyz;
-            double[] center = new double[]{bbox.xyzrpy[0],
-                                           bbox.xyzrpy[1],
-                                           bbox.xyzrpy[2]};
-            VzBox objFrame = new VzBox(lwh[0], lwh[1], lwh[2],
-                                       new VzLines.Style(Color.CYAN, 1));
-            buffer.addBack(new VisChain(LinAlg.translate(center), objFrame));
-        }
+        double[][] tilt = LinAlg.rotateX(psi); 				// tilt up or down to face the camera vertically
+        double[][] rot = LinAlg.rotateZ(theta + Math.PI/2); // rotate flat to face the camera horizontally
+        double[][] faceCamera = LinAlg.matrixAB(rot, tilt);
+        return faceCamera;
     }
 
-    public void drawSoarPredictions(VisWorld.Buffer buffer)
-    {
-        for(Obj ob : tracker.getSoarObjects()) {
-            BoundingBox bbox = ob.getBoundingBox();
-            double[] lwh = bbox.lenxyz;
-            double[] center = new double[]{bbox.xyzrpy[0],
-                                           bbox.xyzrpy[1],
-                                           bbox.xyzrpy[2]};
+    public void drawFPS(){
+        // Render sensor pipeline FPS.
+        Formatter f = new Formatter();
+        f.format("<<monospaced-128>>SENSOR FPS: %3.2f\n", tracker.fps);
+        VzText fpsText = new VzText(VzText.ANCHOR.TOP_LEFT,
+                                    f.toString());
+        VisChain fpsChain = new VisChain(LinAlg.scale(0.1),
+                                         fpsText);
+        VisPixCoords sensorFPS = new VisPixCoords(VisPixCoords.ORIGIN.TOP_LEFT,
+                                                  fpsChain);
+        VisWorld.Buffer fpsBuffer = vw.getBuffer("sensor-fps");
+        fpsBuffer.addBack(sensorFPS);
+        fpsBuffer.swap();
+    }
 
-            VzBox objFrame = new VzBox(lwh[0], lwh[1], lwh[2],
-                                       new VzLines.Style(Color.MAGENTA, 1));
-            buffer.addBack(new VisChain(LinAlg.translate(center), objFrame));
-        }
+    private void drawObjectBoxes(){
+    	VisWorld.Buffer buffer = vw.getBuffer("object-view");
+    	synchronized(tracker.stateLock){
+			for(Obj ob : tracker.getWorldState().values()){
+            	if(isDrawablePerceptionObject(ob)){
+            		buffer.addBack(ob.getVisObject());
+            	}
+	    	}
+    	}
+    	buffer.swap();
+    }
+
+	private void drawPointCloud()
+    {
+    	VisWorld.Buffer buffer = vw.getBuffer("object-view");
+    	synchronized(tracker.stateLock){
+			for(Obj ob : tracker.getWorldState().values()){
+				ArrayList<double[]> points = ob.getPointCloud().getPoints();
+                //System.out.printf("Drawing object %d with %d pts\n", ob.getID(), points.size());
+				if(points != null && points.size() > 0){
+	    			VisColorData colors = new VisColorData();
+	    			VisVertexData vertexData = new VisVertexData();
+	    			for(double[] pt : points){
+	    				vertexData.add(new double[]{pt[0], pt[1], pt[2]});
+		    			colors.add(ColorUtil.swapRedBlue((int)pt[3]));
+	    			}
+	    			VzPoints visPts = new VzPoints(vertexData, new VzPoints.Style(colors, 2));
+	    			buffer.addBack(visPts);
+				}
+			}
+    	}
+    	buffer.swap();
+	}
+
+    private void drawSelection(double dt){
+    	synchronized(tracker.stateLock){
+            HashMap<Integer, Obj> worldState = tracker.getWorldState();
+	    	if(worldState.containsKey(selectedId)){
+	    		if(animation == null){
+	        		Obj selectedObject = worldState.get(selectedId);
+	                //double[] xyz = LinAlg.resize(LinAlg.matrixToXyzrpy(selectedObject.getPoseMatrix()), 3);
+	               // double br = Math.abs(selectedObject.getShape().getBoundingRadius());
+	                //animation = new SelectionAnimation(xyz, br*1.2);
+	                animation = new SelectionAnimation(selectedObject);
+	    		}
+	    	} else {
+	    		animation = null;
+	    	}
+            if (animation != null) {
+                VisWorld.Buffer vb = vw.getBuffer("selection");
+                animation.step(dt);
+                vb.addBack(animation);
+                vb.swap();
+            } else {
+            	vw.getBuffer("selection").clear();
+            }
+    	}
+    }
+
+	private Boolean isDrawablePerceptionObject(Obj obj){
+    	if(obj.isVisible() == false){
+    		return false;
+    	}
+    	if(obj.getSourceSimObject() != null && obj.getSourceSimObject() instanceof SimObjectPC){
+    		SimObjectPC simObj = (SimObjectPC)obj.getSourceSimObject();
+    		if(simObj instanceof SimLocation || simObj.getVisible() == false){
+    			return false;
+    		}
+    	}
+		return true;
+	}
+
+    private void drawPerceptionObjects(){
+		VisWorld.Buffer buffer = vw.getBuffer("perc-objects");
+    	synchronized(tracker.stateLock){
+            HashMap<Integer, Obj> worldState = tracker.getWorldState();
+            for(Obj obj : worldState.values()){
+            	if(!isDrawablePerceptionObject(obj)){
+            		continue;
+            	}
+
+            	// Draw box outline
+                BoundingBox bbox = obj.getBoundingBox();
+               // System.out.println(String.format("%d H: %+.5f   Z: %+.5f", obj.getID(), bbox.lenxyz[2], bbox.xyzrpy[2]));
+    			double[] s = bbox.lenxyz;
+    			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);
+    			double[][] trans = LinAlg.xyzrpyToMatrix(bbox.xyzrpy);
+    			VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)), new VzLines.Style(Color.blue, 2));
+    			buffer.addBack(new VisChain(trans, scale, box));
+            }
+    	}
+    	buffer.swap();
+    }
+
+    private void drawPerceptionLabels(double[][] faceCamera){
+		VisWorld.Buffer buffer = vw.getBuffer("perc-labels");
+    	synchronized(tracker.stateLock){
+            HashMap<Integer, Obj> worldState = tracker.getWorldState();
+            for(Obj obj : worldState.values()){
+            	if(!isDrawablePerceptionObject(obj)){
+            		continue;
+            	}
+
+            	String labelString = "";
+        		String tf="<<monospaced,blue,dropshadow=false>>";
+        		labelString += String.format("%s%d\n", tf, obj.getID());
+
+        		if(drawPropertyLabels){
+            		for(FeatureCategory cat : FeatureCategory.values()){
+                        if (cat == FeatureCategory.LOCATION)
+                            continue;   // These don't matter
+                        Classifications cs = obj.getLabels(cat);
+                        Classifications.Label bestLabel = cs.getBestLabel();
+                        if(bestLabel.label.equals("unknown")){
+                        	continue;
+                        }
+                        if(bestLabel != null && cat != FeatureCategory.LOCATION){
+                    		labelString += String.format("%s%s:%.2f\n", tf,
+                                    bestLabel.label,
+                                    bestLabel.weight);
+                        }
+            		}
+        		}
+
+        		VzText text = new VzText(labelString);
+        		double[] textLoc = new double[]{obj.getPose()[0], obj.getPose()[1], obj.getPose()[2] + .1};
+                buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(.002), text));
+            }
+    	}
+        buffer.swap();
+    }
+
+    private void drawBeliefObjects(){
+    	VisWorld.Buffer buffer = vw.getBuffer("belief-objects");
+    	HashMap<Integer, Obj> soarObjects;
+    	synchronized(tracker.stateLock){
+    		soarObjects = tracker.getSoarObjects();
+    		for(Obj obj : soarObjects.values()){
+    			BoundingBox bbox = obj.getBoundingBox();
+    			double[] s = bbox.lenxyz;
+    			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);
+    			double[][] trans = LinAlg.xyzrpyToMatrix(bbox.xyzrpy);
+    			VzBox box = new VzBox(new VzMesh.Style(new Color(0,0,0,0)), new VzLines.Style(Color.black, 4));
+    			buffer.addBack(new VisChain(trans, scale, box));
+    		}
+    	}
+    	buffer.swap();
+    }
+
+    private void drawBeliefLabels(double[][] faceCamera){
+    	VisWorld.Buffer buffer = vw.getBuffer("belief-labels");
+    	HashMap<Integer, Obj> soarObjects;
+    	synchronized(tracker.stateLock){
+    		soarObjects = tracker.getSoarObjects();
+    		for(Obj obj : soarObjects.values()){
+    			BoundingBox bbox = obj.getBoundingBox();
+        		String tf="<<monospaced,black,dropshadow=#FFFFFFFF>>";
+        		String labelString = String.format("%s%d\n", tf, obj.getID());
+        		VzText text = new VzText(labelString);
+        		double[] textLoc = new double[]{bbox.xyzrpy[0], bbox.xyzrpy[1], bbox.xyzrpy[2]};
+        		double[] corner = new double[]{bbox.lenxyz[0]/2, bbox.lenxyz[1]/2, bbox.lenxyz[2]/2, 1};
+        		corner = LinAlg.matrixAB(LinAlg.xyzrpyToMatrix(bbox.xyzrpy), corner);
+        		buffer.addBack(new VisChain(LinAlg.translate(corner), faceCamera, LinAlg.scale(.002), text));
+    		}
+    	}
+    	buffer.swap();
     }
 
     public void drawSensors()
@@ -703,53 +825,20 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         vb.swap();
     }
 
-	private void drawPointCloud(VisWorld.Buffer buffer)
-    {
-    	synchronized(tracker.stateLock){
-			for(Obj ob : tracker.getWorldState().values()){
-				ArrayList<double[]> points = ob.getPointCloud().getPoints();
-                //System.out.printf("Drawing object %d with %d pts\n", ob.getID(), points.size());
-				if(points != null && points.size() > 0){
-	    			VisColorData colors = new VisColorData();
-	    			VisVertexData vertexData = new VisVertexData();
-	    			for(double[] pt : points){
-	    				vertexData.add(new double[]{pt[0], pt[1], pt[2]});
-		    			colors.add(ColorUtil.swapRedBlue((int)pt[3]));
-	    			}
-	    			VzPoints visPts = new VzPoints(vertexData, new VzPoints.Style(colors, 2));
-	    			buffer.addBack(visPts);
-				}
-			}
-    	}
-	}
+//	private void drawSoarView(VisWorld.Buffer buffer)
+//    {
+//    	synchronized(tracker.stateLock){
+//			for(Obj ob : tracker.getWorldState().values()){
+//                if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
+//                	if(((SimObjectPC)ob.getSourceSimObject()).getVisible() == false){
+//                		continue;
+//                	}
+//                }
+//	    		buffer.addBack(ob.getVisObject());
+//	    	}
+//    	}
+//	}
 
-	private void drawSoarView(VisWorld.Buffer buffer)
-    {
-    	synchronized(tracker.stateLock){
-			for(Obj ob : tracker.getWorldState().values()){
-                // XXX - Pretty sure the below is all related to sim objects - needs to be uncommented and fixed
-				// if(ob.getInfo().createdFrom != null){
-				// 	ISimBoltObject simObj = obj.getInfo().createdFrom;
-				// 	ArrayList<VisObject> visObjs = ShapeToVisObject.getVisObjects(simObj.getAboltShape(), new VzMesh.Style(simObj.getColor()));
-				// 	for(VisObject visObj : visObjs){
-    			// 		buffer.addBack(new VisChain(simObj.getPose(), visObj));
-				// 	}
-				// }
-                // else {
-	    			buffer.addBack(ob.getVisObject());
-                    //}
-	    	}
-    	}
-	}
-
-    public void drawVisObjects(String bufferName, ArrayList<VisObject> objects)
-    {
-    	VisWorld.Buffer buffer = vw.getBuffer(bufferName);
-    	for(VisObject obj : objects){
-    		buffer.addBack(obj);
-    	}
-    	buffer.swap();
-    }
 
     // XXX END CODE DUMP
     // ======================================
@@ -765,6 +854,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         opts.addBoolean('k', "kinect", false, "Use a physical kinect");
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
         opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
+        opts.addBoolean('p', "perfectseg", false, "If true, perfect segmentation is done in simulation");
         opts.addString('\0', "backup", null, "Load from backup file");
 
         if (!opts.parse(args)) {
