@@ -55,7 +55,7 @@ public class Rosie implements PrintEventInterface, RunEventInterface
         // Load the properties file
         Properties props = new Properties();
         try {
-			props.load(new FileReader("sbolt.properties"));
+			props.load(new FileReader("config/rosie.properties"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
