@@ -1,4 +1,4 @@
-package.probcog.rosie;
+package probcog.rosie;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -21,9 +21,9 @@ import sml.WMElement;
 import sml.smlRunEventId;
 import probcog.lcmtypes.*;
 import april.util.TimeUtil;
-import edu.umich.insoar.world.PerceptualProperty;
-import edu.umich.insoar.world.WMUtil;
-import edu.umich.insoar.world.WorldModel;
+import probcog.rosie.world.PerceptualProperty;
+import probcog.rosie.world.WMUtil;
+import probcog.rosie.world.WorldModel;
 
 public class PerceptionConnector implements OutputEventInterface, RunEventInterface, LCMSubscriber {
 	private SoarAgent soarAgent;

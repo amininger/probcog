@@ -1,7 +1,7 @@
-package.probcog.rosie.world;
+package probcog.rosie.world;
 
-import edu.umich.insoar.language.BOLTDictionary;
-import edu.umich.insoar.language.Parser;
+import probcog.rosie.language.BOLTDictionary;
+import probcog.rosie.language.Parser;
 import sml.Identifier;
 /**
  * Represents the latest message from the user on the input link

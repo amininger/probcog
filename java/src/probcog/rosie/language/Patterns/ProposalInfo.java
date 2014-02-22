@@ -1,4 +1,4 @@
-package.probcog.rosie.language.Patterns;
+package probcog.rosie.language.Patterns;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import sml.Identifier;
-import edu.umich.insoar.language.LinguisticEntity;
+import probcog.rosie.language.LinguisticEntity;
 
 public class ProposalInfo extends LinguisticEntity{
     public static String TYPE = "ProposalInfo";

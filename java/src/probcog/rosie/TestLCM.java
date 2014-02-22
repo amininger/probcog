@@ -1,4 +1,4 @@
-package.probcog.rosie;
+package probcog.rosie;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;

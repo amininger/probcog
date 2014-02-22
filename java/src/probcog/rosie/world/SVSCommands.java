@@ -1,4 +1,4 @@
-package.probcog.rosie.world;
+package probcog.rosie.world;
 
 
 public class SVSCommands {

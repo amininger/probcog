@@ -1,4 +1,4 @@
-package.probcog.rosie;
+package probcog.rosie;
 
 import sml.Agent;
 import sml.Agent.OutputEventInterface;
@@ -9,17 +9,15 @@ import sml.smlRunEventId;
 
 import april.util.TimeUtil;
 
-import com.soartech.bolt.BOLTLGSupport;
-import com.soartech.bolt.testing.ActionType;
+import rosie.testing.ActionType;
 
-import edu.umich.insoar.language.AgentMessageParser;
-import edu.umich.insoar.language.Patterns.LingObject;
-import edu.umich.insoar.world.Messages;
-import edu.umich.insoar.world.WMUtil;
+import probcog.rosie.language.AgentMessageParser;
+import probcog.rosie.language.Patterns.LingObject;
+import probcog.rosie.world.Messages;
+import probcog.rosie.world.WMUtil;
 
 public class LanguageConnector implements OutputEventInterface, RunEventInterface {
 	private SoarAgent soarAgent;
-	private BOLTLGSupport lgsupport;
 	
 	private Messages messages;
 	
@@ -28,10 +26,9 @@ public class LanguageConnector implements OutputEventInterface, RunEventInterfac
 	private int totalIndexes = 0;
 	private int indexFailures = 0;
 	
-    public LanguageConnector(SoarAgent soarAgent, BOLTLGSupport lgsupport, String dictionaryFile, String grammarFile)
+    public LanguageConnector(SoarAgent soarAgent, String dictionaryFile, String grammarFile)
     {
     	this.soarAgent = soarAgent;
-    	this.lgsupport = lgsupport;
     	
     	messages = new Messages(dictionaryFile, grammarFile);
     	
@@ -53,7 +50,6 @@ public class LanguageConnector implements OutputEventInterface, RunEventInterfac
     }
 
     public void clearLGMessages(){
-    	lgsupport.clear();
     	soarAgent.commitChanges();
     }
     
@@ -65,19 +61,6 @@ public class LanguageConnector implements OutputEventInterface, RunEventInterfac
     
     public void newMessage(String message){
     	messages.addMessage(message);
-//    	
-//    	
-//    	
-//    	if (lgsupport == null) {
-//    		messages.addMessage(message);
-//    	} else if(message.length() > 0){
-//    		if(message.charAt(0) == ':'){
-//    			messages.addMessage(message.substring(1));
-//    		} else {
-//        		// LGSupport has access to the agent object and handles all WM interaction from here
-//        		lgsupport.handleInput(message);
-//    		}
-//    	}
     }
     
     public void runEventHandler(int eventID, Object data, Agent agent, int phase)

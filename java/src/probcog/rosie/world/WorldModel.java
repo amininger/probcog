@@ -1,4 +1,4 @@
-package.probcog.rosie.world;
+package probcog.rosie.world;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,8 +15,8 @@ import sml.Identifier;
 import sml.smlRunEventId;
 import probcog.lcmtypes.*;
 import april.util.TimeUtil;
-import edu.umich.insoar.InSoar;
-import edu.umich.insoar.SoarAgent;
+import probcog.rosie.InSoar;
+import probcog.rosie.SoarAgent;
 public class WorldModel implements RunEventInterface
 {    
     

@@ -1,4 +1,4 @@
-package.probcog.rosie;
+package probcog.rosie;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -30,11 +30,11 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
-import com.soartech.bolt.testing.ActionType;
-import com.soartech.bolt.testing.Script;
-import com.soartech.bolt.testing.ScriptDataMap;
-import com.soartech.bolt.testing.Settings;
-import com.soartech.bolt.testing.Util;
+import rosie.testing.ActionType;
+import rosie.testing.Script;
+import rosie.testing.ScriptDataMap;
+import rosie.testing.Settings;
+import rosie.testing.Util;
 
 public class ChatFrame extends JFrame
 {

@@ -1,11 +1,11 @@
-package.probcog.rosie.language;
+package probcog.rosie.language;
 
 import java.util.Iterator;
 import java.util.Set;
 
 import sml.Identifier;
-import edu.umich.insoar.language.Patterns.LingObject;
-import edu.umich.insoar.world.WMUtil;
+import probcog.rosie.language.Patterns.LingObject;
+import probcog.rosie.world.WMUtil;
 
 public class AgentMessageParser
 {

@@ -1,9 +1,9 @@
-package.probcog.rosie.language.Patterns;
+package probcog.rosie.language.Patterns;
 
 import java.util.Map;
 
 import sml.Identifier;
-import edu.umich.insoar.language.LinguisticEntity;
+import probcog.rosie.language.LinguisticEntity;
 
 public class DescriptionRequest extends LinguisticEntity{
     public static String TYPE = "DescriptionRequest";

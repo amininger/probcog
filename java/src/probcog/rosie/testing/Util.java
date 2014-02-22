@@ -9,9 +9,9 @@ import java.util.List;
 
 import javax.swing.JFileChooser;
 
-import com.soartech.bolt.script.ui.command.PointAtObject;
+import rosie.script.ui.command.PointAtObject;
 
-import edu.umich.insoar.ChatFrame;
+import probcog.rosie.ChatFrame;
 
 public class Util {
 	

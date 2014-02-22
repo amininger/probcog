@@ -1,4 +1,4 @@
-package.probcog.rosie.language;
+package probcog.rosie.language;
 
 import java.util.Map;
 import java.util.regex.Matcher;

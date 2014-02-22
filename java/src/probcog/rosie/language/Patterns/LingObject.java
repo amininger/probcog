@@ -1,4 +1,4 @@
-package.probcog.rosie.language.Patterns;
+package probcog.rosie.language.Patterns;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -9,8 +9,8 @@ import java.util.regex.Pattern;
 
 import sml.Identifier;
 import sml.WMElement;
-import edu.umich.insoar.language.LinguisticEntity;
-import edu.umich.insoar.world.WMUtil;
+import probcog.rosie.language.LinguisticEntity;
+import probcog.rosie.world.WMUtil;
 
 
 public class LingObject extends LinguisticEntity {

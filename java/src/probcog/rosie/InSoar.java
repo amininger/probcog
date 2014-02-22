@@ -1,4 +1,4 @@
-package.probcog.rosie;
+package probcog.rosie;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -20,9 +20,7 @@ import sml.smlRunEventId;
 import probcog.lcmtypes.*;
 import april.util.TimeUtil;
 
-import com.soartech.bolt.BOLTLGSupport;
-
-import edu.umich.insoar.world.WorldModel;
+import probcog.rosie.world.WorldModel;
 
 public class InSoar implements PrintEventInterface, RunEventInterface
 {
@@ -62,35 +60,7 @@ public class InSoar implements PrintEventInterface, RunEventInterface
 			e.printStackTrace();
 		}
         
-        // Disable LG
-        //String useLGProp = props.getProperty("enable-lgsoar");
-        
-        boolean useLG = false;
-        String lgSoarDictionary = "";
-//        if (useLGProp != null && useLGProp.trim().equals("true")) {
-//        	lgSoarDictionary = props.getProperty("lgsoar-dictionary");
-//        	String lgSoarSource = props.getProperty("language-productions").trim();
-//        	if (lgSoarSource != null && lgSoarDictionary != null) {
-//        		useLG = true;
-//        	}
-//        	else {
-//        		System.out.println("ERROR: LGSoar misconfigured, not enabled.");
-//        	}
-//        }
-        
-        soarAgent = new SoarAgent(agentName, props, useLG, headless);
-
-        BOLTLGSupport lgSupport = null;
-        
-//        if (useLG) {
-//        	try{
-//        	lgSupport = new BOLTLGSupport(soarAgent.getAgent(), lgSoarDictionary);
-//        	} catch (RuntimeException e){
-//        		System.err.println("Couldn't open lg dictionary");
-//        		useLG = false;
-//        		lgSupport = null;
-//        	}
-//        }
+        soarAgent = new SoarAgent(agentName, props, headless);
 
 		String doLog = props.getProperty("enable-log");
 		if (doLog != null && doLog.equals("true")) {
@@ -127,7 +97,7 @@ public class InSoar implements PrintEventInterface, RunEventInterface
 			return;
 		}
 		
-		language = new LanguageConnector(soarAgent, lgSupport, dictionaryFile, grammarFile);
+		language = new LanguageConnector(soarAgent, dictionaryFile, grammarFile);
         perception = new PerceptionConnector(soarAgent);   
         motorSystem = new MotorSystemConnector(soarAgent);
         

@@ -1,4 +1,4 @@
-package.probcog.rosie;
+package probcog.rosie;
 
 import java.awt.*;
 import java.util.Stack;

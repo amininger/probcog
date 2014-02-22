@@ -1,4 +1,4 @@
-package.probcog.rosie;
+package probcog.rosie;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -7,8 +7,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 
-import edu.umich.insoar.world.SVSCommands;
-import edu.umich.insoar.world.WMUtil;
+import probcog.rosie.world.SVSCommands;
+import probcog.rosie.world.WMUtil;
 
 import sml.Agent;
 import sml.Identifier;

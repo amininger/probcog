@@ -1,4 +1,4 @@
-package.probcog.rosie.language;
+package probcog.rosie.language;
 
 import java.util.regex.Pattern;
 

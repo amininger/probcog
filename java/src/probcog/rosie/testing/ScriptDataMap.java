@@ -1,10 +1,10 @@
 package probcog.rosie.testing;
 
-import com.soartech.bolt.script.ui.command.AutomateScript;
-import com.soartech.bolt.script.ui.command.ClearClassifierData;
-import com.soartech.bolt.script.ui.command.PointAtObject;
-import com.soartech.bolt.script.ui.command.ResetRobotArm;
-import com.soartech.bolt.script.ui.command.UiCommand;
+import rosie.script.ui.command.AutomateScript;
+import rosie.script.ui.command.ClearClassifierData;
+import rosie.script.ui.command.PointAtObject;
+import rosie.script.ui.command.ResetRobotArm;
+import rosie.script.ui.command.UiCommand;
 
 public class ScriptDataMap {
 	private static final ScriptDataMap instance = new ScriptDataMap();

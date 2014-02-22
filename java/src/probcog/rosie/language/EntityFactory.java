@@ -1,6 +1,6 @@
-package.probcog.rosie.language;
+package probcog.rosie.language;
 
-import edu.umich.insoar.language.Patterns.*;
+import probcog.rosie.language.Patterns.*;
 
 public class EntityFactory
 {	

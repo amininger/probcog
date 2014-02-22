@@ -2,8 +2,8 @@ package probcog.rosie.testing;
 
 import java.util.List;
 
-import edu.umich.insoar.ChatFrame;
-import edu.umich.insoar.InSoar;
+import probcog.rosie.ChatFrame;
+import probcog.rosie.InSoar;
 
 public class ScriptRunner extends Thread {
 	private Script script;

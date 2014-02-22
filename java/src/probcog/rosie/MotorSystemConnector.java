@@ -1,4 +1,4 @@
-package.probcog.rosie;
+package probcog.rosie;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -27,11 +27,11 @@ import april.jmat.LinAlg;
 import april.jmat.MathUtil;
 import april.util.TimeUtil;
 
-import com.soartech.bolt.script.ui.command.ResetRobotArm;
+import rosie.script.ui.command.ResetRobotArm;
 
-import edu.umich.insoar.world.Pose;
-import edu.umich.insoar.world.SVSCommands;
-import edu.umich.insoar.world.WMUtil;
+import probcog.rosie.world.Pose;
+import probcog.rosie.world.SVSCommands;
+import probcog.rosie.world.WMUtil;
 
 public class MotorSystemConnector   implements OutputEventInterface, RunEventInterface, LCMSubscriber{
 	private SoarAgent agent;

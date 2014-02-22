@@ -1,11 +1,11 @@
-package.probcog.rosie.language.Patterns;
+package probcog.rosie.language.Patterns;
 
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import sml.Identifier;
-import edu.umich.insoar.language.LinguisticEntity;
+import probcog.rosie.language.LinguisticEntity;
 
 public class PropertyRequest extends LinguisticEntity{
     public static String TYPE = "PropertyRequest";
