@@ -662,14 +662,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     public void drawSegmentedObjects(VisWorld.Buffer buffer)
     {
         for(Obj ob : tracker.getVisibleObjects()) {
-            double[][] bbox = ob.getBoundingBox();
-            double[] lwh = new double[]{bbox[1][0]-bbox[0][0],
-                                        bbox[1][1]-bbox[0][1],
-                                        bbox[1][2]-bbox[0][2]};
-            double[] center = new double[]{bbox[0][0]+lwh[0]/2.0,
-                                           bbox[0][1]+lwh[1]/2.0,
-                                           bbox[0][2]+lwh[2]/2.0};
-
+            BoundingBox bbox = ob.getBoundingBox();
+            double[] lwh = bbox.lenxyz;
+            double[] center = new double[]{bbox.xyzrpy[0],
+                                           bbox.xyzrpy[1],
+                                           bbox.xyzrpy[2]};
             VzBox objFrame = new VzBox(lwh[0], lwh[1], lwh[2],
                                        new VzLines.Style(Color.CYAN, 1));
             buffer.addBack(new VisChain(LinAlg.translate(center), objFrame));
@@ -679,13 +676,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     public void drawSoarPredictions(VisWorld.Buffer buffer)
     {
         for(Obj ob : tracker.getSoarObjects()) {
-            double[][] bbox = ob.getBoundingBox();
-            double[] lwh = new double[]{bbox[1][0]-bbox[0][0],
-                                        bbox[1][1]-bbox[0][1],
-                                        bbox[1][2]-bbox[0][2]};
-            double[] center = new double[]{bbox[0][0]+lwh[0]/2.0,
-                                           bbox[0][1]+lwh[1]/2.0,
-                                           bbox[0][2]+lwh[2]/2.0};
+            BoundingBox bbox = ob.getBoundingBox();
+            double[] lwh = bbox.lenxyz;
+            double[] center = new double[]{bbox.xyzrpy[0],
+                                           bbox.xyzrpy[1],
+                                           bbox.xyzrpy[2]};
 
             VzBox objFrame = new VzBox(lwh[0], lwh[1], lwh[2],
                                        new VzLines.Style(Color.MAGENTA, 1));
