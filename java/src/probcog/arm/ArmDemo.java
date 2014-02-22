@@ -431,14 +431,14 @@ public class ArmDemo implements LCMSubscriber
             Tracker tracker;
             if (opts.getString("world") == null) {
                 System.out.println("Spinning up real world...");
-                tracker = new Tracker(config, true, null);
+                tracker = new Tracker(config, true, false, null);
                 ArmDriver driver = new ArmDriver(config);
                 (new Thread(driver)).start();
             } else {
                 System.out.println("Spinning up simulation...");
                 SimWorld world = new SimWorld(opts.getString("world"),
                                               new Config());
-                tracker = new Tracker(config, false, world);
+                tracker = new Tracker(config, false, false, world);
                 SimArm simArm = new SimArm(config, world);
             }
             ArmController controller = new ArmController(config);

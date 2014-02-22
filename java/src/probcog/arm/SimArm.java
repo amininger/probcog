@@ -11,6 +11,7 @@ import april.util.*;
 
 // import probcog.sim.*;
 import probcog.lcmtypes.*;
+import probcog.sim.SimObjectPC;
 
 /** Simulates the movements of the robotic arm through the environment based
  *  on observed arm commands. Produces arm_status_t messages on the designated
@@ -119,7 +120,7 @@ public class SimArm implements LCMSubscriber
                     // Handle commands
                     if (cmds != null) {
                         dynamixel_command_t cmd = cmds.commands[i];
-                        //cmd.speed = 0.05; // DEBUG
+                        //cmd.speed = 1.0; // DEBUG XXX
                         // Rotation
                         double pos = arm.getActualPos(i);
                         int sign = pos <= cmd.position_radians ? 1 : -1;
@@ -141,6 +142,7 @@ public class SimArm implements LCMSubscriber
                         if (!stopped) {
                             status.speed = cmd.speed;
                         }
+                        //System.out.println("SPEED " + i + " == " + status.speed);
 
                         // Grabbing
                         // If the hand joint is moving in the positive direction,
@@ -213,6 +215,10 @@ public class SimArm implements LCMSubscriber
                                 }
                             }
 
+                            // XXX: AM: Hack so that grabbed objects aren't viewed (only in perfect segmentation)
+                            if(grabbed instanceof SimObjectPC){
+                            	((SimObjectPC)grabbed).setVisible(true);
+                            }
                             grabbed = null;
                         }
 
@@ -240,7 +246,18 @@ public class SimArm implements LCMSubscriber
                     if (grabbed != null) {
                         double[][] currPose = arm.getGripperPose();
 
-                        grabbed.setPose(LinAlg.matrixAB(currPose, deltaGrabbed));
+                        double[][] objPose = LinAlg.matrixAB(currPose, deltaGrabbed);
+                        
+                        // XXX: AM: Hack so sim objects don't get rotated except along yaw
+                        double[] xyzrpy = LinAlg.matrixToXyzrpy(objPose);
+                        xyzrpy[3] = 0;
+                        xyzrpy[4] = 0;
+                        grabbed.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+                        
+                        // XXX: AM: Hack so that grabbed objects aren't viewed (only in perfect segmentation)
+                        if(grabbed instanceof SimObjectPC){
+                        	((SimObjectPC)grabbed).setVisible(false);
+                        }
                     }
                 }
                 lastPose = arm.getGripperPose();

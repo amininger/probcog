@@ -1,0 +1,127 @@
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	-0.2 0.2 0.0 0.0 0.0 0.0
+	0.1
+	vec 4
+	0.0 0.0 1.0 1.0
+	1
+	door=closed,open
+	pantry
+}
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	0.2 -0.2 0.0 0.0 0.0 0.0
+	0.1
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	table
+}
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	-0.2 -0.2 0.0 0.0 0.0 0.0
+	0.1
+	vec 4
+	1.0 0.0 0.0 1.0
+	0
+	garbage
+}
+"probcog.sim.SimStove"
+{
+	-1
+	vec 6
+	0.2 0.2 0.0 0.0 0.0 0.0
+	0.1
+	vec 4
+	1.0 1.0 0.0 1.0
+	0
+	stove
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	.2 .2 .05 0 0 0
+	0.08
+	vec 4
+	0.9 0.0 0.0 1.0
+  	3
+	color=color-red
+	shape=shape-square
+	size=size-large
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimSpherePC"
+{
+	-1
+	vec 6
+	-.2 .2 .05 0 0 0
+	0.06
+	vec 4
+	0.0 0.0 0.9 1.0
+	3
+	color=color-blue
+	shape=shape-sphere
+	size=size-large
+}
+"probcog.sim.SimArchPC"
+{
+	-1
+	vec 6
+	.2 -.2 .05 0 0 0
+	0.05
+	vec 4
+	0.0 0.7 0.0 1.0
+  	3
+	color=color-green
+	shape=shape-arch
+	size=size-large
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	0 .2 .05 0 0 0
+	0.08
+	vec 4
+	0.9 0.0 0.0 1.0
+  	3
+	color=color-red
+	shape=shape-square
+	size=size-medium
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimSpherePC"
+{
+	-1
+	vec 6
+	-.2 0 .05 0 0 0
+	0.06
+	vec 4
+	0.0 0.0 0.9 1.0
+	3
+	color=color-blue
+	shape=shape-sphere
+	size=size-medium
+}
+"probcog.sim.SimArchPC"
+{
+	-1
+	vec 6
+	.2 0 .05 0 0 0
+	0.05
+	vec 4
+	0.0 0.7 0.0 1.0
+  	3
+	color=color-green
+	shape=shape-arch
+	size=size-medium
+}

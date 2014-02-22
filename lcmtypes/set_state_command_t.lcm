@@ -1,0 +1,8 @@
+struct set_state_command_t 
+{
+    int64_t utime;
+
+		int32_t obj_id;    // Id of the object to set   
+		string state_name; // Name of the state being set
+		string state_val;  // Value the state should be set to 
+}
