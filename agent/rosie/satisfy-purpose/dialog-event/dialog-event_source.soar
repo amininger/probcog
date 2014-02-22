@@ -1,0 +1,23 @@
+source describe-object.soar
+
+pushd describe-object
+source describe-object_source.soar
+popd
+
+source report-interaction.soar
+
+# Souce file "elaborations.soar"
+source elaborations.soar
+
+# Souce file "describe-relation.soar"
+source describe-relation.soar
+
+source start-game.soar
+source game-turn.soar
+source game.soar
+
+# Souce file "is-question.soar"
+source answer-is-question.soar
+
+# Souce file "property-question.soar"
+source property-question.soar
