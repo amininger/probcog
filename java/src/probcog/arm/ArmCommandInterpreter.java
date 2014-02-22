@@ -86,6 +86,7 @@ public class ArmCommandInterpreter
                         bolt_cmd = processDropCommand(last_cmd);
                     } else if (last_cmd.action.contains("RESET")) {
                         bolt_cmd = processResetCommand(last_cmd);
+                        System.out.println("RESETTING");
                     } else if (last_cmd.action.contains("HOME")) {
                         bolt_cmd = processHomeCommand(last_cmd);
                     } else {
@@ -216,6 +217,7 @@ public class ArmCommandInterpreter
     /** Used by the tracker to queue up received robot commands */
     public void queueCommand(robot_command_t cmd)
     {
+    	System.out.println("QUEUED COMMAND: " + cmd.action);
         cmds.add(cmd);
     }
 
