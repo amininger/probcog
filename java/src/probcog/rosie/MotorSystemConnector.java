@@ -27,8 +27,6 @@ import april.jmat.LinAlg;
 import april.jmat.MathUtil;
 import april.util.TimeUtil;
 
-import rosie.script.ui.command.ResetRobotArm;
-
 import probcog.rosie.world.Pose;
 import probcog.rosie.world.SVSCommands;
 import probcog.rosie.world.WMUtil;
@@ -111,7 +109,7 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 	// Happens during an input phase
 	public synchronized void runEventHandler(int eventID, Object data, Agent agent, int phase){
     	long time = 0;
-    	if(InSoar.DEBUG_TRACE){
+    	if(Rosie.DEBUG_TRACE){
     		time = TimeUtil.utime();
     	}
     	
@@ -130,7 +128,7 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 			svsCommands = new StringBuilder();
 		}
 		this.agent.commitChanges();
-    	if(InSoar.DEBUG_TRACE){
+    	if(Rosie.DEBUG_TRACE){
 			System.out.println(String.format("%-20s : %d", "MOTOR CONNECTOR", (TimeUtil.utime() - time)/1000));
     	}
 	}
@@ -342,7 +340,9 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     	JButton armResetButton  = new JButton("Reset Arm");
         armResetButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent arg0) {
-				new ResetRobotArm().execute();
+			// TODO:
+				
+
 			}
         });
         actionMenu.add(armResetButton);

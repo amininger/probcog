@@ -3,7 +3,7 @@ package probcog.rosie.testing;
 import java.util.List;
 
 import probcog.rosie.ChatFrame;
-import probcog.rosie.InSoar;
+import probcog.rosie.Rosie;
 
 public class ScriptRunner extends Thread {
 	private Script script;

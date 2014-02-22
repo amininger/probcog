@@ -9,7 +9,7 @@ import java.util.List;
 
 import javax.swing.JFileChooser;
 
-import rosie.script.ui.command.PointAtObject;
+import probcog.rosie.script.PointAtObject;
 
 import probcog.rosie.ChatFrame;
 

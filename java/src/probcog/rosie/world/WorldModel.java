@@ -15,7 +15,7 @@ import sml.Identifier;
 import sml.smlRunEventId;
 import probcog.lcmtypes.*;
 import april.util.TimeUtil;
-import probcog.rosie.InSoar;
+import probcog.rosie.Rosie;
 import probcog.rosie.SoarAgent;
 public class WorldModel implements RunEventInterface
 {    
@@ -89,7 +89,7 @@ public class WorldModel implements RunEventInterface
     	if(newObservation == null){
     		return;
     	}
-    	if(InSoar.DEBUG_TRACE){
+    	if(Rosie.DEBUG_TRACE){
     		time = TimeUtil.utime();
     		System.out.println("!!! GOT MESSAGE !!!");
     	}
@@ -147,7 +147,7 @@ public class WorldModel implements RunEventInterface
         newObservation = null;
         sendObservation();
         
-        if(InSoar.DEBUG_TRACE){
+        if(Rosie.DEBUG_TRACE){
 			System.out.println(String.format("%-20s : %d", "WORLD MODEL", (TimeUtil.utime() - time)/1000));
         }
     }
@@ -170,7 +170,7 @@ public class WorldModel implements RunEventInterface
     	}
 
     	soar_objects_t outgoingObs = new soar_objects_t();
-    	outgoingObs.utime = InSoar.GetSoarTime();
+    	outgoingObs.utime = Rosie.GetSoarTime();
     	outgoingObs.objects = objDatas.toArray(new object_data_t[objDatas.size()]);
     	outgoingObs.num_objects = outgoingObs.objects.length;
     	

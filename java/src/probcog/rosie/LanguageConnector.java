@@ -9,7 +9,7 @@ import sml.smlRunEventId;
 
 import april.util.TimeUtil;
 
-import rosie.testing.ActionType;
+import probcog.rosie.testing.ActionType;
 
 import probcog.rosie.language.AgentMessageParser;
 import probcog.rosie.language.Patterns.LingObject;
@@ -66,7 +66,7 @@ public class LanguageConnector implements OutputEventInterface, RunEventInterfac
     public void runEventHandler(int eventID, Object data, Agent agent, int phase)
     {
     	long time = 0;
-    	if(InSoar.DEBUG_TRACE){
+    	if(Rosie.DEBUG_TRACE){
     		time = TimeUtil.utime();
     	}
     	
@@ -83,7 +83,7 @@ public class LanguageConnector implements OutputEventInterface, RunEventInterfac
     		messages.updateInputLink(languageId);
     	}
     	
-    	if(InSoar.DEBUG_TRACE){
+    	if(Rosie.DEBUG_TRACE){
 			System.out.println(String.format("%-20s : %d", "LANGUAGE CONNECTOR", (TimeUtil.utime() - time)/1000));
     	}
     }
@@ -216,12 +216,12 @@ public class LanguageConnector implements OutputEventInterface, RunEventInterfac
     private void processPushSegmentCommand(Identifier id){
     	//String type = WMUtil.getValueOfAttribute(id, "type", "Error (push-segment): No ^type attribute");
     	//String originator = WMUtil.getValueOfAttribute(id, "originator", "Error (push-segment): No ^originator attribute");
-    	//InSoar.Singleton().getSoarAgent().getStack().pushSegment(type, originator);
+    	//Rosie.Singleton().getSoarAgent().getStack().pushSegment(type, originator);
     	id.CreateStringWME("status", "complete");
     }
     
     private void processPopSegmentCommand(Identifier id){
-    	//InSoar.Singleton().getSoarAgent().getStack().popSegment();
+    	//Rosie.Singleton().getSoarAgent().getStack().popSegment();
     	id.CreateStringWME("status", "complete");
     }
     

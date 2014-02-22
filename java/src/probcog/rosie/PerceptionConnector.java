@@ -91,7 +91,7 @@ public class PerceptionConnector implements OutputEventInterface, RunEventInterf
     	if(runEventId == smlRunEventId.smlEVENT_BEFORE_INPUT_PHASE){
     		time = TimeUtil.utime();
     		updateInputLink(agent);
-    		if(InSoar.DEBUG_TRACE){
+    		if(Rosie.DEBUG_TRACE){
     			System.out.println(String.format("%-20s : %d", "PERCEPTION CONNECTOR", (TimeUtil.utime() - time)/1000));
     		}
     	}
@@ -234,7 +234,7 @@ public class PerceptionConnector implements OutputEventInterface, RunEventInterf
             observations_t obs = null;
             try {
             	long time = 0;
-            	if(InSoar.DEBUG_TRACE){
+            	if(Rosie.DEBUG_TRACE){
             		time = TimeUtil.utime();
             	}
                 obs = new observations_t(ins);

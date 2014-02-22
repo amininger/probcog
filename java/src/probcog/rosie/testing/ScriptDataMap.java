@@ -1,10 +1,10 @@
 package probcog.rosie.testing;
 
-import rosie.script.ui.command.AutomateScript;
-import rosie.script.ui.command.ClearClassifierData;
-import rosie.script.ui.command.PointAtObject;
-import rosie.script.ui.command.ResetRobotArm;
-import rosie.script.ui.command.UiCommand;
+import probcog.rosie.script.AutomateScript;
+import probcog.rosie.script.ClearClassifierData;
+import probcog.rosie.script.PointAtObject;
+import probcog.rosie.script.ResetArm;
+import probcog.rosie.script.UiCommand;
 
 public class ScriptDataMap {
 	private static final ScriptDataMap instance = new ScriptDataMap();
@@ -26,7 +26,7 @@ public class ScriptDataMap {
 		
 		addUiCommand("automated true", new AutomateScript(true));
 		addUiCommand("automated false", new AutomateScript(false));
-		addUiCommand("arm reset", new ResetRobotArm());
+		addUiCommand("arm reset", new ResetArm());
 		addUiCommand("point square", new PointAtObject(0));
 		addUiCommand("point circle", new PointAtObject(1));
 		addUiCommand("point tee", new PointAtObject(2));

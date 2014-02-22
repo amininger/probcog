@@ -30,11 +30,11 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
-import rosie.testing.ActionType;
-import rosie.testing.Script;
-import rosie.testing.ScriptDataMap;
-import rosie.testing.Settings;
-import rosie.testing.Util;
+import probcog.rosie.testing.ActionType;
+import probcog.rosie.testing.Script;
+import probcog.rosie.testing.ScriptDataMap;
+import probcog.rosie.testing.Settings;
+import probcog.rosie.testing.Util;
 
 public class ChatFrame extends JFrame
 {
