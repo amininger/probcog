@@ -55,7 +55,7 @@ public class Tracker
     ArrayList<Double> frameTimes = new ArrayList<Double>();
     int frameIdx = 0;
     final int frameTotal = 10;
-    
+
     long soarTime = 0;
 
 
@@ -90,11 +90,11 @@ public class Tracker
         new ListenerThread().start();
         new TrackingThread().start();
     }
-    
+
     public long getSoarTime(){
     	return soarTime;
     }
-    
+
     public void resetSoarTime(){
     	soarTime = 0;
     }
@@ -109,7 +109,7 @@ public class Tracker
     {
         return worldState.get(id);
     }
-    
+
     private int matchObject(Obj obj, HashMap<Integer, Obj> candidates){
         // Iterate through our existing objects. If there is an object
         // sharing any single label within a fixed distance of an existing
@@ -117,11 +117,11 @@ public class Tracker
         // been taken by another object, take a new ID
         double thresh = 0.02;
         double overlapThresh = .04;
-        
+
     	double objVol = obj.getBoundingBox().volume();
     	double maxOverlapped = -1;
         int maxID = -1;
-        
+
        // double minDist = Double.MAX_VALUE;
         for (Obj cand: candidates.values()) {
             double candVol = cand.getBoundingBox().volume();
@@ -143,7 +143,7 @@ public class Tracker
         }
         return maxID;
     }
-    
+
 
     public void compareObjects()
     {
@@ -166,7 +166,7 @@ public class Tracker
         }
 
         HashMap<Integer, Obj> previousFrame = new HashMap<Integer, Obj>();
-        
+
         for(Obj obj : soarObjects.values()){
         	previousFrame.put(obj.getID(), obj);
         }
@@ -196,7 +196,7 @@ public class Tracker
                 	System.out.println("  TRACKING: " + (TimeUtil.utime() - time));
                 	time = TimeUtil.utime();
                 }
-    			
+
                 return;
             }
 
@@ -206,7 +206,7 @@ public class Tracker
             // sharing any single label within a fixed distance of an existing
             // object, take the existing object's ID. If the ID has already
             // been taken by another object, take a new ID
-            
+
             for(Obj newObj: visibleObjects){
             	int id = matchObject(newObj, previousFrame);
             	if(id == -1){
@@ -226,8 +226,8 @@ public class Tracker
             	}
                 worldState.put(newObj.getID(), newObj);
             }
-            
-            
+
+
 //            double thresh = 0.02;
 //            double overlapThresh = .04;
 //            for (Obj newObj: visibleObjects) {
@@ -235,12 +235,12 @@ public class Tracker
 //                boolean matched = false;
 //                double maxOverlapped = -1;   // How much the object is overlapped by a soar object
 //                int maxID = -1;
-//                
+//
 //               // double minDist = Double.MAX_VALUE;
 //                for (Obj soarObj: soarObjects) {
 //                    if (idSet.contains(soarObj.getID()))
 //                        continue;
-//                    
+//
 //                    double soarObjVol = soarObj.getBoundingBox().volume();
 //                    double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), soarObj.getBoundingBox(), 8);
 //                    if(iVol == 0){
@@ -285,7 +285,7 @@ public class Tracker
 //                        for (Obj oldObj: previousFrame) {
 //                            if (idSet.contains(oldObj.getID()))
 //                                continue;
-//                            
+//
 //                            double oldObjVol = oldObj.getBoundingBox().volume();
 //                            double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), oldObj.getBoundingBox(), 8);
 //                            if(iVol == 0){
@@ -324,7 +324,7 @@ public class Tracker
 //            }
 
             adjustBoundingBoxes(new ArrayList<Obj>(worldState.values()));
-            
+
             ArrayList<Obj> imagined = createImaginedObjects(world, false);
             for(Obj o : imagined) {
                 worldState.put(o.getID(), o);
@@ -334,7 +334,7 @@ public class Tracker
             	time = TimeUtil.utime();
             }
         }
-        
+
         double frameTime = tic.toc();
         if (frameTimes.size() < frameTotal) {
             frameTimes.add(frameTime);
@@ -363,7 +363,7 @@ public class Tracker
      *  classifiers. The resulting point clouds, their locations, and the
      *  classifications are returned.
      **/
-    private ArrayList<Obj> getVisibleObjects()
+    public ArrayList<Obj> getVisibleObjects()
     {
     	long time = TimeUtil.utime();
 
@@ -412,7 +412,8 @@ public class Tracker
                     Obj sObj = new Obj(odt.id);
                     double[] xyzrpy = odt.pos;
                     sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
-                    sObj.setBoundingBox(new BoundingBox(odt.bbox_dim, odt.bbox_xyzrpy));
+                    sObj.setBoundingBox(new BoundingBox(odt.bbox_dim,
+                                                        odt.bbox_xyzrpy));
 
                     for(int j=0; j<odt.num_cat; j++) {
                         categorized_data_t cat = odt.cat_dat[j];
@@ -464,13 +465,13 @@ public class Tracker
                 {
                 	double c0 = bbox0.xyzrpy[2];		// Center
                 	double h0 = bbox0.lenxyz[2]/2;	// Height (half)
-                	
+
                 	double c1 = bbox1.xyzrpy[2]; 	// Center
                 	double h1 = bbox1.lenxyz[2]/2; 	// Height (half)
-                	
+
                     // Adjust zlens in bounding box based on separation
                     // between centroids. Don't forget to update shape!
-                	
+
                 	double dz = Math.abs(c1 - c0);
                 	// The adjustment is how much the bboxes needed to be backed up so the boxes are separated on z
                 	double adjustment = h0 + h1 + fudge - dz;
@@ -479,7 +480,7 @@ public class Tracker
                 			// Already too small to do anything about (or horizontally overlapping)
                 			continue;
                 		}
-                		
+
                 		bbox0.lenxyz[2] -=  2 * h0 / (h0 + h1) * adjustment;
                 		bbox1.lenxyz[2] -=  2 * h1 / (h0 + h1) * adjustment;
 
@@ -492,16 +493,16 @@ public class Tracker
                         if (Collisions.collision(obj0.getShape(), LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
                                 obj1.getShape(), LinAlg.xyzrpyToMatrix(bbox1.xyzrpy))){
                         	System.out.println("STILL A COLLISION");
-                        	
+
                         }
                 	}
                 }
             }
         }
         // =========== END HACK ======================
-    	
+
     }
-    
+
     //////////////////////////////////////////////////////////////
     // Methods for interacting with the classifierManager (used through guis)
     public void clearClassificationData()
@@ -572,11 +573,11 @@ public class Tracker
                 categorized_data_t[] cat_dat = ob.getCategoryData();
                 od.num_cat = cat_dat.length;
                 od.cat_dat = cat_dat;
-                
+
                 objList.add(od);
             }
         }
-        
+
         object_data_t[] objArray = objList.toArray(new object_data_t[objList.size()]);
         return objArray;
     }
@@ -698,7 +699,7 @@ public class Tracker
                 synchronized (armLock) {
                     armInterpreter.updateWorld(objsList);
                 }
-    			
+
                 if(SHOW_TIMERS){
                     System.out.println("TRACKER: " + (TimeUtil.utime() - startTime));
                 }
