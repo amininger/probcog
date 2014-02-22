@@ -1,0 +1,86 @@
+## find the projected location using spatial-reasoning system
+
+sp {propose*find-projection*put-down
+   (state <s> ^name op_put-down-object-location
+   	      ^io
+	      ^argument1 <obj1>
+	      ^argument2 <nval>
+	      -^projection-result)
+   (<nval> ^argument <obj2>
+  	   ^relation.smem-rep <rel>)
+-->
+   (<s> ^operator <op> + >, =)
+   (<op> ^name find-projection
+   	^interaction true
+	^a <obj1>
+	^b <obj2>
+	^predicate <rel>)
+}
+
+### if equal 
+
+## setup tracking 
+sp {tracking*put-down
+   (state <s> ^name op_put-down-object-location
+   	      ^projection-result <res>
+	      ^io
+	      ^argument1 <obj1>
+	      ^argument2 <nval>
+	      ^topstate <ts>)
+   (<nval> ^argument <loc>
+   	   ^relation <rel>)
+   (<rel> ^smem-rep <srel>)
+-->
+   (<ts> ^track-relation <relation>)
+   (<relation> ^object1 <obj1>
+   	       ^object2 <loc>
+	       ^predicate <srel>
+	       ^vpredicate <rel>)
+}
+
+
+# delete tracking 
+sp {tracking*put-down*delete
+   (state <s> ^track-relation <rel>
+   	      ^operator <op>
+	      ^topstate <s>)
+   (<op> -^name action)
+-->
+   (<s> ^track-relation <rel> -)
+}
+
+## AM: Used to track an object after a place
+sp {action*put-down*object*move*svs*object
+   (state <s> ^name << op_put-down-object-location op_put-down-object-object >>
+              ^argument1.belief-obj.id <id>
+	          ^projection-result <res>
+              ^io.input-link.self.action drop
+              ^topstate.svs.command <cmd>)
+   (<res> ^x <x> ^y <y> ^z <z>)
+-->
+   (<cmd> ^property <xp> <yp> <zp>)
+   (<xp> ^id <id>
+         ^property px
+         ^value <x>)
+   (<yp> ^id <id>
+         ^property py
+         ^value <y>)
+   (<zp> ^id <id>
+         ^property pz
+         ^value <z>)
+}
+
+#sp {put-down*apply*remove*grabbed
+#   (state <s> ^name << op_put-down-object-location op_put-down-object-object >>
+#              ^operator <o>
+#              ^io.input-link.self <self>
+#              ^topstate <top>)
+#   (<self> ^action wait
+#           ^prev-action drop
+#           ^grabbed-object -1)
+#   (<top> ^grabbed <obj>)
+#-->
+#   (<top> ^grabbed <obj> -)
+#   (write |Removing grabbed object| (crlf))
+#}
+

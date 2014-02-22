@@ -1,0 +1,89 @@
+
+# uncomment for preloading move to(on) chunks
+# also make sure to uncomment smem map in init-smem/spatial-relations.soar
+source stored-move-chunks.soar
+
+# Source child problem space "pick-up"
+pushd pick-up
+source pick-up_source.soar
+popd
+
+# Source child problem space "put-down"
+pushd put-down
+source put-down_source.soar
+popd
+
+# Source child problem space "open"
+pushd open
+source open_source.soar
+popd
+
+# Source child problem space "close"
+pushd close
+source close_source.soar
+popd
+
+
+source elaborate-actions-ol.soar
+
+# Souce file "elaborations.soar"
+source elaborations.soar
+
+# Souce file "pefer-indexed-action.soar"
+source prefer-indexed-action.soar
+
+# Souce file "indicate-completed-action.soar"
+source indicate-completed-action.soar
+
+# Souce file "apply-indexed-action.soar"
+source apply-indexed-action.soar
+
+# Souce file "propose-complex-action.soar"
+source propose-complex-action.soar
+
+# Source child problem space "composite-action"
+pushd composite-action
+source composite-action_source.soar
+popd
+
+# Souce file "propose-primitive-action.soar"
+source propose-primitive-action.soar
+
+
+# Source child problem space "wait"
+pushd wait
+source wait_source.soar
+popd
+
+pushd operator-tie
+source operator-tie_source.soar
+popd
+
+
+pushd point
+source point_source.soar
+popd
+
+# Souce file "augment-problem-space.soar"
+source augment-problem-space.soar
+
+# Source child problem space "activate"
+pushd activate
+source activate_source.soar
+popd
+
+# Source child problem space "stop"
+pushd stop
+source stop_source.soar
+popd
+
+source object-activation.soar
+
+
+# Souce file "manage-action-goals.soar"
+source manage-action-goals.soar
+
+# Source child problem space "perception-actions"
+pushd perception-actions
+source perception-actions_source.soar
+popd
