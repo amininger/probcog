@@ -1,17 +1,18 @@
-package magic.robot;
+package probcog.robot.robot;
 
 import java.util.*;
 import java.io.*;
 
 import lcm.lcm.*;
-import magic.lcmtypes.*;
 
 import april.config.*;
 import april.jmat.*;
 import april.lcmtypes.*;
 import april.util.*;
 
-import magic.util.*;
+import probcog.lcmtypes.*;
+
+import probcog.robot.util.*;
 
 import orc.*;
 import java.net.*;
@@ -39,16 +40,9 @@ public class RobotDriver implements LCMSubscriber
 
     Config config = RobotUtil.getConfig();
 
-    ExpiringMessageCache<gamepad_t> gamepadCache = new ExpiringMessageCache<gamepad_t>(0.2);
     ExpiringMessageCache<gamepad_t> udppadCache = new ExpiringMessageCache<gamepad_t>(0.5);
 
     ExpiringMessageCache<diff_drive_t> diffDriveCache = new ExpiringMessageCache<diff_drive_t>(0.2);
-    ExpiringMessageCache<diff_drive_t> diffDriveFollowCache = new ExpiringMessageCache<diff_drive_t>(0.2);
-
-    ExpiringMessageCache<robot_command_list_t> commandCache;
-
-    TeleopDecoder teleopDecoder;
-    VelReqMonitor velReqMonitor;
 
     Orc orcLeft = Orc.makeOrc(RobotUtil.getConfig().requireString("robot.orcLeft"));
     Orc orcRight = Orc.makeOrc(RobotUtil.getConfig().requireString("robot.orcRight"));
@@ -62,27 +56,17 @@ public class RobotDriver implements LCMSubscriber
     QuadratureEncoder encoderBR = new QuadratureEncoder(orcRight, 1, true);
     QuadratureEncoder encoderFL = new QuadratureEncoder(orcLeft,  0, false);
     QuadratureEncoder encoderBL = new QuadratureEncoder(orcLeft,  1, false);
-    VelocityController vcFR = new VelocityController();
-    VelocityController vcBR = new VelocityController();
-    VelocityController vcFL = new VelocityController();
-    VelocityController vcBL = new VelocityController();
+
+    VelocityControler vcFR = new VelocityController();
+    VelocityControler vcBR = new VelocityController();
+    VelocityControler vcFL = new VelocityController();
+    VelocityControler vcBL = new VelocityController();
 
     UDPDriveThread udt;
 
     public RobotDriver()
     {
-        commandCache = new ExpiringMessageCache<robot_command_list_t>(
-            config.requireDouble("robot.driver.cmd_timeout"),
-            config.getBoolean("lcm.accept_only_monotonic_utimes", true));
-        teleopDecoder = new TeleopDecoder(lcm, RobotUtil.getID());
-
-        velReqMonitor = new VelReqMonitor();
-        velReqMonitor.start();
-
         lcm.subscribe("DIFF_DRIVE", this);
-        lcm.subscribe("DIFF_DRIVE_FOLLOW", this);
-        lcm.subscribe("VEL_REQUEST.*", this);
-        lcm.subscribe("CMDS_"+RobotUtil.getGNDID(), this);
         lcm.subscribe("GAMEPAD", this);
 
         MotorThread mt = new MotorThread();
@@ -118,59 +102,14 @@ public class RobotDriver implements LCMSubscriber
 
                 long now = TimeUtil.utime();
 
-                int task = robot_task_t.TASK_FREEZE;
-
-                robot_command_list_t cmdlist = commandCache.get();
-                if (cmdlist != null) {
-                    robot_command_t cmd = RobotUtil.getRobotCommand(cmdlist);
-                    if (cmd != null)
-                        task = cmd.task.task;
-                }
-
                 // default values: stop
                 double cmdLR[] = new double[2];
-                String cmdOrigin = TaskUtil.getTaskName(task);
 
-                switch (task)
-                {
-                    case robot_task_t.TASK_GOTO_LATLON:
-                        break;
-
-                    case robot_task_t.TASK_GOTO_LOCAL:
-                        diff_drive_t msg = diffDriveCache.get();
-                        if (msg != null)
-                            cmdLR = new double[] { msg.left, msg.right };
-                        break;
-
-                        ///////////////////////////
-                    case robot_task_t.TASK_TELEOP:
-                        TeleopDecoder.TeleopState s = teleopDecoder.getState();
-
-                        if (s != null) {
-                            double speed = -s.drive[0];
-                            double turn = s.drive[1];
-
-                            cmdLR = new double[] { speed + turn, speed - turn };
-                            normalizeLR(cmdLR);
-                        }
-                        break;
-
-                        ///////////////////////////
-                    case robot_task_t.TASK_FREEZE:
-                    case robot_task_t.TASK_WAITING:
-                    case robot_task_t.TASK_PANORAMA:
-                    default:
-                        break;
-                }
-
-                // Local Follow Mode overrides GC
-                // follow mode MUST work in frozen mode (b/c failsafe = FREEZE)
-                diff_drive_t msg = diffDriveFollowCache.get();
+                diff_drive_t msg = diffDriveCache.get();
                 if (msg != null)
                     cmdLR = new double[] { msg.left, msg.right };
 
                 gamepad_t gp = null;
-                gamepad_t gp_real = gamepadCache.get();
                 gamepad_t gp_udp = udppadCache.get();
 
                 String gpName = null;
@@ -194,37 +133,6 @@ public class RobotDriver implements LCMSubscriber
                     normalizeLR(cmdLR);
 
                     gpOverride = true;
-                }
-
-                // Process velocity advice. (If both local gamepad
-                // buttons are pressed, we ignore velocity advice.)
-                if (gp == null || (gp.buttons & BTN_MANUAL_MASK) != BTN_MANUAL_MASK) {
-                    double speedLimit = velReqMonitor.getSpeedLimit();
-                    double currentSpeed = Math.max(Math.abs(cmdLR[0]), Math.abs(cmdLR[1]));
-                    long utime = TimeUtil.utime();
-                    double dt = (utime - lastSpeedLimitUtime) / 1000000.0;
-
-                    if (speedLimit > lastSpeedLimit) {
-                        // don't jump up immediately to higher speed limits
-                        double timeForFullAcceleration = 2.0;
-                        speedLimit = Math.min(speedLimit, lastSpeedLimit + dt / timeForFullAcceleration);
-                    }
-
-                    if (speedLimit < lastSpeedLimit) {
-                        // don't jump down immediately to lower speeds
-                        double timeForFullDeceleration = 0.25;
-                        speedLimit = Math.max(speedLimit, lastSpeedLimit - dt / timeForFullDeceleration);
-                    }
-
-                    if (currentSpeed > speedLimit) {
-                        for (int i = 0; i < 2; i++)
-                            cmdLR[i] = cmdLR[i] * speedLimit / currentSpeed;
-                    }
-
-                    cmdOrigin = cmdOrigin + String.format(" speed = %.2f", speedLimit);
-
-                    lastSpeedLimit = speedLimit;
-                    lastSpeedLimitUtime = utime;
                 }
 
                 // limit turn rate
@@ -287,28 +195,10 @@ public class RobotDriver implements LCMSubscriber
 
     public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
     {
-        if (channel.equals("GAMEPAD")) {
-            gamepad_t msg = new gamepad_t(ins);
-            gamepadCache.put(msg, msg.utime);
-        }
-
         if (channel.equals("DIFF_DRIVE")) {
             diff_drive_t msg = new diff_drive_t(ins);
             diffDriveCache.put(msg, msg.utime);
         }
-
-        if (channel.equals("DIFF_DRIVE_FOLLOW")) {
-            diff_drive_t msg = new diff_drive_t(ins);
-            diffDriveFollowCache.put(msg, msg.utime);
-        }
-
-        if (channel.equals("CMDS_"+RobotUtil.getGNDID())) {
-            robot_command_list_t msg = new robot_command_list_t(ins);
-            commandCache.put(msg, msg.utime, TimeUtil.utime());
-        }
-
-        if (channel.startsWith("VEL_REQUEST") && !channel.equals("VEL_REQUEST_STATUS"))
-            velReqMonitor.addRequest(new vel_request_t(ins), channel);
     }
 
     public class EncoderThread extends Thread
@@ -387,7 +277,7 @@ public class RobotDriver implements LCMSubscriber
             InetAddress broadcastAddr;
 
             try {
-                sock = new DatagramSocket(35998, Inet4Address.getByName("192.168.2."+RobotUtil.getID()));
+                sock = new DatagramSocket(35998, Inet4Address.getByName("192.168.3.6"));//+RobotUtil.getID()));
                 sock.setBroadcast(true);
                 broadcastAddr = Inet4Address.getByName("255.255.255.255");
             } catch (Exception ex) {
@@ -406,7 +296,7 @@ public class RobotDriver implements LCMSubscriber
                     outs.write('B');
                     outs.write('T');
 
-                    outs.write(RobotUtil.getID());
+                    outs.write(6);
 
                     OrcStatus statusRight = orcRight.getStatus();
                     outs.write(statusRight.getEstopState() ? 1 : 0);
@@ -474,7 +364,7 @@ public class RobotDriver implements LCMSubscriber
                     int robotId = data[4]&0xff;
 
                     // not for us?
-                    if (robotId != RobotUtil.getID()) {
+                    if (robotId != 6) {
                         continue;
                     }
 

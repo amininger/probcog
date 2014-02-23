@@ -1,0 +1,20 @@
+### success on searching the semantic memory with the cue provided
+sp {get-linguistic-id*propose*write*to*superstate*no-failure
+   (state <s> ^name get-linguistic-id)
+-->
+   (<s> ^operator <op> + <)
+   (<op> ^name complete-get-linguistic-id
+   	 ^linguistic <lid>)
+}
+
+sp {get-linguistic-id*apply*write-to-superstate
+   (state <s> ^name get-linguistic-id
+   	      ^superstate <ss>
+	      ^linguistic {<lid> <> failure}
+	      ^operator <op>)   
+   (<op> ^name complete-get-linguistic-id)
+-->
+   (<ss> ^linguistic <lid>)
+}
+
+

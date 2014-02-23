@@ -1,7 +1,6 @@
 package probcog.robot.pimu;
 
 import lcm.lcm.*;
-import magic.lcmtypes.*;
 import april.lcmtypes.*;
 import april.jmat.*;
 import april.util.*;
@@ -10,7 +9,7 @@ import april.config.*;
 import java.io.*;
 import java.util.*;
 
-//import magic.util.*;
+import probcog.lcmtypes.*;
 
 public class PIMUPose implements LCMSubscriber
 {

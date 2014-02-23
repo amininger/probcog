@@ -1,4 +1,4 @@
-package magic.robot;
+package probcog.robot.robot;
 
 import java.io.*;
 import java.util.*;
@@ -9,8 +9,8 @@ import april.util.*;
 import april.util.GetOpt;
 import april.config.*;
 
-import magic.util.*;
-import magic.lcmtypes.*;
+// import magic.util.*;
+import probcog.lcmtypes.*;
 
 public class EspeakDaemon extends Thread implements LCMSubscriber
 {

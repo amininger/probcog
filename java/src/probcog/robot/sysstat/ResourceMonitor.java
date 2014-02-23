@@ -1,4 +1,4 @@
-package magic.sysstat;
+package probcog.robot.sysstat;
 
 import java.util.*;
 import java.io.*;
@@ -6,12 +6,10 @@ import java.net.*;
 
 import lcm.lcm.*;
 import april.lcmtypes.*;
-import magic.lcmtypes.*;
+import probcog.lcmtypes.*;
 
 import april.util.*;
 import april.config.*;
-
-import magic.util.*;
 
 public class ResourceMonitor implements LCMSubscriber
 {

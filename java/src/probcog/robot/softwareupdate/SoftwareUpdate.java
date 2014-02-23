@@ -1,4 +1,4 @@
-package magic.softwareupdate;
+package probcog.robot.softwareupdate;
 
 import java.io.*;
 import javax.swing.*;
@@ -10,8 +10,7 @@ import lcm.lcm.*;
 import april.util.*;
 import april.config.*;
 
-import magic.util.*;
-import magic.lcmtypes.*;
+import probcog.lcmtypes.*;
 /**
  * Class which handles software updates to robots. Includes a GUI.
  *
