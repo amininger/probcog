@@ -38,14 +38,14 @@ public class RobotDriver implements LCMSubscriber
 
     LCM lcm = LCM.getSingleton();
 
-    Config config = RobotUtil.getConfig();
+    //Config config = RobotUtil.getConfig();
 
     ExpiringMessageCache<gamepad_t> udppadCache = new ExpiringMessageCache<gamepad_t>(0.5);
 
     ExpiringMessageCache<diff_drive_t> diffDriveCache = new ExpiringMessageCache<diff_drive_t>(0.2);
 
-    Orc orcLeft = Orc.makeOrc(RobotUtil.getConfig().requireString("robot.orcLeft"));
-    Orc orcRight = Orc.makeOrc(RobotUtil.getConfig().requireString("robot.orcRight"));
+    Orc orcLeft = Orc.makeOrc("192.168.237.8");//RobotUtil.getConfig().requireString("robot.orcLeft"));
+    Orc orcRight = Orc.makeOrc("192.168.237.7");//RobotUtil.getConfig().requireString("robot.orcRight"));
 
     // FRONT=0, REAR=1 (always!)
     Motor motorFR = new Motor(orcRight, 0, false);
@@ -112,16 +112,11 @@ public class RobotDriver implements LCMSubscriber
                 gamepad_t gp = null;
                 gamepad_t gp_udp = udppadCache.get();
 
-                String gpName = null;
-                if (gp_real != null && (gp_real.buttons & BTN_MANUAL_MASK) > 0) {
-                    gp = gp_real;
-                    gpName = "GAMEPAD_REAL";
-                } else {
-                    gp = gp_udp;
-                    gpName = "GAMEPAD_UDP";
-                }
+                gp = gp_udp;
+                String gpName = "GAMEPAD_UDP";
 
                 boolean gpOverride = false;
+                String cmdOrigin = "Default";
 
                 // gamepad overrides all others
                 if (gp != null && (gp.buttons & BTN_MANUAL_MASK) > 0) {
