@@ -4,6 +4,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JMenu;
@@ -12,9 +14,14 @@ import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
 import probcog.arm.ArmStatus;
+import probcog.commands.TypedValue;
 import probcog.lcmtypes.robot_action_t;
 import probcog.lcmtypes.robot_command_t;
 import probcog.lcmtypes.set_state_command_t;
+import probcog.lcmtypes.control_law_t;
+import probcog.lcmtypes.control_law_status_t;
+import probcog.lcmtypes.condition_test_t;
+import probcog.lcmtypes.typed_value_t;
 import sml.Agent;
 import sml.Agent.OutputEventInterface;
 import sml.Agent.RunEventInterface;
@@ -41,6 +48,10 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 	private robot_action_t curStatus = null;
 	private robot_action_t prevStatus = null;
 	// Last received information about the arm
+	//
+	
+	private HashMap<Integer, Identifier> outstandingCommands;
+	private int nextCommandId = 1;
 	
 	private boolean gotUpdate = false;
 	
@@ -50,9 +61,13 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     
     StringBuilder svsCommands = new StringBuilder();
 
+
+
     public MotorSystemConnector(SoarAgent agent){
     	this.agent = agent;
     	pose = new Pose();
+
+			outstandingCommands = new HashMap<Integer, Identifier>();
     	
     	if(agent.getArmConfig() == null){
     		armStatus = null;
@@ -68,6 +83,7 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     	// Setup LCM events
         lcm = LCM.getSingleton();
         lcm.subscribe("ROBOT_ACTION", this);
+				lcm.subscribe("SOAR_COMMAND_STATUS", this);
 
         // Setup Input Link Events
         inputLinkId = agent.getAgent().GetInputLink();
@@ -83,20 +99,57 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
-    	if(channel.equals("ROBOT_ACTION")){
-    		try {
-    			robot_action_t action = new robot_action_t(ins);
-				newRobotStatus(action);
+			try {
+				if(channel.equals("ROBOT_ACTION")){
+						robot_action_t action = new robot_action_t(ins);
+					newRobotStatus(action);
+				} else if(channel.equals("SOAR_COMMAND_STATUS")){
+
+						control_law_status_t status = new control_law_status_t(ins);
+						newControlLawStatus(status);
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-    	}
     }
     
     public void newRobotStatus(robot_action_t status){
     	curStatus = status;
     	gotUpdate = true;
     }
+
+		public void newControlLawStatus(control_law_status_t status){
+			if(outstandingCommands.containsKey(status.id)){
+				Identifier id = outstandingCommands.get(status.id);
+				boolean remove = false;
+				String newStatus;
+				if(status.equals("started")){
+					newStatus = "received";
+				} else if(status.equals("complete")){
+					newStatus = "complete";
+					remove = true;
+				} else if(status.equals("early-termination")){
+					newStatus = "error";
+					WMUtil.updateStringWME(id, "error-type", "early-termination");
+					remove = true;
+				} else if(status.equals("failure")){
+					newStatus = "error";
+					WMUtil.updateStringWME(id, "error-type", "failure");
+					remove = true;
+				} else if(status.equals("unknown-command")){
+					newStatus = "error";
+					WMUtil.updateStringWME(id, "error-type", "unknown-command");
+					remove = true;
+				} else {
+					return;
+				}
+				WMUtil.updateStringWME(id, "status", newStatus);
+				if(remove){
+					outstandingCommands.remove(status.id);
+				}
+			}
+		}
+
     
     public String getStatus(){
     	if(curStatus == null){
@@ -334,6 +387,139 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     	lcm.publish("ROBOT_COMMAND", command);
         id.CreateStringWME("status", "complete");
     }
+
+		private void processDoControlLawCommand(Identifier id){
+			control_law_t cl = parseControlLaw(id);
+			if(cl == null){
+				System.err.println("Invalid control law");
+				id.CreateStringWME("status", "error");
+				id.CreateStringWME("error-type", "parsing");
+				return;
+			}
+
+			lcm.publish("SOAR_COMMAND", cl);
+			outstandingCommands.put(cl.id, id);
+			id.CreateStringWME("status", "sent");
+		}
+
+		public control_law_t parseControlLaw(Identifier id){
+			control_law_t cl = new control_law_t();
+
+			// ID - only used internally for unique identification
+			cl.id = nextCommandId++;
+
+			// Name of the condition test
+			String name = WMUtil.getValueOfAttribute(id, "name");
+			if(name == null){
+				System.err.println("No ^name attribute on condition test");
+				return null;
+			}
+
+			// Parameters of the control law
+			HashMap<String, typed_value_t> params = parseParameters(id, "parameters");
+			cl.num_params = params.size();
+			cl.param_names = new String[cl.num_params];
+			cl.param_values = new typed_value_t[cl.num_params];
+			int i = 0;
+			for(Map.Entry<String, typed_value_t> e : params.entrySet()){
+				cl.param_names[i] = e.getKey();
+				cl.param_values[i] = e.getValue();
+				i++;
+			}
+
+			// Termination condition - when to stop
+			Identifier termId = WMUtil.getIdentifierOfAttribute(id, "termination-condition");
+			cl.termination_condition = parseConditionTest(termId);
+			if(cl.termination_condition == null){
+				System.err.println("Invalid termination condition");
+				return null;
+			}
+			
+			return cl;
+		}
+
+		public condition_test_t parseConditionTest(Identifier id){
+			condition_test_t ct = new condition_test_t();
+
+			// Null condition test
+			if(id == null){
+				ct.name = "null";
+				ct.num_params = 0;
+				ct.param_names = new String[0];
+				ct.param_values = new typed_value_t[0];
+				ct.compare_type = condition_test_t.CMP_EQ;
+				ct.compared_value = TypedValue.wrap("");;
+				return ct;
+			}
+
+			// Name of the condition test
+			String name = WMUtil.getValueOfAttribute(id, "name");
+			if(name == null){
+				System.err.println("No ^name attribute on condition test");
+				return null;
+			}
+
+			// Parameters of the condition
+			HashMap<String, typed_value_t> params = parseParameters(id, "parameters");
+			ct.num_params = params.size();
+			ct.param_names = new String[ct.num_params];
+			ct.param_values = new typed_value_t[ct.num_params];
+			int i = 0;
+			for(Map.Entry<String, typed_value_t> e : params.entrySet()){
+				ct.param_names[i] = e.getKey();
+				ct.param_values[i] = e.getValue();
+				i++;
+			}
+
+			// compare-type
+			//   The type of comparison (gt, gte, eq, lte, lt)
+			String compareType = WMUtil.getValueOfAttribute(id, "compare-type");
+			if(compareType == null){
+				System.err.println("No compare-type on condition test");
+				return null;
+			} else if(compareType.equals("gt")){
+				ct.compare_type = condition_test_t.CMP_GT;
+			} else if(compareType.equals("gte")){
+				ct.compare_type = condition_test_t.CMP_GTE;
+			} else if(compareType.equals("eq")){
+				ct.compare_type = condition_test_t.CMP_EQ;
+			} else if(compareType.equals("lte")){
+				ct.compare_type = condition_test_t.CMP_LTE;
+			} else if(compareType.equals("lt")){
+				ct.compare_type = condition_test_t.CMP_LT;
+			} else {
+				System.err.println("Unknown compare-type on condition test");
+			}
+
+			// compared-value
+			//   the value being compared against when evaluating the test
+			String comparedValue = WMUtil.getValueOfAttribute(id, "compared-value");
+			if(comparedValue == null){
+				System.err.println("no compared-value on condition test");
+				return null;
+			}
+			ct.compared_value = WMUtil.wrapTypedValue(comparedValue);
+
+			return ct;
+		}
+
+		public HashMap<String, typed_value_t> parseParameters(Identifier id, String att){
+			HashMap<String, typed_value_t> params = new HashMap<String, typed_value_t>();
+			Identifier paramsId = WMUtil.getIdentifierOfAttribute(id, att);
+			if(paramsId != null){
+				for(int i = 0; i < id.GetNumberChildren(); i++){
+					WMElement wme = id.GetChild(i);
+					String name = wme.GetAttribute();
+					String value = wme.GetValueAsString();
+					params.put(name, WMUtil.wrapTypedValue(value));
+				}
+			}
+
+			return params;
+
+		}
+
+
     
     public JMenu createMenu(){
     	JMenu actionMenu = new JMenu("Action");

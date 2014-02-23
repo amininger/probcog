@@ -5,6 +5,8 @@ import java.util.Set;
 
 import sml.*;
 
+import probcog.lcmtypes.typed_value_t;
+
 /**
  * Provides some utility functions to better manipulate working memory
  * 
@@ -138,6 +140,32 @@ public class WMUtil
             }
         }
     }
+
+		public static typed_value_t wrapTypedValue(String value){
+			typed_value_t tv = new typed_value_t();
+			tv.value = value;
+
+			try{
+				// Integer
+				Long.parseLong(value);
+				tv.type = typed_value_t.TYPE_INT;
+			} catch (NumberFormatException e){
+				try{
+					// Double
+					Double.parseDouble(value);
+					tv.type = typed_value_t.TYPE_DOUBLE;
+				} catch (NumberFormatException e2){
+					// Boolean
+					if(value.equals("true") || value.equals("false")){
+						tv.type = typed_value_t.TYPE_BOOL;
+					// String
+					} else {
+						tv.type = typed_value_t.TYPE_STRING;
+					}
+				}
+			}
+			return tv;
+		}
    
     /**
      * Given id and attribute, returns value for WME (id ^attribute value)
