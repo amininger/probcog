@@ -604,7 +604,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 }
 
                 arm.render(vw);
-
                 TimeUtil.sleep(1000/fps);
 
             }

@@ -43,12 +43,12 @@ public class Obj
 
     private boolean confirmed = false;
 
-    
+
     // If the object was created from a simulated object,
     //   This is the backwards pointer
     private SimObject sourceSimObj = null;
     private boolean visible = true; // XXX I think an object is always visible when first made?
-    
+
     public Obj(boolean assignID)
     {
         if(assignID)
@@ -117,7 +117,7 @@ public class Obj
     public void setConfirmed(boolean isConfirmed){
     	confirmed = isConfirmed;
     }
-    
+
     // SET AND GET CALLS
     public void setID(int id)
     {
@@ -127,7 +127,7 @@ public class Obj
     {
         return id;
     }
-    
+
     public void setSourceSimObject(SimObject obj){
     	this.sourceSimObj = obj;
     }
@@ -141,7 +141,7 @@ public class Obj
     		return null;
     	}
     }
-    
+
     public void setPointCloud(PointCloud ptCloud)
     {
         this.ptCloud = ptCloud;
@@ -271,7 +271,7 @@ public class Obj
             cat_dat[j] = new categorized_data_t();
             cat_dat[j].cat = new category_t();
             cat_dat[j].cat.cat = Features.getLCMCategory(fc);
-            
+
         	// Report the real classification(s)
             Classifications cs = labels.get(fc);
             cs.sortLabels();    // Just to be nice
@@ -285,7 +285,7 @@ public class Obj
                 cat_dat[j].label[k] = label.label;
                 k++;
             }
-            
+
             ArrayList<Double> fs = this.features.get(fc);
             if(fs == null || Features.isVisualFeature(fc)){
             	cat_dat[j].num_features = 0;
@@ -297,18 +297,18 @@ public class Obj
 	            	cat_dat[j].features[i] = fs.get(i);
 	            }
             }
-           
+
             j++;
         }
         return cat_dat;
     }
-    
+
     public String[] getStates(){
     	if(sourceSimObj == null || !(sourceSimObj instanceof ISimStateful)){
     		return new String[0];
     	}
     	String[][] currentState = ((ISimStateful)sourceSimObj).getCurrentState();
-    	String[] stateVals = new String[currentState.length]; 
+    	String[] stateVals = new String[currentState.length];
     	for(int i = 0; i < currentState.length; i++){
     		stateVals[i] = currentState[i][0] + "=" + currentState[i][1];
     	}
