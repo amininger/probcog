@@ -1,6 +1,8 @@
 package probcog.rosie.world;
 
 import sml.Agent;
+import april.lcmtypes.pose_t;
+import april.lcmtypes.*;
 import probcog.lcmtypes.*;
 import april.jmat.LinAlg;
 

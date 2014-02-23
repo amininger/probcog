@@ -9,7 +9,7 @@ struct observations_t
     double eye[3];
 
 	// Robot position info in world coordinates
-	pose_t robot; 
+	//pose_t robot; 
 	
     double lookat[3];
     double up[3];
