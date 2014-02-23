@@ -1,12 +1,11 @@
-package magic.sysstat;
+package probcog.robot.sysstat;
 
 import lcm.lcm.*;
 
 import april.config.*;
 import april.util.*;
 
-import magic.lcmtypes.*;
-import magic.util.*;
+import probcog.lcmtypes.*;
 
 import java.io.*;
 import java.util.*;
