@@ -19,51 +19,51 @@ import probcog.rosie.Rosie;
 import probcog.rosie.SoarAgent;
 
 public class WorldModel implements RunEventInterface
-{    
-    
+{
+
     // Mapping from object ids to objects
     private Map<Integer, WorldObject> objects;
-    
+
     private observations_t newObservation = null;
-    
+
     private SoarAgent soarAgent;
     private Robot robot;
-    
+
     private HashMap<Integer, Integer> objectLinks;
-    
+
     public WorldModel(SoarAgent soarAgent){
     	this.soarAgent = soarAgent;
-    	
+
         // Setup Input Link Events
         soarAgent.getAgent().RegisterForRunEvent(smlRunEventId.smlEVENT_BEFORE_INPUT_PHASE, this, null);
 
         objects = new HashMap<Integer, WorldObject>();
         objectLinks = new HashMap<Integer, Integer>();
-        
+
         robot = new Robot();
-  
+
         StringBuilder svsCommands = new StringBuilder();
-        
+
         //svsCommands.append("a eye object world b .01 p 0 0 0\n"); //robot now handles eye
         soarAgent.getAgent().SendSVSInput(svsCommands.toString());
-    }    
-    
+    }
+
     public void reset(){
     	for(WorldObject object : objects.values()){
     		String command = SVSCommands.delete(object.getIdString());
     		soarAgent.getAgent().SendSVSInput(command);
     	}
-    	
+
     	objects.clear();
     	soarAgent.commitChanges();
     }
-    
+
     public void linkObjects(Set<String> sourceIds, String destId){
     	Integer dId = Integer.parseInt(destId);
-    	
+
     	ArrayList<object_data_t> objData = new ArrayList<object_data_t>();
     	StringBuilder svsCommands = new StringBuilder();
-    	
+
     	for(String sourceId : sourceIds){
     		Integer sId = Integer.parseInt(sourceId);
     		objectLinks.put(sId, dId);
@@ -73,19 +73,19 @@ public class WorldModel implements RunEventInterface
             	objects.remove(sId);
     		}
     	}
-    	
+
         String commands = svsCommands.toString();
         if(!commands.isEmpty()){
         	soarAgent.getAgent().SendSVSInput(commands);
         }
-        
+
         if(objData.size() > 0){
         	WorldObject object = new WorldObject(dId, objData);
         	object.updateSVS(soarAgent.getAgent());
         	objects.put(dId, object);
         }
     }
-    
+
 
     long time = 0;
     public synchronized void runEventHandler(int eventID, Object data, Agent agent, int phase)
@@ -97,21 +97,21 @@ public class WorldModel implements RunEventInterface
     		time = TimeUtil.utime();
     		System.out.println("!!! GOT MESSAGE !!!");
     	}
-    	
+
     	//double[] eye = newObservation.eye;
     	//agent.SendSVSInput(String.format("c eye p %f %f %f", eye[0], eye[1], eye[2]));
     	pose_t robot_pos = newObservation.robot; //TODO different lcmtype
     	robot.update(robot_pos);
-    	
+
     	Set<Integer> staleObjects = new HashSet<Integer>();
     	for(WorldObject object : objects.values()){
     		staleObjects.add(object.getId());
     	}
-    	
+
     	HashMap<Integer, ArrayList<object_data_t>> newData = new HashMap<Integer, ArrayList<object_data_t>>();
-    	for(object_data_t objData : newObservation.observations){    		
-    		Integer id = objData.id;	
-    		
+    	for(object_data_t objData : newObservation.observations){
+    		Integer id = objData.id;
+
     		if(objectLinks.containsKey(id)){
     			id = objectLinks.get(id);
     		}
@@ -120,7 +120,7 @@ public class WorldModel implements RunEventInterface
     		}
     		newData.get(id).add(objData);
     	}
-    	
+
     	for(Map.Entry<Integer, ArrayList<object_data_t>> e : newData.entrySet()){
     		Integer id = e.getKey();
     		if(staleObjects.contains(id)){
@@ -150,22 +150,22 @@ public class WorldModel implements RunEventInterface
         for(WorldObject object : objects.values()){
         	object.updateSVS(agent);
         }
-        
+
         newObservation = null;
         sendObservation();
-        
+
         if(Rosie.DEBUG_TRACE){
 			System.out.println(String.format("%-20s : %d", "WORLD MODEL", (TimeUtil.utime() - time)/1000));
         }
     }
-    
+
     public synchronized void newObservation(observations_t observation){
     	this.newObservation = observation;
     }
-    
+
     public synchronized void sendObservation(){
     	ArrayList<object_data_t> objDatas = new ArrayList<object_data_t>();
-    	
+
     	String[] beliefObjects = soarAgent.getAgent().SVSQuery("objs-with-flag object-source belief\n").split(" ");
     	for(int i = 2; i < beliefObjects.length; i++){
     		String objId = beliefObjects[i].trim();
@@ -180,10 +180,10 @@ public class WorldModel implements RunEventInterface
     	outgoingObs.utime = Rosie.GetSoarTime();
     	outgoingObs.objects = objDatas.toArray(new object_data_t[objDatas.size()]);
     	outgoingObs.num_objects = outgoingObs.objects.length;
-    	
+
     	LCM.getSingleton().publish("SOAR_OBJECTS", outgoingObs);
     }
-    
+
     public object_data_t parseObject(String objInfo){
     	object_data_t objData = new object_data_t();
     	objData.utime = TimeUtil.utime();
@@ -194,7 +194,7 @@ public class WorldModel implements RunEventInterface
     	objData.cat_dat = new categorized_data_t[0];
     	objData.num_states = 0;
     	objData.state_values = new String[0];
-    	
+
     	String[] fields = objInfo.split(" ");
     	int i = 0;
     	while(i < fields.length){
@@ -243,10 +243,10 @@ public class WorldModel implements RunEventInterface
     			objData.num_cat = objData.cat_dat.length;
     		}
     	}
-    	
+
     	return objData;
     }
-    	
+
     public categorized_data_t parseFlag(String flagName, String flagValue){
     	categorized_data_t catDat = new categorized_data_t();
     	catDat.cat = new category_t();
@@ -260,5 +260,5 @@ public class WorldModel implements RunEventInterface
     	catDat.len = 1;
     	return catDat;
     }
-    	
+
 }
