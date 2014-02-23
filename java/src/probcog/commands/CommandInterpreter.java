@@ -116,4 +116,8 @@ public class CommandInterpreter{
 			}
 		}
 	}
+
+	public static void main(String[] args){
+		CommandInterpreter ci = new CommandInterpreter();
+	}
 }

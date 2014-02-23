@@ -5,10 +5,15 @@ import probcog.lcmtypes.typed_value_t;
 
 import probcog.commands.TypedValue;
 
+import april.util.TimeUtil;
+
 public class ObstructionTest extends ConditionTest<Boolean>{
+	long finishTime;
 
 	public ObstructionTest(condition_test_t test){
 		super(test);
+
+		finishTime = TimeUtil.utime() + 3000000;
 	}
 
 	@Override
@@ -19,6 +24,9 @@ public class ObstructionTest extends ConditionTest<Boolean>{
 	@Override
 	protected Boolean getValue(){
 		// TODO: Returns true if there is an obstruction in front of the robot
+		if(TimeUtil.utime() > finishTime){
+			return true;
+		}
 		return false;
 	}
 }
