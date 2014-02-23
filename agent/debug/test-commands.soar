@@ -1,0 +1,80 @@
+sp {propose*init-test
+	(state <s> ^superstate nil
+						 -^name)
+-->
+	(<s> ^operator <o> + >)
+	(<o> ^name init-test)
+}
+
+sp {apply*init-test
+	(state <s> ^operator.name init-test)
+-->
+	(<s> ^name test)
+}
+
+sp {elaborate*substate*name
+	(state <s> ^superstate.operator.name <name>)
+-->
+	(<s> ^name <name>)
+}
+
+sp {elaborate*substate*io
+	(state <s> ^superstate.io <io>)
+-->
+	(<s> ^io <io>)
+}
+
+sp {propose*wait
+	(state <s> ^superstate <ss>
+						 -^operator.name wait)
+-->
+	(<s> ^operator <o> + = <)
+	(<o> ^name wait)
+}
+
+sp {test*propose*issue-command
+	(state <s> ^name test
+						 -^done-command)
+-->
+	(<s> ^operator <o> +)
+	(<o> ^name issue-command)
+}
+
+sp {issue-command*propose*write-to-ol
+	(state <s> ^name issue-command
+						 -^ol-command)
+-->
+	(<s> ^operator <o> +)
+	(<o> ^name write-to-ol)
+}
+
+sp {issue-command*apply*write-to-ol
+	(state <s> ^name issue-command
+						 ^operator.name write-to-ol
+						 ^io.output-link <out>)
+-->
+	(<s> ^ol-command <cmd>)
+	(<out> ^do-control-law <cmd>)
+	(<cmd> ^name drive-forward
+				 ^termination-condition <cond>)
+	(<cond> ^name obstruction
+					^compare-type eq
+					^compared-value true)
+}
+
+sp {issue-comm*propose*mark*finished
+	(state <s> ^name issue-command
+						 ^ol-command.status complete)
+-->
+	(<s> ^operator <o> +)
+	(<o> ^name mark-finished)
+}
+
+sp {issue-comm*apply*mark*finished
+	(state <s> ^name issue-command
+						 ^operator.name mark-finished
+						 ^superstate <ss>)
+-->
+	(<ss> ^done-command true)
+}
+						 

@@ -123,20 +123,20 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 				Identifier id = outstandingCommands.get(status.id);
 				boolean remove = false;
 				String newStatus;
-				if(status.equals("started")){
+				if(status.status.equals("started")){
 					newStatus = "received";
-				} else if(status.equals("complete")){
+				} else if(status.status.equals("complete")){
 					newStatus = "complete";
 					remove = true;
-				} else if(status.equals("early-termination")){
+				} else if(status.status.equals("early-termination")){
 					newStatus = "error";
 					WMUtil.updateStringWME(id, "error-type", "early-termination");
 					remove = true;
-				} else if(status.equals("failure")){
+				} else if(status.status.equals("failure")){
 					newStatus = "error";
 					WMUtil.updateStringWME(id, "error-type", "failure");
 					remove = true;
-				} else if(status.equals("unknown-command")){
+				} else if(status.status.equals("unknown-command")){
 					newStatus = "error";
 					WMUtil.updateStringWME(id, "error-type", "unknown-command");
 					remove = true;
@@ -401,8 +401,10 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 				id.CreateStringWME("error-type", "parsing");
 				return;
 			}
+			System.out.println("ISSUING COMMAND: " + cl.id);
 
 			lcm.publish("SOAR_COMMAND", cl);
+			System.out.println("PUBLISHED");
 			outstandingCommands.put(cl.id, id);
 			id.CreateStringWME("status", "sent");
 		}
@@ -414,8 +416,8 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 			cl.id = nextCommandId++;
 
 			// Name of the condition test
-			String name = WMUtil.getValueOfAttribute(id, "name");
-			if(name == null){
+			cl.name = WMUtil.getValueOfAttribute(id, "name");
+			if(cl.name == null){
 				System.err.println("No ^name attribute on condition test");
 				return null;
 			}
@@ -458,8 +460,8 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 			}
 
 			// Name of the condition test
-			String name = WMUtil.getValueOfAttribute(id, "name");
-			if(name == null){
+			ct.name = WMUtil.getValueOfAttribute(id, "name");
+			if(ct.name == null){
 				System.err.println("No ^name attribute on condition test");
 				return null;
 			}
