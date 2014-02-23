@@ -1,0 +1,11 @@
+struct control_law_t
+{
+	string name;
+  int32_t id;
+
+	int32_t num_params;
+	string param_names[num_params];
+	typed_value_t param_values[num_params];
+
+	condition_test_t termination_condition;
+}

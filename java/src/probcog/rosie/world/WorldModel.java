@@ -17,6 +17,7 @@ import probcog.lcmtypes.*;
 import april.util.TimeUtil;
 import probcog.rosie.Rosie;
 import probcog.rosie.SoarAgent;
+
 public class WorldModel implements RunEventInterface
 {    
     
@@ -26,7 +27,7 @@ public class WorldModel implements RunEventInterface
     private observations_t newObservation = null;
     
     private SoarAgent soarAgent;
-    
+    private Robot robot;
     
     private HashMap<Integer, Integer> objectLinks;
     
@@ -38,9 +39,12 @@ public class WorldModel implements RunEventInterface
 
         objects = new HashMap<Integer, WorldObject>();
         objectLinks = new HashMap<Integer, Integer>();
+        
+        robot = new Robot();
   
         StringBuilder svsCommands = new StringBuilder();
-        svsCommands.append("a eye object world b .01 p 0 0 0\n");
+        
+        //svsCommands.append("a eye object world b .01 p 0 0 0\n"); //robot now handles eye
         soarAgent.getAgent().SendSVSInput(svsCommands.toString());
     }    
     
@@ -93,9 +97,11 @@ public class WorldModel implements RunEventInterface
     		time = TimeUtil.utime();
     		System.out.println("!!! GOT MESSAGE !!!");
     	}
-
-    	double[] eye = newObservation.eye;
-    	agent.SendSVSInput(String.format("c eye p %f %f %f", eye[0], eye[1], eye[2]));
+    	
+    	//double[] eye = newObservation.eye;
+    	//agent.SendSVSInput(String.format("c eye p %f %f %f", eye[0], eye[1], eye[2]));
+    	pose_t robot_pos = newObservation.robot; //TODO different lcmtype
+    	robot.update(robot_pos);
     	
     	Set<Integer> staleObjects = new HashSet<Integer>();
     	for(WorldObject object : objects.values()){
@@ -103,8 +109,9 @@ public class WorldModel implements RunEventInterface
     	}
     	
     	HashMap<Integer, ArrayList<object_data_t>> newData = new HashMap<Integer, ArrayList<object_data_t>>();
-    	for(object_data_t objData : newObservation.observations){
-    		Integer id = objData.id;
+    	for(object_data_t objData : newObservation.observations){    		
+    		Integer id = objData.id;	
+    		
     		if(objectLinks.containsKey(id)){
     			id = objectLinks.get(id);
     		}

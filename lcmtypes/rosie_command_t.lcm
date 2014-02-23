@@ -1,0 +1,9 @@
+struct rosie_command_t
+{
+    int64_t utime;
+	
+	string parameter[6];
+	string parameter_name[6];
+	string parameter_type[6]; // STRING, INT, DOUBLE
+    string name;// DRIVE_FORWARD_X, DRIVE_UNTIL, TURN_X, TURN_UNTIL 
+}
