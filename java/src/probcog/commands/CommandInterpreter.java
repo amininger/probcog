@@ -3,6 +3,7 @@ package probcog.commands;
 import lcm.lcm.*;
 
 import java.util.Queue;
+import java.util.LinkedList;
 import java.io.IOException;
 
 import april.util.TimeUtil;
@@ -26,6 +27,7 @@ public class CommandInterpreter{
 	protected Queue<control_law_t> waitingCommands;
 
 	public CommandInterpreter(){
+		waitingCommands = new LinkedList<control_law_t>();
 
 		new ListenerThread().start();
 		new CommandThread().start();
@@ -61,7 +63,6 @@ public class CommandInterpreter{
 			curCommand.execute();
 			ControlLaw.Status status = curCommand.getStatus();
 			if(status == ControlLaw.Status.FINISHED){
-
 				sendStatus(curCommand.getID(), "complete");
 				curCommand = null;
 			} else if(status == ControlLaw.Status.EARLY_TERM){
