@@ -90,7 +90,7 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
         agent.getAgent().RegisterForRunEvent(smlRunEventId.smlEVENT_BEFORE_INPUT_PHASE, this, null);
         
         // Setup Output Link Events
-        String[] outputHandlerStrings = { "pick-up", "put-down", "point", "set-state", "home"};
+        String[] outputHandlerStrings = { "pick-up", "put-down", "point", "set-state", "home", "do-control-law"};
         for (String outputHandlerString : outputHandlerStrings)
         {
         	agent.getAgent().AddOutputHandler(outputHandlerString, this, null);
@@ -296,6 +296,9 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
             else if(wme.GetAttribute().equals("home")){
             	processHomeCommand(id);
             }
+						else if(wme.GetAttribute().equals("do-control-law")){
+							processDoControlLawCommand(id);
+						}
             agent.commitChanges();
         } catch (IllegalStateException e){
         	System.out.println(e.getMessage());

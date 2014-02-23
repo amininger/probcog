@@ -32,7 +32,6 @@ public class TypedValue{
 			return new Boolean(value.value);
 		} else {
 			return null;
-
 		}
 	}
 
@@ -56,4 +55,12 @@ public class TypedValue{
 		tv.value = value;
 		return tv;
 	}
+
+	public static typed_value_t wrap(Boolean value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_BOOL;
+		tv.value = value.toString();
+		return tv;
+	}
+
 }
