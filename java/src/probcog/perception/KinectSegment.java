@@ -47,7 +47,7 @@ public class KinectSegment implements Segmenter
     {
     	this(config_, null);
     }
-    
+
     public KinectSegment(Config config_, SimWorld world) throws IOException
     {
     	// Get stuff ready for moving arms
@@ -86,21 +86,21 @@ public class KinectSegment implements Segmenter
         	System.out.println("      TRACING: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
         }
-        
+
         // Remove floor and arm points
         removeFloorAndArmPoints();
         if(Tracker.SHOW_TIMERS){
         	System.out.println("      REMOVE POINTS: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
         }
-        
+
         // Do a union find to do segmentation
         ArrayList<PointCloud> pointClouds = unionFind();
         if(Tracker.SHOW_TIMERS){
         	System.out.println("      SEGMENTATION: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
         }
-        
+
         ArrayList<Obj> segmentedObjects = new ArrayList<Obj>();
         for(PointCloud pc : pointClouds){
         	segmentedObjects.add(new Obj(false, pc));
