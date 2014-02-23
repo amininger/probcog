@@ -13,9 +13,10 @@ LCMTYPES_C := $(addprefix ./lcmtypes/,$(LCMTYPES_C))
 
 all: $(BINPATH)/$(NAME)
 
+# XXX Overkill build now that so many lcmtypes exist
 $(BINPATH)/$(NAME): kinect.c $(LCMTYPES_C)
 	mkdir -p $(BINPATH)
-	g++ kinect.c $(LCMTYPES_C) $(INCLUDES) $(LIBS) $(FLAGS) -o $(BINPATH)/$(NAME)
+	g++ kinect.c ./lcmtypes/kinect_status_t.c $(INCLUDES) $(LIBS) $(FLAGS) -o $(BINPATH)/$(NAME)
 
 ./lcmtypes/%.c: ../lcmtypes/%.lcm
 	mkdir -p lcmtypes
