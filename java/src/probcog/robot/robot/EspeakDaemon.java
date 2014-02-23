@@ -9,7 +9,6 @@ import april.util.*;
 import april.util.GetOpt;
 import april.config.*;
 
-// import magic.util.*;
 import probcog.lcmtypes.*;
 
 public class EspeakDaemon extends Thread implements LCMSubscriber
@@ -20,17 +19,18 @@ public class EspeakDaemon extends Thread implements LCMSubscriber
 
     int priorityThresh;
 
-    Config config = RobotUtil.getConfig();
+    //Config config = RobotUtil.getConfig();
 
     boolean initialized = false;
 
     public EspeakDaemon()
     {
-        priorityThresh = config.requireInt("espeak.priority_thresh");
+        // XXX replace config stuff as necessary
+        //priorityThresh = config.requireInt("espeak.priority_thresh");
+        priorityThresh = 5;
         setDaemon(true);
         queue = new PriorityQueue<speak_t>(10, new MyComparator());
         lcm.subscribe("SPEAK.*", this);
-        new MuteChecker().start();
     }
 
     public void run()
@@ -77,7 +77,9 @@ public class EspeakDaemon extends Thread implements LCMSubscriber
         String voice = s.voice;
         String args = "-s 150 ";
 
-        String subs[] = config.getStrings("espeak.pronunciation", null);
+        // XXX Replace config as appropriate
+        //String subs[] = config.getStrings("espeak.pronunciation", null);
+        String subs[] = null;
         if (subs != null) {
             for (int i = 0; i+1 < subs.length; i+=2) {
                 s.message = s.message.replaceAll(subs[i], subs[i+1]);
@@ -150,76 +152,6 @@ public class EspeakDaemon extends Thread implements LCMSubscriber
             }
         }
     }
-    public class MuteChecker extends Thread
-    {
-        String dir = EnvUtil.expandVariables("$MAGIC_HOME/");
-
-        String cmd[] = {"sh", "-c", "amixer get Master | grep -q \"\\[off\\]\""};
-
-        boolean isMuted = true;
-        boolean verbose;
-
-        public MuteChecker()
-        {
-            if (RobotUtil.getConfig().getBoolean("espeak.set_volume", true))
-                // must sleep to wait for gnome to come up
-                TimeUtil.sleep(15000);
-                setVolume();
-                TimeUtil.sleep(500);
-                synchronized(queue) {
-                    initialized = true;
-                    queue.notify();
-                }
-        }
-
-        public void run()
-        {
-            while(true) {
-                isMuted = getMuteState();
-                process_flags_t pft = new process_flags_t();
-                pft.utime = TimeUtil.utime();
-                if (isMuted)
-                    pft.flags = process_flags_t.FLAG_MUTE;
-                pft.comment = "";
-                lcm.publish("PROCESS_FLAGS_MUTE", pft);
-                TimeUtil.sleep(2000);
-            }
-        }
-
-        public boolean getMuteState()
-        {
-            int eVal = 0;
-            try {
-                Process p = Runtime.getRuntime().exec(cmd);
-                try {
-                    p.waitFor();
-                    eVal = p.exitValue();
-                    p.destroy(); // Cleaning up file descriptors
-                } catch(InterruptedException e) {
-                }
-            } catch (IOException e) {
-                System.out.println("WRN: Unable to read Mute condition");
-            }
-            if (verbose)
-                System.out.println("NFO: System is " + (isMuted ? "" : "not ") + "muted");
-            return eVal == 0;
-        }
-
-        public void setVolume()
-        {
-            System.out.println("NFO: Espeak setting up volume");
-            try {
-                Process p = Runtime.getRuntime().exec(dir+"setVolume.sh ");
-                try {
-                    p.waitFor();
-                    p.destroy(); // Cleaning up file descriptors
-                } catch(InterruptedException e) {
-                }
-            } catch (IOException e) {
-                System.out.println("WRN: Unable to set Mute");
-            }
-        }
-    }
 
     /**
      * Static functions for applications to call to send a speak message
@@ -265,10 +197,11 @@ public class EspeakDaemon extends Thread implements LCMSubscriber
         String str;
         new Thread(ed).start();
 
-        if (gc)
-            str = "Ground Control Started";
-        else
-            str = "Robot " + RobotUtil.getID() + " Started";
+        //if (gc)
+        //    str = "Ground Control Started";
+        //else
+        //    str = "Robot " + RobotUtil.getID() + " Started";
+        str = "Prob Cog Robot Started";
 
         EspeakDaemon.speak(str, "", 0);
 
