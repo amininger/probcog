@@ -13,6 +13,8 @@ import sml.Agent.RunEventInterface;
 import sml.Agent;
 import sml.Identifier;
 import sml.smlRunEventId;
+import april.lcmtypes.pose_t;
+import april.lcmtypes.*;
 import probcog.lcmtypes.*;
 import april.util.TimeUtil;
 import probcog.rosie.Rosie;
@@ -100,8 +102,8 @@ public class WorldModel implements RunEventInterface
     	
     	//double[] eye = newObservation.eye;
     	//agent.SendSVSInput(String.format("c eye p %f %f %f", eye[0], eye[1], eye[2]));
-    	pose_t robot_pos = newObservation.robot; //TODO different lcmtype
-    	robot.update(robot_pos);
+    	//pose_t robot_pos = newObservation.robot; //TODO different lcmtype
+    	//robot.update(robot_pos);
     	
     	Set<Integer> staleObjects = new HashSet<Integer>();
     	for(WorldObject object : objects.values()){
