@@ -57,10 +57,10 @@ public class RobotDriver implements LCMSubscriber
     QuadratureEncoder encoderFL = new QuadratureEncoder(orcLeft,  0, false);
     QuadratureEncoder encoderBL = new QuadratureEncoder(orcLeft,  1, false);
 
-    VelocityControler vcFR = new VelocityController();
-    VelocityControler vcBR = new VelocityController();
-    VelocityControler vcFL = new VelocityController();
-    VelocityControler vcBL = new VelocityController();
+    VelocityController vcFR = new VelocityController();
+    VelocityController vcBR = new VelocityController();
+    VelocityController vcFL = new VelocityController();
+    VelocityController vcBL = new VelocityController();
 
     UDPDriveThread udt;
 
