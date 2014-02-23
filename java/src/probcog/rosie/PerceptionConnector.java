@@ -19,6 +19,7 @@ import sml.Agent.RunEventInterface;
 import sml.Identifier;
 import sml.WMElement;
 import sml.smlRunEventId;
+import april.lcmtypes.pose_t;
 import probcog.lcmtypes.*;
 import april.util.TimeUtil;
 import probcog.rosie.world.PerceptualProperty;
@@ -71,6 +72,7 @@ public class PerceptionConnector implements OutputEventInterface, RunEventInterf
         lcm = LCM.getSingleton();
         lcm.subscribe("OBSERVATIONS", this);
         lcm.subscribe("ROBOT_ACTION", this);
+        lcm.subscribe("ROBOT_POSE", this);
     }
     
     public long getSoarTime(){
@@ -255,6 +257,13 @@ public class PerceptionConnector implements OutputEventInterface, RunEventInterf
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+    	} else if(channel.equals("ROBOT_POSE")){
+    		try {
+    			pose_t robotPose = new pose_t(ins);
+    			world.newRobotPose(robotPose);
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
     	}
     }
     

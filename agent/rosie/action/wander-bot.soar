@@ -1,0 +1,90 @@
+# for testing new mobile robot domain
+#simple code for robot that wanders while avoiding obstacles
+
+sp {propose*wander-bot
+   (state <s> ^problemspace action
+              ^topstate <s>)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name wander-bot)
+}
+
+sp {wander-bot*elaborate*attr
+   (state <s> ^name wander-bot
+              ^superstate.operator <o>)
+   (<o> ^name wander-bot)
+-->
+   (<s> ^obstruction false)
+}
+
+sp {wander-bot*propose*turn
+   (state <s> ^name wander-bot
+              ^obstruction true)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name turn)
+}
+
+sp {wander-bot*propose*drive-forward
+   (state <s> ^name wander-bot
+              ^obstruction false)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name drive-forward)
+}
+
+sp {wander-bot*apply*turn
+   (state <s> ^name wander-bot
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name turn)
+-->
+   (<o1> ^do-control-law <law>)
+   (<law> ^name turn
+          ^termination-condition <cond>)
+   (<cond> ^name obstruction
+           ^compare-type eq
+           ^compared-value false)
+}
+sp {wander-bot*apply*turn*status-complete
+   (state <s> ^name wander-bot
+              ^obstruction <ob>
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name turn)
+   (<o1> ^do-control-law <law>)
+   (<law> ^name turn
+          ^status complete)
+-->
+   (<s> ^obstruction <ob> -)
+   (<s> ^obstruction false)
+   (<o1> ^do-control-law <law> -)
+}
+
+sp {wander-bot*apply*drive-forward
+   (state <s> ^name wander-bot
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name drive-forward)
+-->
+   (<o1> ^do-control-law <law>)
+   (<law> ^name drive-forward
+          ^termination-condition <cond>)
+   (<cond> ^name obstruction
+           ^compare-type eq
+           ^compared-value true)
+}
+sp {wander-bot*apply*drive-foward*status-complete
+   (state <s> ^name wander-bot
+              ^obstruction <ob>
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name drive-foward)
+   (<o1> ^do-control-law <law>)
+   (<law> ^name drive-forward
+          ^status complete)
+-->
+   (<s> ^obstruction <ob> -)
+   (<s> ^obstruction true)
+   (<o1> ^do-control-law <law> -)
+}

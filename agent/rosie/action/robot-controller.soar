@@ -1,0 +1,111 @@
+# for testing new mobile robot domain
+#simple code for robot that turns randomly finds an obstacle then returns to origin
+
+sp {propose*robot-controller*wander
+   (state <s> ^problemspace action
+              ^topstate <s>
+             -^problemspace perception)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name robot-controller)
+}
+
+sp {robot-controller*elaborate*attr
+   (state <s> ^name robot-controller
+              ^superstate.operator <o>)
+   (<o> ^name robot-controller)
+-->
+   (<s> ^obstruction NA)
+}
+
+sp {robot-controller*propose*turn
+   (state <s> ^name robot-controller
+              ^obstruction NA)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name turn)
+}
+
+sp {robot-controller*propose*drive-forward
+   (state <s> ^name robot-controller
+              ^obstruction false)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name drive-forward)
+}
+
+sp {robot-controller*propose*return-home
+   (state <s> ^name robot-controller
+              ^obstruction true)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name return-home-bot)
+}
+
+sp {robot-controller*apply*return-home-bot*complete
+   (state <s> ^name robot-controller
+              ^obstruction <ob>
+              ^home <h>
+              ^operator <o>)
+   (<o> ^name return-home-bot)
+-->
+   (<s> ^home <h> -)
+   (<s> ^obstruction <ob> -)
+   (<s> ^obstruction NA)
+}
+
+sp {robot-controller*apply*turn
+   (state <s> ^name robot-controller
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name turn)
+-->
+   (<o1> ^do-control-law <law>)
+   (<law> ^name turn
+          ^termination-condition <cond>)
+   (<cond> ^name rotation
+           ^compar-type geq
+           ^compared-value (rand-float 3))
+}
+sp {robot-controller*apply*turn*status-complete
+   (state <s> ^name robot-controller
+              ^obstruction <ob>
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name turn)
+   (<o1> ^do-control-law <law>)
+   (<law> ^name turn
+          ^status complete)
+-->
+   (<s> ^obstruction <ob> -)
+   (<s> ^obstruction false)
+   (<o1> ^do-control-law <law> -)
+}
+
+sp {robot-controller*apply*drive-forward
+   (state <s> ^name robot-controller
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name drive-forward)
+-->
+   (<o1> ^do-control-law <law>)
+   (<law> ^name drive-forward
+          ^termination-condition <cond>)
+   (<cond> ^name obstruction
+           ^compare-type eq
+           ^compared-value true)
+}
+sp {robot-controller*apply*drive-foward*status-complete
+   (state <s> ^name robot-controller
+              ^obstruction <ob>
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name drive-foward)
+   (<o1> ^do-control-law <law>)
+   (<law> ^name drive-forward
+          ^status complete)
+-->
+   (<s> ^obstruction <ob> -)
+   (<s> ^obstruction true)
+   (<o1> ^do-control-law <law> -)
+}

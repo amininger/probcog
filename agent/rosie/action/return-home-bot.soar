@@ -1,0 +1,105 @@
+sp {return-home-bot*elaborate*attr
+   (state <s> ^name return-home-bot
+              ^superstate.operator <o>)
+   (<o> ^name return-home-bot)
+-->
+   (<s> ^obstruction true)
+}
+
+sp {return-home-bot*propose*turn
+   (state <s> ^name return-home-bot
+              ^obstruction true)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name turn)
+}
+
+sp {return-home-bot*propose*get-position
+   (state <s> ^name return-home-bot
+             -^position
+              ^obstruction false)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name get-position)
+}
+
+sp {return-home-bot*apply*get-position
+   (state <s> ^name return-home-bot
+              ^topstate.io.input-link <i1>
+              ^operator <o>)
+   (<i1> ^pose <p>)
+   (<p> ^x <x> ^y <y>)
+   (<o> ^name get-position)
+-->
+   (<s> ^position <po>)
+   (<po> ^x <x> ^y <y> ^distance-from-origin (sqrt (+ (* <y> <y>) (* <x> <x>)))) 
+}
+
+sp {return-home-bot*propose*drive-forward
+   (state <s> ^name return-home-bot
+              ^position <p>
+              ^obstruction false)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name drive-forward)
+}
+
+sp {return-home-bot*apply*turn
+   (state <s> ^name return-home-bot
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name turn)
+-->
+   (<o1> ^do-control-law <law>)
+   (<law> ^name turn
+          ^termination-condition <cond>)
+   (<cond> ^name rotation
+           ^compare-type eq
+           ^compared-value 3.14159)
+}
+sp {return-home-bot*apply*turn*status-complete
+   (state <s> ^name return-home-bot
+              ^obstruction <ob>
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name turn)
+   (<o1> ^do-control-law <law>)
+   (<law> ^name turn
+          ^status complete)
+-->
+   (<s> ^obstruction <ob> -)
+   (<s> ^obstruction false)
+   (<o1> ^do-control-law <law> -)
+}
+
+
+sp {return-home-bot*apply*drive-forward
+   (state <s> ^name return-home-bot
+              ^position.distance-from-origin <d>
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name drive-forward)
+-->
+   (<o1> ^do-control-law <law>)
+   (<law> ^name drive-forward
+          ^termination-condition <cond>)
+   (<cond> ^name distance
+           ^compare-type geq
+           ^compared-value <d>)
+}
+sp {return-home-bot*apply*drive-foward*status-complete
+   (state <s> ^name return-home-bot
+              ^obstruction <ob>
+              ^superstate <ss>
+              ^topstate.io.output-link <o1>
+              ^operator <o>)
+   (<o> ^name drive-foward)
+   (<o1> ^do-control-law <law>)
+   (<law> ^name drive-forward
+          ^status complete)
+-->
+   (<ss> ^home true)
+   (<s> ^obstruction <ob> -)
+   (<s> ^obstruction true)
+   (<o1> ^do-control-law <law> -)
+}

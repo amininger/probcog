@@ -231,6 +231,8 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     	}
     	WMUtil.updateStringWME(selfId, "holding-obj", (curStatus.obj_id != -1 ? "true" : "false"));
     	WMUtil.updateIntWME(selfId, "grabbed-object", curStatus.obj_id);
+    	WMUtil.updateFloatWME(selfId, "robot-x", );
+    	WMUtil.updateFloatWME(selfId, "robot-y", );
     	pose.updateWithArray(curStatus.xyz);
     	pose.updateInputLink(selfId);
     	prevStatus = curStatus;
