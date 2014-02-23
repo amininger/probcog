@@ -1,4 +1,4 @@
-package magic.pimu;
+package probcog.robot.pimu;
 
 import lcm.lcm.*;
 import magic.lcmtypes.*;
@@ -10,7 +10,7 @@ import april.config.*;
 import java.io.*;
 import java.util.*;
 
-import magic.util.*;
+//import magic.util.*;
 
 public class PIMUPose implements LCMSubscriber
 {
@@ -30,7 +30,7 @@ public class PIMUPose implements LCMSubscriber
 
     int motorFeedbackCount, pimuCount, txCount;
 
-    Config config = RobotUtil.getConfig();
+    //Config config = RobotUtil.getConfig();
 
     public PIMUPose(GetOpt gopt)
     {
@@ -114,7 +114,9 @@ public class PIMUPose implements LCMSubscriber
                     poseAdj = pose.copy();
                 }
 
-                double dx = config.requireDouble("robot.geometry.circles_x");
+                // XXX CONFIG FILE WAS HERE. Replace later
+                //double dx = config.requireDouble("robot.geometry.circles_x");
+                double dx = 0.13335;
                 double dpos[] = LinAlg.quatRotate(pose.orientation, new double[] { -dx, 0, 0});
                 poseAdj.pos = LinAlg.add(poseAdj.pos, dpos);
 
@@ -133,7 +135,8 @@ public class PIMUPose implements LCMSubscriber
                 distTraveled = 0;   // Reset distance traveled since last update
 
                 // XXX SPECIAL FLATWORLD ASSUMPTION:
-                if (config.requireBoolean("obstacle.use_flat_world")) {
+                //if (config.requireBoolean("obstacle.use_flat_world")) {
+                if (true) {
                     poseAdj.pos[2] = 0;
                 }
 

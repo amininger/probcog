@@ -1,4 +1,4 @@
-package magic.pimu;
+package probcog.robot.pimu;
 
 import java.awt.*;
 import java.util.*;
@@ -11,7 +11,7 @@ import april.vis.*;
 import april.jmat.*;
 import april.util.*;
 
-import magic.lcmtypes.*;
+import probcog.lcmtypes.*;
 
 import lcm.lcm.*;
 

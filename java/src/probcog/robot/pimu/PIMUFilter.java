@@ -1,11 +1,11 @@
-package magic.pimu;
+package probcog.robot.pimu;
 
 import java.util.*;
 import java.io.*;
 import april.util.*;
 import april.jmat.*;
 
-import magic.lcmtypes.*;
+import probcog.lcmtypes.*;
 
 /** Estimate orientation given PIMU data **/
 public class PIMUFilter
