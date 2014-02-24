@@ -7,6 +7,7 @@ import lcm.lcm.*;
 
 import april.jmat.*;
 import april.jmat.geom.*;
+import april.lcmtypes.pose_t;
 import april.util.*;
 
 import probcog.lcmtypes.*;

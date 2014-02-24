@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import lcm.lcm.*;
 
+import april.lcmtypes.pose_t;
 import april.util.*;
 
 import probcog.lcmtypes.*;
