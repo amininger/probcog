@@ -11,7 +11,7 @@ import probcog.lcmtypes.*;
 
 public class DistanceTest extends ConditionTest<Double> implements LCMSubscriber
 {
-    private pose_t initialPose;
+    private pose_t startPose;
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
 
 
@@ -20,9 +20,9 @@ public class DistanceTest extends ConditionTest<Double> implements LCMSubscriber
 		super(test);
 
         // Save the initial pose so we can compute how far we've travelled
-        initialPose = null;
-        while(initialPose == null) {
-            initialPose = poseCache.get();
+        startPose = null;
+        while(startPose == null) {
+            startPose = poseCache.get();
         }
 	}
 
@@ -32,21 +32,26 @@ public class DistanceTest extends ConditionTest<Double> implements LCMSubscriber
 		return TypedValue.unwrapDouble(value);
 	}
 
+    /**
+     * Compute how far we've travelled with respect to the original pose
+     * when this test was initialized. Only use the total change in
+     * pose, not integrated (is this correct?)
+     *
+     * @return total distance travelled
+     **/
 	@Override
 	protected Double getValue()
     {
         pose_t pose = poseCache.get();
 
-        // XXX - How can we report an error from here?
         if(pose == null)
             return -1.0;
 
-        double dx = Math.abs(pose.pos[0] - initialPose.pos[0]);
-        double dy = Math.abs(pose.pos[1] - initialPose.pos[1]);
+        double dx = Math.abs(pose.pos[0] - startPose.pos[0]);
+        double dy = Math.abs(pose.pos[1] - startPose.pos[1]);
 
         double dist = Math.sqrt(dx*dx +dy*dy);
 
-        // XXX - Not sure this should be evaluated in a <=, ==, >= fashion
 		return dist;
 	}
 
