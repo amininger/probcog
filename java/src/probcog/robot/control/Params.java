@@ -2,6 +2,8 @@ package probcog.robot.control;
 
 import april.config.*;
 
+import probcog.util.Util;
+
 public class Params
 {
     public double minSpeed_p;
@@ -21,27 +23,28 @@ public class Params
 
     public double minMotorSpeed_p;
 
-    public static Params makeParams(Config config)
+    public static Params makeParams()
     {
-        Params params = new Params();
-        params.minSpeed_p        = config.requireDouble("pathControl.minSpeed_p");
-        params.maxSpeed_p        = config.requireDouble("pathControl.maxSpeed_p");
+        Config config = Util.getConfig();
 
-        params.speedPreview_m    = config.requireDouble("pathControl.speedPreview_m");
-        params.previewDistThresh_m    = config.requireDouble("pathControl.previewDistThresh_m");
+        Params params = new Params();
+        params.minSpeed_p = config.requireDouble("pathControl.minSpeed_p");
+        params.maxSpeed_p = config.requireDouble("pathControl.maxSpeed_p");
+
+        params.speedPreview_m = config.requireDouble("pathControl.speedPreview_m");
+        params.previewDistThresh_m = config.requireDouble("pathControl.previewDistThresh_m");
 
         params.minLookahead_m = config.requireDouble("pathControl.minLookahead_m");
         params.maxLookahead_m = config.requireDouble("pathControl.maxLookahead_m");
 
-        params.turnRatio_p       = config.requireDouble("pathControl.turnRatio_p");
+        params.turnRatio_p = config.requireDouble("pathControl.turnRatio_p");
 
         params.turnInPlaceThresh_rad = Math.toRadians(config.requireDouble("pathControl.turnInPlaceThresh_deg"));
-        params.slowdownDist_m    = config.requireDouble("pathControl.slowdownDist_m");
-        params.destTolerance_m   = config.requireDouble("pathControl.destTolerance_m");
+        params.slowdownDist_m = config.requireDouble("pathControl.slowdownDist_m");
+        params.destTolerance_m = config.requireDouble("pathControl.destTolerance_m");
 
-        params.minMotorSpeed_p   = config.requireDouble("pathControl.minMotorSpeed_p");
+        params.minMotorSpeed_p = config.requireDouble("pathControl.minMotorSpeed_p");
 
         return params;
     }
-
 }

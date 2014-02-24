@@ -5,32 +5,34 @@ import java.util.*;
 
 import lcm.lcm.*;
 
-import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.util.*;
 
 import probcog.lcmtypes.*;
 import probcog.robot.control.*;
+import probcog.util.Util;
 
 public class DriveForward extends ControlLaw implements LCMSubscriber
 {
     static final int DD_BCAST_PERIOD_MS = 33; // 30 Hz
-    static LCM lcm = LCM.getSingleton();
-
-    static final double centerOffsetX_m = 0.13335;//Half axle separation
     static final double VERY_FAR = 6371000; // meters in Earth radius
+
+    double centerOffsetX_m = Util.getConfig().requireDouble("robot.geometry.centerOffsetX_m");
+
+    static LCM lcm = LCM.getSingleton();
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
 
     private pose_t initialPose;
-    Config config; // XXXXX Never actually initialized
 
-	public DriveForward(control_law_t controlLaw){
+	public DriveForward(control_law_t controlLaw)
+    {
 		super(controlLaw);
 	}
 
 	@Override
-	public void execute(){
+	public void execute()
+    {
         initialPose = null;
         while(initialPose == null) {
             initialPose = poseCache.get();
@@ -39,28 +41,35 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
         double[] start2D = LinAlg.resize(initialPose.pos, 2);
         double[] goal2D = new double[]{start2D[0]+VERY_FAR,
                                        start2D[1]+VERY_FAR};
-        // XXX - Update this every cycle?
-        GLineSegment2D path = new GLineSegment2D(start2D, goal2D);
+        GLineSegment2D path = new GLineSegment2D(start2D, goal2D); // XXX - update?
+        Params storedParams = Params.makeParams();
 
-        while (true) {
+        ControlLaw.Status curStatus = getStatus();
+        boolean drive = curStatus.equals(ControlLaw.Status.EXECUTING);
+
+        while (drive) {
             TimeUtil.sleep(DD_BCAST_PERIOD_MS);
 
+            // Get the most recent position
             pose_t pose = poseCache.get();
             if(pose == null)
                 continue;
-
             double offset[]  = LinAlg.matrixAB(LinAlg.quatToMatrix(pose.orientation),
                                                new double[] {centerOffsetX_m, 0 , 0, 1});
             double center_pos[] = new double[]{pose.pos[0] + offset[0],
                                                pose.pos[1] + offset[1] };
-            Params storedParams = Params.makeParams(config);
 
+            // Create and publish controls used by RobotDriver
             diff_drive_t dd = PathControl.getDiffDrive(center_pos,
                                                        pose.orientation,
                                                        path,
                                                        storedParams,
                                                        1.0);
             publishDiff(dd);
+
+            // Test current status to determine whether to stop driving
+            curStatus = getStatus();
+            drive = curStatus.equals(ControlLaw.Status.EXECUTING);
         }
 	}
 
@@ -83,14 +92,12 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
         if (diff_drive == null)
             return;
 
-        assert(diff_drive.left <= 1 &&  diff_drive.left >= -1);
-        assert(diff_drive.right <= 1 &&  diff_drive.right >= -1);
+        assert(diff_drive.left <= 1 && diff_drive.left >= -1);
+        assert(diff_drive.right <= 1 && diff_drive.right >= -1);
 
         diff_drive.utime = TimeUtil.utime();
         lcm.publish("DIFF_DRIVE", diff_drive);
     }
-
-
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
@@ -108,5 +115,4 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
             poseCache.put(msg, msg.utime);
         }
     }
-
 }

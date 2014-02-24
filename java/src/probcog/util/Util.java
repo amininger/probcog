@@ -1,14 +1,20 @@
 package probcog.util;
 
+import java.io.*;
 import java.util.*;
 
+import april.config.*;
 import april.jmat.*;
 import april.vis.VisCameraManager.CameraPosition;
+import april.util.*;
 
 import probcog.sensor.*;
 
 public class Util
 {
+    public static String configPath = "$HOME/probcog/config/robot.config";
+    private static Config config = null;
+
     /** Give a string of key=token pairs, extract the token
      *  value corresponding to the given key
      **/
@@ -154,5 +160,39 @@ public class Util
     static public void main(String[] args)
     {
         System.out.printf("%d %d %d\n", nextID(), nextID(), nextID());
+    }
+
+    //Lookup the location of the config file, and load it locally
+    public static void loadConfig()
+    {
+        String path = StringUtil.replaceEnvironmentVariables(configPath);
+        File file = new File(path);
+
+        if (file == null)
+        {
+            System.err.println("ERR: Failed to load config from "+path);
+            System.exit(-1);
+        }
+
+        try{
+            config = new ConfigFile(file);
+        }catch(IOException e){}
+    }
+
+    //Ensure the existence of a config file
+    public static void ensureConfig(){
+        if(config == null){
+            loadConfig();
+            assert(config != null);
+        }
+    }
+
+    /**
+     * Convenience method to get the preloaded Config object
+     */
+    public static Config getConfig()
+    {
+        ensureConfig();
+        return config;
     }
 }
