@@ -11,6 +11,3 @@ source proposals.soar
 
 # Souce file "complete-default-relation.soar"
 source complete-default-relation.soar
-
-# Souce file "proposals.soar"
-source proposals.soar

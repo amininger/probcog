@@ -27,7 +27,7 @@ public class WorldModel implements RunEventInterface
     private Map<Integer, WorldObject> objects;
     
     private observations_t newObservation = null;
-    
+    private pose_t robotPose = null;
     private SoarAgent soarAgent;
     private Robot robot;
     
@@ -102,8 +102,11 @@ public class WorldModel implements RunEventInterface
     	
     	//double[] eye = newObservation.eye;
     	//agent.SendSVSInput(String.format("c eye p %f %f %f", eye[0], eye[1], eye[2]));
-    	//pose_t robot_pos = newObservation.robot; //TODO different lcmtype
-    	//robot.update(robot_pos);
+    	
+    	if (robotPose != null)
+    	{
+    		robot.update(robotPose);
+    	}
     	
     	Set<Integer> staleObjects = new HashSet<Integer>();
     	for(WorldObject object : objects.values()){
@@ -163,6 +166,14 @@ public class WorldModel implements RunEventInterface
     
     public synchronized void newObservation(observations_t observation){
     	this.newObservation = observation;
+    }
+    
+    public synchronized void newRobotPose(pose_t observation){
+    	this.robotPose = observation;
+    }
+    
+    public double[] getRobotPose(){
+    	return this.robot.getPos();
     }
     
     public synchronized void sendObservation(){
