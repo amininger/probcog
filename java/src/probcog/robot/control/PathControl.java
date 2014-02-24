@@ -2,14 +2,14 @@ package probcog.robot.control;
 
 import april.jmat.*;
 import april.jmat.geom.*;
+import april.util.*;
 
 import probcog.lcmtypes.*;
 import probcog.robot.robot.RobotDriver;
 
 public class PathControl
 {
-
-    // Get a diff drive command to drive the CENTER of the robot along path
+    // Get diff drive command to drive the CENTER of the robot along path
     public static diff_drive_t getDiffDrive(double [] pos_center,
                                             double [] orientation,
                                             GLineSegment2D path,
@@ -140,6 +140,4 @@ public class PathControl
 
         return speeds;
     }
-
-
 }

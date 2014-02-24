@@ -44,8 +44,7 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
         GLineSegment2D path = new GLineSegment2D(start2D, goal2D); // XXX - update?
         Params storedParams = Params.makeParams();
 
-        ControlLaw.Status curStatus = getStatus();
-        boolean drive = curStatus.equals(ControlLaw.Status.EXECUTING);
+        boolean drive = getStatus().equals(ControlLaw.Status.EXECUTING);
 
         while (drive) {
             TimeUtil.sleep(DD_BCAST_PERIOD_MS);
@@ -68,8 +67,7 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
             publishDiff(dd);
 
             // Test current status to determine whether to stop driving
-            curStatus = getStatus();
-            drive = curStatus.equals(ControlLaw.Status.EXECUTING);
+            drive = getStatus().equals(ControlLaw.Status.EXECUTING);
         }
 	}
 
@@ -98,6 +96,7 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
         diff_drive.utime = TimeUtil.utime();
         lcm.publish("DIFF_DRIVE", diff_drive);
     }
+
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
