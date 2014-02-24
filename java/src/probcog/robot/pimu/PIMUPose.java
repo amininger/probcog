@@ -1,6 +1,8 @@
 package probcog.robot.pimu;
 
 import lcm.lcm.*;
+import april.lcmtypes.*;
+import april.lcmtypes.pose_t;
 import april.jmat.*;
 import april.util.*;
 import april.config.*;

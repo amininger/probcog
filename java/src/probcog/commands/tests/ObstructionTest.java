@@ -5,10 +5,12 @@ import probcog.lcmtypes.typed_value_t;
 
 import probcog.commands.TypedValue;
 
-public class ObstructionTest extends ConditionTest<Boolean>{
+import april.util.TimeUtil;
 
+public class ObstructionTest extends ConditionTest<Boolean>{
 	public ObstructionTest(condition_test_t test){
 		super(test);
+
 	}
 
 	@Override

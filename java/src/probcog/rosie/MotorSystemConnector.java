@@ -37,6 +37,7 @@ import april.util.TimeUtil;
 import probcog.rosie.world.Pose;
 import probcog.rosie.world.SVSCommands;
 import probcog.rosie.world.WMUtil;
+import probcog.rosie.world.WorldModel;
 
 public class MotorSystemConnector   implements OutputEventInterface, RunEventInterface, LCMSubscriber{
 	private SoarAgent agent;
@@ -90,7 +91,7 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
         agent.getAgent().RegisterForRunEvent(smlRunEventId.smlEVENT_BEFORE_INPUT_PHASE, this, null);
         
         // Setup Output Link Events
-        String[] outputHandlerStrings = { "pick-up", "put-down", "point", "set-state", "home"};
+        String[] outputHandlerStrings = { "pick-up", "put-down", "point", "set-state", "home", "do-control-law"};
         for (String outputHandlerString : outputHandlerStrings)
         {
         	agent.getAgent().AddOutputHandler(outputHandlerString, this, null);
@@ -123,20 +124,20 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 				Identifier id = outstandingCommands.get(status.id);
 				boolean remove = false;
 				String newStatus;
-				if(status.equals("started")){
+				if(status.status.equals("started")){
 					newStatus = "received";
-				} else if(status.equals("complete")){
+				} else if(status.status.equals("complete")){
 					newStatus = "complete";
 					remove = true;
-				} else if(status.equals("early-termination")){
+				} else if(status.status.equals("early-termination")){
 					newStatus = "error";
 					WMUtil.updateStringWME(id, "error-type", "early-termination");
 					remove = true;
-				} else if(status.equals("failure")){
+				} else if(status.status.equals("failure")){
 					newStatus = "error";
 					WMUtil.updateStringWME(id, "error-type", "failure");
 					remove = true;
-				} else if(status.equals("unknown-command")){
+				} else if(status.status.equals("unknown-command")){
 					newStatus = "error";
 					WMUtil.updateStringWME(id, "error-type", "unknown-command");
 					remove = true;
@@ -231,6 +232,14 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     	}
     	WMUtil.updateStringWME(selfId, "holding-obj", (curStatus.obj_id != -1 ? "true" : "false"));
     	WMUtil.updateIntWME(selfId, "grabbed-object", curStatus.obj_id);
+    	//TODO remove
+    	//stub for getting robot position on input link to test mobile robot
+    	WorldModel world;
+    	if ((world = agent.getWorldModel()) != null)
+    	{
+    		WMUtil.updateFloatWME(selfId, "robot-x", world.getRobotPose()[0]);
+    		WMUtil.updateFloatWME(selfId, "robot-y", world.getRobotPose()[1]);
+    	}
     	pose.updateWithArray(curStatus.xyz);
     	pose.updateInputLink(selfId);
     	prevStatus = curStatus;
@@ -296,6 +305,9 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
             else if(wme.GetAttribute().equals("home")){
             	processHomeCommand(id);
             }
+						else if(wme.GetAttribute().equals("do-control-law")){
+							processDoControlLawCommand(id);
+						}
             agent.commitChanges();
         } catch (IllegalStateException e){
         	System.out.println(e.getMessage());
@@ -396,8 +408,10 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 				id.CreateStringWME("error-type", "parsing");
 				return;
 			}
+			System.out.println("ISSUING COMMAND: " + cl.id);
 
 			lcm.publish("SOAR_COMMAND", cl);
+			System.out.println("PUBLISHED");
 			outstandingCommands.put(cl.id, id);
 			id.CreateStringWME("status", "sent");
 		}
@@ -409,8 +423,8 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 			cl.id = nextCommandId++;
 
 			// Name of the condition test
-			String name = WMUtil.getValueOfAttribute(id, "name");
-			if(name == null){
+			cl.name = WMUtil.getValueOfAttribute(id, "name");
+			if(cl.name == null){
 				System.err.println("No ^name attribute on condition test");
 				return null;
 			}
@@ -453,8 +467,8 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 			}
 
 			// Name of the condition test
-			String name = WMUtil.getValueOfAttribute(id, "name");
-			if(name == null){
+			ct.name = WMUtil.getValueOfAttribute(id, "name");
+			if(ct.name == null){
 				System.err.println("No ^name attribute on condition test");
 				return null;
 			}

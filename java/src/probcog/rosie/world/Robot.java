@@ -1,8 +1,9 @@
 package probcog.rosie.world;
 
 import sml.Agent;
-import probcog.lcmtypes.*;
+import april.lcmtypes.pose_t;
 import april.jmat.LinAlg;
+// kinect offset values
 
 /**
  * Representation of the mobile robot positon, rotation, and bounding box in the world
@@ -13,6 +14,10 @@ import april.jmat.LinAlg;
  */
 public class Robot
 {
+	// kinect offset values
+	final double eyeZ = 0.565;
+	final double eyeX = 0.14;
+	final double eyeY = 0.00;
     // Name of the object (may be null if not named)
     protected String name;
 
@@ -40,6 +45,9 @@ public class Robot
         //TODO hardcode robot size and kinect eye offset
         bboxSize = new double[3];
         eyeOffset = new double[3];
+        eyeOffset[0] = eyeX;
+        eyeOffset[1] = eyeY;
+        eyeOffset[2] = eyeZ;
 
         bboxPos = new double[3];
         bboxRot = new double[3];
@@ -54,9 +62,12 @@ public class Robot
     public Robot(pose_t robotData){
         name = null;
 
-        //TODO hardcode robot size and kinect eye offset
+        //TODO hard code robot size and kinect eye offset
         bboxSize = new double[3];
         eyeOffset = new double[3];
+        eyeOffset[0] = eyeX;
+        eyeOffset[1] = eyeY;
+        eyeOffset[2] = eyeZ;
 
         bboxPos = new double[3];
         bboxRot = new double[3];
