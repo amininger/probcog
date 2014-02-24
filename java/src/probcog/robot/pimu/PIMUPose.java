@@ -11,6 +11,7 @@ import java.io.*;
 import java.util.*;
 
 import probcog.lcmtypes.*;
+import probcog.util.Util;
 
 public class PIMUPose implements LCMSubscriber
 {
@@ -30,7 +31,7 @@ public class PIMUPose implements LCMSubscriber
 
     int motorFeedbackCount, pimuCount, txCount;
 
-    //Config config = RobotUtil.getConfig();
+    Config config = Util.getConfig();
 
     public PIMUPose(GetOpt gopt)
     {
@@ -114,9 +115,7 @@ public class PIMUPose implements LCMSubscriber
                     poseAdj = pose.copy();
                 }
 
-                // XXX CONFIG FILE WAS HERE. Replace later
-                //double dx = config.requireDouble("robot.geometry.circles_x");
-                double dx = 0.13335;
+                double dx = config.requireDouble("robot.geometry.circles_x");
                 double dpos[] = LinAlg.quatRotate(pose.orientation, new double[] { -dx, 0, 0});
                 poseAdj.pos = LinAlg.add(poseAdj.pos, dpos);
 
@@ -134,9 +133,7 @@ public class PIMUPose implements LCMSubscriber
 
                 distTraveled = 0;   // Reset distance traveled since last update
 
-                // XXX SPECIAL FLATWORLD ASSUMPTION:
-                //if (config.requireBoolean("obstacle.use_flat_world")) {
-                if (true) {
+                if (config.requireBoolean("obstacle.use_flat_world")) {
                     poseAdj.pos[2] = 0;
                 }
 

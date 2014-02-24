@@ -10,6 +10,7 @@ import april.util.GetOpt;
 import april.config.*;
 
 import probcog.lcmtypes.*;
+import probcog.util.Util;
 
 public class EspeakDaemon extends Thread implements LCMSubscriber
 {
@@ -19,15 +20,13 @@ public class EspeakDaemon extends Thread implements LCMSubscriber
 
     int priorityThresh;
 
-    //Config config = RobotUtil.getConfig();
+    Config config = Util.getConfig();
 
     boolean initialized = false;
 
     public EspeakDaemon()
     {
-        // XXX replace config stuff as necessary
-        //priorityThresh = config.requireInt("espeak.priority_thresh");
-        priorityThresh = 5;
+        priorityThresh = config.requireInt("espeak.priority_thresh");
         setDaemon(true);
         queue = new PriorityQueue<speak_t>(10, new MyComparator());
         lcm.subscribe("SPEAK.*", this);
@@ -77,9 +76,7 @@ public class EspeakDaemon extends Thread implements LCMSubscriber
         String voice = s.voice;
         String args = "-s 150 ";
 
-        // XXX Replace config as appropriate
-        //String subs[] = config.getStrings("espeak.pronunciation", null);
-        String subs[] = null;
+        String subs[] = config.getStrings("espeak.pronunciation", null);
         if (subs != null) {
             for (int i = 0; i+1 < subs.length; i+=2) {
                 s.message = s.message.replaceAll(subs[i], subs[i+1]);
