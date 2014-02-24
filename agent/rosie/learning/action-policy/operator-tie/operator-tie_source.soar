@@ -11,9 +11,6 @@ source proposals.soar
 # Souce file "retrieve-next-relevant-episode.soar"
 source retrieve-next-relevant-episode.soar
 
-# Souce file "retrieve-next-relevant-episode.soar"
-source retrieve-next-relevant-episode.soar
-
 # Souce file "elaborations.soar"
 source elaborations.soar
 

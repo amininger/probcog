@@ -19,7 +19,7 @@ sp {index-object*find-matches*propose*infer-match*partial
 }
 
 # Exactly 1 empty match and no perfect/partial matches
-sp {index-object*find-matches*propose*infer-match*partial
+sp {index-object*find-matches*propose*infer-match*empty
    (state <s> ^name find-matches
               ^match-info <info>
              -^object-to-index.matches.match)

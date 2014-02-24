@@ -77,7 +77,7 @@ sp {evaluate-operator*elaborate*state*remove*untried-tied-operator*composite-act
 
 # SBW 5/07: replaced all occurences of -^tried-tied-operator with ^untried-tied-operator
 # this takes care of lots of local negations
- sp {evaluate-operator*elaborate*state*remove*untried-tied-operator
+ sp {evaluate-operator*elaborate*state*remove*untried-tied-operator*non-action
     :default
     (state <s> ^look-ahead-operator <o> 
                ^operator <o>
