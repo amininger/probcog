@@ -1,12 +1,10 @@
 # for testing new mobile robot domain
 #simple code for robot that turns randomly finds an obstacle then returns to origin
 
-sp {propose*robot-controller*wander
-   (state <s> ^problemspace action
-              ^topstate <s>
-             -^problemspace perception)
+sp {propose*robot-controller
+   (state <s> ^name satisfy-purpose)
 -->
-   (<s> ^operator <o> +)
+   (<s> ^operator <o> + >)
    (<o> ^name robot-controller)
 }
 
@@ -65,7 +63,7 @@ sp {robot-controller*apply*turn
           ^termination-condition <cond>)
    (<cond> ^name rotation
            ^compar-type geq
-           ^compared-value (rand-float 3))
+           ^compared-value (rand-float 6.2)) #random radian 0-2pi
 }
 sp {robot-controller*apply*turn*status-complete
    (state <s> ^name robot-controller

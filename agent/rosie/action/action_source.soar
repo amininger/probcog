@@ -1,7 +1,7 @@
 #mobile testing files
 source wander-bot.soar
-source robot-controller.soar
-source return-home-bot.soar
+#source robot-controller.soar
+#source return-home-bot.soar
 
 # uncomment for preloading move to(on) chunks
 # also make sure to uncomment smem map in init-smem/spatial-relations.soar

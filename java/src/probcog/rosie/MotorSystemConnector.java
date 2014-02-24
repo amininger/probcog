@@ -37,6 +37,7 @@ import april.util.TimeUtil;
 import probcog.rosie.world.Pose;
 import probcog.rosie.world.SVSCommands;
 import probcog.rosie.world.WMUtil;
+import probcog.rosie.world.WorldModel;
 
 public class MotorSystemConnector   implements OutputEventInterface, RunEventInterface, LCMSubscriber{
 	private SoarAgent agent;
@@ -231,8 +232,14 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     	}
     	WMUtil.updateStringWME(selfId, "holding-obj", (curStatus.obj_id != -1 ? "true" : "false"));
     	WMUtil.updateIntWME(selfId, "grabbed-object", curStatus.obj_id);
-    	WMUtil.updateFloatWME(selfId, "robot-x", );
-    	WMUtil.updateFloatWME(selfId, "robot-y", );
+    	//TODO remove
+    	//stub for getting robot position on input link to test mobile robot
+    	WorldModel world;
+    	if ((world = agent.getWorldModel()) != null)
+    	{
+    		WMUtil.updateFloatWME(selfId, "robot-x", world.getRobotPose()[0]);
+    		WMUtil.updateFloatWME(selfId, "robot-y", world.getRobotPose()[1]);
+    	}
     	pose.updateWithArray(curStatus.xyz);
     	pose.updateInputLink(selfId);
     	prevStatus = curStatus;

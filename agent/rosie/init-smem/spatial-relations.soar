@@ -10,13 +10,13 @@ sp {spatial-reasoning*elaborate*initialize*prep-list
    (state <s> ^superstate nil)
 -->
    (<s> ^prepositions <fp>)
-   (<fp> 
-     ^prep.name on
+#   (<fp> 
+#     ^prep.name on
 #     ^prep.name right-of
 #     ^prep.name left-of 
 #	  ^prep.name above
 #	 ^prep.name below
-     ^prep.name under
+#     ^prep.name under
 #     ^prep.name in
 #     ^prep.name diagonal-with 
 #     ^prep.name diagonal-from 
@@ -26,7 +26,7 @@ sp {spatial-reasoning*elaborate*initialize*prep-list
 #     ^prep2.name linear-with
 #     ^prep2.name smaller-than
 #  ^prep2 <P271>
-      )
+#      )
 #     (<P271> ^name linear-with 
 #          ^pair <P862> ^pair <P863>
 #          ^pair <P864> ^pair <P865> ^pair <P867> ^pair <P868> ^pair <P869>

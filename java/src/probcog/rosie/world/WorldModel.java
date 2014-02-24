@@ -172,6 +172,10 @@ public class WorldModel implements RunEventInterface
     	this.robotPose = observation;
     }
     
+    public double[] getRobotPose(){
+    	return this.robot.getPos();
+    }
+    
     public synchronized void sendObservation(){
     	ArrayList<object_data_t> objDatas = new ArrayList<object_data_t>();
     	

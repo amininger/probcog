@@ -27,8 +27,8 @@ sp {return-home-bot*apply*get-position
    (state <s> ^name return-home-bot
               ^topstate.io.input-link <i1>
               ^operator <o>)
-   (<i1> ^pose <p>)
-   (<p> ^x <x> ^y <y>)
+   (<i1> ^robot-x <x>
+         ^robot-y <y>)
    (<o> ^name get-position)
 -->
    (<s> ^position <po>)

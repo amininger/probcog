@@ -2,10 +2,9 @@
 #simple code for robot that wanders while avoiding obstacles
 
 sp {propose*wander-bot
-   (state <s> ^problemspace action
-              ^topstate <s>)
+   (state <s> ^name satisfy-purpose)
 -->
-   (<s> ^operator <o> +)
+   (<s> ^operator <o> + >)
    (<o> ^name wander-bot)
 }
 

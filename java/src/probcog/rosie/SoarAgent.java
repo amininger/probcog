@@ -110,6 +110,10 @@ public class SoarAgent implements RunEventInterface{
 		this.world = worldModel;
 	}
 	
+	public WorldModel getWorldModel(){
+		return world;
+	}
+	
 	public String getArmConfig(){
 		return armConfig;
 	}
@@ -175,7 +179,7 @@ public class SoarAgent implements RunEventInterface{
     		System.out.println(ret);
     	}
     	if(agentSource != null){
-    		String ret = agent.ExecuteCommandLine("source " + agentSource);
+    		String ret = agent.ExecuteCommandLine("source " + agentSource + " -v");
     		System.out.println(ret);
     	}
     	System.out.println("Agent re-initialized");

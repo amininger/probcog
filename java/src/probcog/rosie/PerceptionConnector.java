@@ -72,7 +72,7 @@ public class PerceptionConnector implements OutputEventInterface, RunEventInterf
         lcm = LCM.getSingleton();
         lcm.subscribe("OBSERVATIONS", this);
         lcm.subscribe("ROBOT_ACTION", this);
-        lcm.subscribe("ROBOT_POSE", this);
+        lcm.subscribe("POSE", this);
     }
     
     public long getSoarTime(){
@@ -257,7 +257,7 @@ public class PerceptionConnector implements OutputEventInterface, RunEventInterf
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-    	} else if(channel.equals("ROBOT_POSE")){
+    	} else if(channel.equals("POSE")){
     		try {
     			pose_t robotPose = new pose_t(ins);
     			world.newRobotPose(robotPose);
