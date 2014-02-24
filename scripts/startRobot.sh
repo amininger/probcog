@@ -9,7 +9,7 @@ export JAVA_OPTS_512="-Xmx512m"
 export JAVA_OPTS_1024="-Xmx1024m"
 
 PROC_CONFIG=$PROBCOG_HOME/config/procman/proc.config
-BIN_PATH=$PROBCOG_HOME/bin
+export BIN_PATH=$PROBCOG_HOME/bin
 
 # Networking
 # XXX Not necessary for now
