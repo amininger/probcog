@@ -5,7 +5,9 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <signal.h>
 #include <sys/time.h>
+#include <time.h>   // timespec
 #include <pthread.h>
 #include <unistd.h>
 #include <lcm/lcm.h>
@@ -19,6 +21,8 @@
 #define DEPTH_WIDTH 640
 #define DEPTH_HEIGHT 480
 
+volatile int running = 1;
+
 // Threading
 pthread_t freenect_thread;
 pthread_t accel_thread;
@@ -26,9 +30,9 @@ pthread_t lcm_thread;
 int got_rgb = 0;
 int got_depth = 0;
 
-pthread_mutex_t frame_lock;// = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t accel_lock;// = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t frame_signal;// = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t frame_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t accel_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t frame_signal = PTHREAD_COND_INITIALIZER;
 
 // Data buffers
 uint8_t *d_buf;
@@ -48,8 +52,22 @@ lcm_t *k_lcm;
 int max_count = 1;
 int usecs = 1000000/30;
 
-void video_cb(freenect_device *dev, void *rgb, uint32_t ts)
+static void sig_handler(int signo)
 {
+    switch (signo) {
+        case SIGINT:
+        case SIGQUIT:
+            running = 0;
+            break;
+        default:
+            break;
+    }
+    printf("Caught signal. Cleaning up...\n");
+}
+
+static void video_cb(freenect_device *dev, void *rgb, uint32_t ts)
+{
+    //printf("vcb\n");
     pthread_mutex_lock(&frame_lock);
 
     assert(rgb_back_buf == rgb);
@@ -59,12 +77,13 @@ void video_cb(freenect_device *dev, void *rgb, uint32_t ts)
 
     got_rgb = 1;
 
-    pthread_cond_signal(&frame_signal);
+    pthread_cond_broadcast(&frame_signal);
     pthread_mutex_unlock(&frame_lock);
 }
 
-void depth_cb(freenect_device *dev, void *depth, uint32_t ts)
+static void depth_cb(freenect_device *dev, void *depth, uint32_t ts)
 {
+    //printf("dcb\n");
     pthread_mutex_lock(&frame_lock);
 
     assert(d_back_buf == depth);
@@ -74,16 +93,16 @@ void depth_cb(freenect_device *dev, void *depth, uint32_t ts)
 
     got_depth = 1;
 
-    pthread_cond_signal(&frame_signal);
+    pthread_cond_broadcast(&frame_signal);
     pthread_mutex_unlock(&frame_lock);
 }
 
 // === Video Thread Function ================================
-void *process(void *arg)
+static void *process(void *arg)
 {
     // Set LED to new status to say we're running
     printf("Begin processing thread...\n");
-    freenect_set_led(f_dev, LED_BLINK_GREEN);
+    freenect_set_led(f_dev, LED_GREEN);
 
     // Set up cameras
     printf("Setting up cameras...\n");
@@ -97,14 +116,19 @@ void *process(void *arg)
 
     // Start 'er up
     printf("Kinect initialized. Starting kinect...\n");
-    freenect_start_video(f_dev);
     freenect_start_depth(f_dev);
+    freenect_start_video(f_dev);
 
-    // XXX No clean way to quit, yet
-    while (freenect_process_events(f_ctx) >= 0) {
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 10000;   // 10 ms
+
+    printf("Kinect started. Entering event processing loop...\n");
+    while (running && freenect_process_events_timeout(f_ctx, &timeout) >= 0) {
         // Process callbacks
-        //usleep(usecs);
     }
+
+    printf("Shutting down kinect thread...\n");
 
     // Close everything down
     lcm_destroy(k_lcm);
@@ -119,15 +143,20 @@ void *process(void *arg)
     free(d_buf);
     free(rgb_buf);
 
+    // Wake up the LCM thread in case it was waiting for us.
+    pthread_cond_signal(&frame_signal);
+
+    printf("Kinect thread shut down!\n");
+
     return NULL;
 }
 
 // === Accelerometer Function =========================
-void *accelup(void *arg)
+static void *accelup(void *arg)
 {
     int hz = 30;
     printf("Begin accelerometer update thread...\n");
-    while (true) {
+    while (running) {
         // Get the accelerometer state in mks units
         freenect_raw_tilt_state* state;
         freenect_update_tilt_state(f_dev);
@@ -142,7 +171,7 @@ void *accelup(void *arg)
 }
 
 // === LCM Thread Function ============================
-void *publcm(void *arg)
+static void *publcm(void *arg)
 {
     printf("Begin LCM publishing thread...\n");
     // Loop endlessly while waiting for data. Publish it. Repeat
@@ -155,12 +184,19 @@ void *publcm(void *arg)
     //ks.rgb;
     //ks.depth;
 
-    // XXX No clean way to quit, yet
+    //timespec timeout;
+    //timeout.tv_sec = 0;
+    //timeout.tv_nsec = 50*1000000;
+
     int herp = pthread_mutex_lock(&frame_lock);
-    while (true) {
-        while (!got_rgb || !got_depth) {
+    while (running) {
+        while ((!got_rgb || !got_depth) && running) {
+            //pthread_cond_timedwait(&frame_signal, &frame_lock, &timeout);
             pthread_cond_wait(&frame_signal, &frame_lock);
+            //printf("%d | %d \n", got_rgb, got_depth);
         }
+        if (!running)
+            break;
 
         timeval time;
         gettimeofday(&time, NULL);
@@ -187,6 +223,9 @@ void *publcm(void *arg)
         }
     }
     pthread_mutex_unlock(&frame_lock);
+    printf("Leaving LCM thread...\n");
+
+    return NULL;
 }
 
 // ====================================================
@@ -197,6 +236,10 @@ int main(int argc, char **argv)
         max_count = 30/atoi(argv[1]);
         usecs = 1000000/atoi(argv[1]);
     }
+
+    // Setup clean quit
+    signal(SIGINT, sig_handler);
+    signal(SIGQUIT, sig_handler);
 
     // Init pthreads
     pthread_mutex_init(&frame_lock, NULL);
@@ -264,6 +307,11 @@ int main(int argc, char **argv)
         printf("failed to create lcm thread\n");
         return 1;
     }
+
+    pthread_join(freenect_thread, NULL);
+    pthread_join(lcm_thread, NULL);
+
+    printf("exiting...\n");
 
     pthread_exit(NULL);
     return 0;
