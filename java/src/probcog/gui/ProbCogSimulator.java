@@ -1,14 +1,23 @@
 package probcog.gui;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
-import april.config.*;
-import april.sim.*;
-import april.util.*;
-import april.vis.*;
+import probcog.sim.ISimEffector;
+import probcog.sim.SimObjectPC;
+import april.config.Config;
+import april.sim.SimObject;
+import april.sim.SimWorld;
+import april.sim.Simulator;
+import april.util.EnvUtil;
+import april.util.GetOpt;
+import april.vis.VisCanvas;
+import april.vis.VisConsole;
+import april.vis.VisLayer;
+import april.vis.VisWorld;
 
 public class ProbCogSimulator implements VisConsole.Listener
 {
@@ -19,6 +28,9 @@ public class ProbCogSimulator implements VisConsole.Listener
     // Vis stuff
     VisConsole console;
 
+    private Timer simulateDynamicsTimer;
+    private static final int DYNAMICS_RATE = 30; // FPS to simulate dynamics at
+
     public ProbCogSimulator(GetOpt opts,
                             VisWorld vw,
                             VisLayer vl,
@@ -28,9 +40,13 @@ public class ProbCogSimulator implements VisConsole.Listener
 
 	    console = new VisConsole(vw, vl, vc);
 	    console.addListener(this);
+	    
 
         loadWorld(opts);
         sim = new Simulator(vw, vl, console, world);
+        
+	    simulateDynamicsTimer = new Timer();
+	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(), 1000, 1000/DYNAMICS_RATE);
 
 	}
 
@@ -73,5 +89,23 @@ public class ProbCogSimulator implements VisConsole.Listener
         return null;    // Only using start and stop from sim, still
     }
 
+    class SimulateDynamicsTask extends TimerTask
+    {
+		@Override
+		public void run() {
+//			for(SimObject obj : world.objects){
+//				if(!(obj instanceof ISimEffector)){
+//					continue;
+//				}
+//				for(SimObject target : world.objects){
+//					if(target == obj || !(target instanceof SimObjectPC)){
+//						continue;
+//					}
+//					((ISimEffector)obj).checkObject((SimObjectPC)target);
+//				}
+//			}
+			
+		}
+    }
 
 }

@@ -37,6 +37,8 @@ public class ArmStatus implements LCMSubscriber
 
     private ExpiringMessageCache<dynamixel_status_list_t> statuses =
         new ExpiringMessageCache<dynamixel_status_list_t>(1.0, true);
+    private ExpiringMessageCache<dynamixel_command_list_t> commands =
+        new ExpiringMessageCache<dynamixel_command_list_t>(1.0, true);
 
     public ArmStatus(Config config_) throws IOException
     {
@@ -55,6 +57,7 @@ public class ArmStatus implements LCMSubscriber
         initArm();
 
         lcm.subscribe(prefix+"_STATUS", this);
+        lcm.subscribe("ARM_COMMAND", this); // XXX Multi arm support!
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -84,6 +87,14 @@ public class ArmStatus implements LCMSubscriber
                     joints.get(i).updatePos(dsl.statuses[i].position_radians);
                 }
             }
+        } else if (channel.equals("ARM_COMMAND")) {
+            dynamixel_command_list_t dcl = new dynamixel_command_list_t(ins);
+            long utime = Long.MAX_VALUE;
+            for (dynamixel_command_t c: dcl.commands) {
+                utime = Math.min(utime, c.utime);
+            }
+
+            commands.put(dcl, utime);
         }
     }
 
@@ -157,6 +168,16 @@ public class ArmStatus implements LCMSubscriber
         if (idx >= dsl.len)
             return null;
         return dsl.statuses[idx];
+    }
+
+    public dynamixel_command_t getMostRecentCommand(int idx)
+    {
+        dynamixel_command_list_t dcl = commands.get();
+        if (dcl == null)
+            return null;
+        if (idx >= dcl.len)
+            return null;
+        return dcl.commands[idx];
     }
 
     /** Returns the desired position of the requested servo */

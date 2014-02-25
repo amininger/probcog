@@ -20,7 +20,7 @@ import probcog.util.*;
 // XXX If we're passing around objects with their bounding boxes over LCM,
 // is there any reason for this to be running a full tracker?
 /** Just a windowed view of the raw kinect data with some object box overlays */
-public class KinectView extends JFrame implements LCMSubscriber
+public class KinectView implements LCMSubscriber
 {
     LCM lcm = LCM.getSingleton();
 
@@ -35,22 +35,18 @@ public class KinectView extends JFrame implements LCMSubscriber
     // Observations for bounding boxes
     ExpiringMessageCache<observations_t> observations =
         new ExpiringMessageCache<observations_t>(2.5, true);
+        
+        ArrayList<double[]> points;
 
-    public KinectView(Config config_) throws IOException
+    public KinectView(Config config_, VisWorld vw, VisLayer vl) throws IOException
     {
-        // Setup Frame
-        JFrame frame = new JFrame("Kinect View");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new BorderLayout());
-
         // Make a goddamn kinect
         kinect = new KinectSensor(config_);
 
         // Initialize the image frame and canvas
-        visWorld = new VisWorld();
+        visWorld = vw;
 
-        visLayer = new VisLayer(visWorld);
-        VisCanvas visCanvas = new VisCanvas(visLayer);
+        visLayer = vl;
 
         //Set up initial camera view
         visLayer.cameraManager.uiLookAt(new double[] {1, 0, .7},// Camera position
@@ -58,47 +54,29 @@ public class KinectView extends JFrame implements LCMSubscriber
                                   new double[] {0, 0, 1},// Up
                                   false);
 
-        frame.add(visCanvas, BorderLayout.CENTER);
-
-        // Finalize JFrame
-        frame.setSize(400, 300);
-        frame.setVisible(true);
-
 		class RefreshTask extends TimerTask {
 			public void run() {
+				updateKinectInfo();
                 redrawKinectData();
-				update();
 			}
     	}
 		updateTimer = new Timer();
 		updateTimer.schedule(new RefreshTask(), 1000, 1000/UPDATE_RATE);
     }
-
-    private void update()
-    {
-    	VisWorld.Buffer buffer = visWorld.getBuffer("objects");
-
-        observations_t obs = observations.get();
-        if (obs == null)
-            return;
-
-        for (object_data_t ob: obs.observations) {
-            BoundingBox bbox = new BoundingBox(ob.bbox_dim,
-                                               ob.bbox_xyzrpy);
-            buffer.addBack(bbox.getVis(new VzLines.Style(Color.cyan, 2)));
-        }
-		buffer.swap();
+    
+    public void updateKinectInfo(){
+    	if(kinect.stashFrame()){
+            points = Util.extractPoints(kinect);
+    	}
+    }
+    
+    public VisWorld getVisWorld(){
+    	return visWorld;
     }
 
     private void redrawKinectData()
     {
     	VisWorld.Buffer buffer = visWorld.getBuffer("kinect");
-        ArrayList<double[]> points;
-        if (!kinect.stashFrame()) {
-            points = new ArrayList<double[]>();
-        } else {
-            points = Util.extractPoints(kinect);
-        }
 
 		if(points != null && points.size() > 0){
 			VisColorData colors = new VisColorData();
