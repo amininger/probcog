@@ -106,7 +106,7 @@ public class ArmController implements LCMSubscriber
                 {
                     last_cmd = cmd;
                     prev = goal;
-                    goalHeight = cmd.xyz[2];    // XXX
+                    goalHeight = cmd.xyz[2];    // XXX FAILTEST
                     goal = LinAlg.resize(cmd.xyz, 2);
                     //setState(0);
                     newAction = true;
