@@ -23,7 +23,7 @@ public class ArmController implements LCMSubscriber
     Queue<bolt_arm_command_t> cmds = new LinkedList<bolt_arm_command_t>();
 
     // Update rate
-    int Hz = 25;
+    int Hz = 15;
 
     // Arm parameters and restrictions
     //BoltArm arm = BoltArm.getSingleton();
