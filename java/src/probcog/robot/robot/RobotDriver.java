@@ -282,6 +282,7 @@ public class RobotDriver implements LCMSubscriber
 
             while (true) {
 
+                System.out.println("Advertising joypad");
                 try {
                     ByteArrayOutputStream bouts = new ByteArrayOutputStream();
                     DataOutputStream outs = new DataOutputStream(bouts);
