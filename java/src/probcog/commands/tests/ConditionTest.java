@@ -3,11 +3,13 @@ package probcog.commands.tests;
 import probcog.lcmtypes.condition_test_t;
 import probcog.lcmtypes.typed_value_t;
 
-public abstract class ConditionTest<T extends Comparable> implements IConditionTest{
+public abstract class ConditionTest<T extends Comparable> implements IConditionTest
+{
 	protected int compareType;
 	protected T targetValue;
 
-	public ConditionTest(condition_test_t test){
+	public ConditionTest(condition_test_t test)
+    {
 		compareType = test.compare_type;
 		targetValue = getTarget(test.compared_value);
 	}
@@ -19,11 +21,12 @@ public abstract class ConditionTest<T extends Comparable> implements IConditionT
 	//   to see if it meets the desired condition
 	protected abstract T getValue();
 
-	// Returns true if the test is true 
+	// Returns true if the test is true
 	//   Re-evaluates the condition and compares against the target
-	public boolean evaluate(){
+	public boolean evaluate()
+    {
 		T value = getValue();
-		switch(compareType){
+		switch(compareType) {
 			case condition_test_t.CMP_GT:
 				return value.compareTo(targetValue) > 0 ;
 			case condition_test_t.CMP_GTE:

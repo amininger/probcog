@@ -1,16 +1,29 @@
 package probcog.commands.controls;
 
-import probcog.lcmtypes.control_law_t;
-import probcog.lcmtypes.typed_value_t;
+import java.io.IOException;
 
+import lcm.lcm.*;
+
+import april.lcmtypes.pose_t;
+import april.util.*;
+
+import probcog.lcmtypes.*;
 import probcog.commands.TypedValue;
 
-public class Turn extends ControlLaw{
-	enum Direction { LEFT, RIGHT };
+public class Turn extends ControlLaw
+{
+    static final int DD_BCAST_PERIOD_MS = 33; //XXX - Should go in config
 
+    static LCM lcm = LCM.getSingleton();
+
+	enum Direction { LEFT, RIGHT };
 	Direction dir;
 
-	public Turn(control_law_t controlLaw){
+    private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
+    private pose_t initialPose;
+
+	public Turn(control_law_t controlLaw)
+    {
 		super(controlLaw);
 
 		dir = Direction.LEFT;
@@ -30,13 +43,50 @@ public class Turn extends ControlLaw{
 	}
 
 	@Override
-	public void execute(){
-		// TODO: Code to make the robot turn
+	public void execute()
+    {
+        initialPose = null;
+        while(initialPose == null) {
+            initialPose = poseCache.get();
+        }
+
+        boolean turn = getStatus().equals(ControlLaw.Status.EXECUTING);
+        while (turn) {
+
+            TimeUtil.sleep(DD_BCAST_PERIOD_MS);
+
+            // Get the most recent position
+            pose_t pose = poseCache.get();
+            if(pose == null)
+                continue;
+
+            // Initialize diff drive with no movement
+            diff_drive_t dd = new diff_drive_t();
+            dd.left_enabled = dd.right_enabled = true;
+            dd.left = 0;
+            dd.right = 0;
+
+            // Change left and right wheels depending on turn direction
+            if (dir.equals(Direction.RIGHT)) {
+                dd.left = -0.1;
+                dd.right = 0.1;
+            }
+            else if (dir.equals(Direction.LEFT)) {
+                dd.left = 0.1;
+                dd.right = -0.1;
+            }
+
+            publishDiff(dd);
+
+            // Test current status to determine whether to stop driving
+            turn = getStatus().equals(ControlLaw.Status.EXECUTING);
+        }
 	}
 
 	@Override
-	public ControlLaw.Status getStatus(){
-		// TODO: may return EARLY_TERM or FAILURE if 
+	public ControlLaw.Status getStatus()
+    {
+		// TODO: may return EARLY_TERM or FAILURE if
 		//   something went wrong
 
 		if(termCond.evaluate() == true){
@@ -44,4 +94,37 @@ public class Turn extends ControlLaw{
 		}
 		return ControlLaw.Status.EXECUTING;
 	}
+
+    // XXX publishDiff is in two classes - can we consolidate?
+    private void publishDiff(diff_drive_t diff_drive)
+    {
+        // We may get a null if there are no poses yet
+        // We should throw a WRN elsewhere if that is the case
+        if (diff_drive == null)
+            return;
+
+        assert(diff_drive.left <= 1 && diff_drive.left >= -1);
+        assert(diff_drive.right <= 1 && diff_drive.right >= -1);
+
+        diff_drive.utime = TimeUtil.utime();
+        lcm.publish("DIFF_DRIVE", diff_drive);
+    }
+
+    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+    {
+        try {
+            messageReceivedEx(lcm, channel, ins);
+        } catch (IOException ex) {
+            System.out.println("WRN: "+ex);
+        }
+    }
+
+    synchronized void messageReceivedEx(LCM lcm, String channel,
+                           LCMDataInputStream ins) throws IOException
+    {
+        if (channel.equals("POSE")) {
+            pose_t msg = new pose_t(ins);
+            poseCache.put(msg, msg.utime);
+        }
+    }
 }

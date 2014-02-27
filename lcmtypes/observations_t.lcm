@@ -8,13 +8,10 @@ struct observations_t
     // Camera position info in world coordinates
     double eye[3];
 
-	// Robot position info in world coordinates
-	//pose_t robot; 
-	
     double lookat[3];
     double up[3];
 
-	
+
 
     // Observed objects
     int32_t nobs;
