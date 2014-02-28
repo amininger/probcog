@@ -54,21 +54,21 @@ public class KinectSensor implements Sensor
     kinect_status_t stash_ks;
     BufferedImage r_rgbIm;
     BufferedImage r_depthIm;
-    
+
     private boolean listenToLcm;
 
     public KinectSensor(Config config_) throws IOException{
     	listenToLcm = true;
     	init(config_);
-    	
+
     }
-    
+
     public KinectSensor(Config config_, boolean listenToLcm) throws IOException
     {
     	this.listenToLcm = listenToLcm;
     	init(config_);
     }
-    
+
     private void init(Config config_) throws IOException{
         config = config_;
 
@@ -136,11 +136,11 @@ public class KinectSensor implements Sensor
             new ListenerThread().start();
         }
     }
-    
+
     public double[][] getTransform(){
     	return k2wXform;
     }
-    
+
     public double[] getParams(){
     	return new double[]{Cirx, Ciry, Firx, Firy};
     }
@@ -236,7 +236,7 @@ public class KinectSensor implements Sensor
 
         return true;
     }
-    
+
     public void stashFrame(kinect_status_t stash_ks){
     	ks = stash_ks;
     	stashFrame();

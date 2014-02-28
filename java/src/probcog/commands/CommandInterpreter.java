@@ -35,6 +35,7 @@ public class CommandInterpreter{
 
 	protected void newCommand(control_law_t controlLaw){
 		synchronized(commandLock){
+            System.out.printf("ADDING CMD\n");
 			waitingCommands.add(controlLaw);
 		}
 	}
@@ -51,6 +52,7 @@ public class CommandInterpreter{
 			if(curCommand == null && waitingCommands.size() > 0){
 				control_law_t nextCommand = waitingCommands.poll();
 				curCommand = ControlLawFactory.construct(nextCommand);
+                System.out.printf("FOUND COMMAND: %s\n", nextCommand.name);
 				if(curCommand == null){
 					sendStatus(nextCommand.id, "unknown-command");
 				} else {
@@ -60,6 +62,7 @@ public class CommandInterpreter{
 		}
 
 		if(curCommand != null){
+            System.out.printf("EXEC: %s\n", curCommand.getName());
 			curCommand.execute();
 			ControlLaw.Status status = curCommand.getStatus();
 			if(status == ControlLaw.Status.FINISHED){
@@ -112,6 +115,7 @@ public class CommandInterpreter{
 
 		public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException {
 			if(channel.equals("SOAR_COMMAND")){
+                System.out.printf("GOT COMMAND\n");
 				control_law_t controlLaw = new control_law_t(ins);
 				newCommand(controlLaw);
 			}
