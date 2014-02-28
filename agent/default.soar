@@ -1,0 +1,94 @@
+sp {topstate*propose*init-agent
+	(state <s> ^superstate nil
+						 -^name)
+-->
+	(<s> ^operator <o> + >)
+	(<o> ^name init-agent)
+}
+
+sp {substate*elaborate*io
+	(state <s> ^superstate.io <io>)
+-->
+	(<s> ^io <io>)
+}
+
+sp {substate*elaborate*name
+	(state <s> ^superstate.operator.name <name>)
+-->
+	(<s> ^name <name>)
+}
+
+sp {anystate*propose*wait
+	(state <s> ^superstate <ss>
+						 -^operator.name wait)
+-->
+	(<s> ^operator <o> + <)
+	(<o> ^name wait)
+}
+
+sp {topstate*propose*do-command
+	(state <s> ^superstate nil
+						 ^current-command <cmd>)
+-->
+	(<s> ^operator <o> +)
+	(<o> ^name do-command
+			 ^command <cmd>)
+}
+
+sp {do-command*elaborate*command
+	(state <s> ^name do-command
+						 ^superstate.operator.command <cmd>)
+-->
+	(<s> ^command <cmd>)
+}
+
+sp {do-command*propose*send-command
+	(state <s> ^name do-command
+						 ^command <cmd>
+						 -^ol-command)
+-->
+	(<s> ^operator <o> + >)
+	(<o> ^name send-command
+			 ^command <cmd>)
+}
+
+sp {do-command*apply*send-command*remove*status
+	(state <s> ^name do-command
+						 ^operator <o>)
+	(<o> ^name send-command
+			 ^command.control-law <law>)
+	(<law> ^status <status>)
+-->
+	(<law> ^status <status> -)
+}
+
+sp {do-command*apply*send-command*send
+	(state <s> ^name do-command
+						 ^operator <o>
+						 ^io.output-link <out>)
+	(<o> ^name send-command
+			 ^command.control-law <law>)
+-->
+	(<out> ^do-control-law <law>)
+	(<s> ^ol-command <law>)
+}
+
+sp {do-command*propose*complete-do-command
+	(state <s> ^name do-command
+						 ^ol-command.status << finished error >>)
+-->
+	(<s> ^operator <o> + >)
+	(<o> ^name complete-do-command)
+}
+
+sp {do-command*apply*complete-do-command
+	(state <s> ^name do-command
+						 ^operator.name complete-do-command
+						 ^topstate <top>)
+	(<top> ^current-command <cmd>)
+	(<cmd> ^next-command <next>)
+-->
+	(<s> ^current-command <cmd> -
+			 ^next-command <next>)
+}
+
