@@ -49,6 +49,17 @@ public class CommandSpoofer {
 			cl.param_names = new String[0];
 			cl.param_values = new typed_value_t[0];
 
+            if(clName.equals("turn"))
+            {
+                cl.num_params = 1;
+                cl.param_names = new String[]{"direction"};
+                cl.param_values = new typed_value_t[1];
+                if(value < 0)
+                    cl.param_values[0] = TypedValue.wrap("right");
+                else
+                    cl.param_values[0] = TypedValue.wrap("left");
+            }
+
 			condition_test_t ct = new condition_test_t();
 			ct.name = testName;
 			ct.num_params = 0;
@@ -56,6 +67,11 @@ public class CommandSpoofer {
 			ct.param_values = new typed_value_t[0];
 			ct.compare_type = condition_test_t.CMP_GTE;
 			ct.compared_value = TypedValue.wrap(value);
+
+            if(clName.equals("turn") && value<0)
+            {
+                ct.compare_type = condition_test_t.CMP_LTE;
+            }
 
 			cl.termination_condition = ct;
 			return cl;

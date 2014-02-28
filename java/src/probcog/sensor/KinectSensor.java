@@ -284,7 +284,7 @@ public class KinectSensor implements Sensor
     /** Return the real world position/orientation of the camera */
     public double[][] getCameraXform()
     {
-        return k2wXform_T;
+        return k2wXform;
     }
 
     public ArrayList<double[]> getAllXYZRGB(){

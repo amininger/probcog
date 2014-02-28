@@ -68,14 +68,16 @@ public class Turn extends ControlLaw
             dd.left = 0;
             dd.right = 0;
 
+            double speed = .4;
+
             // Change left and right wheels depending on turn direction
             if (dir.equals(Direction.RIGHT)) {
-                dd.left = -0.1;
-                dd.right = 0.1;
+                dd.left = speed;
+                dd.right = -speed;
             }
             else if (dir.equals(Direction.LEFT)) {
-                dd.left = 0.1;
-                dd.right = -0.1;
+                dd.left = -speed;
+                dd.right = speed;
             }
 
             publishDiff(dd);

@@ -13,20 +13,14 @@ import probcog.commands.TypedValue;
 
 public class RotationTest extends ConditionTest<Double>
 {
-    private pose_t startPose;
-    private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
-
+    private pose_t lastPose;
+    private double yaw;
 
 	public RotationTest(condition_test_t test)
     {
 		super(test);
-
-        // Save the initial pose so we can compute how far we've turned
 		new ListenerThread().start();
-        startPose = null;
-        while(startPose == null) {
-            startPose = poseCache.get();
-        }
+        yaw = 0;
 	}
 
 	@Override
@@ -46,16 +40,8 @@ public class RotationTest extends ConditionTest<Double>
 	@Override
 	protected Double getValue()
     {
-        pose_t pose = poseCache.get();
-
-        if(pose == null)
-            return -3*Math.PI;
-
-        double[] rpyStart = LinAlg.quatToRollPitchYaw(startPose.orientation);
-        double[] rpyNow = LinAlg.quatToRollPitchYaw(pose.orientation);
-        double dYaw = rpyNow[2]-rpyStart[2];
-
-		return dYaw;
+        System.out.println(yaw);
+		return yaw;
 	}
 
 
@@ -87,7 +73,23 @@ public class RotationTest extends ConditionTest<Double>
         {
             if (channel.equals("POSE")) {
                 pose_t msg = new pose_t(ins);
-                poseCache.put(msg, msg.utime);
+
+                if(lastPose != null) {
+                    double[] rpyLast = LinAlg.quatToRollPitchYaw(lastPose.orientation);
+                    double[] rpyNow = LinAlg.quatToRollPitchYaw(msg.orientation);
+
+                    if(rpyLast[2]<-Math.PI/4 && rpyNow[2]>Math.PI/4)
+                    {
+                        rpyLast[2] += 2*Math.PI;
+                    }
+                    else if(rpyLast[2]>Math.PI/4 && rpyNow[2]<-Math.PI/4)
+                    {
+                        rpyNow[2] += 2*Math.PI;
+                    }
+                    yaw += rpyNow[2]-rpyLast[2];
+                }
+
+                lastPose = msg;
             }
         }
     }

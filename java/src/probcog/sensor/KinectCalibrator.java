@@ -134,33 +134,33 @@ public class KinectCalibrator
 
         // Translation of kinect origin to world origin
         double[][] k2wTranslate = new double[][] {
-            {     1,     0,      0,  0},
-            {     0,     1,      0,  0},
-            {     0,     0,      1,  0},
-            {-ko[0], -ko[1], -ko[2], 1}
+            {1, 0, 0, -ko[0]},
+            {0, 1, 0, -ko[1]},
+            {0, 0, 1, -ko[2]},
+            {0, 0, 0, 1}
         };
 
         // Transform from between world and kinect basis
         double[][] w2kTransform = new double[][] {
-            {wx[0], wx[1], wx[2], 0},
-            {wy[0], wy[1], wy[2], 0},
-            {wz[0], wz[1], wz[2], 0},
+            {wx[0], wy[0], wz[0], 0},
+            {wx[1], wy[1], wz[1], 0},
+            {wx[2], wy[2], wz[2], 0},
             {    0,     0,     0, 1}
         };
 
         // Final adjustment in world coordinates to the actual arm origin
         double[][] wTranslate = new double[][] {
-            {       1, 0, 0, 0},
-            {       0, 1, 0, 0},
-            {       0, 0, 1, 0},
-            {x_offset, 0, 0, 1}
+            {1, 0, 0, x_offset},
+            {0, 1, 0, 0},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}
         };
 
         // Multiply out the matrices to provide a tranformation from kinect
         // coordinates to world coodinates w.r.t. the robot arm
-        double[][] k2wTransform = LinAlg.matrixAB(LinAlg.matrixAB(k2wTranslate,
+        double[][] k2wTransform = LinAlg.matrixAB(LinAlg.matrixAB(wTranslate,
                                                                   LinAlg.inverse(w2kTransform)),
-                                                  wTranslate);
+                                                  k2wTranslate);
 
         // Write to a configuration file
         String filename = config.getPath("kinect.calib_robot");
