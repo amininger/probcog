@@ -11,7 +11,7 @@ import april.util.*;
 import probcog.lcmtypes.*;
 import probcog.commands.TypedValue;
 
-public class RotationTest extends ConditionTest<Double> implements LCMSubscriber
+public class RotationTest extends ConditionTest<Double>
 {
     private pose_t startPose;
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
@@ -22,6 +22,7 @@ public class RotationTest extends ConditionTest<Double> implements LCMSubscriber
 		super(test);
 
         // Save the initial pose so we can compute how far we've turned
+		new ListenerThread().start();
         startPose = null;
         while(startPose == null) {
             startPose = poseCache.get();
@@ -57,21 +58,37 @@ public class RotationTest extends ConditionTest<Double> implements LCMSubscriber
 		return dYaw;
 	}
 
-    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-    {
-        try {
-            messageReceivedEx(lcm, channel, ins);
-        } catch (IOException ex) {
-            System.out.println("WRN: "+ex);
-        }
-    }
 
-    synchronized void messageReceivedEx(LCM lcm, String channel,
-                           LCMDataInputStream ins) throws IOException
+	class ListenerThread extends Thread implements LCMSubscriber
     {
-        if (channel.equals("POSE")) {
-            pose_t msg = new pose_t(ins);
-            poseCache.put(msg, msg.utime);
+		LCM lcm = LCM.getSingleton();
+
+		public ListenerThread(){
+			lcm.subscribe("POSE", this);
+		}
+
+		public void run(){
+			while(true){
+				TimeUtil.sleep(1000/60);
+			}
+		}
+
+        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        {
+            try {
+                messageReceivedEx(lcm, channel, ins);
+            } catch (IOException ex) {
+                System.out.println("WRN: "+ex);
+             }
+        }
+
+        synchronized void messageReceivedEx(LCM lcm, String channel,
+                                            LCMDataInputStream ins) throws IOException
+        {
+            if (channel.equals("POSE")) {
+                pose_t msg = new pose_t(ins);
+                poseCache.put(msg, msg.utime);
+            }
         }
     }
 }

@@ -57,6 +57,7 @@ static void sig_handler(int signo)
     switch (signo) {
         case SIGINT:
         case SIGQUIT:
+//case SIGTERM:
             running = 0;
             break;
         default:
@@ -240,6 +241,7 @@ int main(int argc, char **argv)
     // Setup clean quit
     signal(SIGINT, sig_handler);
     signal(SIGQUIT, sig_handler);
+//    signal(SIGTERM, sig_handler);
 
     // Init pthreads
     pthread_mutex_init(&frame_lock, NULL);

@@ -10,7 +10,7 @@ import april.util.*;
 import probcog.commands.TypedValue;
 import probcog.lcmtypes.*;
 
-public class DistanceTest extends ConditionTest<Double> implements LCMSubscriber
+public class DistanceTest extends ConditionTest<Double>
 {
     private pose_t startPose;
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
@@ -19,12 +19,14 @@ public class DistanceTest extends ConditionTest<Double> implements LCMSubscriber
 	public DistanceTest(condition_test_t test)
     {
 		super(test);
-
+		new ListenerThread().start();
         // Save the initial pose so we can compute how far we've travelled
+        System.out.println("In Distance Test");
         startPose = null;
         while(startPose == null) {
             startPose = poseCache.get();
         }
+        System.out.println("Got a pose");
 	}
 
 	@Override
@@ -56,21 +58,35 @@ public class DistanceTest extends ConditionTest<Double> implements LCMSubscriber
 		return dist;
 	}
 
-    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-    {
-        try {
-            messageReceivedEx(lcm, channel, ins);
-        } catch (IOException ex) {
-            System.out.println("WRN: "+ex);
-        }
-    }
+	class ListenerThread extends Thread implements LCMSubscriber {
+		LCM lcm = LCM.getSingleton();
 
-    synchronized void messageReceivedEx(LCM lcm, String channel,
-                           LCMDataInputStream ins) throws IOException
-    {
-        if (channel.equals("POSE")) {
-            pose_t msg = new pose_t(ins);
-            poseCache.put(msg, msg.utime);
+		public ListenerThread(){
+			lcm.subscribe("POSE", this);
+		}
+
+		public void run(){
+			while(true){
+				TimeUtil.sleep(1000/60);
+			}
+		}
+
+        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        {
+            try {
+                messageReceivedEx(lcm, channel, ins);
+            } catch (IOException ex) {
+                System.out.println("WRN: "+ex);
+            }
+        }
+
+        synchronized void messageReceivedEx(LCM lcm, String channel,
+                                            LCMDataInputStream ins) throws IOException
+        {
+            if (channel.equals("POSE")) {
+                pose_t msg = new pose_t(ins);
+                poseCache.put(msg, msg.utime);
+            }
         }
     }
 }

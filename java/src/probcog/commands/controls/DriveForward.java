@@ -14,7 +14,7 @@ import probcog.lcmtypes.*;
 import probcog.robot.control.*;
 import probcog.util.Util;
 
-public class DriveForward extends ControlLaw implements LCMSubscriber
+public class DriveForward extends ControlLaw
 {
     static final int DD_BCAST_PERIOD_MS = 33; // 30 Hz
     static final double VERY_FAR = 6371000; // meters in Earth radius
@@ -26,14 +26,17 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
 
     private pose_t initialPose;
 
-	public DriveForward(control_law_t controlLaw)
+    public DriveForward(control_law_t controlLaw)
     {
-		super(controlLaw);
-	}
+        super(controlLaw);
+		new ListenerThread().start();
+    }
 
-	@Override
-	public void execute()
+    @Override
+    public void execute()
     {
+        System.out.println("Executing drive-forward");
+
         initialPose = null;
         while(initialPose == null) {
             initialPose = poseCache.get();
@@ -70,18 +73,19 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
             // Test current status to determine whether to stop driving
             drive = getStatus().equals(ControlLaw.Status.EXECUTING);
         }
-	}
+    }
 
     @Override
-	public ControlLaw.Status getStatus(){
-		// TODO: may return EARLY_TERM or FAILURE if
-		//   something went wrong
+    public ControlLaw.Status getStatus()
+    {
+	// TODO: may return EARLY_TERM or FAILURE if
+	//   something went wrong
 
-		if(termCond.evaluate() == true){
-			return ControlLaw.Status.FINISHED;
-		}
-		return ControlLaw.Status.EXECUTING;
+	if(termCond.evaluate() == true){
+	    return ControlLaw.Status.FINISHED;
 	}
+	return ControlLaw.Status.EXECUTING;
+    }
 
 
     private void publishDiff(diff_drive_t diff_drive)
@@ -98,21 +102,35 @@ public class DriveForward extends ControlLaw implements LCMSubscriber
         lcm.publish("DIFF_DRIVE", diff_drive);
     }
 
-    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-    {
-        try {
-            messageReceivedEx(lcm, channel, ins);
-        } catch (IOException ex) {
-            System.out.println("WRN: "+ex);
-        }
-    }
+	class ListenerThread extends Thread implements LCMSubscriber {
+		LCM lcm = LCM.getSingleton();
 
-    synchronized void messageReceivedEx(LCM lcm, String channel,
-                           LCMDataInputStream ins) throws IOException
-    {
-        if (channel.equals("POSE")) {
-            pose_t msg = new pose_t(ins);
-            poseCache.put(msg, msg.utime);
+		public ListenerThread(){
+			lcm.subscribe("POSE", this);
+		}
+
+		public void run(){
+			while(true){
+				TimeUtil.sleep(1000/60);
+			}
+		}
+
+        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        {
+            try {
+                messageReceivedEx(lcm, channel, ins);
+            } catch (IOException ex) {
+                System.out.println("WRN: "+ex);
+            }
+        }
+
+        synchronized void messageReceivedEx(LCM lcm, String channel,
+                                            LCMDataInputStream ins) throws IOException
+        {
+            if (channel.equals("POSE")) {
+                pose_t msg = new pose_t(ins);
+                poseCache.put(msg, msg.utime);
+            }
         }
     }
 }
