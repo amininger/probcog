@@ -40,7 +40,6 @@ public class RotationTest extends ConditionTest<Double>
 	@Override
 	protected Double getValue()
     {
-        System.out.println(yaw);
 		return yaw;
 	}
 
