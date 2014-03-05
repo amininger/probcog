@@ -27,7 +27,8 @@ public class ObstacleMap
             ioex.printStackTrace();
         }
 
-        new MapThread().start();
+        MapThread mt = new MapThread();
+        mt.start();
     }
 
     public void createMap2D(double minHeight, double maxHeight)
@@ -38,23 +39,24 @@ public class ObstacleMap
 
         int width = sensor.getWidth();
         int height = sensor.getHeight();
-        ArrayList<double[]> points = sensor.getAllXYZRGB();
+
 
         minHeight = Math.abs(minHeight); // Make sure min height is a positive number
 
         double[] radii = new double[width];
+        for(int i=0; i<radii.length; i++) {
+            radii[i] = Double.MAX_VALUE;
+        }
 
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
 
-                double[] p = points.get(y*width + x);
+                double[] p = sensor.getXYZRGB(x,y);
 
-                if(!isEmpty(p) &&
-                   ((p[2] < maxHeight && p[2] > minHeight) ||
-                    (p[2] < -minHeight))) {
-
+                if(!isEmpty(p) && (p[2] < maxHeight && p[2] > minHeight))
+                {
                     double[] xy = new double[]{p[0], p[1]};
-                    double r = LinAlg.distance(xy, new double[2]);
+                    double r = LinAlg.magnitude(xy);
 
                     if(r < radii[x]) {
                         radii[x] = r;
@@ -69,20 +71,14 @@ public class ObstacleMap
             radiif[i] = (float) radii[i];
         }
 
-        double[] p0 = points.get((int) (height/2.0)*width);
-        double[] p1 = points.get((int) (height/2.0)*width+1);
-        float thetaStart = (float) Math.atan2(p0[1], p0[0]);
-        float thetaNext = (float) Math.atan2(p1[1], p1[0]);
-        float thetaStep = (float) thetaNext - thetaStart;
-
-        publishLaser(radiif, thetaStart, thetaStep);
+        publishLaser(radiif, (float) Math.toRadians(57.0/2), (float) -(Math.toRadians(57.0)/(sensor.getWidth()-1)));
     }
 
     private boolean isEmpty(double[] p)
     {
         double epsilon = .0001;
-        for(double d : p) {
-            if(Math.abs(d) > epsilon)
+        for(int i=0; i<3; i++) {
+            if(Math.abs(p[i]) > epsilon)
                 return false;
         }
         return true;
@@ -114,8 +110,8 @@ public class ObstacleMap
         public MapThread()
         {
             Config config = Util.getDomainConfig();
-            double minHeight = config.requireDouble("obstacle.min_height");
-            double maxHeight = config.requireDouble("obstacle.max_height");
+            minHeight = config.requireDouble("obstacle.min_height");
+            maxHeight = config.requireDouble("obstacle.max_height");
         }
 
         public void run()
