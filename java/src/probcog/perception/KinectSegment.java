@@ -232,7 +232,7 @@ public class KinectSegment implements Segmenter
     }
 
     /** For determining whether a point is basically at the origin.**/
-    private boolean almostZero(double[] p)
+    public boolean almostZero(double[] p)
     {
         if((Math.abs(p[0]) < 0.0001) && (Math.abs(p[1]) < 0.0001) &&
            (Math.abs(p[2]) < 0.0001) && (Math.abs(p[3]) < 0.0001))
