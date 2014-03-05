@@ -258,7 +258,7 @@ public class KinectSensor implements Sensor, LCMSubscriber
         double[] pt = LinAlg.resize(p, 4);
         pt[3] = 1;
 
-        return LinAlg.resize(LinAlg.matrixAB(pt, k2wXform), p.length);
+        return LinAlg.resize(LinAlg.matrixAB(k2wXform, pt), p.length);
     }
 
     /** Return the real world position/orientation of the camera */
