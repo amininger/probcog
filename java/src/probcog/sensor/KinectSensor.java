@@ -26,7 +26,7 @@ import probcog.util.Util;
  *  keeps track of the most recently received frame from the
  *  kinect.
  **/
-public class KinectSensor implements Sensor
+public class KinectSensor implements Sensor, LCMSubscriber
 {
     LCM lcm = LCM.getSingleton();
     Config config;
@@ -55,17 +55,15 @@ public class KinectSensor implements Sensor
     BufferedImage r_rgbIm;
     BufferedImage r_depthIm;
 
-    private boolean listenToLcm;
-
-    public KinectSensor(Config config_) throws IOException{
-    	listenToLcm = true;
-    	init(config_);
-
+    // XXX Long term, this is what we're going to want. For now, only
+    // in use for mobile domain
+    public KinectSensor() throws IOException
+    {
+        init(Util.getDomainConfig());
     }
 
-    public KinectSensor(Config config_, boolean listenToLcm) throws IOException
+    public KinectSensor(Config config_) throws IOException
     {
-    	this.listenToLcm = listenToLcm;
     	init(config_);
     }
 
@@ -131,10 +129,8 @@ public class KinectSensor implements Sensor
         }
         k2wXform_T = LinAlg.transpose(k2wXform);
 
-        if(listenToLcm){
-            // Spin up LCM listener
-            new ListenerThread().start();
-        }
+        // Subscribe to LCM
+        lcm.subscribe("KINECT_STATUS", this);
     }
 
     public double[][] getTransform(){
@@ -145,43 +141,27 @@ public class KinectSensor implements Sensor
     	return new double[]{Cirx, Ciry, Firx, Firy};
     }
 
-    //static int cnt = 0;
-    class ListenerThread extends Thread implements LCMSubscriber
+    // === LCM Subscription stuff ==================================
+    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
-        LCM lcm = LCM.getSingleton();
-
-        public ListenerThread()
-        {
-            lcm.subscribe("KINECT_STATUS", this);
+        try {
+            messageReceivedEx(lcm, channel, ins);
+        } catch (IOException ioex) {
+            System.err.println("ERR: LCM channel ="+channel);
+            ioex.printStackTrace();
         }
+    }
 
-        public void run()
-        {
-            while (true) {
-                TimeUtil.sleep(1000/60);    // Just chewing up CPU time...
-            }
-        }
-
-        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-        {
-            try {
-                messageReceivedEx(lcm, channel, ins);
-            } catch (IOException ioex) {
-                System.err.println("ERR: LCM channel ="+channel);
-                ioex.printStackTrace();
-            }
-        }
-
-        private void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
-        {
-            if (channel.equals("KINECT_STATUS")) {
-                synchronized (kinectLock) {
+    private void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
+    {
+        if (channel.equals("KINECT_STATUS")) {
+            synchronized (kinectLock) {
                 //    System.out.println(cnt++);
-                    ks = new kinect_status_t(ins);
-                }
+                ks = new kinect_status_t(ins);
             }
         }
     }
+    // ====================================================
 
     /** "Stash" the current kinect frame data, which will then be
      *  used for all subsequent frame lookups. Calling stash again will
@@ -278,7 +258,7 @@ public class KinectSensor implements Sensor
         double[] pt = LinAlg.resize(p, 4);
         pt[3] = 1;
 
-        return LinAlg.resize(LinAlg.matrixAB(pt, k2wXform), p.length);
+        return LinAlg.resize(LinAlg.matrixAB(k2wXform, pt), p.length);
     }
 
     /** Return the real world position/orientation of the camera */
