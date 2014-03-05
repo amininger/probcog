@@ -195,4 +195,15 @@ public class Util
         ensureConfig();
         return config;
     }
+
+    /**
+     * Convenience method to load domain specific portion of
+     * the preloaded config
+     */
+    public static Config getDomainConfig()
+    {
+        ensureConfig();
+        String domain = config.requireString("system.domain");
+        return config.getChild(domain);
+    }
 }
