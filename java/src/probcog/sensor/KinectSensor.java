@@ -255,6 +255,10 @@ public class KinectSensor implements Sensor, LCMSubscriber
     /** Convert a kinect point to world coordinates */
     private double[] k2w(double[] p)
     {
+        // Points at the origin are invalid XXX
+        if (p[0] == 0 && p[1] == 0 && p[2] == 0)
+            return p;
+
         double[] pt = LinAlg.resize(p, 4);
         pt[3] = 1;
 
@@ -367,6 +371,9 @@ public class KinectSensor implements Sensor, LCMSubscriber
 
         int d = buf[iy*getWidth() + ix];
         double depth = d/1000.0;   // millimeters to meters
+
+        if (depth <= 0)
+            return xyz;
 
         xyz[0] = (ix - Cirx) * depth / Firx;
         xyz[1] = (iy - Ciry) * depth / Firy;
