@@ -288,11 +288,7 @@ public class SimKinectSensor implements Sensor
     		//pixels[i].point = new double[4];
     		return false;
     	}
-    	if(pixels[i].target instanceof SimLocation){
-    		pixels[i].target = null;
-    		// We aren't segmenting sim locations
-    		return false;
-    	}
+
 		return true;
     }
     
@@ -345,18 +341,16 @@ public class SimKinectSensor implements Sensor
             }
         }
         
-        if(minObj == null){
+        if(minDist >= 8.0){
+        	// Didn't hit anything, return empty point
+        	pixel.point = new double[4];
         	return pixel;
-        } else if(minDist >= 8.0){
-        	return pixel;
-        } else {
+        }
+        
+        if(minObj != null){
+        	// We hit something
         	pixel.target = minObj;
         }
-//        pixel.target = minObj;
-//        if(minObj == null) {
-//            double[] xyFloor = ray.intersectPlaneXY();
-//            minDist = LinAlg.distance(ray.getSource(), xyFloor);
-//        }
 
         // Compute the point in space we collide with the object at
         double[] xyzc = ray.getPoint(minDist);
@@ -403,8 +397,8 @@ public class SimKinectSensor implements Sensor
     	SimPixel pixel = getPixel(ix, iy);
     	return pixel.point;
     }
-    
-    public SimPixel[] getAllPixels(){
+
+    public SimPixel[] getPixels(boolean fastScan){
     	SimPixel[] pixels = new SimPixel[WIDTH*HEIGHT];
     	numScans = 0;    
     	
@@ -419,8 +413,8 @@ public class SimKinectSensor implements Sensor
 			}
 		}
 		
-    	boolean scanSubsets = true;
-    	if(scanSubsets){
+    	if(fastScan){
+    		// Scan selective regions recursively
     		scanRegions(grid, GRID_DEPTH, GRID_DEPTH, pixels);
     	} else {
     		// Scan Whole Scene (very slow)
@@ -431,7 +425,7 @@ public class SimKinectSensor implements Sensor
     }
     
     public BufferedImage getImage(){
-    	ArrayList<double[]> points = getAllXYZRGB();
+    	ArrayList<double[]> points = getAllXYZRGB(false);
     	BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
     	for(int y = 0; y < HEIGHT; y++){
     		for(int x= 0; x < WIDTH; x++){
@@ -442,9 +436,10 @@ public class SimKinectSensor implements Sensor
     	return image;    	
     }
     
-    public ArrayList<double[]> getAllXYZRGB(){
-    	SimPixel[] pixels = getAllPixels();
+    public ArrayList<double[]> getAllXYZRGB(boolean fastScan){
     	ArrayList<double[]> points = new ArrayList<double[]>();
+
+    	SimPixel[] pixels = getPixels(fastScan);
 
     	int i = 0;
         for (int y = 0; y < HEIGHT; y++) {

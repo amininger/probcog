@@ -287,7 +287,7 @@ public class KinectSensor implements Sensor
         return k2wXform_T;
     }
 
-    public ArrayList<double[]> getAllXYZRGB(){
+    public ArrayList<double[]> getAllXYZRGB(boolean fastScan){
     	return Util.extractPoints(this);
     }
 

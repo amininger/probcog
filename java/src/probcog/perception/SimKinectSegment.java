@@ -41,11 +41,11 @@ public class SimKinectSegment implements Segmenter
 
     
     public ArrayList<Obj> getSegmentedObjects(){
-    	SimPixel[] pixels = kinect.getAllPixels();
+    	SimPixel[] pixels = kinect.getPixels(true);
 
     	HashMap<SimObject, PointCloud> pointClouds = new HashMap<SimObject, PointCloud>();  
     	for(SimPixel pixel : pixels){
-    		if(pixel == null || pixel.target == null){
+    		if(pixel == null || pixel.target == null || pixel.target instanceof SimLocation){
     			continue;
     		}
     		PointCloud pc = pointClouds.get(pixel.target);

@@ -11,7 +11,7 @@ public interface Sensor
     public int getWidth();
     
     /** Gets all the colored, 3D points in the view region. **/
-    public ArrayList<double[]> getAllXYZRGB();
+    public ArrayList<double[]> getAllXYZRGB(boolean fastScan);
 
     /** Get a colored, 3D point of an object.**/
     public double[] getXYZRGB(int ix, int iy);

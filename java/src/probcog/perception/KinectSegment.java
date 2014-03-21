@@ -81,7 +81,7 @@ public class KinectSegment implements Segmenter
 
         // Get points from camera
         long time = TimeUtil.utime();
-        points = kinect.getAllXYZRGB();
+        points = kinect.getAllXYZRGB(true);
         if(Tracker.SHOW_TIMERS){
         	System.out.println("      TRACING: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
@@ -118,6 +118,7 @@ public class KinectSegment implements Segmenter
         // Only calculate the floor plane once
         if(floorPlane == null && points.size() > 0){
             System.out.println("Getting floor plane!");
+            points = kinect.getAllXYZRGB(false);
             floorPlane = RANSAC.estimatePlane(points, RANSAC_ITERATIONS, RANSAC_PERCENT);
         }
 
