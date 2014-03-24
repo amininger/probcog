@@ -29,6 +29,7 @@ sp {anystate*propose*wait
 sp {topstate*propose*do-command
 	(state <s> ^superstate nil
 						 ^current-command <cmd>)
+	(<cmd> ^control-law <cl>)
 -->
 	(<s> ^operator <o> +)
 	(<o> ^name do-command
@@ -88,7 +89,18 @@ sp {do-command*apply*complete-do-command
 	(<top> ^current-command <cmd>)
 	(<cmd> ^next-command <next>)
 -->
-	(<s> ^current-command <cmd> -
-			 ^next-command <next>)
+	(<top> ^current-command <cmd> -
+			   ^current-command <next>)
 }
+
+sp {do-command*apply*complete-do-command*remove*command
+	(state <s> ^name do-command
+						 ^operator.name complete-do-command
+						 ^ol-command <cmd>
+						 ^io.output-link <out>)
+	(<out> ^do-control-law <cmd>)
+-->
+	(<out> ^do-control-law <cmd> -)
+}
+						 
 
