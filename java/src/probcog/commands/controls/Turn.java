@@ -54,7 +54,6 @@ public class Turn extends ControlLaw
 
         boolean turn = getStatus().equals(ControlLaw.Status.EXECUTING);
         while (turn) {
-
             TimeUtil.sleep(DD_BCAST_PERIOD_MS);
 
             // Get the most recent position

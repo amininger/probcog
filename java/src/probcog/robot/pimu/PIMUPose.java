@@ -31,7 +31,7 @@ public class PIMUPose implements LCMSubscriber
 
     int motorFeedbackCount, pimuCount, txCount;
 
-    Config config = Util.getConfig();
+    Config config = Util.getDomainConfig();
 
     public PIMUPose(GetOpt gopt)
     {
@@ -133,9 +133,9 @@ public class PIMUPose implements LCMSubscriber
 
                 distTraveled = 0;   // Reset distance traveled since last update
 
-                if (config.requireBoolean("obstacle.use_flat_world")) {
+                //if (config.requireBoolean("obstacle.use_flat_world")) {
                     poseAdj.pos[2] = 0;
-                }
+                //}
 
                 lcm.publish("POSE", poseAdj);
             }
