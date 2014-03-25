@@ -241,6 +241,11 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
                 for(int i=0; i<training.num_labels; i++){
                     training_label_t tl = training.labels[i];
+                    if(tl.utime <= soarTime){
+                    	// already seen this label, don't train a second time
+                    	continue;
+                    }
+                    
                     Obj objTrain;
                     synchronized(tracker.stateLock){
                         objTrain = tracker.getObject(tl.id);
@@ -253,7 +258,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                         }
                     }
                 }
-                soarTime = Math.max(soarTime, training.utime);
+                for(int i = 0; i < training.num_labels; i++){
+                	soarTime = Math.max(soarTime, training.labels[i].utime);
+                }
             }catch (IOException e) {
                 e.printStackTrace();
                 return;
@@ -268,10 +275,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 		animation = null;
         			} else if(args[0].equals("reset")){
         				soarTime = 0;
-        				tracker.resetSoarTime();
         			}
         		}
-                soarTime = Math.max(soarTime, command.utime);
         	} catch (IOException e){
         		e.printStackTrace();
         		return;
@@ -283,7 +288,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     public void sendMessage()
     {
         observations_t obs = new observations_t();
-        obs.utime = Math.max(soarTime, tracker.getSoarTime());
+        obs.utime = TimeUtil.utime();
+        obs.soar_utime = soarTime;
         synchronized(tracker.stateLock){
         	obs.click_id = getSelectedId();
         }

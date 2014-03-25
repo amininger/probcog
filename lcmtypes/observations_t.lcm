@@ -1,6 +1,7 @@
 struct observations_t
 {
     int64_t utime;
+		int64_t soar_utime;
 
     // Object ID of the object the user last clicked on
     int32_t click_id;

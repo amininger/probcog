@@ -9,16 +9,38 @@
 	0
 	bin-1
 }
-"probcog.sim.SimScale"
+"probcog.sim.SimLocation"
 {
-	6
+	2
+	vec 6
+	0.15 0.0 -0.081 0.0 0.0 0.0
+	0.08
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	bin-2
+}
+"probcog.sim.SimLocation"
+{
+	3
+	vec 6
+	0.15 0.15 -0.081 0.0 0.0 0.0
+	0.08
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	bin-3
+}
+"probcog.sim.SimLocation"
+{
+	4
 	vec 6
 	0.0 0.2 -0.081 0.0 0.0 0.0 0.0
 	0.08
 	vec 4
 	1.0 1.0 0.0 1.0
 	0
-  scale	
+  goal	
 }
 "probcog.sim.SimBoxPC"
 {

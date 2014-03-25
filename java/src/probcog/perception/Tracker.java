@@ -56,9 +56,6 @@ public class Tracker
     int frameIdx = 0;
     final int frameTotal = 10;
     
-    long soarTime = 0;
-
-
     public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException{
 
 
@@ -91,14 +88,6 @@ public class Tracker
         new TrackingThread().start();
     }
     
-    public long getSoarTime(){
-    	return soarTime;
-    }
-    
-    public void resetSoarTime(){
-    	soarTime = 0;
-    }
-
     public HashMap<Integer, Obj> getWorldState()
     {
         return worldState;
@@ -660,7 +649,6 @@ public class Tracker
             if (channel.equals("SOAR_OBJECTS")) {
                 synchronized (soarLock) {
                     soar_lcm = new soar_objects_t(ins);
-                    soarTime = Math.max(soarTime, soar_lcm.utime);
                 }
             } else if (channel.equals("ROBOT_COMMAND")) {
                 synchronized (armLock) {
@@ -670,11 +658,9 @@ public class Tracker
             } else if(channel.equals("SET_STATE_COMMAND")){
             	set_state_command_t setState = new set_state_command_t(ins);
             	processSetStateCommand(setState);
-                soarTime = Math.max(soarTime, setState.utime);
             } else if(channel.equals("PERCEPTION_COMMAND")){
             	perception_command_t command = new perception_command_t(ins);
             	handlePerceptionCommand(command);
-                soarTime = Math.max(soarTime, command.utime);
             }
         }
     }

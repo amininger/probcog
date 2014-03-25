@@ -1,5 +1,7 @@
 struct training_label_t
 {
+	int64_t utime; // soar time the training label was generated
+
     int32_t id; // unique ID referring to a previously detected object in object_data_t
     string label; // Unique Label, e.g "Red1"
     category_t cat; // e.g. "CAT_COLOR"
