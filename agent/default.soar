@@ -46,37 +46,27 @@ sp {do-command*elaborate*command
 sp {do-command*propose*send-command
 	(state <s> ^name do-command
 						 ^command <cmd>
-						 -^ol-command)
+                         -^sent)
 -->
 	(<s> ^operator <o> + >)
 	(<o> ^name send-command
 			 ^command <cmd>)
 }
 
-sp {do-command*apply*send-command*remove*status
-	(state <s> ^name do-command
-						 ^operator <o>)
-	(<o> ^name send-command
-			 ^command.control-law <law>)
-	(<law> ^status <status>)
--->
-	(<law> ^status <status> -)
-}
-
 sp {do-command*apply*send-command*send
 	(state <s> ^name do-command
+     ^ol-command <cmd>
+     ^operator.name send-command
 						 ^operator <o>
 						 ^io.output-link <out>)
-	(<o> ^name send-command
-			 ^command.control-law <law>)
 -->
-	(<out> ^do-control-law <law>)
-	(<s> ^ol-command <law>)
+	(<out> ^do-control-law <cmd>)
+    (<s> ^sent true)
 }
 
 sp {do-command*propose*complete-do-command
 	(state <s> ^name do-command
-						 ^ol-command.status << finished error >>)
+						 ^ol-command.status << complete error >>)
 -->
 	(<s> ^operator <o> + >)
 	(<o> ^name complete-do-command)
@@ -85,7 +75,7 @@ sp {do-command*propose*complete-do-command
 sp {do-command*apply*complete-do-command
 	(state <s> ^name do-command
 						 ^operator.name complete-do-command
-						 ^topstate <top>)
+						 ^superstate <top>)
 	(<top> ^current-command <cmd>)
 	(<cmd> ^next-command <next>)
 -->
@@ -102,5 +92,5 @@ sp {do-command*apply*complete-do-command*remove*command
 -->
 	(<out> ^do-control-law <cmd> -)
 }
-						 
+
 
