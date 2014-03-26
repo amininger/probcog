@@ -100,6 +100,7 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
 
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
+        System.out.println("Message on channel: " + channel);
 			try {
 				if(channel.equals("ROBOT_ACTION")){
 						robot_action_t action = new robot_action_t(ins);
@@ -120,6 +121,7 @@ public class MotorSystemConnector   implements OutputEventInterface, RunEventInt
     }
 
 		public void newControlLawStatus(control_law_status_t status){
+            System.out.println("New Status # " + status.id + " = " + status.status);
 			if(outstandingCommands.containsKey(status.id)){
 				Identifier id = outstandingCommands.get(status.id);
 				boolean remove = false;
