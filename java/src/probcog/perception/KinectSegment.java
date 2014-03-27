@@ -60,7 +60,11 @@ public class KinectSegment implements Segmenter
         if(world == null){
             kinect = new KinectSensor(config_);
         } else {
-        	kinect = new SimKinectSensor(world);
+            double[] eye = new double[] {0.6, 0, 1.0};    // Camera position
+            double[] lookat = new double[3];              // Looks at origin
+            double[] up = new double[] {-1.0, 0, 1.0};    // Up vector
+
+        	kinect = new SimKinectSensor(world, eye, lookat, up);
         }
 
         sensors.add(kinect);    // XXX

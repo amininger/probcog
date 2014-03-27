@@ -20,11 +20,11 @@ public class SimKinectSegment implements Segmenter
 {
     private ArrayList<Sensor> sensors = new ArrayList<Sensor>();
     private SimKinectSensor kinect;
-    
-    private final static int PIXEL_STRIDE = 2; 
+
+    private final static int PIXEL_STRIDE = 2;
     // Number of pixels to move for each sample
     // Higher values produce a less dense image
-    
+
     // Set up some "Random" colors to draw the segments
     static int[] colors = new int[]{0xff3300CC, 0xff9900CC, 0xffCC0099, 0xffCC0033,
         0xff0033CC, 0xff470AFF, 0xff7547FF, 0xffCC3300,
@@ -33,17 +33,20 @@ public class SimKinectSegment implements Segmenter
 
     public SimKinectSegment(Config config_, SimWorld world) throws IOException
     {
-    	
-        kinect = new SimKinectSensor(world);
+        double[] eye = new double[] {0.6, 0, 1.0};    // Camera position
+        double[] lookat = new double[3];              // Looks at origin
+        double[] up = new double[] {-1.0, 0, 1.0};    // Up vector
+
+        kinect = new SimKinectSensor(world, eye, lookat, up);
 
         sensors.add(kinect);    // XXX
     }
 
-    
+
     public ArrayList<Obj> getSegmentedObjects(){
     	SimPixel[] pixels = kinect.getAllPixels();
 
-    	HashMap<SimObject, PointCloud> pointClouds = new HashMap<SimObject, PointCloud>();  
+    	HashMap<SimObject, PointCloud> pointClouds = new HashMap<SimObject, PointCloud>();
     	for(SimPixel pixel : pixels){
     		if(pixel == null || pixel.target == null){
     			continue;
@@ -55,19 +58,19 @@ public class SimKinectSegment implements Segmenter
     		}
     		pc.addPoint(pixel.point);
     	}
-        
+
         // Turn the segmented point clouds into Obj's
     	ArrayList<Obj> segmentedObjs = new ArrayList<Obj>();
     	for(Map.Entry<SimObject, PointCloud> entry : pointClouds.entrySet()){
     		if(entry.getValue().getPoints().size() == 0){
     			continue;
-    		} 
+    		}
     		Obj obj = new Obj(false, entry.getValue());
     		obj.setSourceSimObject(entry.getKey());
     		segmentedObjs.add(obj);
     	}
-    	
-    	return segmentedObjs;    	
+
+    	return segmentedObjs;
     }
 
     // === Provide access to the raw sensor === //

@@ -42,7 +42,7 @@ public class SimKinectSensor implements Sensor
 			point = new double[4];
 		}
 	}
-	
+
     // Sim Kinect parameters
     private static final int NUM_SUBREGIONS = 12; // To increase/decrease the resolution I recommend tuning this parameter only
     private static final int GRID_DEPTH = 3;
@@ -64,7 +64,7 @@ public class SimKinectSensor implements Sensor
     VisCanvas vc;
 
     /** Takes as input the SimWorld from which point data is generated */
-    public SimKinectSensor(SimWorld sw_)
+    public SimKinectSensor(SimWorld sw_, double[] eye, double[] lookat, double[] up)
     {
         if (false) {
             jf = new JFrame("DEBUG WINDOW");
@@ -84,12 +84,9 @@ public class SimKinectSensor implements Sensor
         // Set up the kinect view. Anchored to a fixed point. Sets this up
         // as our VisLayer's default view, too, so when we render for the
         // canvas, our view of the world will be accurate
-        camera.eye = new double[] {0.6, 0, 1.0};    // Camera position
-        camera.lookat = new double[3];              // Looks at origin
-        camera.up = new double[] {-1.0, 0, 1.0};    // Up vector
-        //camera.eye = new double[] {1, 1, 1};
-        //camera.lookat = new double[] {0, 0, 0};
-        //camera.up = new double[] {-1, -1, 1};
+        camera.eye = eye;                              // Camera position
+        camera.lookat = lookat;                        // Looks at
+        camera.up = up;                                // Up vector
 
         camera.perspective_fovy_degrees = VFOV;
         camera.layerViewport = new int[] {0,0,WIDTH,HEIGHT};
@@ -157,10 +154,10 @@ public class SimKinectSensor implements Sensor
 
         return camMatrix;
     }
-    
+
     /*********
      * scanRegions(boolean[][] higherGrid, int depth, int maxDepth, SimPixel[] pixels)
-     * 
+     *
      * Iterates over each region specified by the given grid that are marked true
      * For each region, it splits it into 4 subregions and scans each one
      * If a region contains an object, it marks it for further scanning in the lowerGrid
@@ -195,13 +192,13 @@ public class SimKinectSensor implements Sensor
     		scanRemaining(lowerGrid, pixels);
     	}
     }
-    
+
     /*********
      * boolean scanRegion(Rectangle region, int depth, int maxDepth, SimPixel[] pixels)
-     * 
+     *
      * Scans the given region on the screen (given in pixel coordinates) and populates the given pixels array
      * with the results of the ray tracing
-     * It uses the depth and max depth to determine how coarse of a scan to do, 
+     * It uses the depth and max depth to determine how coarse of a scan to do,
      * I.e. a depth of 1 means a fine scan, a depth of 4 is coarser
      */
     public boolean scanRegion(Rectangle region, int depth, int maxDepth, SimPixel[] pixels){
@@ -219,16 +216,16 @@ public class SimKinectSensor implements Sensor
     	}
     	return hitObject;
     }
-    
+
     /*********
      * void markRegionsToScan(boolean[][] grid, int row, int col)
-     * 
+     *
      * Marks the given row/col in the grid as true, as well as all the neighbors (8-connected)
      */
     public void markRegionsToScan(boolean[][] grid, int row, int col){
     	int numRows = grid.length;
     	int numCols = grid[0].length;
-    	
+
     	for(int r = row-1; r <= row+1; r++){
     		for(int c = col-1; c <= col+1; c++){
     			if(r >= 0 && c >= 0 && r < numRows && c < numCols){
@@ -237,10 +234,10 @@ public class SimKinectSensor implements Sensor
     		}
     	}
     }
-    
+
     /**********
      * void scanRemaining(boolean[][] grid, SimPixel[] pixels)
-     * 
+     *
      * This iterates over all regions marked as true in the given grid
      * In each region, it iterates over all pixels and scans them if they have not yet been scanned
      */
@@ -254,7 +251,7 @@ public class SimKinectSensor implements Sensor
     			if(grid[r][c] == false){
     				continue;
     			}
-    			
+
     			int endX = startX + regionWidth;
     			int endY = startY + regionHeight;
     			for(int x = startX; x < endX; x++){
@@ -269,11 +266,11 @@ public class SimKinectSensor implements Sensor
     	}
     }
 
-    
-    
+
+
     /**********
      * boolean scanPoint(int px, int py, SimPixel[] pixels)
-     * 
+     *
      * Scans the scene at the given point (in pixel space) using ray tracing from the simulated kinect
      * If it hits an object, it adds it at the appropriate index in the supplied array and returns true
      * If it does not hit anything, it returns false and puts an empty SimPixel in the array (target = null and point = zero)
@@ -295,18 +292,18 @@ public class SimKinectSensor implements Sensor
     	}
 		return true;
     }
-    
+
     // returns a random number between -1 and 1, more biased towards 0
     private double getNoiseScale(){
     	double rand = (Math.random() - .5) * 2; // -1 to 1
     	rand = Math.signum(rand) * rand * rand;  // square to give it more of a curve
     	return rand;
     }
-    
+
     public SimPixel getPixel(int ix, int iy){
     	SimPixel pixel = new SimPixel();
     	pixel.target = null;
-    	
+
     	// XXX Infinite loop possibility
         BufferedImage im;
         do {
@@ -344,7 +341,7 @@ public class SimKinectSensor implements Sensor
                 }
             }
         }
-        
+
         if(minObj == null){
         	return pixel;
         } else if(minDist >= 8.0){
@@ -361,12 +358,12 @@ public class SimKinectSensor implements Sensor
         // Compute the point in space we collide with the object at
         double[] xyzc = ray.getPoint(minDist);
         xyzc = LinAlg.resize(xyzc, 4);
-        
+
         // Add random noise
         for(int i = 0; i < 3; i++){
         	xyzc[i] += getNoiseScale() * POS_NOISE;
         }
-        
+
         // If the object in question supports a color query, assign it
         // a color. Otherwise, default to white.
         int idx = iy*WIDTH + ix;
@@ -392,7 +389,7 @@ public class SimKinectSensor implements Sensor
                   (b & 0xff) |
                   (g & 0xff) << 8 |
                   (r & 0xff) << 16;
-        
+
         pixel.point = xyzc;
         return pixel;
     }
@@ -403,11 +400,11 @@ public class SimKinectSensor implements Sensor
     	SimPixel pixel = getPixel(ix, iy);
     	return pixel.point;
     }
-    
+
     public SimPixel[] getAllPixels(){
     	SimPixel[] pixels = new SimPixel[WIDTH*HEIGHT];
-    	numScans = 0;    
-    	
+    	numScans = 0;
+
     	// AM: Optimization here, tries to do a coarse initial scan over the scene, only doing
     	//      finer scans when an object is hit. see scanSceneSubset for more details
     	// Empirical testing on the simulator shows a 8-10 times speedup
@@ -418,7 +415,7 @@ public class SimKinectSensor implements Sensor
 				grid[r][c] = true;
 			}
 		}
-		
+
     	boolean scanSubsets = true;
     	if(scanSubsets){
     		scanRegions(grid, GRID_DEPTH, GRID_DEPTH, pixels);
@@ -426,10 +423,10 @@ public class SimKinectSensor implements Sensor
     		// Scan Whole Scene (very slow)
     		scanRegions(grid, 1, 1, pixels);
     	}
-    	
+
     	return pixels;
     }
-    
+
     public BufferedImage getImage(){
     	ArrayList<double[]> points = getAllXYZRGB();
     	BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
@@ -439,9 +436,9 @@ public class SimKinectSensor implements Sensor
     			image.setRGB(x, y, (int)points.get(loc)[3]);
     		}
     	}
-    	return image;    	
+    	return image;
     }
-    
+
     public ArrayList<double[]> getAllXYZRGB(){
     	SimPixel[] pixels = getAllPixels();
     	ArrayList<double[]> points = new ArrayList<double[]>();
@@ -459,7 +456,6 @@ public class SimKinectSensor implements Sensor
     	return points;
     }
 
-
     public int getWidth()
     {
         return WIDTH;
@@ -469,7 +465,7 @@ public class SimKinectSensor implements Sensor
     {
         return HEIGHT;
     }
-    
+
     public boolean stashFrame()
     {
     	return true;
