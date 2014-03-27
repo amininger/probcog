@@ -5,7 +5,8 @@ import probcog.lcmtypes.control_law_t;
 import probcog.commands.tests.IConditionTest;
 import probcog.commands.tests.ConditionTestFactory;
 
-public abstract class ControlLaw{
+public abstract class ControlLaw
+{
 	protected String name;
 	protected int id;
 
