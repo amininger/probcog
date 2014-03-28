@@ -31,7 +31,7 @@ public class SimLocation extends SimObjectPC
         objs.add(LinAlg.scale(scale));
 
         // The larger box making up the background of the object
-        objs.add(new VisChain(LinAlg.translate(0, 0, 1), new VzRectangle(new VzMesh.Style(color))));
+        objs.add(new VisChain(LinAlg.translate(0, 0, 1.0), new VzRectangle(new VzMesh.Style(color))));
 
         // The smaller inner box is only drawn if there is a door and it's open
         if(currentState.containsKey("door") && currentState.get("door").equals("open")) {

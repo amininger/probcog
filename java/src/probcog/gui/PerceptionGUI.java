@@ -78,12 +78,13 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     ViewType viewType;
     ClickType clickType;
     Boolean showSoarObjects;
+    Boolean showSegmentedObjects;
 
     Boolean drawPerceptionObjects = true;
     Boolean drawBeliefObjects = true;
     Boolean drawPropertyLabels = true;
     Boolean drawPointClouds = true;
-    
+
     long soarTime = 0;
 
     public PerceptionGUI(GetOpt opts) throws IOException
@@ -153,6 +154,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         viewType = ViewType.POINT_CLOUD;
         clickType = ClickType.SELECT;
         showSoarObjects = false;
+        showSegmentedObjects = false;
 
         // Subscribe to LCM
         lcm.subscribe("TRAINING_DATA", this);
@@ -591,7 +593,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 } else {
                 	//drawObjectBoxes();
                 }
-                
+
                 drawSelection(dt);
                 if(drawPerceptionObjects){
                 	drawPerceptionObjects();
@@ -608,9 +610,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 }
 
                 arm.render(vw);
-                
+
                 TimeUtil.sleep(1000/fps);
-                
+
             }
         }
     }

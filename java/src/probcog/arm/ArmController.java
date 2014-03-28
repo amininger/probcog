@@ -23,7 +23,7 @@ public class ArmController implements LCMSubscriber
     Queue<bolt_arm_command_t> cmds = new LinkedList<bolt_arm_command_t>();
 
     // Update rate
-    int Hz = 25;
+    int Hz = 15;
 
     // Arm parameters and restrictions
     //BoltArm arm = BoltArm.getSingleton();
@@ -106,7 +106,7 @@ public class ArmController implements LCMSubscriber
                 {
                     last_cmd = cmd;
                     prev = goal;
-                    goalHeight = cmd.xyz[2];    // XXX
+                    goalHeight = cmd.xyz[2];    // XXX FAILTEST
                     goal = LinAlg.resize(cmd.xyz, 2);
                     //setState(0);
                     newAction = true;
@@ -122,7 +122,9 @@ public class ArmController implements LCMSubscriber
                         curAction = ActionMode.HOME;
                     } else if (cmd.action.contains("EXACT")) {
                         curAction = ActionMode.EXACT;
-                    }
+                    } else if(cmd.action.contains("ERROR")){
+											curAction = ActionMode.FAILURE;
+										}
                 }
 
                 if (last_cmd != null) {
@@ -341,8 +343,18 @@ public class ArmController implements LCMSubscriber
             //      6: Adjust grip so we grab tightly, but don't break hand
             //      7: Switch action state back to waiting
             dynamixel_status_t gripper_status;
-            double maxLoad = 0.400;
-            double minLoad = 0.275;
+
+						// ORIGINAL VALUES
+            //double maxLoad = 0.400;
+            //double minLoad = 0.275;
+
+            double maxLoad = 0.500;
+            double minLoad = 0.375;
+
+						// XXX: Values to make it drop blocks 
+						// double maxLoad = .150;             
+						// double minLoad = .100;
+
             double gripIncr = Math.toRadians(2.5);
             switch (state) {
                 case GRAB_UP_CURR:
@@ -433,11 +445,11 @@ public class ArmController implements LCMSubscriber
                         // Go to the home position
                         setState(ActionState.HOME);
                     } else if (gripper_status.load <= 0.0 && load < minLoad) {
-                        //System.out.println("Grip moar");
-                        //arm.setPos(5, gripper_status.position_radians + gripIncr);
+                        System.out.println("Grip moar");
+                        arm.setPos(5, gripper_status.position_radians + gripIncr);
                     } else if (gripper_status.load <= 0.0 && load > maxLoad) {
-                        //System.out.println("Grip less");
-                        //arm.setPos(5, gripper_status.position_radians - gripIncr);
+                        System.out.println("Grip less");
+                        arm.setPos(5, gripper_status.position_radians - gripIncr);
                     }
 
                     break;
