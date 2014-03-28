@@ -132,6 +132,10 @@ public class ConvexHull
         hull.add(points.get(2));
         for (int i = 3; i < points.size();) {
             int size = hull.size();
+            if(size < 2){
+            	// XXX: AM: Got a crash here where it tried to access hull[-1]
+            	break;
+            }
             double[] p0 = hull.get(size-2);
             double[] p1 = hull.get(size-1);
             double[] q = points.get(i);

@@ -304,6 +304,16 @@ public class ArmCommandInterpreter
         return bcmd;
     }
 
+		private bolt_arm_command_t encodeCommandError(byte id){
+			bolt_arm_command_t bcmd = new bolt_arm_command_t();
+			bcmd.cmd_id = id;
+			bcmd.action = "ERROR";
+			bcmd.obj_id = -1;
+			bcmd.xyz = new double[]{0, 0, 0};
+			bcmd.wrist = 0;
+			return bcmd;
+		}
+
     /** Instruct the arm to grab the object specified by ID */
     private bolt_arm_command_t processGrabCommand(robot_command_t cmd)
     {
@@ -315,7 +325,8 @@ public class ArmCommandInterpreter
         // Check for a specified ID
         String objIDstr = Util.getTokenValue(cmd.action, "GRAB"); // XXX ID? GRAB?
         if (objIDstr == null) {
-            return null;    // There is no safe way to grab nothing
+					return encodeCommandError(bcmd.cmd_id);
+            //return null;    // There is no safe way to grab nothing
         } else {
             // Found ID
             int objID = Integer.valueOf(objIDstr);
@@ -326,7 +337,8 @@ public class ArmCommandInterpreter
             Obj obj = getObject(objID);
             if (obj == null) {
                 System.out.println("NULL OBJECT");
-                return null;    // There is no safe way to grab nothing
+								return encodeCommandError(bcmd.cmd_id);
+                //return null;    // There is no safe way to grab nothing
             } else {
                 if (debug) {
                     dthread.render(obj.getPointCloud().getPoints());
