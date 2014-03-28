@@ -91,7 +91,7 @@ public class ClassifierManager
 
         classifiers.put(FeatureCategory.SIZE, sizeKNN);
         
-        GKNNClassifier weightKNN = new GKNNClassifier(1, .0001);
+        GKNNClassifier weightKNN = new GKNNClassifier(1, .025);
         classifiers.put(FeatureCategory.WEIGHT, weightKNN);
         
         GKNNClassifier temperatureKNN = new GKNNClassifier(1, .01);

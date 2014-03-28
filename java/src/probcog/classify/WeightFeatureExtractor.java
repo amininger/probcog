@@ -18,7 +18,7 @@ public class WeightFeatureExtractor
     		features.add(0.0);
     	} else {
     		BoundingBox bbox = BoundingBox.getMinimalXY(cloud.getPoints());
-    		features.add(bbox.volume() * 1000);
+    		features.add(bbox.volume()*1000); 
     	}
 
 		return features;
