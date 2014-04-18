@@ -18,7 +18,7 @@ public class SimThermometer extends SimLocation implements ISimEffector{
 		double[] diff = LinAlg.subtract(LinAlg.matrixToXyzrpy(T), obj.getPose());
 		double dx = Math.abs(diff[0]);
 		double dy = Math.abs(diff[1]);
-		if(dx < lwh[0] && dy < lwh[1] ){
+		if(dx < lwh[0]*scale && dy < lwh[1]*scale ){
 			obj.addFeatures(FeatureCategory.TEMPERATURE, 
 					TemperatureFeatureExtractor.getFeatures(obj.getPointCloud()));
 		}
