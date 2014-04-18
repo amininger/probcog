@@ -19,7 +19,7 @@ public class TemperatureFeatureExtractor
         	hue -= 1;
         }
 
-        features.add(1-hue);
+        features.add(hue);
 
 		return features;
     }
