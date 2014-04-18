@@ -545,6 +545,9 @@ public class Tracker
             	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
             		continue;
         		}
+            	if(!ob.isVisible()){
+            		continue;
+            	}
             	object_data_t od = new object_data_t();
 
                 od.utime = utime;

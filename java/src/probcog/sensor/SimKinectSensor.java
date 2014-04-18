@@ -342,8 +342,15 @@ public class SimKinectSensor implements Sensor
         }
         
         if(minDist >= 8.0){
-        	// Didn't hit anything, return empty point
+        	// Ray didn't hit anything, compute intersection w/ table plane
         	pixel.point = new double[4];
+        	double[] dir = ray.getDir();
+        	double[] src = ray.getSource();
+        	double H_THRESH = .000001;
+        	if((dir[2] > H_THRESH && src[2] < 0) || (dir[2] < -H_THRESH && src[2] > 0)){
+        		double a = src[2]/dir[2];
+        		pixel.point = new double[]{ src[0] + a*dir[0], src[1] + a*dir[1], 0, 0 };
+        	} 
         	return pixel;
         }
         
