@@ -14,9 +14,13 @@ import probcog.commands.controls.*;
 /** A tool for testing control laws in simulation. */
 public class ControlPlanningGUI
 {
+    // World rendering
     VisWorld vw = new VisWorld();
     VisLayer vl = new VisLayer(vw);
     VisCanvas vc = new VisCanvas(vl);
+
+    // Panels and system interaction
+    ControlPlanPanel controlsPanel;
 
     public ControlPlanningGUI(GetOpt opts)
     {
@@ -28,7 +32,8 @@ public class ControlPlanningGUI
         jf.add(vc, BorderLayout.CENTER);
 
         // XXX Implement me
-        // jf.add(controlsPanel, BorderLayout.EAST);
+        controlsPanel = new ControlPlanPanel();
+        jf.add(controlsPanel, BorderLayout.EAST);
 
         // jf.add(pg, BorderLayout.SOUTH);
 

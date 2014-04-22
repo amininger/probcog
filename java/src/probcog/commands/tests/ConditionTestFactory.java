@@ -2,6 +2,7 @@ package probcog.commands.tests;
 
 import probcog.lcmtypes.condition_test_t;
 
+// XXX Will probably want to change this, too...
 public class ConditionTestFactory{
 	public static IConditionTest construct(condition_test_t test){
 		if(test.name.equals("distance")){

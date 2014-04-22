@@ -12,22 +12,26 @@ public abstract class ControlLaw
 
 	protected IConditionTest termCond;
 
-	public enum Status{
+	public enum Status
+    {
 		EXECUTING, FINISHED, EARLY_TERM, FAILURE
 	}
 
-	public ControlLaw(control_law_t controlLaw){
+	public ControlLaw(control_law_t controlLaw)
+    {
 		name = controlLaw.name;
 		id = controlLaw.id;
 
 		termCond = ConditionTestFactory.construct(controlLaw.termination_condition);
 	}
 
-	public int getID(){
+	public int getID()
+    {
 		return id;
 	}
 
-	public String getName(){
+	public String getName()
+    {
 		return name;
 	}
 

@@ -26,40 +26,49 @@ public class CommandInterpreter{
 
 	protected Queue<control_law_t> waitingCommands;
 
-	public CommandInterpreter(){
+	public CommandInterpreter()
+    {
 		waitingCommands = new LinkedList<control_law_t>();
 
 		new ListenerThread().start();
 		new CommandThread().start();
 	}
 
-	protected void newCommand(control_law_t controlLaw){
-		synchronized(commandLock){
+	protected void newCommand(control_law_t controlLaw)
+    {
+		synchronized(commandLock) {
 			waitingCommands.add(controlLaw);
 		}
 	}
 
-	protected void sendStatus(int clId, String status){
+	protected void sendStatus(int clId, String status)
+    {
 		control_law_status_t clStatus = new control_law_status_t();
 		clStatus.id = clId;
 		clStatus.status = status;
 		lcm.publish("SOAR_COMMAND_STATUS", clStatus);
 	}
 
-	protected void update(){
+	protected void update()
+    {
 		synchronized(commandLock){
-			if(curCommand == null && waitingCommands.size() > 0){
+			if(curCommand == null && waitingCommands.size() > 0) {
 				control_law_t nextCommand = waitingCommands.poll();
-				curCommand = ControlLawFactory.construct(nextCommand);
-				if(curCommand == null){
-					sendStatus(nextCommand.id, "unknown-command");
-				} else {
-					sendStatus(curCommand.getID(), "started");
-				}
+                try {
+                    curCommand = ControlLawFactory.construct(nextCommand);
+                    if(curCommand == null){
+                        sendStatus(nextCommand.id, "unknown-command");
+                    } else {
+                        sendStatus(curCommand.getID(), "started");
+                    }
+                } catch (ClassNotFoundException ex) {
+                    System.err.println("ERR: "+ex);
+                    ex.printStackTrace();
+                }
 			}
 		}
 
-		if(curCommand != null){
+		if(curCommand != null) {
 			curCommand.execute();
 			ControlLaw.Status status = curCommand.getStatus();
 			if(status == ControlLaw.Status.FINISHED){
@@ -75,50 +84,60 @@ public class CommandInterpreter{
 		}
 	}
 
-	class CommandThread extends Thread{
-		public CommandThread(){
+	class CommandThread extends Thread
+    {
+		public CommandThread()
+        {
 
 		}
 
-		public void run(){
-			while(true){
+		public void run()
+        {
+			while(true) {
 				update();
 				TimeUtil.sleep(1000/CMD_FPS);
 			}
 		}
 	}
 
-	class ListenerThread extends Thread implements LCMSubscriber {
+	class ListenerThread extends Thread implements LCMSubscriber
+    {
 		LCM lcm = LCM.getSingleton();
 
-		public ListenerThread(){
+		public ListenerThread()
+        {
 			lcm.subscribe("SOAR_COMMAND", this);
 		}
 
-		public void run(){
-			while(true){
+		public void run()
+        {
+			while(true) {
 				TimeUtil.sleep(1000/LCM_FPS);
 			}
 		}
 
-		public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
-			try{
+		public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        {
+			try {
 				messageReceivedEx(lcm, channel, ins);
-			} catch (IOException ioex){
+			} catch (IOException ioex) {
 				System.err.println("ERR: LCM channel " + channel);
 				ioex.printStackTrace();
 			}
 		}
 
-		public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException {
-			if(channel.equals("SOAR_COMMAND")){
+		public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
+            throws IOException
+        {
+			if(channel.equals("SOAR_COMMAND")) {
 				control_law_t controlLaw = new control_law_t(ins);
 				newCommand(controlLaw);
 			}
 		}
 	}
 
-	public static void main(String[] args){
+	public static void main(String[] args)
+    {
 		CommandInterpreter ci = new CommandInterpreter();
 	}
 }
