@@ -23,4 +23,11 @@ public class CPoint
         label = label_;
         coords = coords_;
     }
+    
+    public void print(){
+    	for(int i = 0; i < coords.length; i++){
+    		System.out.print(String.format("%.3f ", coords[i]));
+    	}
+    	System.out.println("");
+    }
 }

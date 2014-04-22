@@ -761,6 +761,13 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                             continue;   // These don't matter
                         Classifications cs = obj.getLabels(cat);
                         Classifications.Label bestLabel = cs.getBestLabel();
+                        if(cat == FeatureCategory.TEMPERATURE || cat == FeatureCategory.WEIGHT){
+                        	ArrayList<Double> features = obj.getFeatures(cat);
+                        	if(features != null){
+                                labelString += String.format("%s%s:%.3f\n", tf, 
+                                           (cat == FeatureCategory.WEIGHT ? "weight" : "temp" ), obj.getFeatures(cat).get(0));
+                        	}
+                        }
                         if(bestLabel.label.equals("unknown")){
                         	continue;
                         }

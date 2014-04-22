@@ -19,7 +19,7 @@ import april.util.UnionFindSimple;
 
 public class KinectSegment implements Segmenter
 {
-    final static double COLOR_THRESH = .02;//30;
+    final static double COLOR_THRESH = .025;//30;
     final static double DISTANCE_THRESH = 0.01;
     final static double MIN_FROM_FLOOR_PLANE = .010; // XXX 0.015
     final static double MIN_OBJECT_SIZE = 100;
@@ -103,7 +103,7 @@ public class KinectSegment implements Segmenter
         
         ArrayList<Obj> segmentedObjects = new ArrayList<Obj>();
         for(PointCloud pc : pointClouds){
-        	segmentedObjects.add(new Obj(false, pc));
+        	segmentedObjects.add(new Obj(false, pc.removeTopPoints(0.05)));
         }
         return segmentedObjects;
     }

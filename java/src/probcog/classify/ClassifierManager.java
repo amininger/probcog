@@ -91,7 +91,7 @@ public class ClassifierManager
 
         classifiers.put(FeatureCategory.SIZE, sizeKNN);
         
-        GKNNClassifier weightKNN = new GKNNClassifier(1, .025);
+        GKNNClassifier weightKNN = new GKNNClassifier(1, .015);
         classifiers.put(FeatureCategory.WEIGHT, weightKNN);
         
         GKNNClassifier temperatureKNN = new GKNNClassifier(1, .01);
@@ -137,13 +137,45 @@ public class ClassifierManager
     }
 
     public void addDataPoint(FeatureCategory cat, ArrayList<Double> features, String label){
-	Classifier classifier = classifiers.get(cat);
-	synchronized(stateLock){
-	    CPoint point = new CPoint(label, features);
-	    StackEntry entry = new StackEntry(point, cat, "ADD");
-	    classifier.add(point);
-	    undoStack.add(entry);
-	}
+		Classifier classifier = classifiers.get(cat);
+		synchronized(stateLock){
+		    if(cat != FeatureCategory.SHAPE){
+			    CPoint point = new CPoint(label, features);
+			    StackEntry entry = new StackEntry(point, cat, "ADD");
+			    classifier.add(point);
+			    undoStack.add(entry);
+		    } else {
+		    	int fps = 7;
+		    	double max = 0;
+		    	for(int i = 2*fps; i < 3*fps; i++){
+		    		max = Math.max(features.get(i), max);
+		    	}
+		    	System.out.println("");
+		    	for(int i = 0; i < 2; i++){
+		    		for(int j = 0; j < 2; j++){
+		    			CPoint point = new CPoint(label, features);
+		    			StackEntry entry = new StackEntry(point, cat, "ADD");
+		    			classifier.add(point);
+		    			undoStack.add(entry);
+//		    			point.print();
+		    			// Flip horizontally
+		    			for(int f = 0; f < fps; f++){
+		    				double hmax = features.get(1*fps+f);
+		    				double hmin = features.get(3*fps+f);
+		    				features.set(1*fps+f, 1.0 - hmin);
+		    				features.set(3*fps+f, 1.0 - hmax);
+		    			}
+		    		}
+		    		// Flip vertically
+		    		for(int f = 0; f < fps; f++){
+		    			double vmin = features.get(0*fps+f);
+		    			double vmax = features.get(2*fps+f);
+		    			features.set(0*fps+f, max - vmax);
+		    			features.set(2*fps+f, max - vmin);
+		    		}
+		    	}
+		    }
+		}
     }
 
     public void clearData(){

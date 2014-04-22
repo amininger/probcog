@@ -37,7 +37,7 @@ public class ArmController implements LCMSubscriber
         POINT_UP_CURR, POINT_UP_OVER, POINT_AT, POINT_WAITING,
         GRAB_UP_CURR, GRAB_UP_BEHIND, GRAB_APPROACH,
             GRAB_AT, GRAB_START_GRIP, GRAB_GRIPPING,
-            GRAB_ADJUST_GRIP, GRAB_WAITING,
+            GRAB_ADJUST_GRIP, GRAB_WAITING, GRAB_RETREAT,
         DROP_UP_CURR, DROP_UP_OVER, DROP_AT, DROP_RELEASE,
             DROP_RETREAT, DROP_WAITING,
         HOME, HOMING,
@@ -443,7 +443,8 @@ public class ArmController implements LCMSubscriber
                     if (actionComplete()) {
                         // At this point, we should have a solid grip.
                         // Go to the home position
-                        setState(ActionState.HOME);
+                        setState(ActionState.GRAB_RETREAT);
+                        //setState(ActionState.HOME); 
                     } else if (gripper_status.load <= 0.0 && load < minLoad) {
                         System.out.println("Grip moar");
                         arm.setPos(5, gripper_status.position_radians + gripIncr);
@@ -453,6 +454,13 @@ public class ArmController implements LCMSubscriber
                     }
 
                     break;
+								case GRAB_RETREAT:
+                    moveTo(goal, goalHeight + transOffset);
+
+                    if (actionComplete()) {
+                        setState(ActionState.HOME);
+                    }
+										break;
                 case HOME:
                     homeArm();
 

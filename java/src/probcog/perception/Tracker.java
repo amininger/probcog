@@ -197,9 +197,9 @@ public class Tracker
             // been taken by another object, take a new ID
             
             for(Obj newObj: visibleObjects){
-            	int id = matchObject(newObj, previousFrame);
+            	int id = matchObject(newObj, soarObjects);
             	if(id == -1){
-            		id = matchObject(newObj, soarObjects);
+            		id = matchObject(newObj, previousFrame);
             	}
             	if(id != -1){
             		newObj.setID(id);
@@ -436,60 +436,147 @@ public class Tracker
         }
         return imagined;
     }
-
-    private void adjustBoundingBoxes(ArrayList<Obj> objs){
-        // XXX HACK HACK HACK HACK HACK HACK HACK HACK
-        double fudge = 0.0010; // Just for you, James
-        for (int i = 0; i < objs.size(); i++) {
-        	Obj obj0 = objs.get(i);
-        	Shape shape0 = obj0.getShape();
-        	BoundingBox bbox0 = obj0.getBoundingBox();
-            for (int j = i+1; j < objs.size(); j++) {
-            	Obj obj1 = objs.get(j);
-            	Shape shape1 = obj1.getShape();
-            	BoundingBox bbox1 = obj1.getBoundingBox();
-                if (Collisions.collision(shape0, LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
-                                         shape1, LinAlg.xyzrpyToMatrix(bbox1.xyzrpy)))
-                {
-                	double c0 = bbox0.xyzrpy[2];		// Center
-                	double h0 = bbox0.lenxyz[2]/2;	// Height (half)
-                	
-                	double c1 = bbox1.xyzrpy[2]; 	// Center
-                	double h1 = bbox1.lenxyz[2]/2; 	// Height (half)
-                	
-                    // Adjust zlens in bounding box based on separation
-                    // between centroids. Don't forget to update shape!
-                	
-                	double dz = Math.abs(c1 - c0);
-                	// The adjustment is how much the bboxes needed to be backed up so the boxes are separated on z
-                	double adjustment = h0 + h1 + fudge - dz;
-                	if(adjustment > 0){
-                		if(h0 + h1 < adjustment){
-                			// Already too small to do anything about (or horizontally overlapping)
-                			continue;
-                		}
-                		
-                		bbox0.lenxyz[2] -=  2 * h0 / (h0 + h1) * adjustment;
-                		bbox1.lenxyz[2] -=  2 * h1 / (h0 + h1) * adjustment;
-
-                        obj0.setShape(new BoxShape(bbox0.lenxyz[0],
-                                                      bbox0.lenxyz[1],
-                                                      bbox0.lenxyz[2]));
-                        obj1.setShape(new BoxShape(bbox1.lenxyz[0],
-                                                      bbox1.lenxyz[1],
-                                                      bbox1.lenxyz[2]));
-                        if (Collisions.collision(obj0.getShape(), LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
-                                obj1.getShape(), LinAlg.xyzrpyToMatrix(bbox1.xyzrpy))){
-                        	System.out.println("STILL A COLLISION");
-                        	
-                        }
-                	}
-                }
-            }
-        }
-        // =========== END HACK ======================
-    	
+    
+    private class CollisionStruct{
+    	public Obj obj;
+    	public double[] lenxyz;
+    	public double[] scaledLenxyz;
+    	public double[][] xyzrpy;
+    	public CollisionStruct(Obj obj){
+    		this.obj = obj;
+    		xyzrpy = LinAlg.xyzrpyToMatrix(obj.getBoundingBox().xyzrpy);
+    		lenxyz = LinAlg.copy(obj.getBoundingBox().lenxyz);
+    		scaledLenxyz = LinAlg.copy(lenxyz);
+    	}
+    	public boolean collidesWith(CollisionStruct col){
+    		return Collisions.collision(new BoxShape(scaledLenxyz), xyzrpy,
+    				new BoxShape(col.scaledLenxyz), col.xyzrpy);
+    	}
+    	public void setScale(double[] scale){
+    		LinAlg.scale(lenxyz, scale, scaledLenxyz);
+    	}
+    	public void updateObj(double[] scale){
+    		obj.setShape(new BoxShape(scaledLenxyz));
+    		LinAlg.copy(scaledLenxyz, obj.getBoundingBox().lenxyz);
+    	}
     }
+    
+    double[] adjustOnDims(CollisionStruct c1, CollisionStruct c2, int[] dims){
+    	double[] scale = new double[]{1, 1, 1};
+
+    	// Simple binary search, finds it within 1%
+    	double min = 0.001, max = 1.0;
+    	for(int i = 0; i < 8; i++){
+    		double s = (max + min)/2;
+    		for(int dim : dims){
+    			scale[dim] = s;
+    		}
+    		c1.setScale(scale);
+    		c2.setScale(scale);
+    		if(c1.collidesWith(c2)){
+    			max = s;
+    		} else {
+    			min = s;
+    		}
+    	}
+    	
+    	for(int dim : dims){
+    		scale[dim] = min * .98;
+    	}
+    	return scale;
+    }
+    
+    private void adjustBoundingBoxes(ArrayList<Obj> objs){
+    	ArrayList<CollisionStruct> structs = new ArrayList<CollisionStruct>();
+    	for(Obj obj : objs){
+    		structs.add(new CollisionStruct(obj));
+    	}
+    	for(int i = 0; i < structs.size(); i++){
+    		CollisionStruct col1 = structs.get(i);
+    		for(int j = i+1; j < structs.size(); j++){
+    			CollisionStruct col2 = structs.get(j);
+    			if(!col1.collidesWith(col2)){
+    				continue;
+    			}
+    			
+    			int[][] dimsToTry = new int[][]{
+    					new int[]{0},		// x axis only
+    					new int[]{1},		// y axis only 
+    					new int[]{2}, 		// z axis only
+    					new int[]{0, 1}, 	// x and y axis
+    					new int[]{0, 1, 2}  // x, y, and z axes
+    			};
+    			
+    			double bestScore = 0;
+    			double[] bestScale = new double[]{ 1, 1, 1};
+    			for(int[] dims : dimsToTry){
+    				double[] scale = adjustOnDims(col1, col2, dims);
+    				double score = scale[0] * scale[1] * scale[2];
+    				if(score > bestScore){
+    					bestScore = score;
+    					bestScale = scale;
+    				}
+    			}
+    			
+    			col1.updateObj(bestScale);
+    			col2.updateObj(bestScale);
+    		}
+    	}
+    }
+    
+//    private void adjustBoundingBoxes(ArrayList<Obj> objs){
+//        // XXX HACK HACK HACK HACK HACK HACK HACK HACK
+//        double fudge = 0.0010; // Just for you, James
+//        for (int i = 0; i < objs.size(); i++) {
+//        	Obj obj0 = objs.get(i);
+//        	Shape shape0 = obj0.getShape();
+//        	BoundingBox bbox0 = obj0.getBoundingBox();
+//            for (int j = i+1; j < objs.size(); j++) {
+//            	Obj obj1 = objs.get(j);
+//            	Shape shape1 = obj1.getShape();
+//            	BoundingBox bbox1 = obj1.getBoundingBox();
+//                if (Collisions.collision(shape0, LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
+//                                         shape1, LinAlg.xyzrpyToMatrix(bbox1.xyzrpy)))
+//                {
+//                	double c0 = bbox0.xyzrpy[2];		// Center
+//                	double h0 = bbox0.lenxyz[2]/2;	// Height (half)
+//                	
+//                	double c1 = bbox1.xyzrpy[2]; 	// Center
+//                	double h1 = bbox1.lenxyz[2]/2; 	// Height (half)
+//                	
+//                    // Adjust zlens in bounding box based on separation
+//                    // between centroids. Don't forget to update shape!
+//                	
+//                	double dz = Math.abs(c1 - c0);
+//                	// The adjustment is how much the bboxes needed to be backed up so the boxes are separated on z
+//                	double adjustment = h0 + h1 + fudge - dz;
+//                	if(adjustment > 0){
+//                		if(h0 + h1 < adjustment){
+//                			// Already too small to do anything about (or horizontally overlapping)
+//                			continue;
+//                		}
+//                		
+//                		bbox0.lenxyz[2] -=  2 * h0 / (h0 + h1) * adjustment;
+//                		bbox1.lenxyz[2] -=  2 * h1 / (h0 + h1) * adjustment;
+//
+//                        obj0.setShape(new BoxShape(bbox0.lenxyz[0],
+//                                                      bbox0.lenxyz[1],
+//                                                      bbox0.lenxyz[2]));
+//                        obj1.setShape(new BoxShape(bbox1.lenxyz[0],
+//                                                      bbox1.lenxyz[1],
+//                                                      bbox1.lenxyz[2]));
+//                        if (Collisions.collision(obj0.getShape(), LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
+//                                obj1.getShape(), LinAlg.xyzrpyToMatrix(bbox1.xyzrpy))){
+//                        	System.out.println("STILL A COLLISION");
+//                        	
+//                        }
+//                	}
+//                }
+//            }
+//        }
+//        // =========== END HACK ======================
+//    	
+//    }
     
     //////////////////////////////////////////////////////////////
     // Methods for interacting with the classifierManager (used through guis)
@@ -574,15 +661,23 @@ public class Tracker
     }
 
     private void handlePerceptionCommand(perception_command_t command){
-    	if(command.command.toUpperCase().equals("SAVE_CLASSIFIERS")){
+    	if(command.command.toUpperCase().contains("SAVE_CLASSIFIERS")){
     		try {
-        		classyManager.writeState("default.cls");
+    			String[] args = command.command.split("=");
+    			if(args.length > 1){
+    				String filename = args[1] + ".cls";
+    				classyManager.writeState(filename);
+    			}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-    	} else if(command.command.toUpperCase().equals("LOAD_CLASSIFIERS")){
+    	} else if(command.command.toUpperCase().contains("LOAD_CLASSIFIERS")){
     		try {
-				classyManager.readState("default.cls");
+    			String[] args = command.command.split("=");
+    			if(args.length > 1){
+    				String filename = args[1] + ".cls";
+    				classyManager.readState(filename);
+    			}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

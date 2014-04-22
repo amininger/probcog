@@ -27,6 +27,11 @@ public class PointCloud
         pts.add(point);
         centroid = null;
     }
+    
+    public PointCloud(ArrayList<double[]> points){
+    	pts = points;
+    	centroid = null;
+    }
 
 
     public void addPoint(double[] pt)
@@ -63,10 +68,10 @@ public class PointCloud
 
     /** Compute the average of all the points in the point cloud. Automatically
      *  sets result to centroid. **/
-    private double[] computeCentroid(ArrayList<double[]> points)
+    private static double[] computeCentroid(ArrayList<double[]> points)
     {
         double[] center = new double[3];
-        if(pts.size() < 1){
+        if(points.size() < 1){
             System.err.println("No points in point cloud - can't compute center");
         }
         else{
@@ -103,8 +108,12 @@ public class PointCloud
      */
     public ArrayList<double[]> getCanonical()
     {
-        double theta = getBBoxTheta(pts);
-        ArrayList<double[]> rotated = rotateAtOrigin(pts, theta);
+    	return getCanonical(pts);
+    }
+    
+    public static ArrayList<double[]> getCanonical(ArrayList<double[]> points){
+        double theta = getBBoxTheta(points);
+        ArrayList<double[]> rotated = rotateAtOrigin(points, theta);
         double[] cxyz = getCentroidXY(rotated);
 
         double minX = Double.MAX_VALUE;
@@ -135,7 +144,7 @@ public class PointCloud
     }
 
     /** Normalize the points such that min X and min Y == 0 and max X,Y == 1 */
-    public ArrayList<double[]> normalize(ArrayList<double[]> points)
+    public static ArrayList<double[]> normalize(ArrayList<double[]> points)
     {
         ArrayList<double[]> normalized = new ArrayList<double[]>();
         double minx = Double.MAX_VALUE;
@@ -168,7 +177,7 @@ public class PointCloud
     }
 
     /** Strips all points of their Z coordinate */
-    public ArrayList<double[]> flattenXY(ArrayList<double[]> points)
+    public static ArrayList<double[]> flattenXY(ArrayList<double[]> points)
     {
         ArrayList<double[]> flat = new ArrayList<double[]>();
 
@@ -184,7 +193,7 @@ public class PointCloud
      *  should exist, pick the orientation with the greatest spread of points
      *  along the X-axis.
      */
-    public double getBBoxTheta(ArrayList<double[]> points)
+    public static double getBBoxTheta(ArrayList<double[]> points)
     {
         double[] cxyz = getCentroidXY(points);
         double[][] cXform = LinAlg.translate(cxyz);
@@ -230,7 +239,7 @@ public class PointCloud
     /** Move the supplied points to the origin and rotate
      *  by the requested angle
      */
-    public ArrayList<double[]> rotateAtOrigin(ArrayList<double[]> points, double theta)
+    public static ArrayList<double[]> rotateAtOrigin(ArrayList<double[]> points, double theta)
     {
         double[] cxyz = getCentroidXY(points);
         double[][] cXform = LinAlg.translate(cxyz);
@@ -242,15 +251,71 @@ public class PointCloud
     /** Return the XY centroid of the supplied points based
      *  on the upper face of the shape
      */
-    public double[] getCentroidXY(ArrayList<double[]> points)
+    public static double[] getCentroidXY(ArrayList<double[]> points)
     {
         if (points == null || points.size() < 1)
             return new double[2];
 
         return computeCentroid(isolateTopFace(points));
     }
+    
+    public PointCloud removeTopPoints(double frac){
+    	return new PointCloud(removeTopPoints(pts, frac));
+    }
+    
+    public static ArrayList<double[]> removeTopPoints(ArrayList<double[]> points, double frac){
+        assert (points.size() != 0);
+        if (points.get(0).length < 3)
+            return points;
 
-    public ArrayList<double[]> isolateTopFace(ArrayList<double[]> points)
+        // Find a search range
+        double min = Double.MAX_VALUE;
+        double max = Double.MIN_VALUE;
+        for (double[] p: points) {
+            min = Math.min(p[2], min);
+            max = Math.max(p[2], max);
+        }
+        
+        if(max-min < 0.001){
+        	return points;
+        }
+        
+        // Count the number of points in each 'bin' (horizontal slice)
+        int NUM_BINS = 100;
+        int[] bins = new int[NUM_BINS];
+        for(int i = 0; i < NUM_BINS; i++){
+        	bins[i] = 0;
+        }
+        for(double[] p : points){
+        	int bin = (int)(NUM_BINS * (p[2]-min)/(max-min+.0001));
+        	bins[bin]++;
+        }
+        
+        // Throwaway the top 1% of points 
+        int throwaway = (int)(points.size() * .01);
+        int maxBin = NUM_BINS;
+        while(throwaway > 0 && maxBin > 0){
+        	maxBin--;
+        	throwaway -= bins[maxBin];
+        }
+        
+        ArrayList<double[]> lower = new ArrayList<double[]>();
+        for(double[] p : points){
+        	int bin = (int)(NUM_BINS * (p[2]-min)/(max-min+.0001));
+        	if(bin <= maxBin){
+        		lower.add(p);
+        	}
+        }
+        return lower;
+    	
+    }
+    
+    public PointCloud isolateTopFace(){
+    	return new PointCloud(isolateTopFace(pts, 0.01));
+    	
+    }
+
+    public static ArrayList<double[]> isolateTopFace(ArrayList<double[]> points)
     {
         return isolateTopFace(points, 0.005);
     }
@@ -260,7 +325,7 @@ public class PointCloud
      *  the r parameter and then returns all points within
      *  that discretization
      */
-    public ArrayList<double[]> isolateTopFace(ArrayList<double[]> points, double r)
+    public static ArrayList<double[]> isolateTopFace(ArrayList<double[]> points, double r)
     {
         assert (points.size() != 0);
         if (points.get(0).length < 3)
@@ -273,29 +338,70 @@ public class PointCloud
             min = Math.min(p[2], min);
             max = Math.max(p[2], max);
         }
-
-        double bestZ = max;
-        int bestCnt = 0;
-
-        for (double z = min; z <= max; z+= 0.001) {
-            int cnt = 0;
-            for (double[] p: points) {
-                if (Math.abs(z-p[2]) < r)
-                    cnt++;
-            }
-            if (cnt > bestCnt) {
-                bestCnt = cnt;
-                bestZ = z;
-            }
+        
+        if(max-min < r){
+        	return points;
         }
-
+        
+        // Count the number of points in each 'bin' (horizontal slice)
+        int NUM_BINS = 100;
+        int[] bins = new int[NUM_BINS];
+        for(int i = 0; i < NUM_BINS; i++){
+        	bins[i] = 0;
+        }
+        for(double[] p : points){
+        	int bin = (int)(NUM_BINS * (p[2]-min)/(max-min+.0001));
+        	bins[bin]++;
+        }
+        
+        // Throwaway the top 1% of points 
+        int throwaway = (int)(points.size() * 0.05);
+        int maxBin = NUM_BINS;
+        while(throwaway > 0 && maxBin > 0){
+        	maxBin--;
+        	throwaway -= bins[maxBin];
+        }
+        
+        double binSize = (max-min)/NUM_BINS;
+        int minBin = maxBin - (int)(r/binSize);
+        if(minBin < 0){
+        	minBin = 0;
+        }
+        
         ArrayList<double[]> top = new ArrayList<double[]>();
-        for (double[] p: points) {
-            if (Math.abs(bestZ-p[2]) < r) {
-                top.add(p);
-            }
+        for(double[] p : points){
+        	int bin = (int)(NUM_BINS * (p[2]-min)/(max-min+.0001));
+        	if(bin >= minBin && bin <= maxBin){
+        		top.add(p);
+        	}
         }
-
         return top;
+        
+//        
+//        
+//
+//        double bestZ = max;
+//        int bestCnt = 0;
+//
+//        for (double z = min; z <= max; z+= 0.001) {
+//            int cnt = 0;
+//            for (double[] p: points) {
+//                if (Math.abs(z-p[2]) < r)
+//                    cnt++;
+//            }
+//            if (cnt > bestCnt) {
+//                bestCnt = cnt;
+//                bestZ = z;
+//            }
+//        }
+//
+//        ArrayList<double[]> top = new ArrayList<double[]>();
+//        for (double[] p: points) {
+//            if (Math.abs(bestZ-p[2]) < r) {
+//                top.add(p);
+//            }
+//        }
+//
+//        return top;
     }
 }
