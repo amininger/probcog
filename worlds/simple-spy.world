@@ -59,7 +59,7 @@
 	vec 4
 	0.4 0.4 0.4 1.0
 	1
-	enabled=true,false
+	enabled=false,true
 	blocker-2
 	vec 3
 	1 1 2
@@ -73,7 +73,7 @@
 	vec 4
 	0.4 0.4 0.4 1.0
 	1
-	enabled=true,false
+	enabled=false,true
 	blocker-3
 	vec 3
 	1 1 2
@@ -132,18 +132,6 @@
 	0.1
 	vec 4
 	0.0 0.0 1.0 1.0
-	0
-	vec 3
-	1 1 1
-}
-"probcog.sim.SimBoxPC"
-{
-	-1
-	vec 6
-	0.0 -0.2 0.04 0.0 0.0 0.0
-	0.08
-	vec 4
-	1.0 1.0 0.0 1.0
 	0
 	vec 3
 	1 1 1

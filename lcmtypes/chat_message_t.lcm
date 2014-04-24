@@ -1,0 +1,6 @@
+struct chat_message_t 
+{
+    int64_t utime;
+		string message;
+		string sender;
+}
