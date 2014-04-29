@@ -500,11 +500,11 @@ public class Tracker
     			}
     			
     			int[][] dimsToTry = new int[][]{
-    					new int[]{0},		// x axis only
-    					new int[]{1},		// y axis only 
+    //					new int[]{0},		// x axis only
+    //					new int[]{1},		// y axis only 
     					new int[]{2}, 		// z axis only
-    					new int[]{0, 1}, 	// x and y axis
-    					new int[]{0, 1, 2}  // x, y, and z axes
+    //					new int[]{0, 1}, 	// x and y axis
+    //					new int[]{0, 1, 2}  // x, y, and z axes
     			};
     			
     			double bestScore = 0;
@@ -518,8 +518,10 @@ public class Tracker
     				}
     			}
     			
-    			col1.updateObj(bestScale);
-    			col2.updateObj(bestScale);
+					if(bestScore > .1){
+    				col1.updateObj(bestScale);
+    				col2.updateObj(bestScale);
+					}
     		}
     	}
     }
