@@ -1,0 +1,53 @@
+"probcog.sim.SimLocation"
+{
+	vec 6
+	0.2 0.32 -.01 0.0 0.0 0.0
+	0.075
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	grid-red
+}
+
+"probcog.sim.SimLocation"
+{
+	vec 6
+	0.2 0.16 -.01 0.0 0.0 0.0
+	0.075
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	grid-red
+}
+
+"probcog.sim.SimLocation"
+{
+	vec 6
+	0.2 0.0 -.01 0.0 0.0 0.0
+	0.075
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	home
+}
+"probcog.sim.SimLocation"
+{
+	vec 6
+	0.2 -.16 -.01 0.0 0.0 0.0
+	0.075
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	grid-blue
+}
+
+"probcog.sim.SimLocation"
+{
+	vec 6
+	0.2 -0.32 -.01 0.0 0.0 0.0
+	0.075
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	grid-blue
+}

@@ -1,0 +1,124 @@
+"probcog.sim.SimBoxPC"
+{
+-1
+	vec 6
+	-0.11 -.2 0.035 0.0 0.0 0.0
+	.05
+	vec 4
+	0.00000000000000 0.00000000000000 1.00000000000000 1.00000000000000
+0
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.13 0.12 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	1
+	door=closed,open
+	grid-1
+}
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.13 0.0 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	grid-2
+}
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.13 -0.12 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	grid-3
+}
+
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.25 0.12 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	1
+	door=closed,open
+	grid-4
+}
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.25 0.0 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	grid-5
+}
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.25 -0.12 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	grid-6
+}
+
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.37 0.12 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	1
+	door=closed,open
+	grid-7
+}
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.37 0.0 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	grid-8
+}
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.37 -0.12 -0.06 0.0 0.0 0.0
+	0.05
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	grid-9
+}

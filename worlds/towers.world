@@ -1,0 +1,36 @@
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.2 0.2 -0.08 0.0 0.0 0.0
+	0.075
+	vec 4
+	1.0 1.0 0.0 1.0
+	1
+	door=closed,open
+	yellow-grid
+}
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.2 0.0 -0.08 0.0 0.0 0.0
+	0.075
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	green-grid
+}
+
+"probcog.sim.SimLocation"
+{
+    -1
+	vec 6
+	0.2 -0.2 -0.08 0.0 0.0 0.0
+	0.075
+	vec 4
+	0.0 0.0 1.0 1.0
+	0
+	blue-grid
+}
