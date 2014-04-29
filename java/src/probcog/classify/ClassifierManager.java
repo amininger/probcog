@@ -145,7 +145,7 @@ public class ClassifierManager
 			    classifier.add(point);
 			    undoStack.add(entry);
 		    } else {
-		    	int fps = 7;
+		    	int fps = 7; 
 		    	double max = 0;
 		    	for(int i = 2*fps; i < 3*fps; i++){
 		    		max = Math.max(features.get(i), max);

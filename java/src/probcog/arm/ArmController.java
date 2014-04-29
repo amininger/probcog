@@ -48,7 +48,7 @@ public class ArmController implements LCMSubscriber
     // Track the current mode for LCM messages
     enum ActionMode
     {
-        WAIT, HOME, GRAB, POINT, DROP, EXACT, FAILURE // XXX EXACT only used for calibration
+        MOVE, WAIT, HOME, GRAB, POINT, DROP, EXACT, FAILURE // XXX EXACT only used for calibration
     }
     private ActionMode curAction = ActionMode.WAIT;
     private int grabbedObject = -1;
@@ -124,6 +124,8 @@ public class ArmController implements LCMSubscriber
                         curAction = ActionMode.EXACT;
                     } else if(cmd.action.contains("ERROR")){
 											curAction = ActionMode.FAILURE;
+										} else if(cmd.action.contains("MOVE")){
+											curAction = ActionMode.MOVE;
 										}
                 }
 
@@ -156,7 +158,9 @@ public class ArmController implements LCMSubscriber
                         }
                     } else if (last_cmd.action.contains("EXACT")) {
                         exactStateMachine(); // Calibration only
-                    }
+                    } else if(last_cmd.action.contains("MOVE")){
+											moveStateMachine();
+										}
                 }
                 newAction = false;
 
@@ -329,7 +333,7 @@ public class ArmController implements LCMSubscriber
             wrVec = LinAlg.transform(LinAlg.rotateZ(angle), wrVec); // Base rotation
             wrVec = LinAlg.transform(LinAlg.rotateZ(-last_cmd.wrist), wrVec);
             wrVec = LinAlg.normalize(wrVec);
-            double offset = 0.03;   // meters
+            double offset = 0.035;   // meters
             double[] behind = new double[] {goal[0] + (offset*wrVec[0]),
                                             goal[1] + (offset*wrVec[1])};
 
@@ -458,7 +462,7 @@ public class ArmController implements LCMSubscriber
                     moveTo(goal, goalHeight + transOffset);
 
                     if (actionComplete()) {
-                        setState(ActionState.HOME);
+                        setState(ActionState.GRAB_WAITING);
                     }
 										break;
                 case HOME:

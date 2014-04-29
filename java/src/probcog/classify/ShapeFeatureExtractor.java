@@ -7,6 +7,7 @@ import probcog.perception.PointCloud;
 public class ShapeFeatureExtractor
 {
 
+	public static int FPS = 9;
     public static ArrayList<Double> getFeatures(PointCloud cloud)
     {
     	ArrayList<double[]> lower = PointCloud.isolateTopFace(cloud.getPoints());

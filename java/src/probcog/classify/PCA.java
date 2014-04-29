@@ -90,7 +90,7 @@ public class PCA
     		features.add(colMaxs[i]);
     	}
     	for(int i = 0; i < featuresPerSide; i++){
-    		features.add(rowMins[i]);
+	   		features.add(rowMins[i]);
     	}
 //
 //    	for(int r = 0; r < featuresPerSide; r++){
