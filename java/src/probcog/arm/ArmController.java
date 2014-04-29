@@ -35,7 +35,7 @@ public class ArmController implements LCMSubscriber
     enum ActionState
     {
         POINT_UP_CURR, POINT_UP_OVER, POINT_AT, POINT_WAITING,
-        GRAB_UP_CURR, GRAB_UP_BEHIND, GRAB_APPROACH,
+        GRAB_UP_CURR, GRAB_UP_BEHIND, GRAB_APPROACH, GRAB_APPROACH_2,
             GRAB_AT, GRAB_START_GRIP, GRAB_GRIPPING,
             GRAB_ADJUST_GRIP, GRAB_WAITING, GRAB_RETREAT,
         DROP_UP_CURR, DROP_UP_OVER, DROP_AT, DROP_RELEASE,
@@ -329,7 +329,7 @@ public class ArmController implements LCMSubscriber
             wrVec = LinAlg.transform(LinAlg.rotateZ(angle), wrVec); // Base rotation
             wrVec = LinAlg.transform(LinAlg.rotateZ(-last_cmd.wrist), wrVec);
             wrVec = LinAlg.normalize(wrVec);
-            double offset = 0.035;   // meters
+            double offset = 0.03;   // meters
             double[] behind = new double[] {goal[0] + (offset*wrVec[0]),
                                             goal[1] + (offset*wrVec[1])};
 
@@ -386,6 +386,13 @@ public class ArmController implements LCMSubscriber
                     break;
                 case GRAB_APPROACH:
                     moveTo(behind, goalHeight + preGrabOffset);
+
+                    if (actionComplete()) {
+                        setState(ActionState.GRAB_APPROACH_2);
+                    }
+                    break;
+                case GRAB_APPROACH_2:
+                    moveTo(behind, goalHeight);// + preGrabOffset);
 
                     if (actionComplete()) {
                         setState(ActionState.GRAB_AT);
