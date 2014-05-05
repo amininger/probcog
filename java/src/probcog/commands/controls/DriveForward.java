@@ -5,6 +5,7 @@ import java.util.*;
 
 import lcm.lcm.*;
 
+import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.lcmtypes.pose_t;
@@ -19,7 +20,8 @@ public class DriveForward extends ControlLaw
     static final int DD_BCAST_PERIOD_MS = 33; // 30 Hz
     static final double VERY_FAR = 6371000; // meters in Earth radius
 
-    double centerOffsetX_m = Util.getConfig().requireDouble("robot.geometry.centerOffsetX_m");
+    Config config = Util.getDomainConfig();
+    double centerOffsetX_m = config.requireDouble("robot.geometry.centerOffsetX_m");
 
     static LCM lcm = LCM.getSingleton();
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
@@ -35,8 +37,6 @@ public class DriveForward extends ControlLaw
     @Override
     public void execute()
     {
-        System.out.println("Executing drive-forward");
-
         initialPose = null;
         while(initialPose == null) {
             initialPose = poseCache.get();
@@ -63,11 +63,18 @@ public class DriveForward extends ControlLaw
                                                pose.pos[1] + offset[1] };
 
             // Create and publish controls used by RobotDriver
-            diff_drive_t dd = PathControl.getDiffDrive(center_pos,
-                                                       pose.orientation,
-                                                       path,
-                                                       storedParams,
-                                                       1.0);
+            // diff_drive_t dd = PathControl.getDiffDrive(center_pos,
+            //                                            pose.orientation,
+            //                                            path,
+            //                                            storedParams,
+            //                                            1.0);
+
+            // Initialize diff drive with no movement
+            diff_drive_t dd = new diff_drive_t();
+            dd.left_enabled = dd.right_enabled = true;
+            dd.left = .2;
+            dd.right = .2;
+
             publishDiff(dd);
 
             // Test current status to determine whether to stop driving

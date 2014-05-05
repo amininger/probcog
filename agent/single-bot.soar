@@ -1,0 +1,19 @@
+source default.soar
+
+sp {simple-bot*Apply*init-agent
+	(state <s> ^operator.name init-agent)
+-->
+	(<s> ^name single-bot
+			 ^current-command <c1>)
+	(<c1> ^control-law <move>
+				^next-command <c2>)
+	(<c2> ^control-law <turn>
+				^next-command none)
+	(<turn> ^name turn
+					^termination-condition <dist>)
+	(<dist> ^name rotation
+            ^parameters.direction right
+					^compare-type gte
+					^compared-value 1.75)
+}
+

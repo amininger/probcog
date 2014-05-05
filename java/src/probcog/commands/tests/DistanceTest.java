@@ -21,12 +21,10 @@ public class DistanceTest extends ConditionTest<Double>
 		super(test);
 		new ListenerThread().start();
         // Save the initial pose so we can compute how far we've travelled
-        System.out.println("In Distance Test");
         startPose = null;
         while(startPose == null) {
             startPose = poseCache.get();
         }
-        System.out.println("Got a pose");
 	}
 
 	@Override
