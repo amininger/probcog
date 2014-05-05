@@ -1,3 +1,14 @@
+"probcog.sim.SimRobot"
+{
+	# Robot ID
+	6
+	# XYZRPY Truth
+	vec 6
+	0.00000 0.00000 0.00000 0.00000 -0.00000 0.00000
+	# XYZRPY Odom
+	vec 6
+	0.00000 0.00000 0.00000 0.00000 -0.00000 0.00000
+}
 "probcog.sim.SimLocation"
 {
 	-1

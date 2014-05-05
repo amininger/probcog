@@ -28,6 +28,7 @@ import probcog.sensor.SimKinectSensor;
 
 public class SimRobot implements LCMSubscriber, SimObject
 {
+    int ROBOT_ID = 6;
     SimWorld sw;
     DifferentialDrive drive;
 
@@ -49,12 +50,12 @@ public class SimRobot implements LCMSubscriber, SimObject
     static Random r = new Random();
     static Model4 model4 = new Model4();
 
-    public SimRobot(SimWorld sw, int robotID)
+    public SimRobot(SimWorld sw)
     {
         this.sw = sw;
         useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);
         drawSensor = sw.config.getBoolean("simulator.sim_magic_robot.draw_sensor", false);
-        this.robotID = robotID;
+        this.robotID = ROBOT_ID;
 
         shape = makeShape();
 
@@ -187,12 +188,8 @@ public class SimRobot implements LCMSubscriber, SimObject
 
     class ImageTask implements PeriodicTasks.Task
     {
-        int frameCount = 0;
-
         public void run(double dt)
         {
-            frameCount++;
-
             boolean sendKinect = true;
             if (sendKinect) {
                 // Where is the robot in the world?
@@ -222,8 +219,8 @@ public class SimRobot implements LCMSubscriber, SimObject
                 kinect = new SimKinectSensor(sw, eye, lookAt, up);
                 ArrayList<double[]> xyzrpy = kinect.getAllXYZRGB();
                 // publish a frame here ?
-                laser_t las = new laser_t(ins);
-                // las
+                // laser_t las = new laser_t(ins);
+
             }
         }
     }
@@ -233,38 +230,38 @@ public class SimRobot implements LCMSubscriber, SimObject
         Params params = Params.makeParams();
 
         public void run(double dt) {
-            double[] mcmd = new double[2];
+            // double[] mcmd = new double[2];
 
-            double center_xyz[] = LinAlg.add(drive.poseOdom.pos, LinAlg.quatRotate(drive.poseOdom.orientation, drive.centerOfRotation));
+            // double center_xyz[] = LinAlg.add(drive.poseOdom.pos, LinAlg.quatRotate(drive.poseOdom.orientation, drive.centerOfRotation));
 
-            double q[] = drive.poseOdom.orientation;
+            // double q[] = drive.poseOdom.orientation;
 
-            diff_drive_t dd = PathControl.getDiffDrive(center_xyz,
-                                                       q,
-                                                       wpp_path,
-                                                       params,
-                                                       1.0);
-            mcmd = new double[] { dd.left, dd.right };
+            // diff_drive_t dd = PathControl.getDiffDrive(center_xyz,
+            //                                            q,
+            //                                            wpp_path,
+            //                                            params,
+            //                                            1.0);
+            // mcmd = new double[] { dd.left, dd.right };
 
-            // Gamepad override
-            gamepad_t gp = gamepadCache.get();
-            if (gp != null) {
+            // // Gamepad override
+            // gamepad_t gp = gamepadCache.get();
+            // if (gp != null) {
 
-                final int RIGHT_VERT_AXIS = 3;
-                final int RIGHT_HORZ_AXIS = 2;
+            //     final int RIGHT_VERT_AXIS = 3;
+            //     final int RIGHT_HORZ_AXIS = 2;
 
-                double speed = -gp.axes[RIGHT_VERT_AXIS];
-                if ((gp.buttons & (16 | 32)) == (16 | 32))  // if holding both buttons go faster
-                    speed *= 4;
+            //     double speed = -gp.axes[RIGHT_VERT_AXIS];
+            //     if ((gp.buttons & (16 | 32)) == (16 | 32))  // if holding both buttons go faster
+            //         speed *= 4;
 
-                double turn = gp.axes[RIGHT_HORZ_AXIS];
+            //     double turn = gp.axes[RIGHT_HORZ_AXIS];
 
-                if (gp.buttons != 0) {
-                    mcmd = new double[] { speed + turn, speed - turn };
-                }
-            }
+            //     if (gp.buttons != 0) {
+            //         mcmd = new double[] { speed + turn, speed - turn };
+            //     }
+            // }
 
-            drive.motorCommands = mcmd;
+            // drive.motorCommands = mcmd;
         }
     }
 
