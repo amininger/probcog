@@ -40,11 +40,11 @@ public class ProbCogSimulator implements VisConsole.Listener
 
 	    console = new VisConsole(vw, vl, vc);
 	    console.addListener(this);
-	    
+
 
         loadWorld(opts);
         sim = new Simulator(vw, vl, console, world);
-        
+
 	    simulateDynamicsTimer = new Timer();
 	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(), 1000, 1000/DYNAMICS_RATE);
 
@@ -104,7 +104,7 @@ public class ProbCogSimulator implements VisConsole.Listener
 //					((ISimEffector)obj).checkObject((SimObjectPC)target);
 //				}
 //			}
-			
+
 		}
     }
 

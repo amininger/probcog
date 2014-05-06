@@ -26,7 +26,7 @@ import probcog.vis.*;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
 
-public class SimRobot implements LCMSubscriber, SimObject
+public class SimRobot extends SimObjectPC implements LCMSubscriber
 {
     int ROBOT_ID = 6;
     SimWorld sw;
@@ -42,6 +42,7 @@ public class SimRobot implements LCMSubscriber, SimObject
     VisObject visObj;
     SimKinectSensor kinect;
 
+    ExpiringMessageCache<diff_drive_t> diffdriveCache = new ExpiringMessageCache<diff_drive_t>(0.25);
     ExpiringMessageCache<gamepad_t> gamepadCache = new ExpiringMessageCache<gamepad_t>(0.25);
 
     PeriodicTasks tasks = new PeriodicTasks(2);
@@ -52,6 +53,7 @@ public class SimRobot implements LCMSubscriber, SimObject
 
     public SimRobot(SimWorld sw)
     {
+        super(sw);
         this.sw = sw;
         useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);
         drawSensor = sw.config.getBoolean("simulator.sim_magic_robot.draw_sensor", false);
@@ -68,9 +70,10 @@ public class SimRobot implements LCMSubscriber, SimObject
         drive.centerOfRotation = new double[] { 0.13, 0, 0 };
 
         lcm.subscribe("GAMEPAD_"+robotID, this);
-        lcm.subscribe("SOAR_COMMAND", this);
+        lcm.subscribe("DIFF_DRIVE", this);
 
         tasks.addFixedDelay(new ImageTask(), 2.0);
+        tasks.addFixedDelay(new POSETask(), 2.0);
         tasks.addFixedDelay(new ControlTask(), 0.04);
     }
 
@@ -174,10 +177,9 @@ public class SimRobot implements LCMSubscriber, SimObject
 
     private void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
     {
-        // XXX - New code goes in here
-        if (channel.equals("SOAR_COMMAND")) {
-
-
+        if (channel.equals("DIFF_DRIVE")) {
+            diff_drive_t msg = new diff_drive_t(ins);
+            diffdriveCache.put(msg, msg.utime);
         }
 
         if (channel.startsWith("GAMEPAD")) {
@@ -218,50 +220,61 @@ public class SimRobot implements LCMSubscriber, SimObject
 
                 kinect = new SimKinectSensor(sw, eye, lookAt, up);
                 ArrayList<double[]> xyzrpy = kinect.getAllXYZRGB();
-                // publish a frame here ?
-                // laser_t las = new laser_t(ins);
 
+                // publish a frame here ?
             }
         }
     }
+
+    class POSETask implements PeriodicTasks.Task
+    {
+        public POSETask()
+        {
+        }
+
+        public void run(double dt)
+        {
+            pose_t pose = drive.poseTruth;
+            lcm.publish("POSE", pose);
+        }
+    }
+
+
 
     class ControlTask implements PeriodicTasks.Task
     {
         Params params = Params.makeParams();
 
         public void run(double dt) {
-            // double[] mcmd = new double[2];
+            double[] mcmd = new double[2];
 
-            // double center_xyz[] = LinAlg.add(drive.poseOdom.pos, LinAlg.quatRotate(drive.poseOdom.orientation, drive.centerOfRotation));
+            double center_xyz[] = LinAlg.add(drive.poseOdom.pos, LinAlg.quatRotate(drive.poseOdom.orientation, drive.centerOfRotation));
 
-            // double q[] = drive.poseOdom.orientation;
+            double q[] = drive.poseOdom.orientation;
 
-            // diff_drive_t dd = PathControl.getDiffDrive(center_xyz,
-            //                                            q,
-            //                                            wpp_path,
-            //                                            params,
-            //                                            1.0);
-            // mcmd = new double[] { dd.left, dd.right };
+            diff_drive_t dd = diffdriveCache.get();
+            if (dd != null) {
+                mcmd = new double[] { dd.left, dd.right };
+            }
+            // Gamepad override
+            gamepad_t gp = gamepadCache.get();
+            if (gp != null) {
 
-            // // Gamepad override
-            // gamepad_t gp = gamepadCache.get();
-            // if (gp != null) {
+                final int RIGHT_VERT_AXIS = 3;
+                final int RIGHT_HORZ_AXIS = 2;
 
-            //     final int RIGHT_VERT_AXIS = 3;
-            //     final int RIGHT_HORZ_AXIS = 2;
+                double speed = -gp.axes[RIGHT_VERT_AXIS];
+                if ((gp.buttons & (16 | 32)) == (16 | 32))  // if holding both buttons go faster
+                    speed *= 4;
 
-            //     double speed = -gp.axes[RIGHT_VERT_AXIS];
-            //     if ((gp.buttons & (16 | 32)) == (16 | 32))  // if holding both buttons go faster
-            //         speed *= 4;
+                double turn = gp.axes[RIGHT_HORZ_AXIS];
 
-            //     double turn = gp.axes[RIGHT_HORZ_AXIS];
+                if (gp.buttons != 0) {
+                    mcmd = new double[] { speed + turn, speed - turn };
+                }
+            }
 
-            //     if (gp.buttons != 0) {
-            //         mcmd = new double[] { speed + turn, speed - turn };
-            //     }
-            // }
-
-            // drive.motorCommands = mcmd;
+            drive.motorCommands = mcmd;
         }
     }
 
