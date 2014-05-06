@@ -78,13 +78,13 @@ public class DriveForward extends ControlLaw
     @Override
     public ControlLaw.Status getStatus()
     {
-	// TODO: may return EARLY_TERM or FAILURE if
-	//   something went wrong
+        // TODO: may return EARLY_TERM or FAILURE if
+        //   something went wrong
 
-	if(termCond.evaluate() == true){
-	    return ControlLaw.Status.FINISHED;
-	}
-	return ControlLaw.Status.EXECUTING;
+        if(termCond.evaluate() == true){
+            return ControlLaw.Status.FINISHED;
+        }
+        return ControlLaw.Status.EXECUTING;
     }
 
 

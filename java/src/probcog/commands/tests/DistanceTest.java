@@ -10,7 +10,7 @@ import april.util.*;
 import probcog.commands.TypedValue;
 import probcog.lcmtypes.*;
 
-public class DistanceTest extends ConditionTest<Double>
+public class DistanceTest
 {
     private pose_t startPose;
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
