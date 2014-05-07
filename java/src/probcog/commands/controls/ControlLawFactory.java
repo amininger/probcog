@@ -8,6 +8,10 @@ import probcog.lcmtypes.*;
 
 public class ControlLawFactory
 {
+    // Control law factory: take 2
+    public static construct(HashMap<String, Object> parameters)
+
+
     static Object lock = new Object();
     static public Object getLock()
     {

@@ -2,7 +2,136 @@ package probcog.commands;
 
 import probcog.lcmtypes.typed_value_t;
 
-public class TypedValue{
+public class TypedValue
+{
+    public static final int TYPE_BOOLEAN = 1 << 0;
+    public static final int TYPE_BYTE = 1 << 1;
+    public static final int TYPE_SHORT = 1 << 2;
+    public static final int TYPE_INT = 1 << 3;
+    public static final int TYPE_LONG = 1 << 4;
+    public static final int TYPE_FLOAT = 1 << 5;
+    public static final int TYPE_DOUBLE = 1 << 6;
+    public static final int TYPE_STRING = 1 << 7;
+
+    private int type;
+    private Object value;
+
+    public TypedValue(Boolean v)
+    {
+        type = TYPE_BOOLEAN;
+        value = b;
+    }
+
+    public TypedValue(Byte v)
+    {
+        type = TYPE_BYTE;
+        value = v;
+    }
+
+    public TypedValue(Short v)
+    {
+        type = TYPE_SHORT;
+        value = v;
+    }
+
+    public TypedValue(Integer v)
+    {
+        type = TYPE_INT;
+        value = v;
+    }
+
+    public TypedValue(Long v)
+    {
+        type = TYPE_LONG;
+        value = v;
+    }
+
+    public TypedValue(Float v)
+    {
+        type = TYPE_FLOAT;
+        value = v;
+    }
+
+    public TypedValue(Double v)
+    {
+        type = TYPE_DOUBLE;
+        value = v;
+    }
+
+    public TypedValue(String v)
+    {
+        type = TYPE_STRING;
+        value = v;
+    }
+
+    // Value retrieval functions. No compile-time safety, but will assert
+    // on inane retrieval calls.
+    //
+    // This raises the question: is a call for an Integer on a Byte value inane?
+    // A Double for a Float? Or vice versa? This implementation chooses to say
+    // that yes, you need to specifically retrieve the value as intended, at
+    // which point it is up to the caller to cast the value appropriately to a
+    // new type.
+    //
+    // The one exception is toString. Any value may always be retrieved as a
+    // String with the "toString" call, though this is dependent on the stored
+    // objects implementation of "toString."
+
+    public Boolean getBoolean()
+    {
+        assert (type == TYPE_BOOLEAN);
+        return (Boolean)value;
+    }
+
+    public Byte getByte()
+    {
+        assert (type == TYPE_BYTE);
+        return (Byte)value;
+    }
+
+    public Short getShort()
+    {
+        assert (type == TYPE_SHORT);
+        return (Short)value;
+    }
+
+    public Integer getInt()
+    {
+        assert (type == TYPE_INT);
+        return (Integer)value;
+    }
+
+    public Long getLong()
+    {
+        assert (type == TYPE_LONG);
+        return (Long)value;
+    }
+
+    public Float getFloat()
+    {
+        assert (type == TYPE_FLOAT);
+        return (Float)value;
+    }
+
+    public Double getDouble()
+    {
+        assert (type == TYPE_DOUBLE);
+        return (Double)value;
+    }
+
+    public String toString()
+    {
+        return value.toString();
+    }
+
+    public int getType()
+    {
+        return type;
+    }
+
+    // ====================================================
+    // === LEGACY CODE ====================================
+    // ====================================================
 	public static Double unwrapDouble(typed_value_t value){
 		if(value.type == typed_value_t.TYPE_DOUBLE){
 			return Double.parseDouble(value.value);
