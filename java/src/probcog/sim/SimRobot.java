@@ -20,6 +20,7 @@ import april.util.*;
 import april.sim.*;
 import april.lcmtypes.*;
 
+import probcog.commands.CommandInterpreter;
 import probcog.lcmtypes.*;
 import probcog.util.*;
 import probcog.vis.*;
@@ -66,14 +67,16 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
         } else
             visObj = model4;
 
+        CommandInterpreter ci = new CommandInterpreter();
+
         drive = new DifferentialDrive(sw, this, new double[3]);
         drive.centerOfRotation = new double[] { 0.13, 0, 0 };
 
         lcm.subscribe("GAMEPAD_"+robotID, this);
         lcm.subscribe("DIFF_DRIVE", this);
 
-        tasks.addFixedDelay(new ImageTask(), 2.0);
-        tasks.addFixedDelay(new POSETask(), 2.0);
+        tasks.addFixedDelay(new ImageTask(), 0.04);
+        tasks.addFixedDelay(new POSETask(), 0.04);
         tasks.addFixedDelay(new ControlTask(), 0.04);
     }
 
@@ -84,6 +87,8 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
 
     private CompoundShape makeShape()
     {
+        // BoxShape shape = new BoxShape(MagicRobot.COARSE_SIZE);
+        // shape.transform(LinAlg.translate(MagicRobot.CENTER_X_OFFSET, 0, 0.5*MagicRobot.COARSE_SIZE[2]));
         CompoundShape shape = new CompoundShape();
         if (useCoarseShape) // coarse only
             shape.add(LinAlg.translate(MagicRobot.CENTER_X_OFFSET, 0, 0.5*MagicRobot.COARSE_SIZE[2]),

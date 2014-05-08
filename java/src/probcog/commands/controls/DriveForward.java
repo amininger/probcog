@@ -72,8 +72,8 @@ public class DriveForward extends ControlLaw
             // Initialize diff drive with no movement
             diff_drive_t dd = new diff_drive_t();
             dd.left_enabled = dd.right_enabled = true;
-            dd.left = .2;
-            dd.right = .2;
+            dd.left = .3;
+            dd.right = .3;
 
             publishDiff(dd);
 

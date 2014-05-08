@@ -88,9 +88,9 @@ public class Model4 extends VisChain
 
         add(
             // pose origin
-            new VzCylinder(0.25*in2m, 4*in2m, new VzMesh.Style(cyan)),
-            new VisChain(LinAlg.translate(center[0], center[1], center[2]),
-                         new VzCylinder(0.25*in2m, 4*in2m, new VzMesh.Style(green))),
+            // new VzCylinder(0.25*in2m, 4*in2m, new VzMesh.Style(cyan)),
+            // new VisChain(LinAlg.translate(center[0], center[1], center[2]),
+            //              new VzCylinder(0.25*in2m, 4*in2m, new VzMesh.Style(green))),
 
             // configuration space circles
             new VisChain(LinAlg.translate(MagicRobot.CENTER_X_OFFSET, 0, 0.3*in2m),
