@@ -12,7 +12,7 @@ public interface ControlLaw
      *
      *  @return An instance of a ControlLaw
      **/
-    public ControlLaw construct(HashMap<String, TypedValue> parameters);
+    static public ControlLaw construct(Map<String, TypedValue> parameters);
 
     /** Start/stop the execution of the control law.
      *
@@ -24,5 +24,5 @@ public interface ControlLaw
      *
      *  @return An iterable collection of all possible parameters
      **/
-    public Collection<ControlLawParameter> getParameters()
+    static public Collection<TypedParameter> getParameters()
 }

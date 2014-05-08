@@ -8,28 +8,28 @@ import probcog.lcmtypes.*;
 
 public class ControlLawFactory
 {
-    // Control law factory: take 2
-    public static construct(HashMap<String, Object> parameters)
+    HashMap<String, String> controlLawMap = new HashMap<String, String>();
 
-
-    static Object lock = new Object();
-    static public Object getLock()
+    static ControlLawFactory singleton = null;
+    static public ControlLawFactory getSingleton()
     {
-        return lock;
+        if (singleton == null)
+            singleton = new ControlLawFactory();
+        return singleton;
     }
 
-    static HashMap<String, String> controlLawMap = new HashMap<String, String>();
-    static boolean initialized = false;
+    private ControlLawFactory()
+    {
+        init();
+    }
 
     /** Initializes the factory on first use. This is where the default
      *  registrations are added.
      **/
-    static void init()
+    private void init()
     {
         registerControlLaw("turn", Turn.class.getName());
         registerControlLaw("drive-forward", DriveForward.class.getName());
-
-        initialized = true;
     }
 
     /** Register control laws with the factory. It is the job of the
@@ -41,11 +41,9 @@ public class ControlLawFactory
      *  @param classname    The given name of the class.
      *
      **/
-    public static void registerControlLaw(String name, String classname)
+    synchronized public void registerControlLaw(String name, String classname)
     {
-        synchronized (getLock()) {
-            controlLawMap.put(name, classname);
-        }
+        controlLawMap.put(name, classname);
     }
 
     /** Unregister a control law. Returns true/false if control law was
@@ -55,101 +53,78 @@ public class ControlLawFactory
      *
      *  @return True if control law successfully removed, else false
      **/
-    public static boolean unregisterControllaw(String name)
+    synchronized public boolean unregisterControllaw(String name)
     {
-        String val;
-        synchronized (getLock()) {
-            val = controlLawMap.remove(name);
-        }
+        String val = controlLawMap.remove(name);
         return (val != null);
     }
 
-    /** Get the names of all registered control laws. These differ from class
-     *  names, which actually specify the particular implementation class of
-     *  the control law.
+    /** Construct a control law from an associated set of parameters.
      *
-     *  @return A set of the externally used names of registered control laws
-     **/
-
-    public static Set<String> getControlLawNames()
-    {
-        Set<String> keys;
-        synchronized (getLock()) {
-             keys = controlLawMap.keySet();
-        }
-        return keys;
-    }
-
-    /** Control a control law from an associated lcmtype specifying a name
-     *  and relevant parameters.
-     *
-     *  @param controlLaw   An LCM object containing relevant information to
-     *                      instatiate a control law.
+     *  @param name         Registered name of control law
+     *  @param parameters   Input parameters for construction
      *
      *  @return A ControlLaw object that a robot may execute
      **/
-	public static ControlLaw construct(control_law_t controlLaw) throws ClassNotFoundException
+	synchronized public ControlLaw construct(String name, HashMap<String, TypedValue> parameters) throws ClassNotFoundException
     {
-        // First time initialization
-        synchronized (getLock()) {
-            if (!initialized)
-                init();
-
-            // Ensure class existence
-            if (!controlLawMap.containsKey(controlLaw.name)) {
-                throw new ClassNotFoundException(controlLaw.name);
-            }
-
-            // Instantiate the appropriate control law
-            try {
-                String classname = controlLawMap.get(controlLaw.name);
-                Object obj = Class.forName(classname).getConstructor(control_law_t.class).newInstance(controlLaw);
-                assert (obj instanceof ControlLaw);
-
-                return (ControlLaw) obj;
-            } catch (InvocationTargetException ex) {
-                System.err.printf("ERR: %s (%s)\n", ex, ex.getTargetException());
-            } catch (Exception ex) {
-                System.err.printf("ERR: %s\n", ex);
-                ex.printStackTrace();
-            }
+        // Ensure class existence
+        if (!controlLawMap.containsKey(name)) {
+            throw new ClassNotFoundException("No class registered to " + name);
         }
-        return null;    // XXX
+
+        // Instantiate the appropriate control law
+        try {
+            String classname = controlLawMap.get(name);
+            Object obj = Class.forName(classname).getConstructor(parameters.getClass()).newInstance(parameters);
+            assert (obj instanceof ControlLaw);
+
+            return (ControlLaw) obj;
+        } catch (InvocationTargetException ex) {
+            System.err.printf("ERR: %s (%s)\n", ex, ex.getTargetException());
+        } catch (Exception ex) {
+            System.err.printf("ERR: %s\n", ex);
+            ex.printStackTrace();
+        }
+        // XXX Should fail more gracefully
+        assert (false); // Tried to instantiate non-existent control law.
 	}
+
+    /** Get collections of parameters for all known control laws. These lists of
+     *  parameters specify information like which parameters are required to be
+     *  set (vs. ones that will have reasonable default values), the type and
+     *  range of values parameters may assume, etc.
+     **/
+    synchronized public Map<String, Collection<TypedParameter> > getParameters()
+    {
+        try {
+            HashMap<String, Collection<TypedParameter> > map =
+                new HashMap<String, Collection<TypedParameter> >();
+            for (String name: controlLawMap.keySet()) {
+                String classname = controlLawMap.get(name)
+                map.put(name, Class.forName(classname).getDeclaredMethod("getParameters").invoke(null));
+            }
+        } catch (Exception ex) {
+            System.err.printf("ERR: %s\n", ex);
+            ex.printStackTrace();
+            assert (false);
+        }
+
+        return map;
+    }
 
     public static void main(String[] args)
     {
-        // Test the ControlLawFactory's functionality. By no means complete,
-        // yet, but enough to prove that the implementation is not completely
-        // flawed.
-        control_law_t cl = new control_law_t();
-        cl.name = "turn";
-        cl.id = 0;
-
-        cl.num_params = 1;
-        cl.param_names = new String[] {"direction"};
-        cl.param_values = new typed_value_t[] {TypedValue.wrap("right")};
-
-        // XXX This is not intended to be accurate or useful. We're just making sure
-        // we can appropriately act on control laws, etc.
-        cl.termination_condition = new condition_test_t();
-        cl.termination_condition.name = "rotation"; // XXX
-        cl.termination_condition.num_params = 0;
-        cl.termination_condition.compare_type = condition_test_t.CMP_LTE;   // XXX
-        cl.termination_condition.compared_value = TypedValue.wrap(Math.PI/2.0);
-
+        ControlLawFactory factory = ControlLawFactory.getSingleton();
 
         try {
-            ControlLaw law = ControlLawFactory.construct(cl);
-            System.out.printf("[%s] %d: %s\n",
-                              law.getName(),
-                              law.getID(),
-                              law.getStatus().name());
-            // Automatically spins up termination condition test thread...
+            Map<String, Collection<TypedParameter> > map = factory.getParameters();
+            for (String key: map.keySet()) {
+                System.out.println("Found control law " + key);
+            }
 
-            Set<String> names = ControlLawFactory.getControlLawNames();
-            for (String name: names)
-                System.out.println(name);
+            // Try constructing an instance of a control law based on parameters
+            // XXX
 
 
         } catch (ClassNotFoundException ex) {
