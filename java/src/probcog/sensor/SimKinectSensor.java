@@ -108,6 +108,13 @@ public class SimKinectSensor implements Sensor
         (new RenderThread()).start();
     }
 
+    public void updateCamera(double[] eye, double[] lookat, double[] up)
+    {
+        camera.eye = eye;
+        camera.lookat = lookat;
+        camera.up = up;
+    }
+
     class RenderThread extends Thread
     {
         int Hz = 30;

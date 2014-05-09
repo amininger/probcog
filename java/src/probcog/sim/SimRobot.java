@@ -41,7 +41,6 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
 
     CompoundShape shape;
     VisObject visObj;
-    SimKinectSensor kinect;
 
     ExpiringMessageCache<diff_drive_t> diffdriveCache = new ExpiringMessageCache<diff_drive_t>(0.25);
     ExpiringMessageCache<gamepad_t> gamepadCache = new ExpiringMessageCache<gamepad_t>(0.25);
@@ -67,6 +66,8 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
         } else
             visObj = model4;
 
+        // visObj = new VzSphere(.5, new VzMesh.Style(Color.RED));
+
         CommandInterpreter ci = new CommandInterpreter();
 
         drive = new DifferentialDrive(sw, this, new double[3]);
@@ -87,8 +88,6 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
 
     private CompoundShape makeShape()
     {
-        // BoxShape shape = new BoxShape(MagicRobot.COARSE_SIZE);
-        // shape.transform(LinAlg.translate(MagicRobot.CENTER_X_OFFSET, 0, 0.5*MagicRobot.COARSE_SIZE[2]));
         CompoundShape shape = new CompoundShape();
         if (useCoarseShape) // coarse only
             shape.add(LinAlg.translate(MagicRobot.CENTER_X_OFFSET, 0, 0.5*MagicRobot.COARSE_SIZE[2]),
@@ -195,6 +194,26 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
 
     class ImageTask implements PeriodicTasks.Task
     {
+        SimKinectSensor kinect;
+
+        public ImageTask()
+        {
+            // Where is the robot in the world?
+            double R2G[][] = LinAlg.quatPosToMatrix(drive.poseTruth.orientation, drive.poseTruth.pos);
+            // Where is the kinect with respect to the robot origin (rear axle)?
+            double K2R[][] = LinAlg.translate(0.21 + 0.055, 0, 0.68); // XXX - Need to get correct
+
+            // Where is the kinect in the world?
+            double K2G[][] = LinAlg.matrixAB(R2G, K2R);
+
+            double q[] = LinAlg.matrixToQuat(K2G);
+            double eye[] = LinAlg.matrixAB(K2G, new double[] {0,0,0,1});
+            double lookAt[] = LinAlg.matrixAB(K2G, new double[] {0,0,0,1});
+            double up[] = LinAlg.quatRotate(q, new double[] { 0, 0, 1 });
+
+            kinect = new SimKinectSensor(sw, eye, lookAt, up);
+        }
+
         public void run(double dt)
         {
             boolean sendKinect = true;
@@ -212,18 +231,7 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
                 double lookAt[] = LinAlg.matrixAB(K2G, new double[] {0,0,0,1});
                 double up[] = LinAlg.quatRotate(q, new double[] { 0, 0, 1 });
 
-                // construct the appropriate visworld
-                VisWorld vw = new VisWorld();
-                synchronized(sw) {
-                    VisWorld.Buffer vb = vw.getBuffer("world");
-                    for (SimObject obj : sw.objects) {
-                        vb.addBack(new VisChain(obj.getPose(), obj.getVisObject()));
-                    }
-                    vb.addBack(new VzGrid());
-                    vb.swap();
-                }
-
-                kinect = new SimKinectSensor(sw, eye, lookAt, up);
+                kinect.updateCamera(eye, lookAt, up);
                 ArrayList<double[]> xyzrpy = kinect.getAllXYZRGB();
 
                 // publish a frame here ?
