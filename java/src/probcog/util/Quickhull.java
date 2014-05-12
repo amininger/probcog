@@ -326,7 +326,7 @@ public class Quickhull
     {
         if (points.size() < 4)
             return new Polyhedron3D();  // XXX Error message?
-
+        
         HashSet<Facet> facets = constructSimplex(points);
 
         // Expand hull. For each facet with a non-empty outside set,

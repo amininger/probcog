@@ -413,4 +413,226 @@ public class BoundingBox
 
         jf.setVisible(true);
     }
+    
+    public static boolean intersects(BoundingBox bbox1, BoundingBox bbox2){
+    	return intersects(bbox1, bbox2, 1.0);
+    }
+    
+    public static boolean intersects(BoundingBox bbox1, BoundingBox bbox2, double scale){
+        // Cutoff for cosine of angles between box axes.  This is used to catch
+        // the cases when at least one pair of axes are parallel.  If this
+        // happens, there is no need to test for separation along the
+        // Cross(A[i],B[j]) directions.
+        double cutoff = (double)1 - 0.000001;
+        boolean existsParallelPair = false;
+        int i;
+
+        // Convenience variables.
+        double[][] rotA = LinAlg.rollPitchYawToMatrix(new double[]{-bbox1.xyzrpy[3], -bbox1.xyzrpy[4], -bbox1.xyzrpy[5]});
+        double[][] rotB = LinAlg.rollPitchYawToMatrix(new double[]{-bbox2.xyzrpy[3], -bbox2.xyzrpy[4], -bbox2.xyzrpy[5]});
+        double[][] A = new double[3][3];
+        double[][] B = new double[3][3];
+        for(int r = 0; r < 3; r++){
+        	for(int c = 0; c < 3; c++){
+        		A[r][c] = rotA[r][c];
+        		B[r][c] = rotB[r][c];
+        	}
+        }
+        double[] EA = LinAlg.scale(bbox1.lenxyz, .5 * scale);
+        double[] EB = LinAlg.scale(bbox2.lenxyz, .5 * scale);
+        
+        // Compute difference of box centers, D = C1-C0.
+        double[] D = LinAlg.subtract(LinAlg.resize(bbox2.xyzrpy, 3), LinAlg.resize(bbox1.xyzrpy, 3));
+        
+        double[][] C = new double[3][3];     // matrix C = A^T B, c_{ij} = Dot(A_i,B_j)
+        double[][] AbsC = new double[3][3];  // |c_{ij}|
+        double[] AD = new double[3];       // Dot(A_i,D)
+        double r0, r1, r;   // interval radii and distance between centers
+        double r01;         // = R0 + R1
+
+        // axis C0+t*A0
+        for (i = 0; i < 3; ++i)
+        {
+            C[0][i] = LinAlg.dotProduct(A[0], B[i]);
+            AbsC[0][i] = Math.abs(C[0][i]);
+            if (AbsC[0][i] > cutoff)
+            {
+                existsParallelPair = true;
+            }
+        }
+        AD[0] = LinAlg.dotProduct(A[0], D);
+        r = Math.abs(AD[0]);
+        r1 = EB[0]*AbsC[0][0] + EB[1]*AbsC[0][1] + EB[2]*AbsC[0][2];
+        r01 = EA[0] + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A1
+        for (i = 0; i < 3; ++i)
+        {
+            C[1][i] = LinAlg.dotProduct(A[1], B[i]);
+            AbsC[1][i] = Math.abs(C[1][i]);
+            if (AbsC[1][i] > cutoff)
+            {
+                existsParallelPair = true;
+            }
+        }
+        AD[1] = LinAlg.dotProduct(A[1], D);
+        r = Math.abs(AD[1]);
+        r1 = EB[0]*AbsC[1][0] + EB[1]*AbsC[1][1] + EB[2]*AbsC[1][2];
+        r01 = EA[1] + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A2
+        for (i = 0; i < 3; ++i)
+        {
+            C[2][i] = LinAlg.dotProduct(A[2], B[i]);
+            AbsC[2][i] = Math.abs(C[2][i]);
+            if (AbsC[2][i] > cutoff)
+            {
+                existsParallelPair = true;
+            }
+        }
+        AD[2] = LinAlg.dotProduct(A[2], D);
+        r = Math.abs(AD[2]);
+        r1 = EB[0]*AbsC[2][0] + EB[1]*AbsC[2][1] + EB[2]*AbsC[2][2];
+        r01 = EA[2] + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*B0
+        r = Math.abs(LinAlg.dotProduct(B[0], D));
+        r0 = EA[0]*AbsC[0][0] + EA[1]*AbsC[1][0] + EA[2]*AbsC[2][0];
+        r01 = r0 + EB[0];
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*B1
+        r = Math.abs(LinAlg.dotProduct(B[1], D));
+        r0 = EA[0]*AbsC[0][1] + EA[1]*AbsC[1][1] + EA[2]*AbsC[2][1];
+        r01 = r0 + EB[1];
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*B2
+        r = Math.abs(LinAlg.dotProduct(B[2], D));
+        r0 = EA[0]*AbsC[0][2] + EA[1]*AbsC[1][2] + EA[2]*AbsC[2][2];
+        r01 = r0 + EB[2];
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // At least one pair of box axes was parallel, so the separation is
+        // effectively in 2D where checking the "edge" normals is sufficient for
+        // the separation of the boxes.
+        if (existsParallelPair)
+        {
+            return true;
+        }
+
+        // axis C0+t*A0xB0
+        r = Math.abs(AD[2]*C[1][0] - AD[1]*C[2][0]);
+        r0 = EA[1]*AbsC[2][0] + EA[2]*AbsC[1][0];
+        r1 = EB[1]*AbsC[0][2] + EB[2]*AbsC[0][1];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A0xB1
+        r = Math.abs(AD[2]*C[1][1] - AD[1]*C[2][1]);
+        r0 = EA[1]*AbsC[2][1] + EA[2]*AbsC[1][1];
+        r1 = EB[0]*AbsC[0][2] + EB[2]*AbsC[0][0];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A0xB2
+        r = Math.abs(AD[2]*C[1][2] - AD[1]*C[2][2]);
+        r0 = EA[1]*AbsC[2][2] + EA[2]*AbsC[1][2];
+        r1 = EB[0]*AbsC[0][1] + EB[1]*AbsC[0][0];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A1xB0
+        r = Math.abs(AD[0]*C[2][0] - AD[2]*C[0][0]);
+        r0 = EA[0]*AbsC[2][0] + EA[2]*AbsC[0][0];
+        r1 = EB[1]*AbsC[1][2] + EB[2]*AbsC[1][1];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A1xB1
+        r = Math.abs(AD[0]*C[2][1] - AD[2]*C[0][1]);
+        r0 = EA[0]*AbsC[2][1] + EA[2]*AbsC[0][1];
+        r1 = EB[0]*AbsC[1][2] + EB[2]*AbsC[1][0];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A1xB2
+        r = Math.abs(AD[0]*C[2][2] - AD[2]*C[0][2]);
+        r0 = EA[0]*AbsC[2][2] + EA[2]*AbsC[0][2];
+        r1 = EB[0]*AbsC[1][1] + EB[1]*AbsC[1][0];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A2xB0
+        r = Math.abs(AD[1]*C[0][0] - AD[0]*C[1][0]);
+        r0 = EA[0]*AbsC[1][0] + EA[1]*AbsC[0][0];
+        r1 = EB[1]*AbsC[2][2] + EB[2]*AbsC[2][1];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A2xB1
+        r = Math.abs(AD[1]*C[0][1] - AD[0]*C[1][1]);
+        r0 = EA[0]*AbsC[1][1] + EA[1]*AbsC[0][1];
+        r1 = EB[0]*AbsC[2][2] + EB[2]*AbsC[2][0];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        // axis C0+t*A2xB2
+        r = Math.abs(AD[1]*C[0][2] - AD[0]*C[1][2]);
+        r0 = EA[0]*AbsC[1][2] + EA[1]*AbsC[0][2];
+        r1 = EB[0]*AbsC[2][1] + EB[1]*AbsC[2][0];
+        r01 = r0 + r1;
+        if (r > r01)
+        {
+            return false;
+        }
+
+        return true;
+    }
+    
 }
