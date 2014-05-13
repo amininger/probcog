@@ -221,8 +221,8 @@ public class KinectSegment implements Segmenter
         			double[] hsv1 = ColorFeatureExtractor.avgHSV(c1.getPoints());
         			double[] hsv2 = ColorFeatureExtractor.avgHSV(c2.getPoints());
         			if(Math.abs(hsv1[0] - hsv2[0]) < .035 ||
-        					(hsv1[0] > .85 && hsv2[0] > .85)){
-        				//	(hsv1[0] > .53 && hsv1[0] < .62 && hsv2[0] > .53 && hsv2[0] < .62)){
+        					(hsv1[0] > .8 && hsv2[0] > .8) ||
+        					(hsv1[0] > .53 && hsv1[0] < .62 && hsv2[0] > .53 && hsv2[0] < .62)){
 //        				System.out.println("Merging " + i + " and " + j);
         				int newSet = mappings.get(i);
         				int oldSet = mappings.get(j);

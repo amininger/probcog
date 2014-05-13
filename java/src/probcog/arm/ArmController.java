@@ -400,7 +400,8 @@ public class ArmController implements LCMSubscriber
                     break;
                 case GRAB_AT:
                     //moveTo(goal, grabHeight, grabHeight*1.8);   // Try to compensate for sagging arm
-                    moveTo(goal, goalHeight);
+                	double[] dest = LinAlg.add(LinAlg.scale(behind, .33),  LinAlg.scale(goal,  .67));
+                    moveTo(dest, goalHeight);
 
                     if (actionComplete()) {
                         setState(ActionState.GRAB_START_GRIP);
