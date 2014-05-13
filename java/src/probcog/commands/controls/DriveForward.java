@@ -22,7 +22,8 @@ public class DriveForward implements ControlLaw, LCMSubscriber
     static final int DB_HZ = 30;
     static final double VERY_FAR = 3671000;     // Earth's radius [m]
 
-    double centerOffsetX_m = Util.getConfig().requireDouble("robot.geometry.centerOffsetX_m");
+    // XXX This needs to change
+    double centerOffsetX_m = Util.getDomainConfig().requireDouble("robot.geometry.centerOffsetX_m");
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
 
     LCM lcm = LCM.getSingleton();
@@ -36,18 +37,6 @@ public class DriveForward implements ControlLaw, LCMSubscriber
 
         public DriveTask()
         {
-            pose_t initialPose = null;
-            while (initialPose == null) {
-                initialPose = poseCache.get();
-            }
-
-            double[] start2D = LinAlg.resize(initialPose.pos, 2);
-            double[] goal2D = new double[] {start2D[0]+VERY_FAR,
-                                   start2D[1]+VERY_FAR};
-
-            path = new GLineSegment2D(start2D, goal2D); // XXX - update?
-
-            System.out.println("DriveForward ready to execute");
         }
 
         // Uses MAGIC path controller to issue drive commands to robot. These
@@ -56,6 +45,21 @@ public class DriveForward implements ControlLaw, LCMSubscriber
         // should result in approximately straight forward driving for now.
         public void run(double dt)
         {
+            // Non-blocking initialization
+            if (path == null) {
+                pose_t initialPose = poseCache.get();
+                if (initialPose == null)
+                    return;
+
+                double[] start2D = LinAlg.resize(initialPose.pos, 2);
+                double[] goal2D = new double[] {start2D[0]+VERY_FAR,
+                    start2D[1]+VERY_FAR};
+
+                path = new GLineSegment2D(start2D, goal2D); // XXX - update?
+
+                System.out.println("DriveForward ready to execute");
+            }
+
             // Get the most recent position
             pose_t pose = poseCache.get();
             if(pose == null)
@@ -82,6 +86,8 @@ public class DriveForward implements ControlLaw, LCMSubscriber
 
     public DriveForward(Map<String, TypedValue> parameters)
     {
+        System.out.println("DRIVE FORWARD");
+
         lcm.subscribe("POSE", this);
         tasks.addFixedRate(new DriveTask(), 1.0/DB_HZ);
     }

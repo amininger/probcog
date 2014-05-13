@@ -65,6 +65,8 @@ public class RotationTest implements ConditionTest, LCMSubscriber
 
     public RotationTest(Map<String, TypedValue> parameters)
     {
+        System.out.println("Rotation Test");
+
         assert (parameters.containsKey("yaw"));
         goalYaw = parameters.get("yaw").getDouble();
 

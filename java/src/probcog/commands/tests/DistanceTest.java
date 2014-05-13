@@ -63,6 +63,8 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
 
     public DistanceTest(Map<String, TypedValue> parameters)
     {
+        System.out.println("DISTANCE TEST");
+
         assert (parameters.containsKey("distance"));
         goalDistance = parameters.get("distance").getDouble();
 

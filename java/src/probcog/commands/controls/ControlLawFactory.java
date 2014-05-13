@@ -1,7 +1,7 @@
 package probcog.commands.controls;
 
 import java.util.*;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.*;
 
 import probcog.commands.*;
 import probcog.lcmtypes.*;
@@ -66,7 +66,7 @@ public class ControlLawFactory
      *
      *  @return A ControlLaw object that a robot may execute
      **/
-	synchronized public ControlLaw construct(String name, HashMap<String, TypedValue> parameters) throws ClassNotFoundException
+	synchronized public ControlLaw construct(String name, Map<String, TypedValue> parameters) throws ClassNotFoundException
     {
         // Ensure class existence
         if (!controlLawMap.containsKey(name)) {
@@ -76,7 +76,16 @@ public class ControlLawFactory
         // Instantiate the appropriate control law
         try {
             String classname = controlLawMap.get(name);
-            Object obj = Class.forName(classname).getConstructor(parameters.getClass()).newInstance(parameters);
+            Constructor[] ctors = Class.forName(classname).getDeclaredConstructors();
+            Constructor ctor = null;
+            for (Constructor c: ctors) {
+                if (c.getGenericParameterTypes().length > 0) {
+                    ctor = c;
+                    break;
+                }
+            }
+            assert (ctor != null);
+            Object obj = ctor.newInstance(parameters);
             assert (obj instanceof ControlLaw);
 
             return (ControlLaw) obj;
@@ -86,9 +95,7 @@ public class ControlLawFactory
             System.err.printf("ERR: %s\n", ex);
             ex.printStackTrace();
         }
-        // XXX Should fail more gracefully
-        assert (false); // Tried to instantiate non-existent control law.
-        return null;    // XXX
+        return null; // XXX Should fail more gracefully
 	}
 
     /** Get collections of parameters for all known control laws. These lists of

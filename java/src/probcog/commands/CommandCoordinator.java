@@ -38,7 +38,7 @@ public class CommandCoordinator
     private static int controlLawIDCounter = 0;
     private static int conditionTestIDCounter = 0;
 
-    private enum Status
+    public enum Status
     {
         EXECUTING, FAILURE, SUCCESS, UNKNOWN
     }
@@ -142,6 +142,7 @@ public class CommandCoordinator
         int id = controlLawIDCounter++;
         controlLaws.put(id, new ControlLawRecord(controlLaw));
         controlLaw.setRunning(true);
+        System.out.printf("Registered and started Law <%d>\n", id);
         return id;
     }
 
@@ -167,6 +168,7 @@ public class CommandCoordinator
     {
         int id = conditionTestIDCounter++;
         conditionTests.put(id, conditionTest);
+        System.out.printf("Registered Test <%d>\n", id);
         //conditionTest.setRunning(true);
         return id;
     }
@@ -201,5 +203,10 @@ public class CommandCoordinator
         }
         ArrayList<TerminationCondition> conds = terminationConditions.get(testID);
         conds.add(new TerminationCondition(lawID, status));
+
+        System.out.printf("Registered Test <%d> to Control Law <%d> with termination status <%s>\n",
+                          testID,
+                          lawID,
+                          status.name());
     }
 }

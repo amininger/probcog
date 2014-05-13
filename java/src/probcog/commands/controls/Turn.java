@@ -58,6 +58,8 @@ public class Turn implements ControlLaw
 
     public Turn(Map<String, TypedValue> parameters)
     {
+        System.out.println("TURN");
+
         // Needs a direction to turn, currently
         assert (parameters.containsKey("direction"));
         byte direction = parameters.get("direction").getByte();
