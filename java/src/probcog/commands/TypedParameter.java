@@ -1,4 +1,4 @@
-package probcog.command;
+package probcog.commands;
 
 /** A generic typed parameter.
  *
@@ -8,7 +8,7 @@ package probcog.command;
  **/
 public class TypedParameter
 {
-    private public String name;     // What is this parameter called?
+    private String name;            // What is this parameter called?
     private boolean required;       // It it required (true) or optional (false) for construction?
 
     private int type;   // XXX Pulls type from TypedValue?

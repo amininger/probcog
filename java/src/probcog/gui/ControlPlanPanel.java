@@ -63,8 +63,8 @@ public class ControlPlanPanel extends JPanel
         // associate with a control law and making this generalizable if possible.
         //
         // ...
-        synchronized(ControlLawFactory.getLock()) {
+        //synchronized(ControlLawFactory.getLock()) {
             // What are we hoping to do here?
-        }
+        //}
     }
 }

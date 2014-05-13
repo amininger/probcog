@@ -19,7 +19,7 @@ public class TypedValue
     public TypedValue(Boolean v)
     {
         type = TYPE_BOOLEAN;
-        value = b;
+        value = v;
     }
 
     public TypedValue(Byte v)

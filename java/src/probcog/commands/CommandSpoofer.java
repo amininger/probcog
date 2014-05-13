@@ -41,6 +41,7 @@ import probcog.rosie.world.WorldModel;
 
 public class CommandSpoofer {
 
+    /*
 		public static control_law_t createControlLaw(String clName, String testName, Double value){
 			control_law_t cl = new control_law_t();
 			cl.id = 1;
@@ -89,5 +90,5 @@ public class CommandSpoofer {
 
 		LCM lcm = LCM.getSingleton();
 		lcm.publish("SOAR_COMMAND", cl);
-	}
+	}*/
 }

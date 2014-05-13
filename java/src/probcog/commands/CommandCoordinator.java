@@ -1,10 +1,14 @@
-package probcog.command;
+package probcog.commands;
 
 import java.util.*;
 
 import lcm.lcm.*;
 
 import april.util.*;
+
+import probcog.commands.controls.*;
+import probcog.commands.tests.*;
+import probcog.lcmtypes.*;
 
 /** The command coordinator is responsible for the creation of new control
  *  law requests, condition tests, registration of tests as termination
@@ -47,7 +51,7 @@ public class CommandCoordinator
         public ControlLawRecord(ControlLaw controlLaw)
         {
             this.controlLaw = controlLaw;
-            this.executionStatus = EXECUTING;
+            this.executionStatus = Status.EXECUTING;
         }
     }
     Map<Integer, ControlLawRecord> controlLaws = Collections.synchronizedMap(new HashMap<Integer, ControlLawRecord>());
@@ -82,7 +86,7 @@ public class CommandCoordinator
             synchronized (conditionTests) {
                 for (Integer key: keys) {
                     ConditionTest test = conditionTests.get(key);
-                    if (test.conditionMet() && terminationConditions.containsKey(key) {
+                    if (test.conditionMet() && terminationConditions.containsKey(key)) {
                         ArrayList<TerminationCondition> terms = terminationConditions.get(key);
                         synchronized (terms) {
                             for (TerminationCondition term: terms) {
@@ -98,10 +102,10 @@ public class CommandCoordinator
             }
 
             // Send out status messages via LCM.
-            Set<Integer> keys = controlLaws.keySet();
+            keys = controlLaws.keySet();
             synchronized (controlLaws) {
                 control_law_status_list_t sl = new control_law_status_list_t();
-                sl.utime = TimeUtime.utime();
+                sl.utime = TimeUtil.utime();
                 sl.nstatuses = keys.size();
                 sl.statuses = new control_law_status_t[sl.nstatuses];
                 int idx = 0;
@@ -123,7 +127,7 @@ public class CommandCoordinator
     public CommandCoordinator()
     {
         int hz = 30;
-        tasks.addFixedRate(new UpdateTask, 1.0/hz);
+        tasks.addFixedRate(new UpdateTask(), 1.0/hz);
         tasks.setRunning(true);
     }
 
@@ -147,10 +151,10 @@ public class CommandCoordinator
      *
      *  @return     True is matching control law was destroyed, else false
      **/
-    public boolean destroyControlLaw(int id)
+    public boolean destroyControlLaw(Integer id)
     {
-        ControlLaw controlLaw = controlLaws.remove(id);
-        return controlLaw != null;
+        ControlLawRecord record = controlLaws.remove(id);
+        return record != null;
     }
 
     /** Register a condition test with the Coordinator.
@@ -163,6 +167,7 @@ public class CommandCoordinator
     {
         int id = conditionTestIDCounter++;
         conditionTests.put(id, conditionTest);
+        //conditionTest.setRunning(true);
         return id;
     }
 
@@ -189,8 +194,12 @@ public class CommandCoordinator
      *  @param status           Corresponding status of a control law when condition is met
      *
      **/
-    public void registerTerminationCondition(int testID, int lawID, ControlLaw.Status status)
+    public void registerTerminationCondition(int testID, int lawID, Status status)
     {
-        terminationConditions.put(testID, lawID);
+        if (!terminationConditions.containsKey(testID)) {
+            terminationConditions.put(testID, new ArrayList<TerminationCondition>());
+        }
+        ArrayList<TerminationCondition> conds = terminationConditions.get(testID);
+        conds.add(new TerminationCondition(lawID, status));
     }
 }

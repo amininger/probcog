@@ -28,13 +28,13 @@ public class CommandInterpreter{
 
 	public CommandInterpreter()
     {
-		waitingCommands = new LinkedList<control_law_t>();
+		//waitingCommands = new LinkedList<control_law_t>();
 
-		new ListenerThread().start();
-		new CommandThread().start();
+		//new ListenerThread().start();
+		//new CommandThread().start();
 	}
 
-	protected void newCommand(control_law_t controlLaw)
+	/*protected void newCommand(control_law_t controlLaw)
     {
 		synchronized(commandLock) {
 			waitingCommands.add(controlLaw);
@@ -134,7 +134,7 @@ public class CommandInterpreter{
 				newCommand(controlLaw);
 			}
 		}
-	}
+	}*/
 
 	public static void main(String[] args)
     {

@@ -88,6 +88,7 @@ public class ControlLawFactory
         }
         // XXX Should fail more gracefully
         assert (false); // Tried to instantiate non-existent control law.
+        return null;    // XXX
 	}
 
     /** Get collections of parameters for all known control laws. These lists of
@@ -97,12 +98,14 @@ public class ControlLawFactory
      **/
     synchronized public Map<String, Collection<TypedParameter> > getParameters()
     {
+        HashMap<String, Collection<TypedParameter> > map =
+            new HashMap<String, Collection<TypedParameter> >();
         try {
-            HashMap<String, Collection<TypedParameter> > map =
-                new HashMap<String, Collection<TypedParameter> >();
             for (String name: controlLawMap.keySet()) {
-                String classname = controlLawMap.get(name)
-                map.put(name, Class.forName(classname).getDeclaredMethod("getParameters").invoke(null));
+                String classname = controlLawMap.get(name);
+                Class klass = Class.forName(classname);
+                Object obj = klass.newInstance();
+                map.put(name, (Collection<TypedParameter>)klass.getDeclaredMethod("getParameters").invoke(obj));
             }
         } catch (Exception ex) {
             System.err.printf("ERR: %s\n", ex);
@@ -125,9 +128,8 @@ public class ControlLawFactory
 
             // Try constructing an instance of a control law based on parameters
             // XXX
-
-
-        } catch (ClassNotFoundException ex) {
+        } catch (Exception ex) {
+        //catch (ClassNotFoundException ex) {
             System.err.println("ERR: Could not construct control law" + ex);
             ex.printStackTrace();
         }

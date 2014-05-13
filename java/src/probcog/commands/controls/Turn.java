@@ -1,6 +1,7 @@
 package probcog.commands.controls;
 
-import java.io.IOException;
+import java.io.*;
+import java.util.*;
 
 import lcm.lcm.*;
 
@@ -8,60 +9,26 @@ import april.lcmtypes.pose_t;
 import april.util.*;
 
 import probcog.lcmtypes.*;
-import probcog.commands.TypedValue;
+import probcog.commands.*;
 
-public class Turn extends ControlLaw
+public class Turn implements ControlLaw
 {
-    static final int DD_BCAST_PERIOD_MS = 33; //XXX - Should go in config
-
-    static LCM lcm = LCM.getSingleton();
+    static final int DD_HZ = 30;
 
 	enum Direction { LEFT, RIGHT };
 	Direction dir;
 
-    private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
-    private pose_t initialPose;
+    private PeriodicTasks tasks = new PeriodicTasks(1);
 
-	public Turn(control_law_t controlLaw)
+    private class TurnTask implements PeriodicTasks.Task
     {
-		super(controlLaw);
-
-		new ListenerThread().start();
-
-		dir = Direction.LEFT;
-
-		// Parameters:
-		//   direction = { left, right }
-		for(int p = 0; p < controlLaw.num_params; p++){
-			if(controlLaw.param_names[p].equals("direction")){
-				String value = TypedValue.unwrapString(controlLaw.param_values[p]);
-				if(value.equals("left")){
-					dir = Direction.LEFT;
-				} else if(value.equals("right")){
-					dir = Direction.RIGHT;
-				}
-			}
-		}
-	}
-
-	@Override
-	public void execute()
-    {
-        initialPose = null;
-        while(initialPose == null) {
-            initialPose = poseCache.get();
+        public TurnTask()
+        {
+            System.out.println("Turn ready to execute");
         }
 
-        boolean turn = getStatus().equals(ControlLaw.Status.EXECUTING);
-        while (turn) {
-
-            TimeUtil.sleep(DD_BCAST_PERIOD_MS);
-
-            // Get the most recent position
-            pose_t pose = poseCache.get();
-            if(pose == null)
-                continue;
-
+        public void run(double dt)
+        {
             // Initialize diff drive with no movement
             diff_drive_t dd = new diff_drive_t();
             dd.left_enabled = dd.right_enabled = true;
@@ -81,26 +48,60 @@ public class Turn extends ControlLaw
             }
 
             publishDiff(dd);
-
-            // Test current status to determine whether to stop driving
-            turn = getStatus().equals(ControlLaw.Status.EXECUTING);
         }
-	}
+    }
 
-	@Override
-	public ControlLaw.Status getStatus()
+    /** Strictly for use for parameter checking */
+    public Turn()
     {
-		// TODO: may return EARLY_TERM or FAILURE if
-		//   something went wrong
+    }
 
-		if(termCond.evaluate() == true){
-			return ControlLaw.Status.FINISHED;
-		}
-		return ControlLaw.Status.EXECUTING;
-	}
+    public Turn(Map<String, TypedValue> parameters)
+    {
+        // Needs a direction to turn, currently
+        assert (parameters.containsKey("direction"));
+        byte direction = parameters.get("direction").getByte();
+        if (direction > 0) // CW
+            dir = Direction.LEFT;
+        else // CCW
+            dir = Direction.RIGHT;
+        tasks.addFixedDelay(new TurnTask(), 1.0/DD_HZ);
+    }
+
+    /** Start/stop the execution of the control law.
+     *
+     *  @param run  True causes the control law to begin execution, false stops it
+     **/
+    public void setRunning(boolean run)
+    {
+        tasks.setRunning(run);
+    }
+
+    /** Get the name of this control law. Mostly useful for debugging purposes.
+     *
+     *  @return The name of the control law
+     **/
+    public String getName()
+    {
+        return "TURN";
+    }
+
+    /** Get the parameters that can be set for this control law.
+     *
+     *  @return An iterable collection of all possible parameters
+     **/
+    public Collection<TypedParameter> getParameters()
+    {
+        ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+        params.add(new TypedParameter("direction",
+                                      TypedValue.TYPE_BYTE,
+                                      new TypedValue((byte)-1),
+                                      new TypedValue((byte)1)));
+        return params;
+    }
 
     // XXX publishDiff is in two classes - can we consolidate?
-    private void publishDiff(diff_drive_t diff_drive)
+    static private void publishDiff(diff_drive_t diff_drive)
     {
         // We may get a null if there are no poses yet
         // We should throw a WRN elsewhere if that is the case
@@ -111,40 +112,6 @@ public class Turn extends ControlLaw
         assert(diff_drive.right <= 1 && diff_drive.right >= -1);
 
         diff_drive.utime = TimeUtil.utime();
-        lcm.publish("DIFF_DRIVE", diff_drive);
-    }
-
-
-	class ListenerThread extends Thread implements LCMSubscriber {
-		LCM lcm = LCM.getSingleton();
-
-		public ListenerThread(){
-			lcm.subscribe("POSE", this);
-		}
-
-		public void run(){
-			while(true){
-				TimeUtil.sleep(1000/60);
-			}
-		}
-
-
-        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-        {
-            try {
-                messageReceivedEx(lcm, channel, ins);
-            } catch (IOException ex) {
-                System.out.println("WRN: "+ex);
-            }
-        }
-
-        synchronized void messageReceivedEx(LCM lcm, String channel,
-                                            LCMDataInputStream ins) throws IOException
-        {
-            if (channel.equals("POSE")) {
-                pose_t msg = new pose_t(ins);
-                poseCache.put(msg, msg.utime);
-            }
-        }
+        LCM.getSingleton().publish("DIFF_DRIVE", diff_drive);
     }
 }

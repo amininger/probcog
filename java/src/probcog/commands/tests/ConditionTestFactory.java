@@ -31,7 +31,6 @@ public class ConditionTestFactory
     {
         registerConditionTest("distance", DistanceTest.class.getName());
         registerConditionTest("rotation", RotationTest.class.getName());
-        registerConditionTest("obstruction", ObstructionTest.class.getName());
     }
 
     /** Register condition tests with the factory. It is the job of the
@@ -90,6 +89,7 @@ public class ConditionTestFactory
         }
         // XXX Should fail more gracefully
         assert (false); // Tried to instantiate non-existent conition test.
+        return null;    // XXX
 	}
 
     /** Get collections of parameters for all known condition tests. These lists of
@@ -99,12 +99,14 @@ public class ConditionTestFactory
      **/
     synchronized public Map<String, Collection<TypedParameter> > getParameters()
     {
+        HashMap<String, Collection<TypedParameter> > map =
+            new HashMap<String, Collection<TypedParameter> >();
         try {
-            HashMap<String, Collection<TypedParameter> > map =
-                new HashMap<String, Collection<TypedParameter> >();
             for (String name: testMap.keySet()) {
-                String classname = testMap.get(name)
-                map.put(name, Class.forName(classname).getDeclaredMethod("getParameters").invoke(null));
+                String classname = testMap.get(name);
+                Class klass = Class.forName(classname);
+                Object obj = klass.newInstance();
+                map.put(name, (Collection<TypedParameter>)klass.getDeclaredMethod("getParameters").invoke(obj));
             }
         } catch (Exception ex) {
             System.err.printf("ERR: %s\n", ex);
@@ -129,7 +131,8 @@ public class ConditionTestFactory
             // XXX
 
 
-        } catch (ClassNotFoundException ex) {
+        } catch (Exception ex) {
+        //catch (ClassNotFoundException ex) {
             System.err.println("ERR: Could not construct condition test" + ex);
             ex.printStackTrace();
         }

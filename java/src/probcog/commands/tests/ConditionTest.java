@@ -6,23 +6,16 @@ import probcog.commands.*;
 
 public interface ConditionTest
 {
-    /** Construct an instance of the condition test with the supplied parameters.
-     *
-     *  @param parameters   A map of parameter names to values
-     *
-     *  @return An instance of a ConditionTest
-     **/
-    static public ConditionTest construct(Map<String, TypedValue> parameters);
 
-    /** Start/stop the execution of the condition test.
+    /** Query whether or not the condition being tested for is currently true.
      *
-     *  @param run  True causes the condition test to begin execution, false stops it
+     *  @return True if condition test is currently satisfied, else false
      **/
-    public void setRunning(boolean run);
+    public boolean conditionMet();
 
     /** Get the parameters that can be set for this condition test.
      *
      *  @return An iterable collection of all possible parameters.
      **/
-    static public Collection<TypedParameter> getParameters();
+    public Collection<TypedParameter> getParameters();
 }
