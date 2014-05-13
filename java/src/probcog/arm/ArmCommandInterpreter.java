@@ -43,7 +43,7 @@ public class ArmCommandInterpreter
     // Height values for commands
     double defaultPointHeight = 0.08;   // Default height above object to point [m]
     double pointOffset = 0.06;  // How many [m] to point at above the target
-    double grabOffset  = 0.03;  // Max # [m] to reach down through the object
+    double grabOffset  = 0.025;  // Max # [m] to reach down through the object
     //double dropOffset  = 0.06;  // How many [m] above the table to drop objects
     double dropOffset  = 0.02;
 

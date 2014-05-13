@@ -113,7 +113,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
 
         // Arm control and arm monitor for rendering purposes
-        controller = new ArmController(config);
+        controller = new ArmController(config);//
         arm = new ArmStatus(config);
 
         // Initialize sensable manager
@@ -767,6 +767,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                                 labelString += String.format("%s%s:%.3f\n", tf, 
                                            (cat == FeatureCategory.WEIGHT ? "weight" : "temp" ), obj.getFeatures(cat).get(0));
                         	}
+                        }
+                        if(cat == FeatureCategory.COLOR){
+                        	labelString += String.format("%sColor = %.3f\n", tf, obj.getFeatures(cat).get(3));
                         }
                         if(bestLabel.label.equals("unknown")){
                         	continue;
