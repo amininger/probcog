@@ -53,7 +53,7 @@ public class SimKinectSensor implements Sensor
     public static final double POS_NOISE = .001;
     public static final int COLOR_NOISE = 2;
 
-    CameraPosition camera = new CameraPosition();
+    public CameraPosition camera = new CameraPosition();
 
     SimWorld sw;
 

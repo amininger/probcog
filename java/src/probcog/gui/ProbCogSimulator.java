@@ -36,11 +36,8 @@ public class ProbCogSimulator implements VisConsole.Listener
                             VisLayer vl,
                             VisCanvas vc)
     {
-	    //vc.setTargetFPS(opts.getInt("fps"));
-
 	    console = new VisConsole(vw, vl, vc);
 	    console.addListener(this);
-
 
         loadWorld(opts);
         sim = new Simulator(vw, vl, console, world);
@@ -74,7 +71,7 @@ public class ProbCogSimulator implements VisConsole.Listener
             ex.printStackTrace();
             return;
         }
-    	world.setRunning(true);
+        world.setRunning(true);
     }
 
     // === VisConsole commands ===

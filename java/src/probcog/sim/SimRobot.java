@@ -24,6 +24,7 @@ import probcog.commands.CommandInterpreter;
 import probcog.lcmtypes.*;
 import probcog.util.*;
 import probcog.vis.*;
+import probcog.perception.ObstacleMap;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
 
@@ -77,7 +78,7 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
         lcm.subscribe("DIFF_DRIVE", this);
 
         tasks.addFixedDelay(new ImageTask(), 0.04);
-        tasks.addFixedDelay(new POSETask(), 0.04);
+        tasks.addFixedDelay(new PoseTask(), 0.04);
         tasks.addFixedDelay(new ControlTask(), 0.04);
     }
 
@@ -194,54 +195,48 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
 
     class ImageTask implements PeriodicTasks.Task
     {
-        SimKinectSensor kinect;
+        double gridmap_range = 10;
+        double gridmap_meters_per_pixel = 0.1;
+
+        HashSet<SimObject> ignore = new HashSet<SimObject>();
 
         public ImageTask()
         {
-            // Where is the robot in the world?
-            double R2G[][] = LinAlg.quatPosToMatrix(drive.poseTruth.orientation, drive.poseTruth.pos);
-            // Where is the kinect with respect to the robot origin (rear axle)?
-            double K2R[][] = LinAlg.translate(0.21 + 0.055, 0, 0.68); // XXX - Need to get correct
-
-            // Where is the kinect in the world?
-            double K2G[][] = LinAlg.matrixAB(R2G, K2R);
-
-            double q[] = LinAlg.matrixToQuat(K2G);
-            double eye[] = LinAlg.matrixAB(K2G, new double[] {0,0,0,1});
-            double lookAt[] = LinAlg.matrixAB(K2G, new double[] {0,0,0,1});
-            double up[] = LinAlg.quatRotate(q, new double[] { 0, 0, 1 });
-
-            kinect = new SimKinectSensor(sw, eye, lookAt, up);
+            ignore.add(SimRobot.this);
         }
 
         public void run(double dt)
         {
-            boolean sendKinect = true;
-            if (sendKinect) {
-                // Where is the robot in the world?
-                double R2G[][] = LinAlg.quatPosToMatrix(drive.poseTruth.orientation, drive.poseTruth.pos);
-                // Where is the kinect with respect to the robot origin (rear axle)?
-                double K2R[][] = LinAlg.translate(0.21 + 0.055, 0, 0.68); // XXX - Need to get correct
+            double radstep = Math.atan2(gridmap_meters_per_pixel, gridmap_range);
+            double rad0 = Math.toRadians(-135);
+            double rad1 = Math.toRadians(135);
 
-                // Where is the kinect in the world?
-                double K2G[][] = LinAlg.matrixAB(R2G, K2R);
+            double T_truth[][] = LinAlg.matrixAB(LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
+                                                                        drive.poseTruth.pos),
+                                                 LinAlg.translate(0.3, 0, 0.25));
 
-                double q[] = LinAlg.matrixToQuat(K2G);
-                double eye[] = LinAlg.matrixAB(K2G, new double[] {0,0,0,1});
-                double lookAt[] = LinAlg.matrixAB(K2G, new double[] {0,0,0,1});
-                double up[] = LinAlg.quatRotate(q, new double[] { 0, 0, 1 });
+            double T_odom[][] = LinAlg.matrixAB(LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
+                                                                       drive.poseOdom.pos),
+                                                LinAlg.translate(0.3, 0, 0.25));
 
-                kinect.updateCamera(eye, lookAt, up);
-                ArrayList<double[]> xyzrpy = kinect.getAllXYZRGB();
+            double ranges[] = Sensors.laser(sw, ignore, T_truth, (int) ((rad1-rad0)/radstep),
+                                            rad0, radstep, 29.9);
 
-                // publish a frame here ?
-            }
+
+            laser_t laser = new laser_t();
+            laser.utime = TimeUtil.utime();
+            laser.nranges = ranges.length;
+            laser.ranges = LinAlg.copyFloats(ranges);
+            laser.rad0 = (float) rad0;
+            laser.radstep = (float) radstep;
+
+            lcm.publish("LASER", laser);
         }
     }
 
-    class POSETask implements PeriodicTasks.Task
+    class PoseTask implements PeriodicTasks.Task
     {
-        public POSETask()
+        public PoseTask()
         {
         }
 

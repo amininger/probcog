@@ -7,7 +7,6 @@ public class ControlLawFactory{
 		if(controlLaw.name.equals("turn")){
 			return new Turn(controlLaw);
 		} else if(controlLaw.name.equals("drive-forward")){
-            System.out.println("Control Law Factory saw drive-forward");
 			return new DriveForward(controlLaw);
 		}
 

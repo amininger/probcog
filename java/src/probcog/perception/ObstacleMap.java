@@ -9,6 +9,7 @@ import april.config.*;
 import april.jmat.*;
 import april.lcmtypes.laser_t;
 import april.util.*;
+import april.vis.VisCameraManager.CameraPosition;
 
 import probcog.sensor.*;
 import probcog.util.*;
@@ -31,6 +32,13 @@ public class ObstacleMap
         mt.start();
     }
 
+    public ObstacleMap(Sensor sensor)
+    {
+        this.sensor = sensor;
+        MapThread mt = new MapThread();
+        mt.start();
+    }
+
     public void createMap2D(double minHeight, double maxHeight)
     {
 
@@ -47,6 +55,15 @@ public class ObstacleMap
         for(int i=0; i<radii.length; i++) {
             radii[i] = Double.MAX_VALUE;
         }
+
+        SimKinectSensor kinect = (SimKinectSensor) sensor;
+        CameraPosition camera = kinect.camera;
+        double[] eye = camera.eye;
+        double[] up = camera.up;
+        double[] lookat = camera.lookat;
+        System.out.printf("Eye : (%.2f, %.2f, %.2f)\n", eye[0], eye[1], eye[2]);
+        System.out.printf("Look: (%.2f, %.2f, %.2f)\n", lookat[0], lookat[1], lookat[2]);
+        System.out.printf("Up  : (%.2f, %.2f, %.2f)\n", up[0], up[1], up[2]);
 
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
