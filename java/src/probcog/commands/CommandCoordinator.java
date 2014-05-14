@@ -86,18 +86,20 @@ public class CommandCoordinator
             synchronized (conditionTests) {
                 for (Integer key: keys) {
                     ConditionTest test = conditionTests.get(key);
-                    if (test.conditionMet() && terminationConditions.containsKey(key)) {
-                        ArrayList<TerminationCondition> terms = terminationConditions.get(key);
-                        synchronized (terms) {
-                            for (TerminationCondition term: terms) {
-                                assert (controlLaws.containsKey(term.id));
-                                controlLaws.get(term.id).controlLaw.setRunning(false);
-                                controlLaws.get(term.id).executionStatus = term.terminationStatus;
+                    synchronized (terminationConditions) {
+                        if (test.conditionMet() && terminationConditions.containsKey(key)) {
+                            ArrayList<TerminationCondition> terms = terminationConditions.get(key);
+                            synchronized (terms) {
+                                for (TerminationCondition term: terms) {
+                                    assert (controlLaws.containsKey(term.id));
+                                    controlLaws.get(term.id).controlLaw.setRunning(false);
+                                    controlLaws.get(term.id).executionStatus = term.terminationStatus;
+                                }
                             }
                         }
+                        // Broadcast relevant status information to those who care
+                        // XXX Who cares?
                     }
-                    // Broadcast relevant status information to those who care
-                    // XXX Who cares?
                 }
             }
 
@@ -139,11 +141,13 @@ public class CommandCoordinator
      **/
     public int registerControlLaw(ControlLaw controlLaw)
     {
-        int id = controlLawIDCounter++;
-        controlLaws.put(id, new ControlLawRecord(controlLaw));
-        controlLaw.setRunning(true);
-        System.out.printf("Registered and started Law <%d>\n", id);
-        return id;
+        synchronized (controlLaws) {
+            int id = controlLawIDCounter++;
+            controlLaws.put(id, new ControlLawRecord(controlLaw));
+            controlLaw.setRunning(true);
+            System.out.printf("Registered and started Law <%d>\n", id);
+            return id;
+        }
     }
 
     /** Destroy the control law associated with the given ID.
@@ -154,8 +158,11 @@ public class CommandCoordinator
      **/
     public boolean destroyControlLaw(Integer id)
     {
-        ControlLawRecord record = controlLaws.remove(id);
-        return record != null;
+        synchronized (controlLaws) {
+            ControlLawRecord record = controlLaws.remove(id);
+            System.out.printf("Destroyed Law <%d>\n", id);
+            return record != null;
+        }
     }
 
     /** Register a condition test with the Coordinator.
@@ -166,11 +173,13 @@ public class CommandCoordinator
      **/
     public int registerConditionTest(ConditionTest conditionTest)
     {
-        int id = conditionTestIDCounter++;
-        conditionTests.put(id, conditionTest);
-        System.out.printf("Registered Test <%d>\n", id);
-        //conditionTest.setRunning(true);
-        return id;
+        synchronized (conditionTests) {
+            int id = conditionTestIDCounter++;
+            conditionTests.put(id, conditionTest);
+            System.out.printf("Registered Test <%d>\n", id);
+            //conditionTest.setRunning(true);
+            return id;
+        }
     }
 
     /** Destroy the condition test associated with the given ID.
@@ -181,8 +190,14 @@ public class CommandCoordinator
      **/
     public boolean destroyConditionTest(int id)
     {
-        ConditionTest conditionTest = conditionTests.remove(id);
-        return conditionTest != null;
+        synchronized (conditionTests) {
+            synchronized (terminationConditions) {
+                ConditionTest conditionTest = conditionTests.remove(id);
+                terminationConditions.remove(id);
+                System.out.printf("Destroyed Test <%d>\n", id);
+                return conditionTest != null;
+            }
+        }
     }
 
     /** Register a condition test as a termination condition for a control law.
@@ -198,15 +213,16 @@ public class CommandCoordinator
      **/
     public void registerTerminationCondition(int testID, int lawID, Status status)
     {
-        if (!terminationConditions.containsKey(testID)) {
-            terminationConditions.put(testID, new ArrayList<TerminationCondition>());
+        synchronized (terminationConditions) {
+            if (!terminationConditions.containsKey(testID)) {
+                terminationConditions.put(testID, new ArrayList<TerminationCondition>());
+            }
+            ArrayList<TerminationCondition> conds = terminationConditions.get(testID);
+            conds.add(new TerminationCondition(lawID, status));
         }
-        ArrayList<TerminationCondition> conds = terminationConditions.get(testID);
-        conds.add(new TerminationCondition(lawID, status));
-
-        System.out.printf("Registered Test <%d> to Control Law <%d> with termination status <%s>\n",
-                          testID,
-                          lawID,
-                          status.name());
+            System.out.printf("Registered Test <%d> to Control Law <%d> with termination status <%s>\n",
+                              testID,
+                              lawID,
+                              status.name());
     }
 }
