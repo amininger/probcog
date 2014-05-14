@@ -16,8 +16,6 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
 {
     static final int DT_HZ = 30;
 
-    LCM lcm = LCM.getSingleton();
-
     Object poseLock = new Object();
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
     private pose_t startPose = null;
@@ -68,7 +66,7 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
         assert (parameters.containsKey("distance"));
         goalDistance = parameters.get("distance").getDouble();
 
-        lcm.subscribe("POSE", this);
+        LCM.getSingleton().subscribe("POSE", this);
         (new UpdateTask()).start();
     }
 
