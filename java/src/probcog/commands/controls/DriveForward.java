@@ -5,7 +5,6 @@ import java.util.*;
 
 import lcm.lcm.*;
 
-import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.lcmtypes.pose_t;
@@ -20,7 +19,7 @@ import probcog.util.*;
 // through-the-pipes implementation.
 public class DriveForward implements ControlLaw, LCMSubscriber
 {
-    static final int DB_HZ = 30;
+    static final int DB_HZ = 100;
     static final double VERY_FAR = 3671000;     // Earth's radius [m]
 
     // XXX This needs to change
@@ -71,18 +70,11 @@ public class DriveForward implements ControlLaw, LCMSubscriber
                                                pose.pos[1] + offset[1] };
 
             // Create and publish controls used by RobotDriver
-            // diff_drive_t dd = PathControl.getDiffDrive(center_pos,
-            //                                            pose.orientation,
-            //                                            path,
-            //                                            storedParams,
-            //                                            1.0);
-
-            // Initialize diff drive with no movement
-            diff_drive_t dd = new diff_drive_t();
-            dd.left_enabled = dd.right_enabled = true;
-            dd.left = .3;
-            dd.right = .3;
-
+            diff_drive_t dd = PathControl.getDiffDrive(center_pos,
+                                                       pose.orientation,
+                                                       path,
+                                                       storedParams,
+                                                       1.0);
             publishDiff(dd);
         }
     }

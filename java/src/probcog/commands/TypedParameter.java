@@ -1,5 +1,7 @@
 package probcog.commands;
 
+import java.util.*;
+
 /** A generic typed parameter.
  *
  *  Defines relevant ranges of values than can be assumed (if any), the
@@ -9,10 +11,11 @@ package probcog.commands;
 public class TypedParameter
 {
     private String name;            // What is this parameter called?
-    private boolean required;       // It it required (true) or optional (false) for construction?
+    private boolean required = true;// It it required (true) or optional (false) for construction?
 
     private int type;   // XXX Pulls type from TypedValue?
     private TypedValue[] range = new TypedValue[2]; // Min to max
+    private Collection<TypedValue> valid = null;
 
     public TypedParameter(String name, int type)
     {
@@ -28,6 +31,16 @@ public class TypedParameter
         this.type = type;
         range[0] = min;
         range[1] = max;
+    }
+
+    public TypedParameter(String name, int type, Collection<TypedValue> valid)
+    {
+        for (TypedValue v: valid)
+            assert (type == v.getType());
+
+        this.name = name;
+        this.type = type;
+        this.valid = valid;
     }
 
     public String getName()
@@ -56,5 +69,18 @@ public class TypedParameter
             return range;
         else
             throw new UnsupportedOperationException("No range specified");
+    }
+
+    public boolean hasValid()
+    {
+        return valid != null;
+    }
+
+    public Collection<TypedValue> getValid() throws UnsupportedOperationException
+    {
+        if (hasValid())
+            return valid;
+        else
+            throw new UnsupportedOperationException("No valid parameters specified");
     }
 }
