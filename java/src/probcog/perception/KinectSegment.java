@@ -26,7 +26,7 @@ import april.util.UnionFindSimple;
 
 public class KinectSegment implements Segmenter
 {
-    final static double COLOR_THRESH = .01;//30;
+    final static double COLOR_THRESH = .008;//30;
     final static double DISTANCE_THRESH = 0.01;
     final static double MIN_FROM_FLOOR_PLANE = .015; // XXX 0.015
     final static double MIN_OBJECT_SIZE = 100;
@@ -190,7 +190,7 @@ public class KinectSegment implements Segmenter
         HashMap<Integer, PointCloud> idToPoints = new HashMap<Integer, PointCloud>();
         for(int i = 0; i < points.size(); i++){
             double[] point = points.get(i);
-            if(!almostZero(point) && uf.getSetSize(i) > MIN_OBJECT_SIZE){
+            if(!almostZero(point) && uf.getSetSize(i) > 10){//MIN_OBJECT_SIZE){
                 int ufID = uf.getRepresentative(i);
                 PointCloud ptCloud = idToPoints.get(ufID);
                 if(ptCloud == null)
@@ -220,9 +220,21 @@ public class KinectSegment implements Segmenter
         		if(BoundingBox.intersects(bbox1, bbox2, 1.1)){
         			double[] hsv1 = ColorFeatureExtractor.avgHSV(c1.getPoints());
         			double[] hsv2 = ColorFeatureExtractor.avgHSV(c2.getPoints());
-        			if(Math.abs(hsv1[0] - hsv2[0]) < .035 ||
-        					(hsv1[0] > .8 && hsv2[0] > .8) ||
-        					(hsv1[0] > .53 && hsv1[0] < .62 && hsv2[0] > .53 && hsv2[0] < .62)){
+        			boolean merge = false;
+        			if(hsv1[0] > .8 && hsv2[0] > .8){
+        				merge = true;
+        			} else if(hsv1[0] <= .8 && hsv2[0] <= .8 && hsv1[0] > .65 && hsv2[0] > .65){
+        				merge = true;
+        			} else if(hsv1[0] <= .65 && hsv2[0] <= .65 && hsv1[0] > .54 && hsv2[0] > .54){
+        				merge = true;
+        			} else if(hsv1[0] <= .54 && hsv2[0] <= .54 && hsv1[0] > .48 && hsv2[0] > .48){
+        				merge = true;
+        			} else if(hsv1[0] <= .48 && hsv2[0] <= .48 && hsv1[0] > .2 && hsv2[0] > .2){
+        				merge = true;
+        			} else if(hsv1[0] <= .2 && hsv2[0] <= .2){
+        				merge = true;
+        			}
+        			if(merge){
 //        				System.out.println("Merging " + i + " and " + j);
         				int newSet = mappings.get(i);
         				int oldSet = mappings.get(j);
@@ -242,8 +254,12 @@ public class KinectSegment implements Segmenter
         
         HashMap<Integer, PointCloud> mergedClouds = new HashMap<Integer, PointCloud>();
         for(Map.Entry<Integer, Integer> e : mappings.entrySet()){
+        	
 //        	System.out.println("Mapping " + e.getKey() + "=" + e.getValue());
         	PointCloud pc = clouds.get(e.getKey());
+        	if(pc.getPoints().size() < MIN_OBJECT_SIZE){
+        		continue;
+        	}
         	if(mergedClouds.containsKey(e.getValue())){
         		mergedClouds.get(e.getValue()).addPoints(pc.getPoints());
         	} else {
