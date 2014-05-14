@@ -48,7 +48,7 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
 
     PeriodicTasks tasks = new PeriodicTasks(2);
 
-    // static variables
+    // static variables ..
     static Random r = new Random();
     static Model4 model4 = new Model4();
 
