@@ -40,54 +40,56 @@ import probcog.rosie.world.WMUtil;
 import probcog.rosie.world.WorldModel;
 
 public class CommandSpoofer {
+    public static control_law_t createControlLaw(String clName, String testName, Double value){
+        control_law_t cl = new control_law_t();
+        cl.id = 1;
+        cl.name = clName;
+        cl.num_params = 0;
+        cl.param_names = new String[0];
+        cl.param_values = new typed_value_t[0];
 
-		public static control_law_t createControlLaw(String clName, String testName, Double value){
-			control_law_t cl = new control_law_t();
-			cl.id = 1;
-			cl.name = clName;
-			cl.num_params = 0;
-			cl.param_names = new String[0];
-			cl.param_values = new typed_value_t[0];
+        if(clName.equals("turn"))
+        {
+            cl.num_params = 1;
+            cl.param_names = new String[]{"direction"};
+            cl.param_values = new typed_value_t[1];
+            if(value < 0)
+                cl.param_values[0] = TypedValue.wrap(-1);
+            else
+                cl.param_values[0] = TypedValue.wrap(1);
+        }
 
-            if(clName.equals("turn"))
-            {
-                cl.num_params = 1;
-                cl.param_names = new String[]{"direction"};
-                cl.param_values = new typed_value_t[1];
-                if(value < 0)
-                    cl.param_values[0] = TypedValue.wrap("right");
-                else
-                    cl.param_values[0] = TypedValue.wrap("left");
-            }
+        condition_test_t ct = new condition_test_t();
+        ct.name = testName;
+        ct.num_params = 0;
+        ct.param_names = new String[0];
+        ct.param_values = new typed_value_t[0];
+        ct.compare_type = condition_test_t.CMP_GTE;
+        ct.compared_value = TypedValue.wrap(value);
 
-			condition_test_t ct = new condition_test_t();
-			ct.name = testName;
-			ct.num_params = 0;
-			ct.param_names = new String[0];
-			ct.param_values = new typed_value_t[0];
-			ct.compare_type = condition_test_t.CMP_GTE;
-			ct.compared_value = TypedValue.wrap(value);
+        if(clName.equals("turn") && value<0)
+        {
+            ct.compare_type = condition_test_t.CMP_LTE;
+        }
 
-            if(clName.equals("turn") && value<0)
-            {
-                ct.compare_type = condition_test_t.CMP_LTE;
-            }
+        cl.termination_condition = ct;
+        return cl;
+    }
 
-			cl.termination_condition = ct;
-			return cl;
-		}
+    public static void main(String[] args){
+        if(args.length < 3){
+            System.err.println("Need 3 args");
+            System.err.println("Possible command types are:");
+            System.err.println("\tdrive-forward distance [# meters]");
+            System.err.println("\tturn rotation [# rads]");
+        }
+        String clName = args[0];
+        String ctName = args[1];
+        Double value = new Double(args[2]);
 
-	public static void main(String[] args){
-		if(args.length < 3){
-			System.err.println("Need 3 args");
-		}
-		String clName = args[0];
-		String ctName = args[1];
-		Double value = new Double(args[2]);
+        control_law_t cl = createControlLaw(clName, ctName, value);
 
-		control_law_t cl = createControlLaw(clName, ctName, value);
-
-		LCM lcm = LCM.getSingleton();
-		lcm.publish("SOAR_COMMAND", cl);
-	}
+        LCM lcm = LCM.getSingleton();
+        lcm.publish("SOAR_COMMAND", cl);
+    }
 }

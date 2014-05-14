@@ -1,5 +1,7 @@
 struct control_law_t
 {
+    int64_t utime; // XXX
+
 	string name;
     int32_t id;
 

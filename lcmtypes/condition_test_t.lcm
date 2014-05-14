@@ -14,5 +14,4 @@ struct condition_test_t
 
 	int32_t compare_type;
 	typed_value_t compared_value;
-
 }

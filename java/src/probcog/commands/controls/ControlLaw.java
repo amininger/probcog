@@ -1,37 +1,26 @@
 package probcog.commands.controls;
 
-import probcog.lcmtypes.control_law_t;
+import java.util.*;
 
-import probcog.commands.tests.IConditionTest;
-import probcog.commands.tests.ConditionTestFactory;
+import probcog.commands.*;
 
-public abstract class ControlLaw{
-	protected String name;
-	protected int id;
+public interface ControlLaw
+{
+    /** Start/stop the execution of the control law.
+     *
+     *  @param run  True causes the control law to begin execution, false stops it
+     **/
+    public void setRunning(boolean run);
 
-	protected IConditionTest termCond;
+    /** Get the name of this control law. Mostly useful for debugging purposes.
+     *
+     *  @return The name of the control law
+     **/
+    public String getName();
 
-	public enum Status{
-		EXECUTING, FINISHED, EARLY_TERM, FAILURE
-	}
-
-	public ControlLaw(control_law_t controlLaw){
-		name = controlLaw.name;
-		id = controlLaw.id;
-
-		termCond = ConditionTestFactory.construct(controlLaw.termination_condition);
-	}
-
-	public int getID(){
-		return id;
-	}
-
-	public String getName(){
-		return name;
-	}
-
-	public abstract void execute();
-
-	public abstract Status getStatus();
-
+    /** Get the parameters that can be set for this control law.
+     *
+     *  @return An iterable collection of all possible parameters
+     **/
+    public Collection<TypedParameter> getParameters();
 }
