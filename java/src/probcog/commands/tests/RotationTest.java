@@ -14,8 +14,6 @@ import probcog.commands.*;
 
 public class RotationTest implements ConditionTest, LCMSubscriber
 {
-    LCM lcm = LCM.getSingleton();
-
     Object poseLock = new Object();
     private pose_t currPose;    // Most recendly recorded pose
     private pose_t lastPose;    // Last recorded pose
@@ -65,12 +63,12 @@ public class RotationTest implements ConditionTest, LCMSubscriber
 
     public RotationTest(Map<String, TypedValue> parameters)
     {
-        System.out.println("Rotation Test");
+        System.out.println("ROTATION TEST");
 
         assert (parameters.containsKey("yaw"));
         goalYaw = parameters.get("yaw").getDouble();
 
-        lcm.subscribe("POSE", this);
+        LCM.getSingleton().subscribe("POSE", this);
         (new UpdateThread()).start();
     }
 

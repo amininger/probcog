@@ -89,12 +89,10 @@ public class CommandCoordinator
                     synchronized (terminationConditions) {
                         if (test.conditionMet() && terminationConditions.containsKey(key)) {
                             ArrayList<TerminationCondition> terms = terminationConditions.get(key);
-                            synchronized (terms) {
-                                for (TerminationCondition term: terms) {
-                                    assert (controlLaws.containsKey(term.id));
-                                    controlLaws.get(term.id).controlLaw.setRunning(false);
-                                    controlLaws.get(term.id).executionStatus = term.terminationStatus;
-                                }
+                            for (TerminationCondition term: terms) {
+                                assert (controlLaws.containsKey(term.id));
+                                controlLaws.get(term.id).controlLaw.setRunning(false);
+                                controlLaws.get(term.id).executionStatus = term.terminationStatus;
                             }
                         }
                         // Broadcast relevant status information to those who care
@@ -128,7 +126,7 @@ public class CommandCoordinator
 
     public CommandCoordinator()
     {
-        int hz = 30;
+        int hz = 100;
         tasks.addFixedRate(new UpdateTask(), 1.0/hz);
         tasks.setRunning(true);
     }

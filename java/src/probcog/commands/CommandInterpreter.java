@@ -58,67 +58,48 @@ public class CommandInterpreter
 
 	protected void update()
     {
-		synchronized(commandLock){
-            control_law_status_list_t sl = statusCache.get();
-            if (sl == null)
-                return;
+        control_law_status_list_t sl = statusCache.get();
+        if (sl == null)
+            return;
 
-			if(sl.nstatuses == 0 && waitingCommands.size() > 0) {
-				control_law_t nextCommand = waitingCommands.poll();
-                assert (nextCommand.name.equals("drive-forward") ||
-                        nextCommand.name.equals("turn"));
-                assert (nextCommand.termination_condition.name.equals("distance") ||
-                        nextCommand.termination_condition.name.equals("rotation"));
-                Map<String, TypedValue> params = new HashMap<String, TypedValue>();
-                if (nextCommand.name.equals("turn")) {
-                    int v = TypedValue.unwrapInt(nextCommand.param_values[0]);
-                    params.put("direction", new TypedValue((byte)v));
-                }
-                Map<String, TypedValue> params2 = new HashMap<String, TypedValue>();
-                double v = TypedValue.unwrapDouble(nextCommand.termination_condition.compared_value);
-                if (nextCommand.termination_condition.name.equals("distance")) {
-                    params2.put("distance", new TypedValue(v));
+        if(sl.nstatuses == 0 && waitingCommands.size() > 0) {
+            control_law_t nextCommand;
+            synchronized (commandLock) {
+                nextCommand = waitingCommands.poll();
+            }
+            assert (nextCommand.name.equals("drive-forward") ||
+                    nextCommand.name.equals("turn"));
+            assert (nextCommand.termination_condition.name.equals("distance") ||
+                    nextCommand.termination_condition.name.equals("rotation"));
+            Map<String, TypedValue> params = new HashMap<String, TypedValue>();
+            if (nextCommand.name.equals("turn")) {
+                int v = TypedValue.unwrapInt(nextCommand.param_values[0]);
+                params.put("direction", new TypedValue((byte)v));
+            }
+            Map<String, TypedValue> params2 = new HashMap<String, TypedValue>();
+            double v = TypedValue.unwrapDouble(nextCommand.termination_condition.compared_value);
+            if (nextCommand.termination_condition.name.equals("distance")) {
+                params2.put("distance", new TypedValue(v));
+            } else {
+                params2.put("yaw", new TypedValue(v));
+            }
+
+            try {
+                ControlLaw law = clfactory.construct(nextCommand.name, params);
+                ConditionTest test = ctfactory.construct(nextCommand.termination_condition.name, params2);
+                if (law != null && test != null) {
+                    testID = coordinator.registerConditionTest(test);
+                    lawID = coordinator.registerControlLaw(law);
+                    coordinator.registerTerminationCondition(testID, lawID, CommandCoordinator.Status.SUCCESS);
                 } else {
-                    params2.put("yaw", new TypedValue(v));
+                    System.err.println("WRN: Error constructing law/test");
                 }
-
-                try {
-                    ControlLaw law = clfactory.construct(nextCommand.name, params);
-                    ConditionTest test = ctfactory.construct(nextCommand.termination_condition.name, params2);
-                    if (law != null && test != null) {
-                        testID = coordinator.registerConditionTest(test);
-                        lawID = coordinator.registerControlLaw(law);
-                        coordinator.registerTerminationCondition(testID, lawID, CommandCoordinator.Status.SUCCESS);
-                    } else {
-                        System.err.println("WRN: Error constructing law/test");
-                    }
-                    /*if(curCommand == null){
-                        sendStatus(nextCommand.id, "unknown-command");
-                    } else {
-                        sendStatus(curCommand.getID(), "started");
-                    }*/
-                } catch (ClassNotFoundException ex) {
-                    System.err.println("ERR: "+ex);
-                    ex.printStackTrace();
-                }
-			}
-		}
-
-		/*if(curCommand != null) {
-			curCommand.execute();
-			ControlLaw.Status status = curCommand.getStatus();
-			if(status == ControlLaw.Status.FINISHED){
-				sendStatus(curCommand.getID(), "complete");
-				curCommand = null;
-			} else if(status == ControlLaw.Status.EARLY_TERM){
-				sendStatus(curCommand.getID(), "early-termination");
-				curCommand = null;
-			} else if(status == ControlLaw.Status.FAILURE){
-				sendStatus(curCommand.getID(), "failure");
-				curCommand = null;
-			}
-		}*/
-	}
+            } catch (ClassNotFoundException ex) {
+                System.err.println("ERR: "+ex);
+                ex.printStackTrace();
+            }
+        }
+    }
 
 	class CommandThread extends Thread
     {
