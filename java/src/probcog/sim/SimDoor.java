@@ -43,6 +43,7 @@ public class SimDoor implements SimObject
     {
         BoxShape shape = new BoxShape(0, 0, 0);
         return shape.transform(LinAlg.translate(0, 0, 1));
+        // return new BoxShape(scale[0], scale[1], scale[2]);
     }
 
     public void read(StructureReader ins) throws IOException
