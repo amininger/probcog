@@ -24,8 +24,8 @@ public class CommandInterpreter
     ConditionTestFactory ctfactory = ConditionTestFactory.getSingleton();
 
 	protected Object commandLock = new Object();
-
-	protected ControlLaw curCommand;
+    protected int lawID;    // Could be multiples in future
+    protected int testID;   // Could be multiples in future
 
 	protected Queue<control_law_t> waitingCommands;
 
@@ -86,9 +86,9 @@ public class CommandInterpreter
                     ControlLaw law = clfactory.construct(nextCommand.name, params);
                     ConditionTest test = ctfactory.construct(nextCommand.termination_condition.name, params2);
                     if (law != null && test != null) {
-                        int ctid = coordinator.registerConditionTest(test);
-                        int clid = coordinator.registerControlLaw(law);
-                        coordinator.registerTerminationCondition(ctid, clid, CommandCoordinator.Status.SUCCESS);
+                        testID = coordinator.registerConditionTest(test);
+                        lawID = coordinator.registerControlLaw(law);
+                        coordinator.registerTerminationCondition(testID, lawID, CommandCoordinator.Status.SUCCESS);
                     } else {
                         System.err.println("WRN: Error constructing law/test");
                     }
@@ -171,6 +171,19 @@ public class CommandInterpreter
 			} else if ("CONTROL_LAW_STATUS".equals(channel)) {
                 control_law_status_list_t sl = new control_law_status_list_t(ins);
                 statusCache.put(sl, TimeUtil.utime());
+
+                // Cleanup
+                synchronized (commandLock) {
+                    if (sl.nstatuses > 0 && sl.statuses[0].id == lawID)
+                    {
+                        String status = sl.statuses[0].status;
+                        if (!CommandCoordinator.Status.EXECUTING.name().equals(status)) {
+                            System.out.println("STATUS == "+status);
+                            coordinator.destroyConditionTest(testID);
+                            coordinator.destroyControlLaw(lawID);
+                        }
+                    }
+                }
             }
 		}
 	}
