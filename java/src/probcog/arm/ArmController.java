@@ -95,6 +95,9 @@ public class ArmController implements LCMSubscriber
             while (true) {
                 TimeUtil.sleep(1000/Hz);
 
+                while(cmds.size() > 1){
+                	cmds.poll();
+                }
                 // Action handler - get the most recent command
                 bolt_arm_command_t cmd = cmds.peek();
 
