@@ -14,7 +14,6 @@ import april.vis.*;
 public class SimBlocker extends SimLocation implements ISimEffector
 {
 	protected double storedZ = 0;
-	private String prevState;
 	
     public SimBlocker(SimWorld sw) {
 		super(sw);
@@ -67,20 +66,6 @@ public class SimBlocker extends SimLocation implements ISimEffector
     	super.setState(stateName, stateVal);
     }
     
-    @Override
-    public String[][] getCurrentState() {
-		String[][] states = super.getCurrentState();
-		for(String[] state : states){
-			if(state[0].equals("enabled")){
-				state[1] = prevState;
-				prevState = getState("enabled");
-				break;
-			}
-		}
-		return states;
-	}
-
-
 	/** Restore state that was previously written **/
 	@Override
 	public void read(StructureReader ins) throws IOException
@@ -96,10 +81,7 @@ public class SimBlocker extends SimLocation implements ISimEffector
 			this.addNewState("enabled", new String[]{"false", "true"});
 		}
 
-		prevState = this.getState("enabled");
-		if(this.getState("enabled").equals("false")){
-			setState("enabled", "false");
-		}
+		this.setState("enabled", this.getState("enabled"));
 	}
 	
 	@Override

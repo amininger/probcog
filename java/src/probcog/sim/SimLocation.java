@@ -88,6 +88,8 @@ public class SimLocation extends SimObjectPC
         Classifications location = new Classifications();
         location.add(name, 1.0);
         locObj.addClassifications(FeatureCategory.LOCATION, location);
+        
+        locObj.setStates(this.getCurrentState());
 
         return locObj;
     }

@@ -33,8 +33,7 @@ public class Obj
     // Labels and attributes of the object
     private HashMap<FeatureCategory, Classifications> labels;
     private HashMap<FeatureCategory, ArrayList<Double>> features;
-    private HashMap<String, String[]> possibleStates;
-    private HashMap<String, String> currentStates;
+    private String[][] states;
 
     // Visualization information
 	private Shape shape;
@@ -56,8 +55,7 @@ public class Obj
 
         labels = new HashMap<FeatureCategory, Classifications>();
         features = new HashMap<FeatureCategory, ArrayList<Double>>();
-        possibleStates = new HashMap<String, String[]>();
-        currentStates = new HashMap<String, String>();
+        states = new String[0][0];
         bbox = new BoundingBox();
         centroid = new double[3];
         ptCloud = new PointCloud();
@@ -73,8 +71,7 @@ public class Obj
 
         labels = new HashMap<FeatureCategory, Classifications>();
         features = new HashMap<FeatureCategory, ArrayList<Double>>();
-        possibleStates = new HashMap<String, String[]>();
-        currentStates = new HashMap<String, String>();
+        states = new String[0][0];
 
         bbox = ptCloud.getBoundingBox();
         centroid = ptCloud.getCentroid();
@@ -99,8 +96,7 @@ public class Obj
 
         labels = new HashMap<FeatureCategory, Classifications>();
         features = new HashMap<FeatureCategory, ArrayList<Double>>();
-        possibleStates = new HashMap<String, String[]>();
-        currentStates = new HashMap<String, String>();
+        states = new String[0][0];
 
         bbox = new BoundingBox();
         centroid = new double[3];
@@ -303,14 +299,17 @@ public class Obj
         return cat_dat;
     }
     
+    public void setStates(String[][] states){
+    	this.states = states;
+    }
+    
     public String[] getStates(){
     	if(sourceSimObj == null || !(sourceSimObj instanceof ISimStateful)){
     		return new String[0];
     	}
-    	String[][] currentState = ((ISimStateful)sourceSimObj).getCurrentState();
-    	String[] stateVals = new String[currentState.length]; 
-    	for(int i = 0; i < currentState.length; i++){
-    		stateVals[i] = currentState[i][0] + "=" + currentState[i][1];
+    	String[] stateVals = new String[states.length]; 
+    	for(int i = 0; i < states.length; i++){
+    		stateVals[i] = states[i][0] + "=" + states[i][1];
     	}
         return stateVals;
     }

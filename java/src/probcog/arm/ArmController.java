@@ -97,6 +97,9 @@ public class ArmController implements LCMSubscriber
 
                 // Action handler - get the most recent command
                 bolt_arm_command_t cmd = cmds.peek();
+								while(cmds.size() > 1){
+									cmds.poll();
+								}
 
                 // Check for new action. Shouldn't execute new
                 // action until we have completed the previous one
@@ -329,7 +332,7 @@ public class ArmController implements LCMSubscriber
             wrVec = LinAlg.transform(LinAlg.rotateZ(angle), wrVec); // Base rotation
             wrVec = LinAlg.transform(LinAlg.rotateZ(-last_cmd.wrist), wrVec);
             wrVec = LinAlg.normalize(wrVec);
-            double offset = 0.03;   // meters
+            double offset = 0.035;   // meters
             double[] behind = new double[] {goal[0] + (offset*wrVec[0]),
                                             goal[1] + (offset*wrVec[1])};
 
@@ -400,7 +403,7 @@ public class ArmController implements LCMSubscriber
                     break;
                 case GRAB_AT:
                     //moveTo(goal, grabHeight, grabHeight*1.8);   // Try to compensate for sagging arm
-                	double[] dest = LinAlg.add(LinAlg.scale(behind, .33),  LinAlg.scale(goal,  .67));
+                	double[] dest = LinAlg.add(LinAlg.scale(behind, .4),  LinAlg.scale(goal,  .6));
                     moveTo(dest, goalHeight);
 
                     if (actionComplete()) {
