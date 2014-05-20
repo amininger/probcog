@@ -21,6 +21,7 @@ public class SimLocation extends SimObjectPC implements SimObject
 
     String name = "";
     double[] sxyz = new double[]{1, 1, .1};
+    protected double[] lwh = new double[]{1, 1, 1};
 
     public SimLocation(SimWorld sw)
     {
@@ -94,7 +95,7 @@ public class SimLocation extends SimObjectPC implements SimObject
             locObj = new Obj(id);
         }
 
-        double[] lwh = new double[]{scale, scale, scale};
+        lwh = new double[]{scale, scale, scale};
 
         double[] pose = LinAlg.matrixToXyzrpy(T);
 
