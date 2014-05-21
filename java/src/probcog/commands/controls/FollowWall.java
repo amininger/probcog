@@ -17,20 +17,26 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 {
     private static final double FW_HZ = 100;
     private static final double ROBOT_RAD = Util.getDomainConfig().requireDouble("robot.geometry.radius");
+    private static final double BACK_THETA = 3*Math.PI/4;
+    private static final double FRONT_THETA = -Math.PI/4;
+    private static final double MAX_V = 1.0;
+
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
         new ExpiringMessageCache<laser_t>(.2);
 
     Direction dir;
     private enum Direction { LEFT, RIGHT }
-    private double goalDistance = -1;
+    private double goalDistance = Double.MAX_VALUE;
 
     private class UpdateTask implements PeriodicTasks.Task
     {
-        int idx = -1;       // laser_t beam index
-        double offset;      // offset from 90 degrees if necessary
+        int startIdx = -1;
+        int finIdx = -1;
 
-        double MAX_DIST = 5.0;  // [m]
+        // State for PID
+        double K_d = 0.7;
+        double lastRange = -1;
 
         public void run(double dt)
         {
@@ -44,7 +50,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             // 90 degress CCW from the front of the robot, in all likelihood.
             // Otherwise, we choose the furthest beam out to that side and correct
             // our range measurements accordingly.
-            if (idx < 0)
+            if (startIdx < 0)
                 init(laser);
 
             // Update the movement of the robot. Basically, swing towards wall
@@ -55,37 +61,44 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         private void init(laser_t laser)
         {
-            // Find best laser range measurement
-            double bestDistance = Double.POSITIVE_INFINITY;
-            double dist = Double.POSITIVE_INFINITY;
-            for (int i = 0; i < laser.nranges; i++) {
-                double t = laser.rad0 + i*laser.radstep;
-                switch (dir) {
-                    case LEFT:
-                        dist = Math.abs(Math.PI/2 - t);
-                        break;
-                    case RIGHT:
-                        dist = Math.abs(-Math.PI/2 - t);
-                        break;
-                }
-                if (dist < bestDistance) {
-                    bestDistance = dist;
-                    idx = i;
-                    offset = dist;
-                }
+            // Find indices at which to start/stop scanning
+            switch (dir) {
+                case LEFT:
+                    finIdx = MathUtil.clamp((int)((BACK_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
+                    startIdx = MathUtil.clamp((int)((FRONT_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
+                    break;
+                case RIGHT:
+                    startIdx = MathUtil.clamp((int)((-BACK_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
+                    finIdx = MathUtil.clamp((int)((-FRONT_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
+                    break;
+                default:
+                    assert (false);
+                    break;
             }
 
-            // If no distance was specified, try to maintain current distance
-            if (goalDistance < 0) {
-                goalDistance = Math.cos(offset)*laser.ranges[idx];
+            assert (startIdx <= finIdx);
+
+            // If no goal distance was specified, find one
+            if (goalDistance == Double.MAX_VALUE) {
+                for (int i = startIdx; i <= finIdx; i++) {
+                    goalDistance = Math.min(goalDistance, laser.ranges[i]);
+                }
             }
         }
 
         // P controller to do wall avoidance. More logic could be added...
         private void update(laser_t laser, double dt)
         {
-            assert (idx >= 0);
-            double r = laser.ranges[idx];
+            double r = Double.MAX_VALUE;
+            for (int i = startIdx; i <= finIdx; i++) {
+                r = Math.min(r, laser.ranges[i]);
+            }
+            double deriv = 0;
+            if (lastRange > 0)
+                deriv = (r - lastRange)/dt; // [m/s] of change
+            lastRange = r;
+
+            double prop = MathUtil.clamp(-1 + r/goalDistance, -0.5, 0.7);
 
             // Initialize no-speed diff drive
             diff_drive_t dd = new diff_drive_t();
@@ -94,33 +107,11 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             dd.left = 0;
             dd.right = 0;
 
-            // Distance delta. Positive == too far, negative == too close
-            double delta = MathUtil.clamp(Math.cos(offset)*r - goalDistance,
-                                          -MAX_DIST,
-                                          MAX_DIST);
-
-            double nearSpeed = 0.5 - 0.5*(delta/MAX_DIST);
-            double farSpeed = 0.5 + 0.5*(delta/MAX_DIST);
-
-            // Correct for forward obstacles. If we get within a robot radius
-            // of an obstacle for any of the beams in a 90 degree fan in front
-            // of us, turn hard in the OPPOSITE direction of the wall we are
-            // following.
-            for (int i = 0; i < laser.nranges; i++) {
-                double t = laser.rad0 + i*laser.radstep;
-                if (-Math.PI/4 > t || Math.PI/4 < t)
-                    continue;
-                double dist = Math.cos(t)*laser.ranges[i];
-                if (dist < ROBOT_RAD+.25) {
-                    nearSpeed = 0.5;
-                    farSpeed = -0.5;
-                    break;
-                }
-            }
-
-            double max = Math.max(nearSpeed, farSpeed);
-            nearSpeed = nearSpeed/max;
-            farSpeed = farSpeed/max;
+            double nearSpeed = 0.5;
+            double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
+            double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
+            nearSpeed = MAX_V*nearSpeed/max;
+            farSpeed = MAX_V*farSpeed/max;
 
             switch (dir) {
                 case LEFT:
