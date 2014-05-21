@@ -30,6 +30,7 @@ public class ControlLawFactory
     {
         registerControlLaw("turn", Turn.class.getName());
         registerControlLaw("drive-forward", DriveForward.class.getName());
+        registerControlLaw("follow-wall", FollowWall.class.getName());
     }
 
     /** Register control laws with the factory. It is the job of the

@@ -67,14 +67,16 @@ public class CommandInterpreter
             synchronized (commandLock) {
                 nextCommand = waitingCommands.poll();
             }
-            assert (nextCommand.name.equals("drive-forward") ||
-                    nextCommand.name.equals("turn"));
-            assert (nextCommand.termination_condition.name.equals("distance") ||
-                    nextCommand.termination_condition.name.equals("rotation"));
+
             Map<String, TypedValue> params = new HashMap<String, TypedValue>();
             if (nextCommand.name.equals("turn")) {
                 int v = TypedValue.unwrapInt(nextCommand.param_values[0]);
                 params.put("direction", new TypedValue((byte)v));
+            } else if (nextCommand.name.equals("follow-wall")) {
+                int v = TypedValue.unwrapInt(nextCommand.param_values[0]);
+                double d = TypedValue.unwrapDouble(nextCommand.param_values[1]);
+                params.put("side", new TypedValue((byte)v));
+                params.put("distance", new TypedValue(d));
             }
             Map<String, TypedValue> params2 = new HashMap<String, TypedValue>();
             double v = TypedValue.unwrapDouble(nextCommand.termination_condition.compared_value);
@@ -151,7 +153,7 @@ public class CommandInterpreter
 				newCommand(controlLaw);
 			} else if ("CONTROL_LAW_STATUS".equals(channel)) {
                 control_law_status_list_t sl = new control_law_status_list_t(ins);
-                statusCache.put(sl, TimeUtil.utime());
+                statusCache.put(sl, sl.utime);
 
                 // Cleanup
                 synchronized (commandLock) {

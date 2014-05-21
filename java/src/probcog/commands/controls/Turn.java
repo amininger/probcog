@@ -5,7 +5,7 @@ import java.util.*;
 
 import lcm.lcm.*;
 
-import april.lcmtypes.pose_t;
+import april.lcmtypes.*;
 import april.util.*;
 
 import probcog.lcmtypes.*;
@@ -13,7 +13,7 @@ import probcog.commands.*;
 
 public class Turn implements ControlLaw
 {
-    static final int DD_HZ = 30;
+    static final int DD_HZ = 100;
 
 	enum Direction { LEFT, RIGHT };
 	Direction dir;
@@ -95,10 +95,12 @@ public class Turn implements ControlLaw
     public Collection<TypedParameter> getParameters()
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+        ArrayList<TypedValue> options = new ArrayList<TypedValue>();
+        options.add(new TypedValue((byte)-1));
+        options.add(new TypedValue((byte)1));
         params.add(new TypedParameter("direction",
                                       TypedValue.TYPE_BYTE,
-                                      new TypedValue((byte)-1),
-                                      new TypedValue((byte)1)));
+                                      options));
         return params;
     }
 

@@ -59,13 +59,28 @@ public class CommandSpoofer {
                 cl.param_values[0] = TypedValue.wrap(1);
         }
 
+        if ("follow-wall".equals(clName)) {
+            cl.num_params = 2;
+            cl.param_names = new String[]{"side", "distance"};
+            cl.param_values = new typed_value_t[2];
+            if(value < 0)
+                cl.param_values[0] = TypedValue.wrap(-1);
+            else
+                cl.param_values[0] = TypedValue.wrap(1);
+            cl.param_values[1] = TypedValue.wrap(value);
+        }
+
         condition_test_t ct = new condition_test_t();
         ct.name = testName;
         ct.num_params = 0;
         ct.param_names = new String[0];
         ct.param_values = new typed_value_t[0];
         ct.compare_type = condition_test_t.CMP_GTE;
-        ct.compared_value = TypedValue.wrap(value);
+        if ("follow-wall".equals(clName)) {
+            ct.compared_value = TypedValue.wrap(1000.0); // Infinity
+        } else {
+            ct.compared_value = TypedValue.wrap(value);
+        }
 
         if(clName.equals("turn") && value<0)
         {
@@ -82,6 +97,7 @@ public class CommandSpoofer {
             System.err.println("Possible command types are:");
             System.err.println("\tdrive-forward distance [# meters]");
             System.err.println("\tturn rotation [# rads]");
+            System.err.println("\tfollow-wall distance [# meters from wall (sign indicates which wall)]");
         }
         String clName = args[0];
         String ctName = args[1];
