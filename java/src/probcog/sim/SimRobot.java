@@ -28,7 +28,7 @@ import probcog.perception.ObstacleMap;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
 
-public class SimRobot extends SimObjectPC implements LCMSubscriber
+public class SimRobot implements SimObject, LCMSubscriber
 {
     int ROBOT_ID = 6;
     SimWorld sw;
@@ -48,13 +48,12 @@ public class SimRobot extends SimObjectPC implements LCMSubscriber
 
     PeriodicTasks tasks = new PeriodicTasks(2);
 
-    // static variables
+    // static variables ..
     static Random r = new Random();
     static Model4 model4 = new Model4();
 
     public SimRobot(SimWorld sw)
     {
-        super(sw);
         this.sw = sw;
         useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);
         drawSensor = sw.config.getBoolean("simulator.sim_magic_robot.draw_sensor", false);

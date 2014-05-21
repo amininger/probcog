@@ -14,9 +14,13 @@ import probcog.classify.Features.FeatureCategory;
 import probcog.perception.*;
 import probcog.util.*;
 
-public class SimLocation extends SimObjectPC
+public class SimLocation extends SimObjectPC implements SimObject
 {
-    private String name;
+    boolean table = false; // XXX -- Get this info from config file?
+    boolean mobile = true;
+
+    String name = "";
+    double[] sxyz = new double[]{1, 1, .1};
     protected double[] lwh = new double[]{1, 1, 1};
 
     public SimLocation(SimWorld sw)
@@ -27,30 +31,47 @@ public class SimLocation extends SimObjectPC
     public VisObject getVisObject()
     {
         ArrayList<Object> objs = new ArrayList<Object>();
-        
-        objs.add(LinAlg.scale(scale));
 
         // The larger box making up the background of the object
-        objs.add(new VisChain(LinAlg.translate(0, 0, 1), new VzRectangle(new VzMesh.Style(color))));
+        if(table) {
+            objs.add(LinAlg.scale(scale));
 
-        // The smaller inner box is only drawn if there is a door and it's open
-        if(currentState.containsKey("door") && currentState.get("door").equals("open")) {
-            objs.add(new VisChain(LinAlg.translate(0,0,1.001),
-                                  LinAlg.scale(.9),
-                                  new VzRectangle(new VzMesh.Style(Color.DARK_GRAY))));
+            objs.add(new VisChain(LinAlg.translate(0, 0, 1), new VzRectangle(new VzMesh.Style(color))));
+
+            // The smaller inner box is only drawn if there is a door and it's open
+            if(currentState.containsKey("door") && currentState.get("door").equals("open")) {
+                objs.add(new VisChain(LinAlg.translate(0,0,1.001),
+                                      LinAlg.scale(.9),
+                                      new VzRectangle(new VzMesh.Style(Color.DARK_GRAY))));
+            }
+
+            // The name of the location
+            objs.add(new VisChain(LinAlg.rotateZ(Math.PI/2), LinAlg.translate(0,-.8,1.002),
+                                  LinAlg.scale(0.02),
+                                  new VzText(VzText.ANCHOR.CENTER,
+                                             String.format("<<black>> %s", name))));
         }
+        else if (mobile) {
+            objs.add(new VisChain(LinAlg.translate(0,0,-.5),
+                                  new VzRectangle(sxyz[0], sxyz[1], new VzMesh.Style(color))));
 
-        // The name of the location
-        objs.add(new VisChain(LinAlg.rotateZ(Math.PI/2), LinAlg.translate(0,-.8,1.002),
-                              LinAlg.scale(0.02),
-                              new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", name))));
+            // The name of the location
+            objs.add(new VisChain(LinAlg.translate(0,0,-.5),
+                                  LinAlg.scale(0.1),
+                                  new VzText(VzText.ANCHOR.CENTER,
+                                             String.format("<<black>> %s", name))));
+
+        }
 
         return new VisChain(objs.toArray());
     }
 
     public Shape getShape()
     {
-    	return new BoxShape(lwh[0]*2, lwh[1]*2, lwh[2]*2);
+        if(table) {
+            return new BoxShape(sxyz[0]*2, sxyz[1]*2, sxyz[2]*2);
+        }
+        return new BoxShape(sxyz[0], sxyz[1], -sxyz[2]);
     }
 
     public void setName(String name)
@@ -73,7 +94,7 @@ public class SimLocation extends SimObjectPC
         else {
             locObj = new Obj(id);
         }
-        
+
         lwh = new double[]{scale, scale, scale};
 
         double[] pose = LinAlg.matrixToXyzrpy(T);
@@ -96,6 +117,7 @@ public class SimLocation extends SimObjectPC
     {
     	super.read(ins);
 
+        sxyz = ins.readDoubles();
         name = ins.readString();
     }
 
@@ -103,6 +125,7 @@ public class SimLocation extends SimObjectPC
     {
     	super.write(outs);
 
+        outs.writeDoubles(sxyz);
         outs.writeString(name);
     }
 
