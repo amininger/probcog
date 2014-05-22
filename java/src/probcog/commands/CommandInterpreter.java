@@ -77,6 +77,9 @@ public class CommandInterpreter
                 double d = TypedValue.unwrapDouble(nextCommand.param_values[1]);
                 params.put("side", new TypedValue((byte)v));
                 params.put("distance", new TypedValue(d));
+            } else if (nextCommand.name.equals("follow-heading")) {
+                double h = TypedValue.unwrapDouble(nextCommand.param_values[0]);
+                params.put("heading", new TypedValue(h));
             }
             Map<String, TypedValue> params2 = new HashMap<String, TypedValue>();
             double v = TypedValue.unwrapDouble(nextCommand.termination_condition.compared_value);
