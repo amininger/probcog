@@ -207,8 +207,10 @@ public class SimRobot implements SimObject, LCMSubscriber
         public void run(double dt)
         {
             double radstep = Math.atan2(gridmap_meters_per_pixel, gridmap_range);
-            double rad0 = Math.toRadians(-135);
-            double rad1 = Math.toRadians(135);
+            double minDeg = -135;
+            double maxDeg = 135;
+            double rad0 = Math.toRadians(minDeg);
+            double rad1 = Math.toRadians(maxDeg);
 
             double T_truth[][] = LinAlg.matrixAB(LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
                                                                         drive.poseTruth.pos),
