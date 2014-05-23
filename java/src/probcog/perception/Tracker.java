@@ -39,7 +39,9 @@ public class Tracker
     // Arm Stuff
     private Object armLock = new Object();
     private robot_command_t robot_cmd;
-
+    
+    private Object locLock = new Object();
+    
     private Segmenter segmenter;
     private ArmCommandInterpreter armInterpreter;
 
@@ -90,13 +92,17 @@ public class Tracker
     
     public HashMap<Integer, Obj> getWorldState()
     {
-        return worldState;
+    	synchronized(stateLock){
+    		return worldState;
+    	}
     }
 
     // Returns null if object not found
     public Obj getObject(Integer id)
     {
-        return worldState.get(id);
+    	synchronized(stateLock){
+    		return worldState.get(id);
+    	}
     }
     
     private int matchObject(Obj obj, HashMap<Integer, Obj> candidates){
@@ -196,6 +202,7 @@ public class Tracker
         Tic tic = new Tic();
     	long time = TimeUtil.utime();
 
+
     	// Get Soar Objects
         HashMap<Integer, Obj> soarObjects = getSoarObjects();
         if(SHOW_TIMERS){
@@ -204,8 +211,13 @@ public class Tracker
         	System.out.println("  GET VISIBLE OBJECTS");
         }
 
+        ArrayList<Obj> visibleObjects;
+        ArrayList<Obj> imagined;
+        synchronized(locLock){
+        	visibleObjects = getVisibleObjects();
+        	imagined = createImaginedObjects(world, false);
+        }
         // Get Visible Objects
-        ArrayList<Obj> visibleObjects = getVisibleObjects();
         if(SHOW_TIMERS){
         	System.out.println("  GET VISIBLE OBJECTS: " + (TimeUtil.utime() - time));
         	time = TimeUtil.utime();
@@ -215,11 +227,11 @@ public class Tracker
 //        for(Obj obj : soarObjects.values()){
 //        	previousFrame.put(obj.getID(), obj);
 //        }
-        for(Obj obj : worldState.values()){
-        	previousFrame.put(obj.getID(), obj);
-        }
 
         synchronized (stateLock) {
+        	for(Obj obj : worldState.values()){
+                previousFrame.put(obj.getID(), obj);
+        	}
             worldState = new HashMap<Integer, Obj>();
 
             // Perfect segmentation, relies on the ID's inherent in the source Sim objects
@@ -232,7 +244,6 @@ public class Tracker
             		}
             	}
 
-            	ArrayList<Obj> imagined = createImaginedObjects(world, false);
                 for(Obj o : imagined) {
                     worldState.put(o.getID(), o);
                 }
@@ -264,7 +275,15 @@ public class Tracker
             ArrayList<Obj> unmatchedObjects = new ArrayList<Obj>();
             for(Map.Entry<Obj, Integer> e : idMapping.entrySet()){
             	if(e.getValue() != -1 && unmatchedSoarObjects.containsKey(e.getValue())){
-            		unmatchedSoarObjects.remove(e.getValue());
+            		Obj obj = e.getKey();
+            		Obj soarObj = unmatchedSoarObjects.get(e.getValue());
+            		if(BoundingBox.estimateIntersectionVolume(obj.getBoundingBox(), soarObj.getBoundingBox(), 8) < .000000001){
+            			// Not actually a match, doesn't intersect soar object
+            			e.setValue(-1);
+            			unmatchedObjects.add(e.getKey());
+            		} else {
+            			unmatchedSoarObjects.remove(e.getValue());
+            		}
             	} else {
             		unmatchedObjects.add(e.getKey());
             	}
@@ -386,7 +405,7 @@ public class Tracker
 
             adjustBoundingBoxes(new ArrayList<Obj>(worldState.values()));
             
-            ArrayList<Obj> imagined = createImaginedObjects(world, false);
+            
             for(Obj o : imagined) {
                 worldState.put(o.getID(), o);
             }
@@ -446,6 +465,8 @@ public class Tracker
             	}
             }
         }
+
+        
         // Classify all visible objects
         for(Obj obj : visibleObjects){
         	obj.addAllClassifications(classyManager.classifyAll(obj));
@@ -898,15 +919,18 @@ public class Tracker
     // Given a command from soar to set the state for an object,
     //   sets the state if a valid command
     private void processSetStateCommand(set_state_command_t setState){
+    	SimObject src = null;
     	synchronized(stateLock){
     		Obj obj = worldState.get(setState.obj_id);
     		if(obj != null){
-    			SimObject src = obj.getSourceSimObject();
-    			if(src != null && src instanceof ISimStateful){
-    				((ISimStateful)src).setState(setState.state_name, setState.state_val);
-    			}
+    			src = obj.getSourceSimObject();
     		}
     	}
+    	if(src != null && src instanceof ISimStateful){
+    		synchronized(locLock){
+    			((ISimStateful)src).setState(setState.state_name, setState.state_val);
+    		}
+		}
     }
 
     /** Class that continually listens for messages from Soar about what objects

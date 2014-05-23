@@ -26,7 +26,7 @@ import april.util.UnionFindSimple;
 
 public class KinectSegment implements Segmenter
 {
-    final static double COLOR_THRESH = .008;//30;
+    final static double COLOR_THRESH = .01;//30;
     final static double DISTANCE_THRESH = 0.01;
     final static double MIN_FROM_FLOOR_PLANE = .015; // XXX 0.015
     final static double MIN_OBJECT_SIZE = 100;
@@ -190,7 +190,7 @@ public class KinectSegment implements Segmenter
         HashMap<Integer, PointCloud> idToPoints = new HashMap<Integer, PointCloud>();
         for(int i = 0; i < points.size(); i++){
             double[] point = points.get(i);
-            if(!almostZero(point) && uf.getSetSize(i) > 10){//MIN_OBJECT_SIZE){
+            if(!almostZero(point) && uf.getSetSize(i) > MIN_OBJECT_SIZE){
                 int ufID = uf.getRepresentative(i);
                 PointCloud ptCloud = idToPoints.get(ufID);
                 if(ptCloud == null)
@@ -271,7 +271,7 @@ public class KinectSegment implements Segmenter
         	objects.add(e.getValue());
         }
 //        System.out.println(mergedClouds.size());
-
+//
 //        for(PointCloud ptc : idToPoints.values())
 //            objects.add(ptc);
 

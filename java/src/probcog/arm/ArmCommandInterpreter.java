@@ -460,8 +460,8 @@ public class ArmCommandInterpreter
             double delta = (gripWidth - defaultGripWidth)/2;
             double theta = Math.atan2(bcmd.xyz[1], bcmd.xyz[0]);
 
-            bcmd.xyz[0] += -delta*Math.sin(theta);
-            bcmd.xyz[1] += delta*Math.cos(theta);
+//            bcmd.xyz[0] += -delta*Math.sin(theta);
+//            bcmd.xyz[1] += delta*Math.cos(theta);
 
             gripWidth = 0;
         }
