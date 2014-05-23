@@ -22,9 +22,10 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
     private static final double MIN_THETA = -Math.PI/2;
     private static final double MAX_THETA = Math.PI/2;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
+    private static final double K_d = 0.05;
 
     double targetHeading = 0;
-    double distance = 0.5;   // XXX distance to be away from wall
+    double distance = 0.75;   // XXX distance to be away from wall
 
     PeriodicTasks tasks = new PeriodicTasks(1);
     ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
@@ -32,10 +33,21 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
 
     private class UpdateTask implements PeriodicTasks.Task
     {
+        diff_drive_t lastDD;
+        double rRightLast = Double.MAX_VALUE;
+        double rLeftLast = Double.MAX_VALUE;
+
         boolean oriented = false;
         int startIdx = -1;
         int midIdx = -1;
         int finIdx = -1;
+
+        public UpdateTask()
+        {
+            lastDD = new diff_drive_t();
+            lastDD.right = 0;
+            lastDD.left = 0;
+        }
 
         public void run(double dt)
         {
@@ -69,15 +81,11 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
         {
             // Initialize no-speed diff drive
             diff_drive_t dd = new diff_drive_t();
-            dd.utime = TimeUtil.utime();
-            dd.left_enabled = dd.right_enabled = true;
-            dd.left = 0;
-            dd.right = 0;
 
             if (!oriented)
                 dd = orient(pose, targetHeading);
             else
-                dd = drive(laser, pose, targetHeading);
+                dd = drive(laser, pose, targetHeading, dt);
 
             LCM.getSingleton().publish("DIFF_DRIVE", dd);
         }
@@ -104,7 +112,7 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
             return dd;
         }
 
-        private diff_drive_t drive(laser_t laser, pose_t pose, double heading)
+        private diff_drive_t drive(laser_t laser, pose_t pose, double heading, double dt)
         {
             double[] rpy = LinAlg.quatToRollPitchYaw(pose.orientation);
 
@@ -116,8 +124,8 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
 
             // Try to drive towards heading, first.
             double delta = MathUtil.mod2pi(rpy[2] - heading);
-            dd.left = 0.5 + 0.5*(delta/(Math.PI/2));
-            dd.right = 0.5 + 0.5*(delta/(-Math.PI/2));
+            dd.left = 0.5 + .3*(delta/(Math.PI/2));
+            dd.right = 0.5 + .3*(delta/(-Math.PI/2));
 
             // Avoid anything that gets in the way, within reason
             double max = Math.max(dd.left, dd.right);
@@ -126,34 +134,34 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
             ArrayList<Double> rightSamples = new ArrayList<Double>();
             ArrayList<Double> leftSamples = new ArrayList<Double>();
             for (int i = startIdx; i < finIdx; i++) {
+                double t = laser.rad0+laser.radstep*i;
+                double w = Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)));
                 if (i < midIdx) {
-                    rRight = Math.min(laser.ranges[i], rRight);
-                    rightSamples.add((double)laser.ranges[i]);
+                    rRight = Math.min(w*laser.ranges[i], rRight);
+                    rightSamples.add(w*laser.ranges[i]);
                 } else {
-                    rLeft = Math.min(laser.ranges[i], rLeft);
-                    leftSamples.add((double)laser.ranges[i]);
+                    rLeft = Math.min(w*laser.ranges[i], rLeft);
+                    leftSamples.add(w*laser.ranges[i]);
                 }
             }
-            // Inefficient median sampling
-            Collections.sort(rightSamples);
-            Collections.sort(leftSamples);
-            double rRightMedian = rRight;
-            double rLeftMedian = rLeft;
-            if (rightSamples.size() > 0)
-                rRightMedian = rightSamples.get(rightSamples.size()/8);
-            if (leftSamples.size() > 0)
-                rLeftMedian = leftSamples.get(leftSamples.size()/8);
 
-
-            dd.left -= max * Math.pow(distance/Math.max(distance, rRightMedian), 1);
-            dd.right -= max * Math.pow(distance/Math.max(distance, rLeftMedian), 1);
+            // This causes walls to "push" on the robot. Repulsor fields!
+            double leftPush = Math.pow(distance/Math.max(distance, rRight), 3);
+            double rightPush = Math.pow(distance/Math.max(distance, rLeft), 3);
+            double rLeftDeriv = (rLeft - rLeftLast)/dt; // [m/s]
+            double rRightDeriv = (rRight - rRightLast)/dt;  // [m/s]
+            dd.left = dd.left - (dd.left*leftPush) - (K_d*rLeftDeriv);
+            dd.right = dd.right - (dd.right*rightPush) - (K_d*rRightDeriv);
 
             // Normalize
             max = Math.max(Math.abs(dd.left), Math.abs(dd.right));
-            if (max > 0.01) {
+            if (max > K_d) {
                 dd.left /= max;
                 dd.right /= max;
             }
+
+            rRightLast = rRight;
+            rLeftLast = rLeft;
 
             return dd;
         }

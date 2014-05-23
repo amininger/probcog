@@ -17,8 +17,8 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
     static final int DT_HZ = 30;
 
     Object poseLock = new Object();
-    private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
     private pose_t startPose = null;
+    private pose_t currPose = null;
     private double goalDistance = 0;
     private double currentDistance = 0;
 
@@ -32,7 +32,7 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
                     try {
                         poseLock.wait();
                     } catch (InterruptedException ex) {}
-                    startPose = poseCache.get();
+                    startPose = currPose;
                 }
             }
 
@@ -42,8 +42,6 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
                     try {
                         poseLock.wait();
                     } catch (InterruptedException ex) {}
-
-                    pose_t currPose = poseCache.get();  // XXX This cache seems silly now
 
                     // Update distance
                     currentDistance = LinAlg.distance(startPose.pos,
@@ -85,7 +83,7 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
         if (channel.equals("POSE")) {
             pose_t msg = new pose_t(ins);
             synchronized (poseLock) {
-                poseCache.put(msg, msg.utime);
+                currPose = msg;
                 poseLock.notifyAll();
             }
         }
