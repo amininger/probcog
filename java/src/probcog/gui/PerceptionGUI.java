@@ -768,9 +768,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                                            (cat == FeatureCategory.WEIGHT ? "weight" : "temp" ), obj.getFeatures(cat).get(0));
                         	}
                         }
-                        if(cat == FeatureCategory.COLOR){
-                        	labelString += String.format("%sColor = %.3f\n", tf, obj.getFeatures(cat).get(3));
-                        }
+//                        if(cat == FeatureCategory.COLOR){
+//                        	labelString += String.format("%sColor = %.3f\n", tf, obj.getFeatures(cat).get(3));
+//                        }
                         if(bestLabel.label.equals("unknown")){
                         	continue;
                         }
