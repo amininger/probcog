@@ -1,0 +1,10 @@
+struct classifications_t
+{
+    int64_t utime;
+
+    string name; // E..g "Red"
+    int32_t id;
+    double xyz[3];
+
+    double confidence; // [0-1] e.g. .7
+}

@@ -82,8 +82,12 @@ public class CommandInterpreter
             double v = TypedValue.unwrapDouble(nextCommand.termination_condition.compared_value);
             if (nextCommand.termination_condition.name.equals("distance")) {
                 params2.put("distance", new TypedValue(v));
-            } else {
+            } else if (nextCommand.termination_condition.name.equals("rotation")){
                 params2.put("yaw", new TypedValue(v));
+            } else if (nextCommand.termination_condition.name.equals("count")){
+                params2.put("count", new TypedValue(v));
+                String classType = TypedValue.unwrapString(nextCommand.termination_condition.param_values[1]);
+                params2.put("class", new TypedValue(classType));
             }
 
             try {

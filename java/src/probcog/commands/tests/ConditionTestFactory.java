@@ -31,6 +31,7 @@ public class ConditionTestFactory
     {
         registerConditionTest("distance", DistanceTest.class.getName());
         registerConditionTest("rotation", RotationTest.class.getName());
+        registerConditionTest("count", ClassificationCounterTest.class.getName());
     }
 
     /** Register condition tests with the factory. It is the job of the

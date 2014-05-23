@@ -39,14 +39,20 @@ import probcog.rosie.world.SVSCommands;
 import probcog.rosie.world.WMUtil;
 import probcog.rosie.world.WorldModel;
 
-public class CommandSpoofer {
-    public static control_law_t createControlLaw(String clName, String testName, Double value){
+public class CommandSpoofer
+{
+    public static control_law_t createControlLaw(String clName,
+                                                 String testName,
+                                                 ArrayList<String> params)
+    {
         control_law_t cl = new control_law_t();
         cl.id = 1;
         cl.name = clName;
         cl.num_params = 0;
         cl.param_names = new String[0];
         cl.param_values = new typed_value_t[0];
+
+        double value = Double.parseDouble(params.get(0));
 
         if(clName.equals("turn"))
         {
@@ -87,23 +93,37 @@ public class CommandSpoofer {
             ct.compare_type = condition_test_t.CMP_LTE;
         }
 
+        if ("count".equals(testName)) {
+            ct.num_params = 2;
+            ct.param_names = new String[]{"count", "class"};
+            ct.param_values = new typed_value_t[2];
+            ct.param_values[0] = TypedValue.wrap(value);
+            ct.param_values[1] = TypedValue.wrap(params.get(1));
+        }
+
         cl.termination_condition = ct;
         return cl;
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args)
+    {
         if(args.length < 3){
-            System.err.println("Need 3 args");
-            System.err.println("Possible command types are:");
+            System.err.println("Need at least 3 args: [command name] [test condition] [parameters]");
+            System.err.println("Possible command types incluede:");
             System.err.println("\tdrive-forward distance [# meters]");
+            System.err.println("\tdrive-forward count [number] [things-to-count]");
             System.err.println("\tturn rotation [# rads]");
             System.err.println("\tfollow-wall distance [# meters from wall (sign indicates which wall)]");
         }
+
         String clName = args[0];
         String ctName = args[1];
-        Double value = new Double(args[2]);
+        ArrayList<String> params = new ArrayList<String>();
+        for(int i=2; i<args.length; i++) {
+            params.add(args[i]);
+        }
 
-        control_law_t cl = createControlLaw(clName, ctName, value);
+        control_law_t cl = createControlLaw(clName, ctName, params);
 
         LCM lcm = LCM.getSingleton();
         lcm.publish("SOAR_COMMAND", cl);
