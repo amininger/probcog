@@ -17,7 +17,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 {
     private static final double FW_HZ = 100;
     private static final double ROBOT_RAD = Util.getDomainConfig().requireDouble("robot.geometry.radius");
-    private static final double BACK_THETA = 3*Math.PI/4;
+    private static final double BACK_THETA = Math.PI/2;
     private static final double FRONT_THETA = -Math.PI/4;
     private static final double MAX_V = 1.0;
 
@@ -35,7 +35,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         int finIdx = -1;
 
         // State for PID
-        double K_d = 0.7;
+        double K_d = 0.3;
         double lastRange = -1;
 
         public void run(double dt)
@@ -91,14 +91,20 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         {
             double r = Double.MAX_VALUE;
             for (int i = startIdx; i <= finIdx; i++) {
-                r = Math.min(r, laser.ranges[i]);
+                //double w = 1.0;
+                //if (finIdx - i > (finIdx - startIdx)/2)
+                //    w = .75;
+                double w = MathUtil.clamp(Math.abs(Math.sin(laser.rad0+laser.radstep*i)),
+                                          Math.sin(Math.PI/6), 1.0);
+                r = Math.min(r, w*laser.ranges[i]);
             }
             double deriv = 0;
             if (lastRange > 0)
                 deriv = (r - lastRange)/dt; // [m/s] of change
             lastRange = r;
 
-            double prop = MathUtil.clamp(-1 + r/goalDistance, -0.5, 0.7);
+            // XXX
+            double prop = MathUtil.clamp(-0.5 + r/goalDistance, -1.0, 1.0);
 
             // Initialize no-speed diff drive
             diff_drive_t dd = new diff_drive_t();

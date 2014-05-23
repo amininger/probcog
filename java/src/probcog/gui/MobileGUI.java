@@ -14,6 +14,7 @@ import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
+import april.lcmtypes.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;
@@ -41,6 +42,9 @@ public class MobileGUI extends JFrame
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
+
+    // Message caches
+    ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
 
     // Vis Stuff
     VisWorld vw;
@@ -73,19 +77,38 @@ public class MobileGUI extends JFrame
 
 
     /** Render ProbCog-specific content. */
-    class RenderThread extends Thread
+    class RenderThread extends Thread implements LCMSubscriber
     {
         int fps = 20;
 
+        public RenderThread()
+        {
+            LCM.getSingleton().subscribe("POSE", this);
+        }
+
+
         public void run()
         {
-            // Tic tic = new Tic();
-            // while (true) {
-            //     double dt = tic.toctic();
-            //     drawWorld();
-            //     TimeUtil.sleep(1000/fps);
+            Tic tic = new Tic();
+            while (true) {
+                double dt = tic.toctic();
+                //drawWorld();
+                drawTrajectory(dt);
+                TimeUtil.sleep(1000/fps);
+            }
+        }
 
-            // }
+        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        {
+            try {
+                if ("POSE".equals(channel)) {
+                    pose_t pose = new pose_t(ins);
+                    poseCache.put(pose, pose.utime);
+                }
+            } catch (IOException ex) {
+                System.err.println("WRN: Error receiving message on channel - "+channel);
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -97,6 +120,28 @@ public class MobileGUI extends JFrame
             buffer.addBack(o.getVisObject());
         }
     	buffer.swap();
+    }
+
+    private static double dtAcc = 0;
+    ArrayList<double[]> poseList = new ArrayList<double[]>();
+    private void drawTrajectory(double dt)
+    {
+        if (dtAcc + dt < 1.0) {
+            dtAcc += dt;
+            return;
+        }
+
+        pose_t pose = poseCache.get();
+        if (pose != null)
+            poseList.add(pose.pos);
+
+        vw.getBuffer("trajectory").addBack(new VzPoints(new VisVertexData(poseList),
+                                                        new VzPoints.Style(Color.cyan, 4)));
+        vw.getBuffer("trajectory").addBack(new VzLines(new VisVertexData(poseList),
+                                                       VzLines.LINE_STRIP,
+                                                       new VzLines.Style(Color.blue, 1)));
+        vw.getBuffer("trajectory").swap();
+        dtAcc = 0;
     }
 
     public static void main(String args[])
