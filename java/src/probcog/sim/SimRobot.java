@@ -244,10 +244,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         public void run(double dt)
         {
-            // XXX - We're only seeing the door closest to us if there are multiple within range.
             double sensingThreshold = 1.5;
-            SimDoor door = null;
-            double distance = Double.MAX_VALUE;
             // XXX - Look through all objects in the world and if one is
             // a door and it's within a set distance of us, "classify" it
 
@@ -260,23 +257,20 @@ public class SimRobot implements SimObject, LCMSubscriber
                     double[] xyzDoor = LinAlg.resize(xyzrpyDoor, 3);
 
                     double dist = LinAlg.distance(xyzBot, xyzDoor);
-                    if(dist < sensingThreshold && dist < distance) {
-                        distance = dist;
-                        door = (SimDoor) so;
+                    if(dist < sensingThreshold) {
+                        SimDoor door = (SimDoor) so;
+
+                        LinAlg.minusEquals(xyzrpyDoor, xyzrpyBot);
+
+                        classifications_t classies = new classifications_t();
+                        classies.utime = TimeUtil.utime();
+                        classies.name = "door";
+                        classies.id = door.id;
+                        classies.xyz = LinAlg.resize(xyzrpyDoor, 3); // Should this be relative and not absolute?
+                        classies.confidence = 1.0;
+                        lcm.publish("CLASSIFICATIONS", classies);
                     }
                 }
-            }
-
-            if(door != null) {
-                double[] xyzrpy = LinAlg.matrixToXyzrpy(door.getPose());
-
-                classifications_t classies = new classifications_t();
-                classies.utime = TimeUtil.utime();
-                classies.name = "door";
-                classies.id = door.id;
-                classies.xyz = LinAlg.resize(xyzrpy, 3); // Should this be relative and not absolute?
-                classies.confidence = 1.0;
-                lcm.publish("CLASSIFICATIONS", classies);
             }
         }
     }
