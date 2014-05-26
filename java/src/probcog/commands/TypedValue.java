@@ -16,6 +16,7 @@ public class TypedValue
     private int type;
     private Object value;
 
+
     public TypedValue(Boolean v)
     {
         type = TYPE_BOOLEAN;
@@ -162,6 +163,66 @@ public class TypedValue
 		} else {
 			return null;
 		}
+	}
+
+	public static Short unwrapShort(typed_value_t value){
+		if(value.type == typed_value_t.TYPE_SHORT){
+			return  Short.parseShort(value.value);
+		} else {
+			return null;
+		}
+	}
+
+	public static Long unwrapLong(typed_value_t value){
+		if(value.type == typed_value_t.TYPE_LONG){
+			return Long.parseLong(value.value);
+		} else {
+			return null;
+		}
+	}
+
+	public static Byte unwrapByte(typed_value_t value){
+		if(value.type == typed_value_t.TYPE_BYTE){
+			return Byte.parseByte(value.value);
+		} else {
+			return null;
+		}
+	}
+
+	public static Float unwrapFloat(typed_value_t value){
+		if(value.type == typed_value_t.TYPE_FLOAT){
+			return Float.parseFloat(value.value);
+		} else {
+			return null;
+		}
+	}
+
+	public static typed_value_t wrap(Short value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_SHORT;
+		tv.value = value.toString();
+		return tv;
+	}
+
+	public static typed_value_t wrap(Long value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_LONG;
+		tv.value = value.toString();
+		return tv;
+	}
+
+	public static typed_value_t wrap(Byte value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_BYTE;
+		tv.value = value.toString();
+		return tv;
+	}
+
+	public static typed_value_t wrap(Float value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_FLOAT;
+		tv.value = value.toString();
+		return tv;
 	}
 
 	public static typed_value_t wrap(Integer value){

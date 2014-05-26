@@ -6,8 +6,13 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
+import lcm.lcm.*;
+
+import april.util.*;
+
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
+import probcog.lcmtypes.*;
 // import java.awt.event.ActionEvent;
 // import java.awt.event.ActionListener;
 // import java.io.IOException;
@@ -48,166 +53,19 @@ import probcog.commands.tests.*;
 
 public class CommandSpoofer extends JFrame
 {
-    // public static control_law_t createControlLaw(String clName,
-    //                                              String testName,
-    //                                              ArrayList<String> params)
-    // {
-    //     control_law_t cl = new control_law_t();
-    //     cl.id = 1;
-    //     cl.name = clName;
-    //     cl.num_params = 0;
-    //     cl.param_names = new String[0];
-    //     cl.param_values = new typed_value_t[0];
+    LCM lcm = LCM.getSingleton();
 
-    //     double value = Double.parseDouble(params.get(0));
+    private JPanel commandParamPanel, testParamPanel;
+    private JList commandList, testList;
 
-    //     if(clName.equals("turn"))
-    //     {
-    //         cl.num_params = 1;
-    //         cl.param_names = new String[]{"direction"};
-    //         cl.param_values = new typed_value_t[1];
-    //         if(value < 0)
-    //             cl.param_values[0] = TypedValue.wrap(-1);
-    //         else
-    //             cl.param_values[0] = TypedValue.wrap(1);
-    //     }
-
-    //     if ("follow-wall".equals(clName)) {
-    //         cl.num_params = 2;
-    //         cl.param_names = new String[]{"side", "distance"};
-    //         cl.param_values = new typed_value_t[2];
-    //         if(value < 0)
-    //             cl.param_values[0] = TypedValue.wrap(-1);
-    //         else
-    //             cl.param_values[0] = TypedValue.wrap(1);
-    //         cl.param_values[1] = TypedValue.wrap(value);
-    //     }
-
-    //     if ("follow-heading".equals(clName)) {
-    //         cl.num_params = 1;
-    //         cl.param_names = new String[]{"heading"};
-    //         cl.param_values = new typed_value_t[1];
-    //         cl.param_values[0] = TypedValue.wrap(MathUtil.mod2pi(value));
-    //     }
-
-    //     condition_test_t ct = new condition_test_t();
-    //     ct.name = testName;
-    //     ct.num_params = 0;
-    //     ct.param_names = new String[0];
-    //     ct.param_values = new typed_value_t[0];
-    //     ct.compare_type = condition_test_t.CMP_GTE;
-    //     if ("follow-wall".equals(clName) || "follow-heading".equals(clName)) {
-    //         ct.compared_value = TypedValue.wrap(1000.0); // Infinity
-    //     } else {
-    //         ct.compared_value = TypedValue.wrap(value);
-    //     }
-
-    //     if(clName.equals("turn") && value<0)
-    //     {
-    //         ct.compare_type = condition_test_t.CMP_LTE;
-    //     }
-
-    //     if ("count".equals(testName)) {
-    //         ct.num_params = 2;
-    //         ct.param_names = new String[]{"count", "class"};
-    //         ct.param_values = new typed_value_t[2];
-    //         ct.param_values[0] = TypedValue.wrap(value);
-    //         ct.param_values[1] = TypedValue.wrap(params.get(1));
-    //     }
-
-    //     cl.termination_condition = ct;
-    //     return cl;
-    // }
-
-    JPanel commandParamPanel, testParamPanel;
-    JList commandList, testList;
+    final private String COMMAND = "COMMAND";
+    final private String TEST = "TEST";
 
     Map<String, Collection<TypedParameter>> clParams, ctParams;
 
-    // public CommandSpoofer()
-    // {
-    //     super("CommandSpoofer");
-    //     this.setSize(600, 400);
-    //     this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    //     setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
-
-    //     ControlLawFactory clfactory = ControlLawFactory.getSingleton();
-    //     ConditionTestFactory ctfactory = ConditionTestFactory.getSingleton();
-    //     clParams = clfactory.getParameters();
-    //     ctParams = ctfactory.getParameters();
-
-    //     JPanel commandPanel = new JPanel(new BorderLayout());
-    //     JPanel testPanel = new JPanel(new BorderLayout());
-    //     commandParamPanel = new JPanel();
-    //     testParamPanel = new JPanel();
-
-    //     JLabel commandLabel = new JLabel("Commands",JLabel.LEFT);
-    //     JLabel testLabel = new JLabel("Tests",JLabel.LEFT);
-
-    //     commandList = new JList(clParams.keySet().toArray(new String[0]));
-    //     commandList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    //     commandList.getSelectionModel().addListSelectionListener( new CommandListSelectionHandler());
-
-    //     testList = new JList(ctParams.keySet().toArray(new String[0]));
-    //     testList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-    //     commandPanel.add(commandLabel, BorderLayout.NORTH);
-    //     commandPanel.add(commandList, BorderLayout.CENTER);
-
-    //     testPanel.add(testLabel, BorderLayout.NORTH);
-    //     testPanel.add(testList, BorderLayout.CENTER);
-
-
-    //     // JButton command = new JButton("Command");
-    //     // command.addActionListener(new CommandListener());
-
-    //     this.add(commandPanel);
-    //     this.add(commandParamPanel);
-    //     this.add(testPanel);
-    //     this.add(testParamPanel);
-    //     this.setVisible(true);
-    // }
-
-
-
-    // private class CommandListSelectionHandler implements ListSelectionListener
-    // {
-    //     public void valueChanged(ListSelectionEvent listSelectionEvent)
-    //     {
-    //         ListSelectionModel lsm = (ListSelectionModel) listSelectionEvent.getSource();
-    //         if (!listSelectionEvent.getValueIsAdjusting() && !lsm.isSelectionEmpty()) {
-
-    //             // commandParamPanel = new JPanel();
-
-    //             commandParamPanel.add(new JLabel("Parameters:"));
-    //             commandParamPanel.revalidate();
-    //             commandParamPanel.repaint();
-
-    //             String key = (String) commandList.getSelectedValue();
-    //             Collection<TypedParameter> params = clParams.get(key);
-
-    //             for(TypedParameter tp : params)
-    //             {
-    //                 String label = tp.getName();
-    //                 if(tp.hasValid()) {
-    //                     Collection<TypedValue> valid = tp.getValid();
-    //                     label += " (";
-    //                     for(TypedValue v : valid) {
-    //                         label += " "+v.toString();
-    //                     }
-    //                     label += "):";
-    //                 }
-    //                 JLabel lab = new JLabel(label);
-    //                 commandParamPanel.add(lab);
-    //                 System.out.println(tp.getName());
-    //             }
-    //         }
-    //     }
-    // }
-
-
-
-    JPanel controlCards, testCards;
+    private JPanel controlCards, testCards;
+    private condition_test_t ct;
+    control_law_t cl;
 
     public void addComponentToPane(Container pane)
     {
@@ -216,6 +74,8 @@ public class CommandSpoofer extends JFrame
         ConditionTestFactory ctfactory = ConditionTestFactory.getSingleton();
         clParams = clfactory.getParameters();
         ctParams = ctfactory.getParameters();
+        ct = new condition_test_t();
+        cl = new control_law_t();
 
         // Create panel for the control laws
         JPanel controlPane = new JPanel(); //use FlowLayout
@@ -229,7 +89,7 @@ public class CommandSpoofer extends JFrame
         // create those cards
         controlCards = new JPanel(new CardLayout());
         for(String law: controlLaws) {
-            JPanel card = createPanel(clParams.get(law));
+            JPanel card = createPanel(clParams.get(law), COMMAND);
             controlCards.add(card, law);
         }
 
@@ -245,13 +105,18 @@ public class CommandSpoofer extends JFrame
         // create those cards
         testCards = new JPanel(new CardLayout());
         for(String test: tests) {
-            JPanel card = createPanel(ctParams.get(test));
+            JPanel card = createPanel(ctParams.get(test), TEST);
             testCards.add(card, test);
         }
 
         // Create button for sending the lcm message
         JPanel buttonPane = new JPanel();
         JButton sendButton = new JButton("Send Command");
+        sendButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    publishControlLaw();
+                }
+            });
         buttonPane.add(sendButton);
 
         // Add everything to our panel
@@ -262,30 +127,84 @@ public class CommandSpoofer extends JFrame
         pane.add(buttonPane);
     }
 
-    private JPanel createPanel(Collection<TypedParameter> params)
+    private JPanel createPanel(Collection<TypedParameter> params, String cardType)
     {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        // panel.add(new JLabel(name, JLabel.LEFT));
+        TypedParameter[] paramsArray = params.toArray(new TypedParameter[0]);
 
-        for(TypedParameter tp : params)
+        for(int i=0; i<paramsArray.length; i++)
         {
-            JPanel jp = new JPanel();
+            TypedParameter tp = paramsArray[i];
             String paramName = tp.getName();
             String type = typeToString(tp.getType());
 
+            JPanel jp = new JPanel();
             jp.add(new JLabel(paramName, JLabel.LEFT));
-            System.out.println(paramName+" "+type);
+            final int expectedType = tp.getType();
+            final int paramID = i;
+            final String commandType = cardType;
 
             if(tp.hasValid()) {
-                Collection<TypedValue> valid = tp.getValid();
-                for(TypedValue v : valid) {
+                TypedValue[] validArray = tp.getValid().toArray(new TypedValue[0]);
+                String[] validChoices = new String[validArray.length];
+                for(int j=0; j<validChoices.length; j++) {
+                    validChoices[j] = validArray[j].toString();
                 }
-            }
-            else if(tp.hasRange()) {
 
+                JComboBox validCombo = new JComboBox(validChoices);
+                validCombo.setEditable(false);
+                validCombo.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent event) {
+                            if (event.getStateChange() == ItemEvent.SELECTED) {
+                                String selection = (String) event.getItem();
+                                typed_value_t tv = getTypedValueLCM(expectedType, selection);
+                                if(COMMAND.equals(commandType))
+                                    cl.param_values[paramID] = tv;
+                                else if(TEST.equals(commandType))
+                                    ct.param_values[paramID] = tv;
+                            }
+                        }
+                    });
+
+
+                jp.add(validCombo);
             }
             else {
+                if(tp.hasRange()) {
+                    TypedValue[] range = tp.getRange();
+                    String rangeLabel = "("+range[0].toString()+", "+range[1].toString()+")";
+                    jp.add(new JLabel(rangeLabel));
+                }
+                else {
+                    String typeLabel = "("+type+")";
+                    jp.add(new JLabel(typeLabel));
+                }
+
+                final JTextField tf = new JTextField(8);
+                tf.getDocument().addDocumentListener(new DocumentListener() {
+                        public void changedUpdate(DocumentEvent e) {
+                            updateLCM();
+                        }
+                        public void removeUpdate(DocumentEvent e) {
+                            updateLCM();
+                        }
+                        public void insertUpdate(DocumentEvent e) {
+                            updateLCM();
+                        }
+
+                        public void updateLCM() {
+                            typed_value_t tv = getTypedValueLCM(expectedType, tf.getText());
+                            if(COMMAND.equals(commandType)){
+                                cl.param_values[paramID] = tv;
+                            }
+                            else if(TEST.equals(commandType)){
+                                ct.param_values[paramID] = tv;
+                            }
+                        }
+                    });
+
+                jp.add(tf);
 
             }
 
@@ -294,6 +213,30 @@ public class CommandSpoofer extends JFrame
 
 
         return panel;
+    }
+
+    private typed_value_t getTypedValueLCM(int type, String input)
+    {
+        switch (type) {
+            case TypedValue.TYPE_BOOLEAN:
+                return TypedValue.wrap(Boolean.parseBoolean(input));
+            case TypedValue.TYPE_BYTE:
+                return TypedValue.wrap(Byte.parseByte(input));
+            case TypedValue.TYPE_SHORT:
+                return TypedValue.wrap(Short.parseShort(input));
+            case TypedValue.TYPE_INT:
+                return TypedValue.wrap(Integer.parseInt(input));
+            case TypedValue.TYPE_LONG:
+                return TypedValue.wrap(Long.parseLong(input));
+            case TypedValue.TYPE_FLOAT:
+                return TypedValue.wrap(Float.parseFloat(input));
+            case TypedValue.TYPE_DOUBLE:
+                return TypedValue.wrap(Double.parseDouble(input));
+            case TypedValue.TYPE_STRING:
+                return TypedValue.wrap(input);
+        }
+
+        return new typed_value_t();
     }
 
     private String typeToString(int type)
@@ -320,22 +263,63 @@ public class CommandSpoofer extends JFrame
         return "UNKNOWN";
     }
 
+    private static int id = 0;
+    private void publishControlLaw()
+    {
+        assert(cl != null && ct != null);
+
+        cl.id = id;
+        id ++;
+        cl.utime = TimeUtil.utime();
+
+        cl.termination_condition = ct;
+        lcm.publish("SOAR_COMMAND", cl);
+    }
+
     class ControlChangeListener implements ItemListener
     {
-        public void itemStateChanged(ItemEvent event) {
+        public void itemStateChanged(ItemEvent event)
+        {
             if (event.getStateChange() == ItemEvent.SELECTED) {
-                CardLayout cl = (CardLayout)(controlCards.getLayout());
-                cl.show(controlCards, (String)event.getItem());
+                cl.name = (String) event.getItem();
+                cl.num_params = clParams.get(cl.name).size();
+                cl.param_names = new String[cl.num_params];
+                cl.param_values = new typed_value_t[cl.num_params];
+
+                if(cl.num_params > 0) {
+                    TypedParameter[] paramNames = clParams.get(cl.name).toArray(new TypedParameter[0]);
+                    for(int i=0; i<paramNames.length; i++) {
+                        cl.param_names[i] = paramNames[i].getName();
+                    }
+                }
+
+                CardLayout cardlayout = (CardLayout)(controlCards.getLayout());
+                cardlayout.show(controlCards, cl.name);
             }
         }
     }
 
     class TestChangeListener implements ItemListener
     {
-        public void itemStateChanged(ItemEvent event) {
+        public void itemStateChanged(ItemEvent event)
+        {
             if (event.getStateChange() == ItemEvent.SELECTED) {
-                CardLayout cl = (CardLayout)(testCards.getLayout());
-                cl.show(testCards, (String)event.getItem());
+                ct.name = (String)event.getItem();
+                ct.num_params = ctParams.get(ct.name).size();
+                ct.param_names = new String[ct.num_params];
+                ct.param_values = new typed_value_t[ct.num_params];
+                if(ct.num_params > 0) {
+                    TypedParameter[] paramNames = ctParams.get(ct.name).toArray(new TypedParameter[0]);
+                    for(int i=0; i<paramNames.length; i++) {
+                        ct.param_names[i] = paramNames[i].getName();
+                    }
+                }
+
+                ct.compare_type = condition_test_t.CMP_GTE;
+                ct.compared_value = TypedValue.wrap(0);
+
+                CardLayout cardlayout = (CardLayout)(testCards.getLayout());
+                cardlayout.show(testCards, ct.name);
             }
         }
     }
@@ -358,27 +342,5 @@ public class CommandSpoofer extends JFrame
     public static void main(String[] args)
     {
         CommandSpoofer cs = new CommandSpoofer();
-
-    //     if(args.length < 3){
-    //         System.err.println("Need at least 3 args: [command name] [test condition] [parameters]");
-    //         System.err.println("Possible command types incluede:");
-    //         System.err.println("\tdrive-forward distance [# meters]");
-    //         System.err.println("\tdrive-forward count [number] [things-to-count]");
-    //         System.err.println("\tturn rotation [# rads]");
-    //         System.err.println("\tfollow-wall distance [# meters from wall (sign indicates which wall)]");
-    //         System.err.println("\tfollow-heading distance [heading rads]");
-    //     }
-
-    //     String clName = args[0];
-    //     String ctName = args[1];
-    //     ArrayList<String> params = new ArrayList<String>();
-    //     for(int i=2; i<args.length; i++) {
-    //         params.add(args[i]);
-    //     }
-
-    //     control_law_t cl = createControlLaw(clName, ctName, params);
-
-    //     LCM lcm = LCM.getSingleton();
-    //     lcm.publish("SOAR_COMMAND", cl);
     }
 }
