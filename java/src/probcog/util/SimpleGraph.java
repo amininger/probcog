@@ -1,7 +1,11 @@
 package probcog.util;
 
+import java.io.*;
 import java.util.*;
 
+import april.util.*;
+
+// XXX Serialization not straightforward...e.g. threads
 /** A generic structure for representing both directed and undirected graphs.
  *
  *  T == Node value , U == Edge value
@@ -173,4 +177,72 @@ public class SimpleGraph<T, U>
             edges.put(a, new HashMap<SimpleGraphNode, U>());
         edges.get(a).put(b, u);
     }
+
+    // === Saving and loading ===
+    /** Write the graph to filename */
+    /*public void write(String filename) throws IOException
+    {
+        BinaryStructureWriter fout = new BinaryStructureWriter(new BufferedOutputStream(new FileOutputStream(filename)));
+
+        // Write out nodes
+        fout.writeInt(nodes.size());
+        fout.blockBegin();
+        for (SimpleGraphNode n: nodes.keySet()) {
+            n.write(fout);
+            T t = nodes.get(n);
+            if (t == null) {
+                fout.writeInt(0);
+                continue;
+            }
+            fout.writeInt(1);
+            t.write(fout);
+        }
+        fout.blockEnd();
+
+        // Write out edges
+        fout.writeInt(edges.size());
+        fout.blockBegin();
+        for (SimpleGraphNode a: edges.keySet()) {
+            a.write(fout);
+            if (edges.get(a) == null) {
+                fout.writeInt(0);
+                continue;
+            }
+            fout.write(edges.get(a).size());
+            for (SimpleGraphNode b: edges.get(a).keySet()) {
+                b.write(fout);
+                U u = edges.get(a).get(b);
+                if (u == null) {
+                    fout.writeInt(0);
+                    continue;
+                }
+                fout.writeInt(1);
+                u.write(fout);
+            }
+        }
+        fout.blockEnd();
+    }*/
+
+    /** Reconstruct the graph stored in filename */
+    /*public void read(String filename) throws IOException
+    {
+        BinaryStructureReader fin = new BinaryStructureReader(new BufferedInputStream(new FileInputStream(filename)));
+
+        // Ensure empty structures
+        reset();
+
+        // Read in nodes and node values
+        int size = fout.readInt();
+        fout.blockBegin();
+        for (int i = 0; i < size; i++) {
+            SimpleGraphNode n = new SimpleGraphNode();
+            n.read(fin);
+            T t = null;
+            int k = fin.readInt();
+            if (k > 0) {
+                T t = new T()
+            }
+        }
+        fout.blockEnd();
+    }*/
 }

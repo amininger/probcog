@@ -16,6 +16,7 @@ import probcog.util.*;
 public class FollowWall implements ControlLaw, LCMSubscriber
 {
     private static final double FW_HZ = 100;
+    private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getDomainConfig().requireDouble("robot.geometry.radius");
     private static final double BACK_THETA = Math.PI/2;
     private static final double FRONT_THETA = -Math.PI/4;
@@ -24,13 +25,17 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
         new ExpiringMessageCache<laser_t>(.2);
+    private ExpiringMessageCache<pose_t> poseCache =
+        new ExpiringMessageCache<pose_t>(.2);
 
     Direction dir;
     private enum Direction { LEFT, RIGHT }
     private double goalDistance = Double.MAX_VALUE;
+    private double targetHeading = 0;
 
     private class UpdateTask implements PeriodicTasks.Task
     {
+        boolean oriented = false;
         int startIdx = -1;
         int finIdx = -1;
 
@@ -42,6 +47,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         {
             laser_t laser = laserCache.get();
             if (laser == null)
+                return;
+
+            pose_t pose = poseCache.get();
+            if (pose == null)
                 return;
 
             // Initialization step.
@@ -56,7 +65,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             // Update the movement of the robot. Basically, swing towards wall
             // when range > desired, else swing back the other way. Some extra
             // logic to prevent running into walls.
-            update(laser, dt);
+            update(laser, pose, dt);
         }
 
         private void init(laser_t laser)
@@ -87,8 +96,28 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         }
 
         // P controller to do wall avoidance. More logic could be added...
-        private void update(laser_t laser, double dt)
+        private void update(laser_t laser, pose_t pose, double dt)
         {
+            diff_drive_t dd;
+
+            if (!oriented) {
+                dd = orient(pose, targetHeading);
+            } else {
+                dd = drive(laser, dt);
+            }
+
+            LCM.getSingleton().publish("DIFF_DRIVE", dd);
+        }
+
+        private diff_drive_t drive(laser_t laser, double dt)
+        {
+            // Initialize no-speed diff drive
+            diff_drive_t dd = new diff_drive_t();
+            dd.utime = TimeUtil.utime();
+            dd.left_enabled = dd.right_enabled = true;
+            dd.left = 0;
+            dd.right = 0;
+
             double r = Double.MAX_VALUE;
             for (int i = startIdx; i <= finIdx; i++) {
                 //double w = 1.0;
@@ -105,13 +134,6 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
             // XXX
             double prop = MathUtil.clamp(-0.5 + r/goalDistance, -1.0, 1.0);
-
-            // Initialize no-speed diff drive
-            diff_drive_t dd = new diff_drive_t();
-            dd.utime = TimeUtil.utime();
-            dd.left_enabled = dd.right_enabled = true;
-            dd.left = 0;
-            dd.right = 0;
 
             double nearSpeed = 0.5;
             double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
@@ -130,7 +152,29 @@ public class FollowWall implements ControlLaw, LCMSubscriber
                     break;
             }
 
-            LCM.getSingleton().publish("DIFF_DRIVE", dd);
+            return dd;
+        }
+
+        private diff_drive_t orient(pose_t pose, double heading)
+        {
+            double[] rpy = LinAlg.quatToRollPitchYaw(pose.orientation);
+
+            diff_drive_t dd = new diff_drive_t();
+            dd.utime = TimeUtil.utime();
+            dd.left_enabled = dd.right_enabled = true;
+            dd.left = 0;
+            dd.right = 0;
+
+            double delta = MathUtil.mod2pi(rpy[2] - heading);
+
+            if (Math.abs(delta) < HEADING_THRESH) {
+                oriented = true;
+            } else {
+                dd.left = 0.7 * delta / Math.PI;
+                dd.right = 0.7 * delta / -Math.PI;
+            }
+
+            return dd;
         }
     }
 
@@ -152,7 +196,11 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("distance"))
             goalDistance = Math.abs(parameters.get("distance").getDouble());
 
+        if (parameters.containsKey("heading"))
+            targetHeading = parameters.get("heading").getDouble();
+
         LCM.getSingleton().subscribe("LASER", this);
+        LCM.getSingleton().subscribe("POSE", this);
         tasks.addFixedDelay(new UpdateTask(), 1.0/FW_HZ);
     }
 
@@ -171,6 +219,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if ("LASER".equals(channel)) {
             laser_t laser = new laser_t(ins);
             laserCache.put(laser, laser.utime);
+        } else if ("POSE".equals(channel)) {
+            pose_t pose = new pose_t(ins);
+            poseCache.put(pose, pose.utime);
         }
     }
 
@@ -208,6 +259,11 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         params.add(new TypedParameter("distance",
                                       TypedValue.TYPE_DOUBLE));  // Could have range limits...
+
+        params.add(new TypedParameter("heading",
+                                      TypedValue.TYPE_DOUBLE,
+                                      new TypedValue(-Math.PI),
+                                      new TypedValue(Math.PI)));
 
         return params;
     }

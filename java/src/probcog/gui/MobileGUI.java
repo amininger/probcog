@@ -23,6 +23,7 @@ import april.vis.VisCameraManager.CameraPosition;
 import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
+import probcog.commands.*;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
@@ -39,6 +40,8 @@ import probcog.vis.*;
 public class MobileGUI extends JFrame
 {
     private ProbCogSimulator simulator;
+    // XXX Temporary home
+    private SimpleGraph<CommandNode, CommandEdge> graph = new SimpleGraph<CommandNode, CommandEdge>();
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
@@ -61,11 +64,16 @@ public class MobileGUI extends JFrame
         vw = new VisWorld();
         vl = new VisLayer(vw);
         vc = new VisCanvas(vl);
+        vl.addEventHandler(new MobileGUIEventHandler(vw));
         this.add(vc, BorderLayout.CENTER);
 
     	// Initialize the simulator
         // CommandInterpreter ci = new CommandInterpreter();
         simulator = new ProbCogSimulator(opts, vw, vl, vc);
+
+        // Initialize the graph. Assumes CSE Sim world, as it is hardcoded for it
+        // XXX
+        initGraph();
 
         // Set GUI modes
         this.setVisible(true);
@@ -110,6 +118,50 @@ public class MobileGUI extends JFrame
                 ex.printStackTrace();
             }
         }
+    }
+
+    class MobileGUIEventHandler extends VisEventAdapter
+    {
+        VisWorld world;
+
+        public MobileGUIEventHandler(VisWorld vw)
+        {
+            world = vw;
+        }
+
+        public boolean mouseMoved(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
+        {
+            double[] xy = ray.intersectPlaneXY();
+            Formatter f = new Formatter();
+            f.format("<<monospaced-128>>(%.2f, %.2f)", xy[0], xy[1]);
+            VisWorld.Buffer vb = world.getBuffer("coordinates");
+
+            vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_RIGHT,
+                                        LinAlg.scale(0.1),
+                                        new VzText(VzText.ANCHOR.BOTTOM_RIGHT_ROUND,
+                                                   f.toString())));
+            vb.swap();
+            return false;
+        }
+    }
+
+    // XXX A hand-coded version of the CSE graph, to get off the ground with.
+    private void initGraph()
+    {
+/*        ArrayList<SimpleGraphNode> nodes = new ArrayList<SimpleGraphNode>();
+        CommandNode n;
+        CommandEdge e;
+        CommandEdge.Edge v;
+        n = new CommandNode(new double[]{1,0}); // In front of april-office door
+        nodes.add(graph.addNode(n));
+        n = new CommandNode(new double[]{12.8, 0}); // In front of soar-office door
+        nodes.add(graph.addNode(n));
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");   // count = int, string class
+        v.addLawParam("side", new TypedValue((byte)-1));
+        v.addLawParam("heading", new TypedValue(0.0));
+*/
+
     }
 
     private void drawWorld()
