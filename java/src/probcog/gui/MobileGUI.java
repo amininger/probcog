@@ -98,6 +98,7 @@ public class MobileGUI extends JFrame
         public void run()
         {
             Tic tic = new Tic();
+            drawGraph();
             while (true) {
                 double dt = tic.toctic();
                 //drawWorld();
@@ -165,7 +166,29 @@ public class MobileGUI extends JFrame
         v.addTermParam("class", new TypedValue("door"));
         e.addEdge(v);
         v = new CommandEdge.Edge("follow-heading", "count"); // XXX ...
+        v.addLawParam("heading", new TypedValue(0.4));
+        v.addLawParam("distance", new TypedValue(0.5));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        e.addEdge(v);
         graph.connect(nodes.get(0), nodes.get(1), e);
+
+        n = new CommandNode(new double[]{66, -40}); // John's office
+        nodes.add(graph.addNode(n));
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("heading", new TypedValue(0.0));
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        e.addEdge(v);
+        v = new CommandEdge.Edge("follow-heading", "count");
+        v.addLawParam("heading", new TypedValue(0.7));
+        v.addLawParam("distance", new TypedValue(0.5));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        e.addEdge(v);
+        graph.connect(nodes.get(0), nodes.get(2), e);
 
     }
 
@@ -199,6 +222,27 @@ public class MobileGUI extends JFrame
                                                        new VzLines.Style(Color.blue, 1)));
         vw.getBuffer("trajectory").swap();
         dtAcc = 0;
+    }
+
+    private void drawGraph()
+    {
+        VisWorld.Buffer vb = vw.getBuffer("graph");
+
+        ArrayList<double[]> points = new ArrayList<double[]>();
+        for (SimpleGraphNode n: graph.getNodes()) {
+            for (SimpleGraphNode n_: graph.neighbors(n)) {
+                points.add(graph.getNodeValue(n).getXY());
+                points.add(graph.getNodeValue(n_).getXY());
+            }
+        }
+
+        VisVertexData vvd = new VisVertexData(points);
+        vb.addBack(new VzPoints(vvd,
+                                new VzPoints.Style(Color.yellow, 10)));
+        vb.addBack(new VzLines(vvd,
+                               VzLines.LINES,
+                               new VzLines.Style(Color.red, 2)));
+        vb.swap();
     }
 
     public static void main(String args[])
