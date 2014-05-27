@@ -14,8 +14,8 @@ import probcog.lcmtypes.*;
 
 public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 {
-    private double goalCount = 0;
-    private double currentCount = 0;
+    private int goalCount = 0;
+    private int currentCount = 0;
     private String classType = "";
     private HashSet<Integer> observedIDs;
 
@@ -29,12 +29,11 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         System.out.println("CLASSIFICATION COUNTER TEST");
 
         assert (parameters.containsKey("count"));
-        goalCount = parameters.get("count").getDouble();
+        goalCount = parameters.get("count").getInt();
 
         assert (parameters.containsKey("class"));
         classType = parameters.get("class").toString();
 
-        System.out.println("Found class");
         observedIDs = new HashSet<Integer>();
 
         // Initialize
@@ -60,7 +59,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         params.add(new TypedParameter("count",
-                                      TypedValue.TYPE_DOUBLE));
+                                      TypedValue.TYPE_INT));
 
         params.add(new TypedParameter("class",
                                       TypedValue.TYPE_STRING));

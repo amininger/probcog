@@ -23,6 +23,7 @@ import april.vis.VisCameraManager.CameraPosition;
 import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
+import probcog.commands.CommandSpoofer;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
@@ -151,6 +152,7 @@ public class MobileGUI extends JFrame
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
+        opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
 
         if (!opts.parse(args)) {
             System.err.println("ERR: Error parsing args - "+opts.getReason());
@@ -164,6 +166,9 @@ public class MobileGUI extends JFrame
         // Spin up the GUI
         try {
             MobileGUI gui = new MobileGUI(opts);
+            if(opts.getBoolean("spoof")) {
+                CommandSpoofer spoof = new CommandSpoofer();
+            }
         } catch (IOException ioex) {
             System.err.println("ERR: Error starting GUI");
             ioex.printStackTrace();

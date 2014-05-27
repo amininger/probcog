@@ -1,6 +1,6 @@
 struct condition_test_t
 {
-	const int32_t CMP_GT	 = 1;
+	const int32_t CMP_GT   = 1;
 	const int32_t CMP_GTE  = 2;
 	const int32_t CMP_EQ   = 3;
 	const int32_t CMP_LTE  = 4;

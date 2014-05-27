@@ -13,43 +13,6 @@ import april.util.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
 import probcog.lcmtypes.*;
-// import java.awt.event.ActionEvent;
-// import java.awt.event.ActionListener;
-// import java.io.IOException;
-// import java.util.ArrayList;
-// import java.util.HashMap;
-// import java.util.Map;
-
-// import javax.swing.JButton;
-// import javax.swing.JMenu;
-
-// import lcm.lcm.LCM;
-// import lcm.lcm.LCMDataInputStream;
-// import lcm.lcm.LCMSubscriber;
-// import probcog.arm.ArmStatus;
-// import probcog.commands.TypedValue;
-// import probcog.lcmtypes.robot_action_t;
-// import probcog.lcmtypes.robot_command_t;
-// import probcog.lcmtypes.set_state_command_t;
-// import probcog.lcmtypes.control_law_t;
-// import probcog.lcmtypes.control_law_status_t;
-// import probcog.lcmtypes.condition_test_t;
-// import probcog.lcmtypes.typed_value_t;
-// import sml.Agent;
-// import sml.Agent.OutputEventInterface;
-// import sml.Agent.RunEventInterface;
-// import sml.Identifier;
-// import sml.WMElement;
-// import sml.smlRunEventId;
-// import april.config.Config;
-// import april.config.ConfigFile;
-// import april.jmat.LinAlg;
-// import april.jmat.MathUtil;
-// import april.util.TimeUtil;
-// import probcog.rosie.world.Pose;
-// import probcog.rosie.world.SVSCommands;
-// import probcog.rosie.world.WMUtil;
-// import probcog.rosie.world.WorldModel;
 
 public class CommandSpoofer extends JFrame
 {
@@ -88,12 +51,15 @@ public class CommandSpoofer extends JFrame
         // Create the panel that contains the control law "cards" and
         // create those cards
         controlCards = new JPanel(new CardLayout());
-        for(String law: controlLaws) {
+        for(int i=0; i<controlLaws.length; i++) {
+            String law = controlLaws[i];
             JPanel card = createPanel(clParams.get(law), COMMAND);
             controlCards.add(card, law);
         }
+        initializeControlLCM(controlLaws[0]);
 
-        // Create panel for the control laws
+
+        // Create panel for the termination tests
         JPanel testPane = new JPanel(); //use FlowLayout
         String[] tests = ctParams.keySet().toArray(new String[0]);
         JComboBox testCombo = new JComboBox(tests);
@@ -101,13 +67,15 @@ public class CommandSpoofer extends JFrame
         testCombo.addItemListener(new TestChangeListener());
         testPane.add(testCombo);
 
-        // Create the panel that contains the control law "cards" and
+        // Create the panel that contains the termination test "cards" and
         // create those cards
         testCards = new JPanel(new CardLayout());
-        for(String test: tests) {
+        for(int i=0; i<tests.length; i++) {
+            String test = tests[i];
             JPanel card = createPanel(ctParams.get(test), TEST);
             testCards.add(card, test);
         }
+        initializeTestLCM(tests[0]);
 
         // Create button for sending the lcm message
         JPanel buttonPane = new JPanel();
@@ -127,12 +95,19 @@ public class CommandSpoofer extends JFrame
         pane.add(buttonPane);
     }
 
+    /**
+     * A panel is created for each control law and test condition, these are shown
+     * when their corresponding law/test is selected. Each one shows the parameters
+     * available to be changed (including ranges and valid selections if those exist
+     * and alerts the user as to what type is expected.
+     **/
     private JPanel createPanel(Collection<TypedParameter> params, String cardType)
     {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         TypedParameter[] paramsArray = params.toArray(new TypedParameter[0]);
 
+        // Each parameter that can be changed gets its own line
         for(int i=0; i<paramsArray.length; i++)
         {
             TypedParameter tp = paramsArray[i];
@@ -145,6 +120,8 @@ public class CommandSpoofer extends JFrame
             final int paramID = i;
             final String commandType = cardType;
 
+            // If there are only a few options that can be selected, display them
+            // in a combo box.
             if(tp.hasValid()) {
                 TypedValue[] validArray = tp.getValid().toArray(new TypedValue[0]);
                 String[] validChoices = new String[validArray.length];
@@ -171,16 +148,21 @@ public class CommandSpoofer extends JFrame
                 jp.add(validCombo);
             }
             else {
+                // If a range of options is available, tell the user what it is
+                // DOES NOT PERFORM CHECK!
                 if(tp.hasRange()) {
                     TypedValue[] range = tp.getRange();
                     String rangeLabel = "("+range[0].toString()+", "+range[1].toString()+")";
                     jp.add(new JLabel(rangeLabel));
                 }
+                // Let user know what type is expected
                 else {
                     String typeLabel = "("+type+")";
                     jp.add(new JLabel(typeLabel));
                 }
 
+                // Update the lcm message every time a key is entered or removed
+                // from the box
                 final JTextField tf = new JTextField(8);
                 tf.getDocument().addDocumentListener(new DocumentListener() {
                         public void changedUpdate(DocumentEvent e) {
@@ -205,40 +187,55 @@ public class CommandSpoofer extends JFrame
                     });
 
                 jp.add(tf);
-
             }
-
             panel.add(jp);
         }
-
 
         return panel;
     }
 
+    /**
+     * Transform the given string input into an lcmtype that has the
+     * correct typing (i.e. int, string, double, boolean)
+     **/
     private typed_value_t getTypedValueLCM(int type, String input)
     {
-        switch (type) {
-            case TypedValue.TYPE_BOOLEAN:
-                return TypedValue.wrap(Boolean.parseBoolean(input));
-            case TypedValue.TYPE_BYTE:
-                return TypedValue.wrap(Byte.parseByte(input));
-            case TypedValue.TYPE_SHORT:
-                return TypedValue.wrap(Short.parseShort(input));
-            case TypedValue.TYPE_INT:
-                return TypedValue.wrap(Integer.parseInt(input));
-            case TypedValue.TYPE_LONG:
-                return TypedValue.wrap(Long.parseLong(input));
-            case TypedValue.TYPE_FLOAT:
-                return TypedValue.wrap(Float.parseFloat(input));
-            case TypedValue.TYPE_DOUBLE:
-                return TypedValue.wrap(Double.parseDouble(input));
-            case TypedValue.TYPE_STRING:
-                return TypedValue.wrap(input);
+        if(input.isEmpty() || input == null)
+            input = "0";
+        try {
+            switch (type) {
+                case TypedValue.TYPE_BOOLEAN:
+                    if(input.isEmpty() || input == "0")
+                        return TypedValue.wrap(false);
+                    return TypedValue.wrap(Boolean.parseBoolean(input));
+                case TypedValue.TYPE_BYTE:
+                    return TypedValue.wrap(Byte.parseByte(input));
+                case TypedValue.TYPE_SHORT:
+                    return TypedValue.wrap(Short.parseShort(input));
+                case TypedValue.TYPE_INT:
+                    return TypedValue.wrap(Integer.parseInt(input));
+                case TypedValue.TYPE_LONG:
+                    return TypedValue.wrap(Long.parseLong(input));
+                case TypedValue.TYPE_FLOAT:
+                    return TypedValue.wrap(Float.parseFloat(input));
+                case TypedValue.TYPE_DOUBLE:
+                    return TypedValue.wrap(Double.parseDouble(input));
+                case TypedValue.TYPE_STRING:
+                    if(input.isEmpty() || input == "0")
+                        TypedValue.wrap("");
+                    return TypedValue.wrap(input);
+            }
+        }
+        catch(Exception ex) {
+            ex.printStackTrace();
         }
 
         return new typed_value_t();
     }
 
+    /**
+     * @return a string describing the primitive type
+     **/
     private String typeToString(int type)
     {
         switch (type) {
@@ -263,10 +260,17 @@ public class CommandSpoofer extends JFrame
         return "UNKNOWN";
     }
 
+    /**
+     * Publish control laws when the button is pressed. The method assumes
+     * that the information has been correctly entered into the control_law
+     * and test_condition lcm messages correctly and only checks that they
+     * exist.
+     **/
     private static int id = 0;
     private void publishControlLaw()
     {
-        assert(cl != null && ct != null);
+        if(cl == null || ct == null)
+            return;
 
         cl.id = id;
         id ++;
@@ -276,48 +280,88 @@ public class CommandSpoofer extends JFrame
         lcm.publish("SOAR_COMMAND", cl);
     }
 
+    /**
+     * Listens for changes in the control law combo box. Whenever a new control law
+     * is selected, the control_law lcm is updated with the correct name, parameters,
+     * etc and the correct JPanel is displayed for editing.
+     **/
     class ControlChangeListener implements ItemListener
     {
         public void itemStateChanged(ItemEvent event)
         {
             if (event.getStateChange() == ItemEvent.SELECTED) {
-                cl.name = (String) event.getItem();
-                cl.num_params = clParams.get(cl.name).size();
-                cl.param_names = new String[cl.num_params];
-                cl.param_values = new typed_value_t[cl.num_params];
 
-                if(cl.num_params > 0) {
-                    TypedParameter[] paramNames = clParams.get(cl.name).toArray(new TypedParameter[0]);
-                    for(int i=0; i<paramNames.length; i++) {
-                        cl.param_names[i] = paramNames[i].getName();
-                    }
-                }
-
+                initializeControlLCM((String) event.getItem());
                 CardLayout cardlayout = (CardLayout)(controlCards.getLayout());
                 cardlayout.show(controlCards, cl.name);
             }
         }
     }
 
+    private void initializeControlLCM(String name)
+    {
+        cl.name = name;
+        cl.num_params = clParams.get(cl.name).size();
+        cl.param_names = new String[cl.num_params];
+        cl.param_values = new typed_value_t[cl.num_params];
+
+        // If necessary, initialize param names and values
+        if(cl.num_params > 0) {
+            TypedParameter[] paramNames = clParams.get(cl.name).toArray(new TypedParameter[0]);
+            for(int i=0; i<cl.num_params; i++) {
+                TypedParameter tp = paramNames[i];
+
+                cl.param_names[i] = tp.getName();
+
+                TypedValue value = new TypedValue("");
+                if(tp.hasValid()) {
+                    value =  tp.getValid().toArray(new TypedValue[0])[0];
+                }
+
+                cl.param_values[i] = getTypedValueLCM(tp.getType(), value.toString());
+            }
+        }
+    }
+
+    private void initializeTestLCM(String name)
+    {
+        ct.name = name;
+        ct.num_params = ctParams.get(ct.name).size();
+        ct.param_names = new String[ct.num_params];
+        ct.param_values = new typed_value_t[ct.num_params];
+
+        // If necessary, initialize param names and values
+        if(ct.num_params > 0) {
+            TypedParameter[] paramNames = ctParams.get(ct.name).toArray(new TypedParameter[0]);
+            for(int i=0; i<ct.num_params; i++) {
+                TypedParameter tp = paramNames[i];
+
+                ct.param_names[i] = tp.getName();
+
+                TypedValue value = new TypedValue("");
+                if(tp.hasValid()) {
+                    value =  tp.getValid().toArray(new TypedValue[0])[0];
+                }
+
+                ct.param_values[i] = getTypedValueLCM(tp.getType(), value.toString());
+            }
+        }
+
+        ct.compare_type = condition_test_t.CMP_GTE;
+        ct.compared_value = TypedValue.wrap(0);
+    }
+
+    /**
+     * Listens for changes in the test condition combo box. Whenever a new test condition
+     * is selected, the condition_test lcm is updated with the correct name, parameters,
+     * etc and the correct JPanel is displayed for editing.
+     **/
     class TestChangeListener implements ItemListener
     {
         public void itemStateChanged(ItemEvent event)
         {
             if (event.getStateChange() == ItemEvent.SELECTED) {
-                ct.name = (String)event.getItem();
-                ct.num_params = ctParams.get(ct.name).size();
-                ct.param_names = new String[ct.num_params];
-                ct.param_values = new typed_value_t[ct.num_params];
-                if(ct.num_params > 0) {
-                    TypedParameter[] paramNames = ctParams.get(ct.name).toArray(new TypedParameter[0]);
-                    for(int i=0; i<paramNames.length; i++) {
-                        ct.param_names[i] = paramNames[i].getName();
-                    }
-                }
-
-                ct.compare_type = condition_test_t.CMP_GTE;
-                ct.compared_value = TypedValue.wrap(0);
-
+                initializeTestLCM((String)event.getItem());
                 CardLayout cardlayout = (CardLayout)(testCards.getLayout());
                 cardlayout.show(testCards, ct.name);
             }

@@ -16,7 +16,6 @@ public class TypedValue
     private int type;
     private Object value;
 
-
     public TypedValue(Boolean v)
     {
         type = TYPE_BOOLEAN;
@@ -63,6 +62,44 @@ public class TypedValue
     {
         type = TYPE_STRING;
         value = v;
+    }
+
+    public TypedValue(typed_value_t tv)
+    {
+        switch (tv.type) {
+            case typed_value_t.TYPE_BOOL:
+                type = TYPE_BOOLEAN;
+                value = unwrapBoolean(tv);
+                break;
+            case typed_value_t.TYPE_BYTE:
+                type = TYPE_BYTE;
+                value = unwrapByte(tv);
+                break;
+            case typed_value_t.TYPE_SHORT:
+                type = TYPE_SHORT;
+                value = unwrapShort(tv);
+                break;
+            case typed_value_t.TYPE_INT:
+                type = TYPE_INT;
+                value = unwrapInt(tv);
+                break;
+            case typed_value_t.TYPE_LONG:
+                type = TYPE_LONG;
+                value = unwrapLong(tv);
+                break;
+            case typed_value_t.TYPE_FLOAT:
+                type = TYPE_FLOAT;
+                value = unwrapFloat(tv);
+                break;
+            case typed_value_t.TYPE_DOUBLE:
+                type = TYPE_DOUBLE;
+                value = unwrapDouble(tv);
+                break;
+            case typed_value_t.TYPE_STRING:
+                type = TYPE_STRING;
+                value = unwrapString(tv);
+                break;
+        }
     }
 
     // Value retrieval functions. No compile-time safety, but will assert

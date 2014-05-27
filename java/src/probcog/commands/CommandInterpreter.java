@@ -68,34 +68,25 @@ public class CommandInterpreter
                 nextCommand = waitingCommands.poll();
             }
 
-            Map<String, TypedValue> params = new HashMap<String, TypedValue>();
-            if (nextCommand.name.equals("turn")) {
-                int v = TypedValue.unwrapInt(nextCommand.param_values[0]);
-                params.put("direction", new TypedValue((byte)v));
-            } else if (nextCommand.name.equals("follow-wall")) {
-                int v = TypedValue.unwrapInt(nextCommand.param_values[0]);
-                double d = TypedValue.unwrapDouble(nextCommand.param_values[1]);
-                params.put("side", new TypedValue((byte)v));
-                params.put("distance", new TypedValue(d));
-            } else if (nextCommand.name.equals("follow-heading")) {
-                double h = TypedValue.unwrapDouble(nextCommand.param_values[0]);
-                params.put("heading", new TypedValue(h));
-            }
-            Map<String, TypedValue> params2 = new HashMap<String, TypedValue>();
-            double v = TypedValue.unwrapDouble(nextCommand.termination_condition.compared_value);
-            if (nextCommand.termination_condition.name.equals("distance")) {
-                params2.put("distance", new TypedValue(v));
-            } else if (nextCommand.termination_condition.name.equals("rotation")){
-                params2.put("yaw", new TypedValue(v));
-            } else if (nextCommand.termination_condition.name.equals("count")){
-                params2.put("count", new TypedValue(v));
-                String classType = TypedValue.unwrapString(nextCommand.termination_condition.param_values[1]);
-                params2.put("class", new TypedValue(classType));
+            // Get control law parameters
+            Map<String, TypedValue> paramsControl = new HashMap<String, TypedValue>();
+            for(int i=0; i<nextCommand.num_params; i++) {
+                paramsControl.put(nextCommand.param_names[i],
+                                  new TypedValue(nextCommand.param_values[i]));
             }
 
+            // Get test condition parameters
+            Map<String, TypedValue> paramsTest = new HashMap<String, TypedValue>();
+            for(int i=0; i<nextCommand.termination_condition.num_params; i++) {
+                paramsTest.put(nextCommand.termination_condition.param_names[i],
+                               new TypedValue(nextCommand.termination_condition.param_values[i]));
+            }
+
+            // Attempt to create and register control law and test condition
             try {
-                ControlLaw law = clfactory.construct(nextCommand.name, params);
-                ConditionTest test = ctfactory.construct(nextCommand.termination_condition.name, params2);
+                ControlLaw law = clfactory.construct(nextCommand.name, paramsControl);
+                ConditionTest test = ctfactory.construct(nextCommand.termination_condition.name,
+                                                         paramsTest);
                 if (law != null && test != null) {
                     testID = coordinator.registerConditionTest(test);
                     lawID = coordinator.registerControlLaw(law);
