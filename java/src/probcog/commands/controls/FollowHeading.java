@@ -34,8 +34,8 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
     private class UpdateTask implements PeriodicTasks.Task
     {
         diff_drive_t lastDD;
-        double rRightLast = Double.MAX_VALUE;
-        double rLeftLast = Double.MAX_VALUE;
+        double rRightLast = 0;
+        double rLeftLast = 0;
 
         boolean oriented = false;
         int startIdx = -1;
@@ -87,6 +87,7 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
             else
                 dd = drive(laser, pose, targetHeading, dt);
 
+            assert (!(Double.isNaN(dd.left) || Double.isNaN(dd.right)));
             LCM.getSingleton().publish("DIFF_DRIVE", dd);
         }
 
@@ -153,7 +154,7 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
             dd.left = dd.left - (dd.left*leftPush) - (K_d*rLeftDeriv);
             dd.right = dd.right - (dd.right*rightPush) - (K_d*rRightDeriv);
 
-            // Normalize
+            // Normalize for sufficiently large values
             max = Math.max(Math.abs(dd.left), Math.abs(dd.right));
             if (max > K_d) {
                 dd.left /= max;
@@ -236,8 +237,8 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         params.add(new TypedParameter("heading",    // [rad] in global coords
                                       TypedValue.TYPE_DOUBLE,
-                                      new TypedValue(-Math.PI),
-                                      new TypedValue(Math.PI)));
+                                      new TypedValue(-Math.PI/2),
+                                      new TypedValue(Math.PI/2)));
         params.add(new TypedParameter("distance",   // [m] from wall
                                       TypedValue.TYPE_DOUBLE));
         return params;

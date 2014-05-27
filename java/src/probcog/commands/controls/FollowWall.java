@@ -138,8 +138,12 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             double nearSpeed = 0.5;
             double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
             double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
-            nearSpeed = MAX_V*nearSpeed/max;
-            farSpeed = MAX_V*farSpeed/max;
+            if (max < 0.01) {
+                nearSpeed = farSpeed = 0;
+            } else {
+                nearSpeed = MAX_V*nearSpeed/max;
+                farSpeed = MAX_V*farSpeed/max;
+            }
 
             switch (dir) {
                 case LEFT:

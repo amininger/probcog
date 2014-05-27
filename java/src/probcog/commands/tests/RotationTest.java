@@ -49,7 +49,7 @@ public class RotationTest implements ConditionTest, LCMSubscriber
                         rpyNow[2] += 2*Math.PI;
                     }
 
-                    yaw += rpyNow[2]-rpyLast[2];
+                    yaw += Math.abs(rpyNow[2]-rpyLast[2]);
                     lastPose = currPose;
                 }
             }
@@ -100,9 +100,7 @@ public class RotationTest implements ConditionTest, LCMSubscriber
     public boolean conditionMet()
     {
         synchronized (poseLock) {
-            boolean gz0 = yaw > 0;
-            boolean gz1 = goalYaw > 0;
-            return (((gz1 && gz0) || !(gz0 || gz1)) && Math.abs(yaw) >= Math.abs(goalYaw));
+            return yaw >= goalYaw;
         }
     }
 
@@ -114,7 +112,9 @@ public class RotationTest implements ConditionTest, LCMSubscriber
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         params.add(new TypedParameter("yaw",
-                                      TypedValue.TYPE_DOUBLE));
+                                      TypedValue.TYPE_DOUBLE,
+                                      new TypedValue(0.0),
+                                      new TypedValue(Math.PI)));
         return params;
     }
 }

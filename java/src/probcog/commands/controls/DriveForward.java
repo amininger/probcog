@@ -51,13 +51,15 @@ public class DriveForward implements ControlLaw, LCMSubscriber
                 if (initialPose == null)
                     return;
 
+                double[] rpy = LinAlg.quatToRollPitchYaw(initialPose.orientation);
+                double goalX = VERY_FAR*Math.cos(rpy[2]);
+                double goalY = VERY_FAR*Math.sin(rpy[2]);
+
                 double[] start2D = LinAlg.resize(initialPose.pos, 2);
-                double[] goal2D = new double[] {start2D[0]+VERY_FAR,
-                    start2D[1]+VERY_FAR};
+                double[] goal2D = new double[] {start2D[0]+goalX,
+                                                start2D[1]+goalY};
 
                 path = new GLineSegment2D(start2D, goal2D); // XXX - update?
-
-                System.out.println("DriveForward ready to execute");
             }
 
             // Get the most recent position

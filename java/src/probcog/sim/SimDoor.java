@@ -11,12 +11,16 @@ import april.vis.*;
 
 public class SimDoor implements SimObject
 {
+
 	protected double[][] T = LinAlg.identity(4);  // position
     protected Color color = new Color(51, 25, 0);
     protected double[] scale = new double[]{.9, 0.1, 1.5};
 
+    protected int id;
+
     public SimDoor(SimWorld sw)
     {
+        id = nextID();
     }
 
     public void setPose(double[][] T)
@@ -45,6 +49,13 @@ public class SimDoor implements SimObject
         // BoxShape shape = new BoxShape(0, 0, 0);
         // return shape.transform(LinAlg.translate(0, 0, 1));
         return new BoxShape(scale[0], scale[1], -scale[2]);
+    }
+
+    // Increasing ids
+    private static int idGen = 1;
+    public static int nextID()
+    {
+        return idGen ++;
     }
 
     public void read(StructureReader ins) throws IOException

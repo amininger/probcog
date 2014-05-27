@@ -158,7 +158,10 @@ public class CommandCoordinator
     {
         synchronized (controlLaws) {
             ControlLawRecord record = controlLaws.remove(id);
-            System.out.printf("Destroyed Law <%d>\n", id);
+            if (record != null) {
+                record.controlLaw.setRunning(false);
+                System.out.printf("Destroyed Law <%d>\n", id);
+            }
             return record != null;
         }
     }
@@ -192,7 +195,9 @@ public class CommandCoordinator
             synchronized (terminationConditions) {
                 ConditionTest conditionTest = conditionTests.remove(id);
                 terminationConditions.remove(id);
-                System.out.printf("Destroyed Test <%d>\n", id);
+                if (conditionTest != null) {
+                    System.out.printf("Destroyed Test <%d>\n", id);
+                }
                 return conditionTest != null;
             }
         }

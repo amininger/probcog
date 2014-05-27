@@ -96,7 +96,7 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
     public boolean conditionMet()
     {
         synchronized (poseLock) {
-            return goalDistance < currentDistance;
+            return goalDistance <= currentDistance;
         }
     }
 

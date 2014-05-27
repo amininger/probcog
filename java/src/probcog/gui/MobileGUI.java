@@ -148,7 +148,7 @@ public class MobileGUI extends JFrame
     // XXX A hand-coded version of the CSE graph, to get off the ground with.
     private void initGraph()
     {
-/*        ArrayList<SimpleGraphNode> nodes = new ArrayList<SimpleGraphNode>();
+        ArrayList<SimpleGraphNode> nodes = new ArrayList<SimpleGraphNode>();
         CommandNode n;
         CommandEdge e;
         CommandEdge.Edge v;
@@ -160,7 +160,12 @@ public class MobileGUI extends JFrame
         v = new CommandEdge.Edge("follow-wall", "count");   // count = int, string class
         v.addLawParam("side", new TypedValue((byte)-1));
         v.addLawParam("heading", new TypedValue(0.0));
-*/
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(1)); // XXX unclear...
+        v.addTermParam("class", new TypedValue("door"));
+        e.addEdge(v);
+        v = new CommandEdge.Edge("follow-heading", "count"); // XXX ...
+        graph.connect(nodes.get(0), nodes.get(1), e);
 
     }
 
@@ -203,6 +208,7 @@ public class MobileGUI extends JFrame
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
+        opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
 
         if (!opts.parse(args)) {
             System.err.println("ERR: Error parsing args - "+opts.getReason());
@@ -216,6 +222,9 @@ public class MobileGUI extends JFrame
         // Spin up the GUI
         try {
             MobileGUI gui = new MobileGUI(opts);
+            if(opts.getBoolean("spoof")) {
+                CommandSpoofer spoof = new CommandSpoofer();
+            }
         } catch (IOException ioex) {
             System.err.println("ERR: Error starting GUI");
             ioex.printStackTrace();

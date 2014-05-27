@@ -35,7 +35,7 @@ public class Turn implements ControlLaw
             dd.left = 0;
             dd.right = 0;
 
-            double speed = .4;
+            double speed = .1;
 
             // Change left and right wheels depending on turn direction
             if (dir.equals(Direction.RIGHT)) {

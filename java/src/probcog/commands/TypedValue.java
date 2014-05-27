@@ -64,6 +64,44 @@ public class TypedValue
         value = v;
     }
 
+    public TypedValue(typed_value_t tv)
+    {
+        switch (tv.type) {
+            case typed_value_t.TYPE_BOOL:
+                type = TYPE_BOOLEAN;
+                value = unwrapBoolean(tv);
+                break;
+            case typed_value_t.TYPE_BYTE:
+                type = TYPE_BYTE;
+                value = unwrapByte(tv);
+                break;
+            case typed_value_t.TYPE_SHORT:
+                type = TYPE_SHORT;
+                value = unwrapShort(tv);
+                break;
+            case typed_value_t.TYPE_INT:
+                type = TYPE_INT;
+                value = unwrapInt(tv);
+                break;
+            case typed_value_t.TYPE_LONG:
+                type = TYPE_LONG;
+                value = unwrapLong(tv);
+                break;
+            case typed_value_t.TYPE_FLOAT:
+                type = TYPE_FLOAT;
+                value = unwrapFloat(tv);
+                break;
+            case typed_value_t.TYPE_DOUBLE:
+                type = TYPE_DOUBLE;
+                value = unwrapDouble(tv);
+                break;
+            case typed_value_t.TYPE_STRING:
+                type = TYPE_STRING;
+                value = unwrapString(tv);
+                break;
+        }
+    }
+
     // Value retrieval functions. No compile-time safety, but will assert
     // on inane retrieval calls.
     //
@@ -162,6 +200,66 @@ public class TypedValue
 		} else {
 			return null;
 		}
+	}
+
+	public static Short unwrapShort(typed_value_t value){
+		if(value.type == typed_value_t.TYPE_SHORT){
+			return  Short.parseShort(value.value);
+		} else {
+			return null;
+		}
+	}
+
+	public static Long unwrapLong(typed_value_t value){
+		if(value.type == typed_value_t.TYPE_LONG){
+			return Long.parseLong(value.value);
+		} else {
+			return null;
+		}
+	}
+
+	public static Byte unwrapByte(typed_value_t value){
+		if(value.type == typed_value_t.TYPE_BYTE){
+			return Byte.parseByte(value.value);
+		} else {
+			return null;
+		}
+	}
+
+	public static Float unwrapFloat(typed_value_t value){
+		if(value.type == typed_value_t.TYPE_FLOAT){
+			return Float.parseFloat(value.value);
+		} else {
+			return null;
+		}
+	}
+
+	public static typed_value_t wrap(Short value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_SHORT;
+		tv.value = value.toString();
+		return tv;
+	}
+
+	public static typed_value_t wrap(Long value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_LONG;
+		tv.value = value.toString();
+		return tv;
+	}
+
+	public static typed_value_t wrap(Byte value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_BYTE;
+		tv.value = value.toString();
+		return tv;
+	}
+
+	public static typed_value_t wrap(Float value){
+		typed_value_t tv = new typed_value_t();
+		tv.type = typed_value_t.TYPE_FLOAT;
+		tv.value = value.toString();
+		return tv;
 	}
 
 	public static typed_value_t wrap(Integer value){
