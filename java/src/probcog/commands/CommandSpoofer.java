@@ -30,6 +30,24 @@ public class CommandSpoofer extends JFrame
     private condition_test_t ct;
     control_law_t cl;
 
+    public CommandSpoofer()
+    {
+        super("CommandSpoofer");
+        this.setSize(600, 400);
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+
+        this.addComponentToPane(getContentPane());
+
+        //Display the window.
+        this.pack();
+        this.setVisible(true);
+    }
+
+    /**
+     * Create a panel that has all the control laws and termination conditions
+     * that are registered and displays what parameters they take.
+     **/
     public void addComponentToPane(Container pane)
     {
         // Get control laws and termination conditions
@@ -79,6 +97,7 @@ public class CommandSpoofer extends JFrame
 
         // Create button for sending the lcm message
         JPanel buttonPane = new JPanel();
+        buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.Y_AXIS));
         JButton sendButton = new JButton("Send Command");
         sendButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
@@ -86,6 +105,16 @@ public class CommandSpoofer extends JFrame
                 }
             });
         buttonPane.add(sendButton);
+
+        // XXX -- Doesn't actually follow through in the command coordinator
+        // Create button for stopping lcm message
+        JButton stopButton = new JButton("Stop Command");
+        stopButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    publishStop();
+                }
+            });
+        buttonPane.add(stopButton);
 
         // Add everything to our panel
         pane.add(controlPane);
@@ -190,7 +219,6 @@ public class CommandSpoofer extends JFrame
             }
             panel.add(jp);
         }
-
         return panel;
     }
 
@@ -260,44 +288,6 @@ public class CommandSpoofer extends JFrame
         return "UNKNOWN";
     }
 
-    /**
-     * Publish control laws when the button is pressed. The method assumes
-     * that the information has been correctly entered into the control_law
-     * and test_condition lcm messages correctly and only checks that they
-     * exist.
-     **/
-    private static int id = 0;
-    private void publishControlLaw()
-    {
-        if(cl == null || ct == null)
-            return;
-
-        cl.id = id;
-        id ++;
-        cl.utime = TimeUtil.utime();
-
-        cl.termination_condition = ct;
-        lcm.publish("SOAR_COMMAND", cl);
-    }
-
-    /**
-     * Listens for changes in the control law combo box. Whenever a new control law
-     * is selected, the control_law lcm is updated with the correct name, parameters,
-     * etc and the correct JPanel is displayed for editing.
-     **/
-    class ControlChangeListener implements ItemListener
-    {
-        public void itemStateChanged(ItemEvent event)
-        {
-            if (event.getStateChange() == ItemEvent.SELECTED) {
-
-                initializeControlLCM((String) event.getItem());
-                CardLayout cardlayout = (CardLayout)(controlCards.getLayout());
-                cardlayout.show(controlCards, cl.name);
-            }
-        }
-    }
-
     private void initializeControlLCM(String name)
     {
         cl.name = name;
@@ -351,6 +341,64 @@ public class CommandSpoofer extends JFrame
         ct.compared_value = TypedValue.wrap(0);
     }
 
+
+    /**
+     * Publish control laws when the button is pressed. The method assumes
+     * that the information has been correctly entered into the control_law
+     * and test_condition lcm messages correctly and only checks that they
+     * exist.
+     **/
+    private static int id = 0;
+    private String lastControl;
+    private void publishControlLaw()
+    {
+        if(cl == null || ct == null)
+            return;
+
+        cl.id = id;
+        id ++;
+        lastControl = cl.name;
+
+        cl.utime = TimeUtil.utime();
+        cl.termination_condition = ct;
+        lcm.publish("SOAR_COMMAND", cl);
+    }
+
+
+    private void publishStop()
+    {
+        control_law_status_t status = new control_law_status_t();
+        status.id = id - 1;
+        status.name = lastControl;
+        status.status = "DESTROY";
+
+        control_law_status_list_t status_list = new control_law_status_list_t();
+        status_list.utime = TimeUtil.utime();
+        status_list.nstatuses = 1;
+        status_list.statuses = new control_law_status_t[status_list.nstatuses];
+        status_list.statuses[0] = status;
+
+        lcm.publish("CONTROL_LAW_STATUS", status_list);
+    }
+
+    /**
+     * Listens for changes in the control law combo box. Whenever a new control law
+     * is selected, the control_law lcm is updated with the correct name, parameters,
+     * etc and the correct JPanel is displayed for editing.
+     **/
+    class ControlChangeListener implements ItemListener
+    {
+        public void itemStateChanged(ItemEvent event)
+        {
+            if (event.getStateChange() == ItemEvent.SELECTED) {
+
+                initializeControlLCM((String) event.getItem());
+                CardLayout cardlayout = (CardLayout)(controlCards.getLayout());
+                cardlayout.show(controlCards, cl.name);
+            }
+        }
+    }
+
     /**
      * Listens for changes in the test condition combo box. Whenever a new test condition
      * is selected, the condition_test lcm is updated with the correct name, parameters,
@@ -367,21 +415,6 @@ public class CommandSpoofer extends JFrame
             }
         }
     }
-
-    public CommandSpoofer()
-    {
-        super("CommandSpoofer");
-        this.setSize(600, 400);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
-
-        this.addComponentToPane(getContentPane());
-
-        //Display the window.
-        this.pack();
-        this.setVisible(true);
-    }
-
 
     public static void main(String[] args)
     {
