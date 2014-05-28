@@ -10,6 +10,8 @@ public class CommandEdge
     ArrayList<Edge> edges = new ArrayList<Edge>();
     public static class Edge
     {
+        public double probability = 1.0;
+
         public String law;
         public HashMap<String, TypedValue> lawParams = new HashMap<String, TypedValue>();
 
@@ -31,6 +33,19 @@ public class CommandEdge
         {
             termParams.put(name, value);
         }
+
+        public String toString()
+        {
+            String ls = law+"\n";
+            String ts = term+"\n";
+            for (String key: lawParams.keySet()) {
+                ls += "\t["+key+" = "+lawParams.get(key)+"]\n";
+            }
+            for (String key: termParams.keySet()) {
+                ts += "\t["+key+" = "+termParams.get(key)+"]\n";
+            }
+            return ls + ts;
+        }
     }
 
     public CommandEdge()
@@ -45,7 +60,7 @@ public class CommandEdge
         edges.add(e);
     }
 
-    public ArrayList<Edge> getEdge()
+    public ArrayList<Edge> getEdges()
     {
         return edges;
     }

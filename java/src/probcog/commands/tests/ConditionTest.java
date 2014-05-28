@@ -6,7 +6,6 @@ import probcog.commands.*;
 
 public interface ConditionTest
 {
-
     /** Query whether or not the condition being tested for is currently true.
      *
      *  @return True if condition test is currently satisfied, else false

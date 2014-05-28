@@ -74,6 +74,7 @@ public class MobileGUI extends JFrame
         // Initialize the graph. Assumes CSE Sim world, as it is hardcoded for it
         // XXX
         initGraph();
+        instructRobot();    // XXX temporary
 
         // Set GUI modes
         this.setVisible(true);
@@ -162,33 +163,166 @@ public class MobileGUI extends JFrame
         v.addLawParam("side", new TypedValue((byte)-1));
         v.addLawParam("heading", new TypedValue(0.0));
         v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(1)); // XXX unclear...
+        v.addTermParam("count", new TypedValue(1));
         v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
         e.addEdge(v);
-        v = new CommandEdge.Edge("follow-heading", "count"); // XXX ...
+        v = new CommandEdge.Edge("follow-heading", "count");
         v.addLawParam("heading", new TypedValue(0.4));
         v.addLawParam("distance", new TypedValue(0.5));
         v.addTermParam("count", new TypedValue(1));
         v.addTermParam("class", new TypedValue("door"));
         e.addEdge(v);
+        v.probability = .95;
         graph.connect(nodes.get(0), nodes.get(1), e);
 
         n = new CommandNode(new double[]{66, -40}); // John's office
         nodes.add(graph.addNode(n));
         e = new CommandEdge();
         v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("side", new TypedValue((byte)-1));
         v.addLawParam("heading", new TypedValue(0.0));
         v.addLawParam("distance", new TypedValue(1.0));
         v.addTermParam("count", new TypedValue(1));
         v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
+        e.addEdge(v);
+        v = new CommandEdge.Edge("follow-heading", "count");
+        v.addLawParam("heading", new TypedValue(-0.7));
+        v.addLawParam("distance", new TypedValue(0.5));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
+        e.addEdge(v);
+        graph.connect(nodes.get(0), nodes.get(2), e); // april to john's
+
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("side", new TypedValue((byte)-1));
+        v.addLawParam("heading", new TypedValue(0.0));
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
+        e.addEdge(v);
+        v = new CommandEdge.Edge("follow-heading", "count");
+        v.addLawParam("heading", new TypedValue(-0.7));
+        v.addLawParam("distance", new TypedValue(0.5));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
+        e.addEdge(v);
+        graph.connect(nodes.get(1), nodes.get(2), e);   // soar to john's
+
+        n = new CommandNode(new double[]{66, -24.5});   // ben's office
+        nodes.add(graph.addNode(n));
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("side", new TypedValue((byte)-1));
+        v.addLawParam("heading", new TypedValue(0.0));
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(3));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95*.95*.95;
+        e.addEdge(v);
+        v = new CommandEdge.Edge("follow-heading", "count");
+        v.addLawParam("heading", new TypedValue(0.7));
+        v.addLawParam("distance", new TypedValue(0.5));
+        v.addTermParam("count", new TypedValue(3));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95*.95*.95;
+        e.addEdge(v);
+        graph.connect(nodes.get(2), nodes.get(3), e);   // john's to ben's
+
+        n = new CommandNode(new double[]{66, -21.8});   // ed's
+        nodes.add(graph.addNode(n));
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("side", new TypedValue((byte)-1));
+        v.addLawParam("heading", new TypedValue(0.0));
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
         e.addEdge(v);
         v = new CommandEdge.Edge("follow-heading", "count");
         v.addLawParam("heading", new TypedValue(0.7));
         v.addLawParam("distance", new TypedValue(0.5));
         v.addTermParam("count", new TypedValue(1));
         v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
         e.addEdge(v);
-        graph.connect(nodes.get(0), nodes.get(2), e);
+        graph.connect(nodes.get(3), nodes.get(4), e);   // ben's to ed's
+
+        n = new CommandNode(new double[]{66, -4.5});   // conference 1
+        nodes.add(graph.addNode(n));
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("side", new TypedValue((byte)-1));
+        v.addLawParam("heading", new TypedValue(0.0));
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(2));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95*.95;
+        e.addEdge(v);
+        v = new CommandEdge.Edge("follow-heading", "count");
+        v.addLawParam("heading", new TypedValue(0.7));
+        v.addLawParam("distance", new TypedValue(0.5));
+        v.addTermParam("count", new TypedValue(2));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95*.95;
+        e.addEdge(v);
+        graph.connect(nodes.get(4), nodes.get(5), e);   // ed's to conference
+
+        n = new CommandNode(new double[]{66, -0.7});  // Kitchen
+        nodes.add(graph.addNode(n));
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("side", new TypedValue((byte)-1));
+        v.addLawParam("heading", new TypedValue(0.0));
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
+        e.addEdge(v);
+        v = new CommandEdge.Edge("follow-heading", "count");
+        v.addLawParam("heading", new TypedValue(0.7));
+        v.addLawParam("distance", new TypedValue(0.5));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
+        e.addEdge(v);
+        graph.connect(nodes.get(5), nodes.get(6), e);   // conference to kitchen
+
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("side", new TypedValue((byte)1));
+        v.addLawParam("heading", new TypedValue(0.0));
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(2));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95*.95;
+        e.addEdge(v);
+        graph.connect(nodes.get(0), nodes.get(6), e);   // april to kitchen
+
+        e = new CommandEdge();
+        v = new CommandEdge.Edge("follow-wall", "count");
+        v.addLawParam("side", new TypedValue((byte)1));
+        v.addLawParam("heading", new TypedValue(0.0));
+        v.addLawParam("distance", new TypedValue(1.0));
+        v.addTermParam("count", new TypedValue(1));
+        v.addTermParam("class", new TypedValue("door"));
+        v.probability = .95;
+        e.addEdge(v);
+        graph.connect(nodes.get(1), nodes.get(6), e);   // soar to kitchen
+    }
+
+    public void instructRobot()
+    {
+        ArrayList<CommandEdge.Edge> path = GraphUtil.bestPath(graph, new double[] {0,0}, new double[] {66, -0.7});
+        for (CommandEdge.Edge edge: path) {
+            System.out.println(edge);
+        }
 
     }
 
