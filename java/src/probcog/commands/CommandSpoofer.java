@@ -191,7 +191,10 @@ public class CommandSpoofer extends JFrame
                 }
 
                 // Update the lcm message every time a key is entered or removed
-                // from the box
+                // from the box.
+                // XXX Not necessary...can't we just generate them at send time?
+                // Then we avoid these annoying parsing errors when numbers are
+                // negative, etc.
                 final JTextField tf = new JTextField(8);
                 tf.getDocument().addDocumentListener(new DocumentListener() {
                         public void changedUpdate(DocumentEvent e) {

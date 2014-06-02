@@ -146,11 +146,14 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
                 }
             }
 
-            // This causes walls to "push" on the robot. Repulsor fields!
-            double leftPush = Math.pow(distance/Math.max(distance, rRight), 3);
-            double rightPush = Math.pow(distance/Math.max(distance, rLeft), 3);
+            // This causes walls to "push" on the robot. Repulsor fields! Downside:
+            // they always have an effect, even when the walls shouldn't be doing
+            // anything. Push should have a close-up effect and then fade out
+            double leftPush = Math.pow(distance/Math.max(distance, Math.min(rRight, 2*distance)), 3);
+            double rightPush = Math.pow(distance/Math.max(distance, Math.min(rLeft, 2*distance)), 3);
             double rLeftDeriv = (rLeft - rLeftLast)/dt; // [m/s]
             double rRightDeriv = (rRight - rRightLast)/dt;  // [m/s]
+
             dd.left = dd.left - (dd.left*leftPush) - (K_d*rLeftDeriv);
             dd.right = dd.right - (dd.right*rightPush) - (K_d*rRightDeriv);
 
