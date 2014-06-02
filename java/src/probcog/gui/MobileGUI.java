@@ -27,8 +27,7 @@ import probcog.commands.*;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
-import probcog.sim.SimLocation;
-import probcog.sim.SimObjectPC;
+import probcog.sim.*;
 import probcog.util.*;
 import probcog.vis.*;
 
@@ -54,6 +53,9 @@ public class MobileGUI extends JFrame
     VisLayer vl;
     VisCanvas vc;
 
+    // Parameter Stuff
+    ParameterGUI pg;
+
     public MobileGUI(GetOpt opts) throws IOException
     {
         super("ProbCog Mobile");
@@ -71,6 +73,11 @@ public class MobileGUI extends JFrame
         // CommandInterpreter ci = new CommandInterpreter();
         simulator = new ProbCogSimulator(opts, vw, vl, vc);
 
+        // Parameter stuff
+        pg = new ParameterGUI();
+        initParameters();
+        this.add(pg, BorderLayout.SOUTH);
+
         // Initialize the graph. Assumes CSE Sim world, as it is hardcoded for it
         // XXX
         initGraph();
@@ -83,7 +90,6 @@ public class MobileGUI extends JFrame
         RenderThread rt = new RenderThread();
         rt.start();
     }
-
 
     /** Render ProbCog-specific content. */
     class RenderThread extends Thread implements LCMSubscriber
@@ -145,6 +151,33 @@ public class MobileGUI extends JFrame
             vb.swap();
             return false;
         }
+    }
+
+    class SimParameterListener implements ParameterListener
+    {
+        public void parameterChanged(ParameterGUI pg, String name)
+        {
+            if ("noise".equals(name)) {
+                // Look for SimRobot and turn off/on noise
+                synchronized (simulator) {
+                    for (SimObject obj: simulator.getWorld().objects) {
+                        if (!(obj instanceof probcog.sim.SimRobot))
+                            continue;
+                        probcog.sim.SimRobot robot = (probcog.sim.SimRobot)obj;
+                        robot.setNoise(pg.gb(name));
+                    }
+                }
+            }
+        }
+    }
+
+    private void initParameters()
+    {
+        // Is noise on by default? Assumes simulator HAS been initialization
+        boolean useNoise = simulator.getWorld().config.getBoolean("simulator.sim_magic_robot.use_noise", false);
+        pg.addCheckBoxes("noise", "Sensor Noise", useNoise);
+
+        pg.addListener(new SimParameterListener());
     }
 
     // XXX A hand-coded version of the CSE graph, to get off the ground with.

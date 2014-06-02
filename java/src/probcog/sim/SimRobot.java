@@ -35,6 +35,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     DifferentialDrive drive;
 
     boolean useCoarseShape;
+    boolean useNoise;
     boolean drawSensor;
     int robotID;
 
@@ -55,7 +56,9 @@ public class SimRobot implements SimObject, LCMSubscriber
     public SimRobot(SimWorld sw)
     {
         this.sw = sw;
+        // XXX These don't exist?
         useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);
+        useNoise = sw.config.getBoolean("simulator.sim_magic_robot.use_noise", false);
         drawSensor = sw.config.getBoolean("simulator.sim_magic_robot.draw_sensor", false);
         this.robotID = ROBOT_ID;
 
@@ -193,6 +196,11 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
     }
 
+    public void setNoise(boolean noise)
+    {
+        useNoise = noise;
+    }
+
     class ImageTask implements PeriodicTasks.Task
     {
         double gridmap_range = 10;
@@ -210,6 +218,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             double radstep = Math.atan2(gridmap_meters_per_pixel, gridmap_range);
             double minDeg = -135;
             double maxDeg = 135;
+            double maxRange = 29.9;
             double rad0 = Math.toRadians(minDeg);
             double rad1 = Math.toRadians(maxDeg);
 
@@ -222,8 +231,19 @@ public class SimRobot implements SimObject, LCMSubscriber
                                                 LinAlg.translate(0.3, 0, 0.25));
 
             double ranges[] = Sensors.laser(sw, ignore, T_truth, (int) ((rad1-rad0)/radstep),
-                                            rad0, radstep, 29.9);
+                                            rad0, radstep, maxRange);
 
+            // XXX Config file
+            double mean = 0;
+            double stddev = 0.01;
+            if (useNoise) {
+                Random r = new Random();
+                for (int i = 0; i < ranges.length; i++) {
+                    if (ranges[i] == maxRange)
+                        continue;
+                    ranges[i] = Math.min(maxRange, ranges[i] + r.nextGaussian()*stddev*ranges[i]);
+                }
+            }
 
             laser_t laser = new laser_t();
             laser.utime = TimeUtil.utime();
