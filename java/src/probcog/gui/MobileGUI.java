@@ -40,7 +40,7 @@ public class MobileGUI extends JFrame
 {
     private ProbCogSimulator simulator;
     // XXX Temporary home
-    private SimpleGraph<CommandNode, CommandEdge> graph = new SimpleGraph<CommandNode, CommandEdge>();
+    //private SimpleGraph<CommandNode, CommandEdge> graph = new SimpleGraph<CommandNode, CommandEdge>();
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
@@ -80,8 +80,8 @@ public class MobileGUI extends JFrame
 
         // Initialize the graph. Assumes CSE Sim world, as it is hardcoded for it
         // XXX
-        initGraph();
-        instructRobot();    // XXX temporary
+        //initGraph();
+        //instructRobot();    // XXX temporary
 
         // Set GUI modes
         this.setVisible(true);
@@ -105,7 +105,7 @@ public class MobileGUI extends JFrame
         public void run()
         {
             Tic tic = new Tic();
-            drawGraph();
+            //drawGraph();
             while (true) {
                 double dt = tic.toctic();
                 //drawWorld();
@@ -181,7 +181,7 @@ public class MobileGUI extends JFrame
     }
 
     // XXX A hand-coded version of the CSE graph, to get off the ground with.
-    private void initGraph()
+    /*private void initGraph()
     {
         ArrayList<SimpleGraphNode> nodes = new ArrayList<SimpleGraphNode>();
         CommandNode n;
@@ -357,7 +357,7 @@ public class MobileGUI extends JFrame
             System.out.println(edge);
         }
 
-    }
+    }*/
 
     private void drawWorld()
     {
@@ -391,7 +391,7 @@ public class MobileGUI extends JFrame
         dtAcc = 0;
     }
 
-    private void drawGraph()
+    /*private void drawGraph()
     {
         VisWorld.Buffer vb = vw.getBuffer("graph");
 
@@ -410,7 +410,7 @@ public class MobileGUI extends JFrame
                                VzLines.LINES,
                                new VzLines.Style(Color.red, 2)));
         vb.swap();
-    }
+    }*/
 
     public static void main(String args[])
     {

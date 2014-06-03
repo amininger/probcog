@@ -1,7 +1,7 @@
 package probcog.sim;
 
 import java.awt.Color;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 import april.jmat.*;
@@ -11,19 +11,22 @@ import april.vis.*;
 
 import probcog.util.*;
 
-public class SimDoor implements SimObject
+// XXX This is not intended to be permanent, but acts as a proxy for an actual
+// hallway detector one might run on a robot.
+/** Marks the transition from one hallway into another. */
+public class SimHallway implements SimObject
 {
 	protected double[][] T = LinAlg.identity(4);  // position
-    protected Color color = new Color(51, 25, 0);
-    protected double[] scale = new double[]{.9, 0.1, 1.5};
+    protected Color color = new Color(100, 150, 100);
+    double[] sxyz = new double[]{0.1, 2.0, 1.0};
 
     protected int id;
 
     // Characteristics of classification confidence distribution
-    protected double mean = 0.9;
+    protected double mean = 0.95;
     protected double stddev = 0.05;
 
-    public SimDoor(SimWorld sw)
+    public SimHallway(SimWorld sw)
     {
         id = Util.nextID();
     }
@@ -40,20 +43,15 @@ public class SimDoor implements SimObject
 
     public VisObject getVisObject()
     {
-        ArrayList<Object> objs = new ArrayList<Object>();
-
-        objs.add(new VisChain(LinAlg.scale(scale[0], scale[1], scale[2]),
-                              LinAlg.translate(0, 0, scale[2]/9),
-                              new VzBox(new VzMesh.Style(color))));
-
-        return new VisChain(objs.toArray());
+        return new VisChain(LinAlg.scale(sxyz[0], sxyz[1], 1),
+                            new VzRectangle(new VzMesh.Style(color)));
     }
 
     public Shape getShape()
     {
         // BoxShape shape = new BoxShape(0, 0, 0);
         // return shape.transform(LinAlg.translate(0, 0, 1));
-        return new BoxShape(scale[0], scale[1], -scale[2]); // Negative z scale makes box invisible to LIDAR
+        return new BoxShape(sxyz[0], sxyz[1], -sxyz[2]); // Negative z sxyz makes box invisible to LIDAR
     }
 
     public void read(StructureReader ins) throws IOException
@@ -61,6 +59,7 @@ public class SimDoor implements SimObject
     	// 6 doubles for pose information (XYZRPY)
         double xyzrpy[] = ins.readDoubles();
         this.T = LinAlg.xyzrpyToMatrix(xyzrpy);
+        this.sxyz = ins.readDoubles();
 
         // IDs are automatically generated upon creation. Right now, don't
         // care which door has which ID.
@@ -71,7 +70,10 @@ public class SimDoor implements SimObject
 
     public void write(StructureWriter outs) throws IOException
     {
+        outs.writeComment("Pose XYZRPY");
         outs.writeDoubles(LinAlg.matrixToXyzrpy(T));
+        outs.writeComment("Object scale");
+        outs.writeDoubles(sxyz);
         outs.writeComment("mean and stddev of confidence measure");
         outs.writeDouble(mean);
         outs.writeDouble(stddev);
