@@ -30,6 +30,8 @@ import probcog.sensor.SimKinectSensor;
 
 public class SimRobot implements SimObject, LCMSubscriber
 {
+    static Random classifierRandom = new Random(3611871);
+
     int ROBOT_ID = 6;
     SimWorld sw;
     DifferentialDrive drive;
@@ -256,6 +258,9 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
     }
 
+    // XXX Temporary existence inside robot. Longer term, classifications are
+    // likely to be spun up outside the robot, but this allows us to quite easily
+    // turn noise on and off
     class ClassifyTask implements PeriodicTasks.Task
     {
         public ClassifyTask()
@@ -264,34 +269,60 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         public void run(double dt)
         {
-            double sensingThreshold = 1.5;
-            // XXX - Look through all objects in the world and if one is
+            // Look through all objects in the world and if one is
             // a door and it's within a set distance of us, "classify" it
-
             double[] xyzrpyBot = LinAlg.matrixToXyzrpy(getPose());
             double[] xyzBot = LinAlg.resize(xyzrpyBot, 3);
 
             for(SimObject so : sw.objects) {
-                if(so instanceof SimDoor) {
-                    double[] xyzrpyDoor = LinAlg.matrixToXyzrpy(so.getPose());
-                    double[] xyzDoor = LinAlg.resize(xyzrpyDoor, 3);
-
-                    double dist = LinAlg.distance(xyzBot, xyzDoor);
-                    if(dist < sensingThreshold) {
-                        SimDoor door = (SimDoor) so;
-
-                        LinAlg.minusEquals(xyzrpyDoor, xyzrpyBot);
-
-                        classifications_t classies = new classifications_t();
-                        classies.utime = TimeUtil.utime();
-                        classies.name = "door";
-                        classies.id = door.id;
-                        classies.xyz = LinAlg.resize(xyzrpyDoor, 3); // Should this be relative and not absolute?
-                        classies.confidence = 1.0;
-                        lcm.publish("CLASSIFICATIONS", classies);
-                    }
-                }
+                // Door detection
+                detectDoor(so, xyzBot);
             }
+        }
+
+        private void detectDoor(SimObject so, double[] xyzBot)
+        {
+            if (!(so instanceof SimDoor || so instanceof SimFalseDoor))
+                return;
+            double sensingThreshold = 1.5;
+
+            double[] xyzrpyDoor = LinAlg.matrixToXyzrpy(so.getPose());
+            double[] xyzDoor = LinAlg.resize(xyzrpyDoor, 3);
+            double dist = LinAlg.distance(xyzBot, xyzDoor);
+            if (dist > sensingThreshold)
+                return;
+
+            classifications_t classies = new classifications_t();
+            classies.utime = TimeUtil.utime();
+            classies.name = "door";
+            classies.xyz = xyzDoor; // Should this be relative w.r.t bot or absolute?
+
+            if (useNoise) {
+                // Object detections imperfect. Based on classification confidence
+                double mean;
+                double stddev;
+                if (so instanceof SimDoor) {
+                    SimDoor door = (SimDoor)so;
+                    classies.id = door.id;
+                    mean = door.mean;
+                    stddev = door.stddev;
+                } else {
+                    SimFalseDoor door = (SimFalseDoor)so;
+                    classies.id = door.id;
+                    mean = door.mean;
+                    stddev = door.stddev;
+                }
+                classies.confidence = MathUtil.clamp(mean + classifierRandom.nextGaussian()*stddev, 0, 1);
+            } else {
+                // Object detections perfect. Object MUST be a real door
+                if (!(so instanceof SimDoor))
+                    return;
+                SimDoor door = (SimDoor)so;
+                classies.id = door.id;
+                classies.confidence = 1.0;
+            }
+
+            lcm.publish("CLASSIFICATIONS", classies);
         }
     }
 
@@ -303,7 +334,12 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         public void run(double dt)
         {
-            pose_t pose = drive.poseTruth;
+            pose_t pose;
+            if (useNoise) {
+                pose = drive.poseOdom;
+            } else {
+                pose = drive.poseTruth;
+            }
             lcm.publish("POSE", pose);
         }
     }

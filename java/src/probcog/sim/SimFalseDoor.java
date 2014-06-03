@@ -11,20 +11,20 @@ import april.vis.*;
 
 import probcog.util.*;
 
-public class SimDoor implements SimObject
+public class SimFalseDoor implements SimObject
 {
 
 	protected double[][] T = LinAlg.identity(4);  // position
-    protected Color color = new Color(51, 25, 0);
+    protected Color color = new Color(124, 25, 0);
     protected double[] scale = new double[]{.9, 0.1, 1.5};
 
     protected int id;
 
     // Characteristics of classification confidence distribution
-    protected double mean = 0.9;
-    protected double stddev = 0.05;
+    protected double mean = 0.1;
+    protected double stddev = 0.1;
 
-    public SimDoor(SimWorld sw)
+    public SimFalseDoor(SimWorld sw)
     {
         id = Util.nextID();
     }
@@ -54,7 +54,7 @@ public class SimDoor implements SimObject
     {
         // BoxShape shape = new BoxShape(0, 0, 0);
         // return shape.transform(LinAlg.translate(0, 0, 1));
-        return new BoxShape(scale[0], scale[1], -scale[2]); // Negative z scale makes box invisible to LIDAR
+        return new BoxShape(scale[0], scale[1], -scale[2]); // Negative Z scale makes box invisible to LIDAR
     }
 
     public void read(StructureReader ins) throws IOException

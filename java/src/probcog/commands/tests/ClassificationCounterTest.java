@@ -14,10 +14,30 @@ import probcog.lcmtypes.*;
 
 public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 {
+    // Default parameters...should these be settable?
+    static final double CONFIDENCE_THRESHOLD = 0.8;
+
     private int goalCount = 0;
-    private int currentCount = 0;
     private String classType = "";
-    private HashSet<Integer> observedIDs;
+    private HashMap<Integer, DetectionRecord> observed;
+
+    class DetectionRecord
+    {
+        public int n;
+        public double mean;
+
+        public DetectionRecord()
+        {
+            n = 0;
+            mean = 0;
+        }
+
+        public void addSample(double v)
+        {
+            n++;
+            mean = mean + 1.0*(v-mean)/n;
+        }
+    }
 
     /** Strictly for use for parameter checking */
     public ClassificationCounterTest()
@@ -34,7 +54,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         assert (parameters.containsKey("class"));
         classType = parameters.get("class").toString();
 
-        observedIDs = new HashSet<Integer>();
+        observed = new HashMap<Integer, DetectionRecord>();
 
         // Initialize
         // XXX - Here we need to spin up a classifier and tell it what to look for
@@ -48,7 +68,18 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
      **/
     public boolean conditionMet()
     {
-        return currentCount >= goalCount;
+        int count = 0;
+        for (DetectionRecord d: observed.values()) {
+            // Compute a sample weighted confidence. This helps account for
+            // some of the noise in sampling. Chosen fairly arbitrarily to
+            // heavily penalize few sample while minimally penalizing many samples,
+            // but could be revisited
+            double conf = (1.0 - 1.0/d.n)*d.mean;
+            if (conf > CONFIDENCE_THRESHOLD)
+                count++;
+        }
+
+        return count >= goalCount;
     }
 
     /** Get the parameters that can be set for this condition test.
@@ -81,10 +112,14 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         if (channel.equals("CLASSIFICATIONS")) {
             classifications_t msg = new classifications_t(ins);
 
-            // If correct category and previously unobserved, increment counter
-            if(msg.name.equals(classType) && !observedIDs.contains(msg.id)) {
-                observedIDs.add(msg.id);
-                currentCount ++;
+            // Keep running average of "quality" of detection, with a penalty
+            // for not having multiple observations coming into play during
+            // evaluation in conditionMet()
+            if (classType.equals(msg.name)) {
+                if (!observed.containsKey(msg.id)) {
+                    observed.put(msg.id, new DetectionRecord());
+                }
+                observed.get(msg.id).addSample(msg.confidence);
             }
         }
     }
