@@ -16,6 +16,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 {
     // Default parameters...should these be settable?
     static final double CONFIDENCE_THRESHOLD = 0.8;
+    static final double ORIENTATION_THRESHOLD = Math.toRadians(15);
 
     private int goalCount = 0;
     // By default, set to -Pi. Any value <= -3.14 will be treated as a default
@@ -29,17 +30,32 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     {
         public int n;
         public double mean;
+        boolean metOrientation;
 
         public DetectionRecord()
         {
             n = 0;
             mean = 0;
+            if (orientation <= -3.14)
+                metOrientation = true;
+            else
+                metOrientation = false;
         }
 
-        public void addSample(double v)
+        public void addSample(classifications_t classy)
         {
             n++;
-            mean = mean + 1.0*(v-mean)/n;
+            mean = mean + 1.0*(classy.confidence-mean)/n;
+
+            if (metOrientation)
+                return;
+
+            // Determine is the object was positioned correctly
+            // to meet our relative orientation requirements
+            if (Math.abs(MathUtil.mod2pi(classy.xyzrpy[5] - orientation)) < ORIENTATION_THRESHOLD) {
+                System.out.println("ONE");
+                metOrientation = true;
+            }
         }
     }
 
@@ -57,6 +73,10 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 
         assert (parameters.containsKey("class"));
         classType = parameters.get("class").toString();
+
+        // Orientation relative to us...defaults to irrelevant
+        if (parameters.containsKey("orientation"))
+            orientation = parameters.get("orientation").getDouble();
 
         observed = new HashMap<Integer, DetectionRecord>();
 
@@ -79,8 +99,9 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
             // heavily penalize few sample while minimally penalizing many samples,
             // but could be revisited
             double conf = (1.0 - 1.0/d.n)*d.mean;
-            if (conf > CONFIDENCE_THRESHOLD)
+            if (conf > CONFIDENCE_THRESHOLD && d.metOrientation)
                 count++;
+
         }
 
         return count >= goalCount;
@@ -127,7 +148,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
                 if (!observed.containsKey(msg.id)) {
                     observed.put(msg.id, new DetectionRecord());
                 }
-                observed.get(msg.id).addSample(msg.confidence);
+                observed.get(msg.id).addSample(msg);
             }
         }
     }

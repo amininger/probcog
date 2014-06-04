@@ -296,8 +296,8 @@ public class SimRobot implements SimObject, LCMSubscriber
 
             // Position relative to robot. For now, tossing away orientation data,
             // but may be relevant later.
-            double[] relxyz = relativeXYZ(getPose(), LinAlg.resize(xyzrpyDoor, 3));
-            classies.xyzrpy = LinAlg.resize(relxyz, 6);
+            double[] relXyzrpy = relativePose(getPose(), xyzrpyDoor);
+            classies.xyzrpy = relXyzrpy;
 
             if (useNoise) {
                 // Object detections imperfect. Based on classification confidence
@@ -336,19 +336,19 @@ public class SimRobot implements SimObject, LCMSubscriber
             double ORIENTATION_THRESHOLD = Math.toRadians(-5);
 
             double[] xyzrpyHall = LinAlg.matrixToXyzrpy(so.getPose());
-            double[] relxyz = relativeXYZ(getPose(), LinAlg.resize(xyzrpyHall, 3));
+            double[] relXyzrpy = relativePose(getPose(), xyzrpyHall);
             double yawHall = xyzrpyHall[5];
             double yawBot = xyzrpyBot[5];
             double dotp = Math.cos(yawBot)*Math.cos(yawHall) + Math.sin(yawBot)*Math.sin(yawHall);
             double dist = LinAlg.distance(xyzrpyBot, xyzrpyHall, 2);
             // Object must be in range, correctly oriented, and in front of the robot (XXX)
-            if (dist > SENSING_THRESHOLD|| dotp < ORIENTATION_THRESHOLD || relxyz[0] < -0.5)
+            if (dist > SENSING_THRESHOLD|| dotp < ORIENTATION_THRESHOLD || relXyzrpy[0] < -0.5)
                 return;
 
             classifications_t classies = new classifications_t();
             classies.utime = TimeUtil.utime();
             classies.name = "hallway";
-            classies.xyzrpy = LinAlg.resize(relxyz, 6);
+            classies.xyzrpy = relXyzrpy;
             classies.id = hall.id;
 
             if (useNoise) {
@@ -365,10 +365,17 @@ public class SimRobot implements SimObject, LCMSubscriber
             return MathUtil.clamp(u + classifierRandom.nextGaussian()*s, 0, 1);
         }
 
-        // Relative position XYZ in A's frame
-        private double[] relativeXYZ(double[][] A, double[] xyz)
+        private double[] relativePose(double[][] A, double[] xyzrpy)
         {
-            return LinAlg.transform(LinAlg.inverse(A), xyz);
+            double[] xyzrpy_A = LinAlg.matrixToXyzrpy(A);
+            double[] p = LinAlg.resize(xyzrpy, 3);
+            p = LinAlg.transform(LinAlg.inverse(A), p);
+            p = LinAlg.resize(p, 6);
+
+            // Relative yaw difference.
+            p[5] = MathUtil.mod2pi(xyzrpy[5] - xyzrpy_A[5]);
+
+            return p;
         }
     }
 
@@ -389,8 +396,6 @@ public class SimRobot implements SimObject, LCMSubscriber
             lcm.publish("POSE", pose);
         }
     }
-
-
 
     class ControlTask implements PeriodicTasks.Task
     {
