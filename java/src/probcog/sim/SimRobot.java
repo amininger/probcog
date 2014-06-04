@@ -272,47 +272,44 @@ public class SimRobot implements SimObject, LCMSubscriber
             // Look through all objects in the world and if one is
             // a door and it's within a set distance of us, "classify" it
             double[] xyzrpyBot = LinAlg.matrixToXyzrpy(getPose());
-            double[] xyzBot = LinAlg.resize(xyzrpyBot, 3);
 
             for(SimObject so : sw.objects) {
-                // Door detection
-                detectDoor(so, xyzBot);
+                detectDoor(so, xyzrpyBot);
+                detectHallway(so, xyzrpyBot);
             }
         }
 
-        private void detectDoor(SimObject so, double[] xyzBot)
+        private void detectDoor(SimObject so, double[] xyzrpyBot)
         {
             if (!(so instanceof SimDoor || so instanceof SimFalseDoor))
                 return;
             double sensingThreshold = 1.5;
 
             double[] xyzrpyDoor = LinAlg.matrixToXyzrpy(so.getPose());
-            double[] xyzDoor = LinAlg.resize(xyzrpyDoor, 3);
-            double dist = LinAlg.distance(xyzBot, xyzDoor);
+            double dist = LinAlg.distance(xyzrpyBot, xyzrpyDoor, 2);
             if (dist > sensingThreshold)
                 return;
 
             classifications_t classies = new classifications_t();
             classies.utime = TimeUtil.utime();
             classies.name = "door";
-            classies.xyz = xyzDoor; // Should this be relative w.r.t bot or absolute?
+
+            // Position relative to robot. For now, tossing away orientation data,
+            // but may be relevant later.
+            double[] relxyz = relativeXYZ(getPose(), LinAlg.resize(xyzrpyDoor, 3));
+            classies.xyzrpy = LinAlg.resize(relxyz, 6);
 
             if (useNoise) {
                 // Object detections imperfect. Based on classification confidence
-                double mean;
-                double stddev;
                 if (so instanceof SimDoor) {
                     SimDoor door = (SimDoor)so;
                     classies.id = door.id;
-                    mean = door.mean;
-                    stddev = door.stddev;
+                    classies.confidence = sampleConfidence(door.mean, door.stddev);
                 } else {
                     SimFalseDoor door = (SimFalseDoor)so;
                     classies.id = door.id;
-                    mean = door.mean;
-                    stddev = door.stddev;
+                    classies.confidence = sampleConfidence(door.mean, door.stddev);
                 }
-                classies.confidence = MathUtil.clamp(mean + classifierRandom.nextGaussian()*stddev, 0, 1);
             } else {
                 // Object detections perfect. Object MUST be a real door
                 if (!(so instanceof SimDoor))
@@ -323,6 +320,55 @@ public class SimRobot implements SimObject, LCMSubscriber
             }
 
             lcm.publish("CLASSIFICATIONS", classies);
+        }
+
+        // Only detect hallways that we can "see". That means that
+        // 1) They are not behind the robot
+        // 2) The portal opens in an appropriate direction
+        private void detectHallway(SimObject so, double[] xyzrpyBot)
+        {
+            if (!(so instanceof SimHallway))
+                return;
+            SimHallway hall = (SimHallway)so;
+
+            // Imperfect and probably over generous
+            double SENSING_THRESHOLD = 5.0;
+            double ORIENTATION_THRESHOLD = Math.toRadians(-5);
+
+            double[] xyzrpyHall = LinAlg.matrixToXyzrpy(so.getPose());
+            double[] relxyz = relativeXYZ(getPose(), LinAlg.resize(xyzrpyHall, 3));
+            double yawHall = xyzrpyHall[5];
+            double yawBot = xyzrpyBot[5];
+            double dotp = Math.cos(yawBot)*Math.cos(yawHall) + Math.sin(yawBot)*Math.sin(yawHall);
+            double dist = LinAlg.distance(xyzrpyBot, xyzrpyHall, 2);
+            // Object must be in range, correctly oriented, and in front of the robot (XXX)
+            if (dist > SENSING_THRESHOLD|| dotp < ORIENTATION_THRESHOLD || relxyz[0] < -0.5)
+                return;
+
+            classifications_t classies = new classifications_t();
+            classies.utime = TimeUtil.utime();
+            classies.name = "hallway";
+            classies.xyzrpy = LinAlg.resize(relxyz, 6);
+            classies.id = hall.id;
+
+            if (useNoise) {
+                classies.confidence = sampleConfidence(hall.mean, hall.stddev);
+            } else {
+                classies.confidence = 1.0;
+            }
+
+            lcm.publish("CLASSIFICATIONS", classies);
+        }
+
+        private double sampleConfidence(double u, double s)
+        {
+            return MathUtil.clamp(u + classifierRandom.nextGaussian()*s, 0, 1);
+        }
+
+        // Relative position XYZ in A's frame
+        private double[] relativeXYZ(double[][] A, double[] xyz)
+        {
+            return LinAlg.transform(LinAlg.inverse(A), xyz);
         }
     }
 

@@ -19,6 +19,7 @@ public class SimHallway implements SimObject
 	protected double[][] T = LinAlg.identity(4);  // position
     protected Color color = new Color(100, 150, 100);
     double[] sxyz = new double[]{0.1, 2.0, 1.0};
+    double orientation = 0; // [-PI, PI]
 
     protected int id;
 
@@ -43,7 +44,9 @@ public class SimHallway implements SimObject
 
     public VisObject getVisObject()
     {
-        return new VisChain(LinAlg.scale(sxyz[0], sxyz[1], 1),
+        VisVertexData vvd = new VisVertexData(new double[2], new double[] {1.0, 0});
+        return new VisChain(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.blue, 2)),
+                            LinAlg.scale(sxyz[0], sxyz[1], 1),
                             new VzRectangle(new VzMesh.Style(color)));
     }
 

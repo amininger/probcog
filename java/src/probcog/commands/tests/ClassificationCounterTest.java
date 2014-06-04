@@ -18,6 +18,10 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     static final double CONFIDENCE_THRESHOLD = 0.8;
 
     private int goalCount = 0;
+    // By default, set to -Pi. Any value <= -3.14 will be treated as a default
+    // value in which object position relative to the robot is not relevant. In
+    // this mode, objects will merely be counted.
+    private double orientation = -Math.PI;
     private String classType = "";
     private HashMap<Integer, DetectionRecord> observed;
 
@@ -94,6 +98,10 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 
         params.add(new TypedParameter("class",
                                       TypedValue.TYPE_STRING));
+        params.add(new TypedParameter("orientation",
+                                      TypedValue.TYPE_DOUBLE,
+                                      new TypedValue(-Math.PI),
+                                      new TypedValue(Math.PI)));
         return params;
     }
 

@@ -95,9 +95,13 @@ public class MobileGUI extends JFrame
     class RenderThread extends Thread implements LCMSubscriber
     {
         int fps = 20;
+        Object classyLock = new Object();
+        HashMap<Integer, classifications_t> classifications =
+            new HashMap<Integer, classifications_t>();
 
         public RenderThread()
         {
+            LCM.getSingleton().subscribe("CLASSIFICATIONS", this);
             LCM.getSingleton().subscribe("POSE", this);
         }
 
@@ -110,6 +114,7 @@ public class MobileGUI extends JFrame
                 double dt = tic.toctic();
                 //drawWorld();
                 drawTrajectory(dt);
+                drawClassifications();
                 TimeUtil.sleep(1000/fps);
             }
         }
@@ -120,10 +125,41 @@ public class MobileGUI extends JFrame
                 if ("POSE".equals(channel)) {
                     pose_t pose = new pose_t(ins);
                     poseCache.put(pose, pose.utime);
+                } else if ("CLASSIFICATIONS".equals(channel)) {
+                    classifications_t classy = new classifications_t(ins);
+                    synchronized (classyLock) {
+                        classifications.put(classy.id, classy);
+                    }
                 }
             } catch (IOException ex) {
                 System.err.println("WRN: Error receiving message on channel - "+channel);
                 ex.printStackTrace();
+            }
+        }
+
+        public void drawClassifications()
+        {
+            synchronized (classyLock) {
+                pose_t pose = poseCache.get();
+
+                VisWorld.Buffer vb = vw.getBuffer("classifications");
+                if (pose == null || classifications.size() < 1) {
+                    vb.swap();
+                    return;
+                }
+                VisVertexData vvd = new VisVertexData();
+                VisColorData vcd = new VisColorData();
+                for (classifications_t classy: classifications.values()) {
+                    double yaw = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
+                    double[] rel_xyz = LinAlg.transform(LinAlg.rotateZ(yaw), LinAlg.resize(classy.xyzrpy, 3));
+                    double[] xyz = LinAlg.add(pose.pos, rel_xyz);
+                    vvd.add(xyz);
+                    vcd.add(ColorUtil.swapRedBlue(ColorUtil.seededColor(classy.name.hashCode()).getRGB()));
+                }
+                classifications.clear();
+
+                vb.addBack(new VzPoints(vvd, new VzPoints.Style(vcd, 10)));
+                vb.swap();
             }
         }
     }

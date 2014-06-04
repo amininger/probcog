@@ -4,7 +4,7 @@ struct classifications_t
 
     string name; // E..g "Red"
     int32_t id;
-    double xyz[3];
+    double xyzrpy[6];
 
     double confidence; // [0-1] e.g. .7
 }
