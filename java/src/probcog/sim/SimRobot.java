@@ -78,7 +78,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive = new DifferentialDrive(sw, this, new double[3]);
         drive.centerOfRotation = new double[] { 0.13, 0, 0 };
 
-        lcm.subscribe("GAMEPAD_"+robotID, this);
+        lcm.subscribe("GAMEPAD", this);
         lcm.subscribe("DIFF_DRIVE", this);
 
         tasks.addFixedDelay(new ImageTask(), 0.04);
@@ -416,8 +416,8 @@ public class SimRobot implements SimObject, LCMSubscriber
             gamepad_t gp = gamepadCache.get();
             if (gp != null) {
 
-                final int RIGHT_VERT_AXIS = 3;
-                final int RIGHT_HORZ_AXIS = 2;
+                final int RIGHT_VERT_AXIS = 5;//3;
+                final int RIGHT_HORZ_AXIS = 4;//2;
 
                 double speed = -gp.axes[RIGHT_VERT_AXIS];
                 if ((gp.buttons & (16 | 32)) == (16 | 32))  // if holding both buttons go faster
