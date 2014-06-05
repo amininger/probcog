@@ -20,9 +20,88 @@ import probcog.lcmtypes.*;
 
 public class FollowHall implements ControlLaw, LCMSubscriber
 {
+    private static final double FH_HZ = 100;
+    private static final double MIN_RANGE = 3.0;
+    private static final double THETA_SWEEP = Math.atan2(1.0, MIN_RANGE);
+    private static final double MIN_THETA = -Math.PI/2 - THETA_SWEEP;
+    private static final double MAX_THETA = Math.PI/2 + THETA_SWEEP;
+
     PeriodicTasks tasks = new PeriodicTasks(1);
     ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
     ExpiringMessageCache<laser_t> laserCache = new ExpiringMessageCache<laser_t>(0.2);
+
+    class UpdateTask implements PeriodicTasks.Task
+    {
+        public UpdateTask()
+        {
+        }
+
+        public void run(double dt)
+        {
+            laser_t laser = laserCache.get();
+            if (laser == null)
+                return;
+
+            update(laser, dt);
+        }
+
+        private void update(laser_t laser, double dt)
+        {
+            diff_drive_t dd = new diff_drive_t();
+
+            dd = drive(laser);
+
+            LCM.getSingleton().publish("DIFF_DRIVE", dd);
+        }
+
+        private diff_drive_t drive(laser_t laser)
+        {
+            // Locate the direction closest to being in front of us (without
+            // being behind us) that is free.
+            // (Later, we'll add some slight push back by walls to try to recenter)
+            int SAMPLES = (int)Math.ceil(THETA_SWEEP*2/laser.radstep);
+            LinkedList<Double> slidingRanges = new LinkedList<Double>();
+            int unsafe = 0;
+            double bestTheta = Double.MAX_VALUE;
+            for (int i = 0; i < laser.nranges; i++) {
+                double t = laser.rad0 + i*laser.radstep;
+                if (t < MIN_THETA || t > MAX_THETA)
+                    continue;
+                if (laser.ranges[i] < MIN_RANGE)
+                    unsafe++;
+                slidingRanges.addLast((double)laser.ranges[i]);
+                if (slidingRanges.size() > SAMPLES) {
+                    double r = slidingRanges.removeFirst();
+                    if (r < MIN_RANGE)
+                        unsafe--;
+                }
+                if (slidingRanges.size() != SAMPLES)
+                    continue;
+
+                double middleTheta = laser.rad0 + (i-SAMPLES/2)*laser.radstep;
+                if (unsafe == 0 && Math.abs(middleTheta) < Math.abs(bestTheta))
+                    bestTheta = middleTheta;
+            }
+
+            // Drive in that direction
+            diff_drive_t dd = new diff_drive_t();
+            dd.utime = TimeUtil.utime();
+            dd.left_enabled = dd.right_enabled = true;
+            dd.left = dd.right = 0;
+
+            if (bestTheta != Double.MAX_VALUE) {
+                if (bestTheta > 0) {
+                    dd.right = 1.0;
+                    dd.left = Math.cos(bestTheta);
+                } else {
+                    dd.left = 1.0;
+                    dd.right = Math.cos(bestTheta);
+                }
+            }
+
+            return dd;
+        }
+    }
 
     /** Strictly for use in parameter checking */
     public FollowHall()
@@ -34,8 +113,11 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     public FollowHall(Map<String, TypedValue> parameters)
     {
         // Parameters
+        // XXX Are there any?
 
-        // Add task
+        tasks.addFixedDelay(new UpdateTask(), 1.0/FH_HZ);
+
+        LCM.getSingleton().subscribe("LASER", this);
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -132,11 +214,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             // Locate the direction closest to being in front of us (without
             // being behind us) that is free.
             // (Later, we'll add some slight push back by walls to try to recenter)
-            double MIN_RANGE = 3.0; // [m]
-            double THETA_SWEEP = Math.atan2(0.5, MIN_RANGE);
-            double MIN_THETA = -Math.PI/2 - THETA_SWEEP/2;
-            double MAX_THETA = Math.PI/2 + THETA_SWEEP/2;
-            int SAMPLES = (int)Math.ceil(THETA_SWEEP/laser.radstep);
+            int SAMPLES = (int)Math.ceil(THETA_SWEEP*2/laser.radstep);
             LinkedList<Double> slidingRanges = new LinkedList<Double>();
             int unsafe = 0;
             double bestTheta = Double.MAX_VALUE;
