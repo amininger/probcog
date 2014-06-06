@@ -14,17 +14,29 @@ import lcm.lcm.*;
 
 import april.lcmtypes.*;
 import april.util.*;
+import april.jmat.*;
 
 import probcog.commands.*;
 import probcog.lcmtypes.*;
 
 public class FollowHall implements ControlLaw, LCMSubscriber
 {
-    private static final double FH_HZ = 100;
+    // General parameters
+    private static final int FH_HZ = 100;
+
+    // Hall parameters
     private static final double MIN_RANGE = 3.0;
     private static final double THETA_SWEEP = Math.atan2(1.0, MIN_RANGE);
     private static final double MIN_THETA = -Math.PI/2 - THETA_SWEEP;
     private static final double MAX_THETA = Math.PI/2 + THETA_SWEEP;
+    private static final int ORIENTATION_SAMPLES = FH_HZ*10;
+
+    // Range parameters
+    private static final double WALL_WEIGHT = 0.20;
+    private static final double MIN_R_THETA = -Math.PI/2;
+    private static final double MAX_R_THETA = Math.PI/2;
+    private static final double WALL_RIGHT_CEIL= 2.0;
+    private static final double WALL_LEFT_CEIL = 6.0;
 
     PeriodicTasks tasks = new PeriodicTasks(1);
     ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
@@ -32,6 +44,11 @@ public class FollowHall implements ControlLaw, LCMSubscriber
 
     class UpdateTask implements PeriodicTasks.Task
     {
+        int startIdx = -1;
+        int midIdx = -1;
+        int finIdx = -1;
+        double meanOrientation = Double.MAX_VALUE;
+
         public UpdateTask()
         {
         }
@@ -42,20 +59,56 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             if (laser == null)
                 return;
 
-            update(laser, dt);
+            pose_t pose = poseCache.get();
+            if (pose == null)
+                return;
+
+            if (meanOrientation == Double.MAX_VALUE)
+                init(laser, pose);
+
+            update(laser, pose, dt);
         }
 
-        private void update(laser_t laser, double dt)
+        private void init(laser_t laser, pose_t pose)
+        {
+            meanOrientation = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
+
+            startIdx = MathUtil.clamp((int)((MIN_R_THETA-laser.rad0)/laser.radstep), 0, laser.nranges-1);
+            midIdx = MathUtil.clamp((int)((0-laser.rad0)/laser.radstep), 0, laser.nranges-1);
+            finIdx = MathUtil.clamp((int)((MAX_R_THETA-laser.rad0)/laser.radstep), 0, laser.nranges-1);
+        }
+
+        private void update(laser_t laser, pose_t pose, double dt)
         {
             diff_drive_t dd = new diff_drive_t();
 
-            dd = drive(laser);
+            dd = drive(laser, pose);
 
             LCM.getSingleton().publish("DIFF_DRIVE", dd);
         }
 
-        private diff_drive_t drive(laser_t laser)
+        private diff_drive_t drive(laser_t laser, pose_t pose)
         {
+            double currentOrientation = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
+            double w0 = (ORIENTATION_SAMPLES-1.0)/ORIENTATION_SAMPLES;
+            double w1 = 1.0 - w0;
+            meanOrientation = w0*meanOrientation + w1*MathUtil.mod2pi(meanOrientation, currentOrientation);
+            meanOrientation = MathUtil.mod2pi(meanOrientation);
+
+            // Find left and right ranges. This should help push us into the hall
+            // center
+            double rLeft = Double.MAX_VALUE;
+            double rRight = Double.MAX_VALUE;
+            for (int i = startIdx; i < finIdx; i++) {
+                double t = laser.rad0+laser.radstep*i;
+                double w = Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)));
+                if (i < midIdx) {
+                    rRight = Math.min(w*laser.ranges[i], rRight);
+                } else {
+                    rLeft = Math.min(w*laser.ranges[i], rLeft);
+                }
+            }
+
             // Locate the direction closest to being in front of us (without
             // being behind us) that is free.
             // (Later, we'll add some slight push back by walls to try to recenter)
@@ -63,6 +116,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             LinkedList<Double> slidingRanges = new LinkedList<Double>();
             int unsafe = 0;
             double bestTheta = Double.MAX_VALUE;
+            double bestDiff = Double.MAX_VALUE;
             for (int i = 0; i < laser.nranges; i++) {
                 double t = laser.rad0 + i*laser.radstep;
                 if (t < MIN_THETA || t > MAX_THETA)
@@ -78,9 +132,14 @@ public class FollowHall implements ControlLaw, LCMSubscriber
                 if (slidingRanges.size() != SAMPLES)
                     continue;
 
+                // Map middle theta to global orientation
                 double middleTheta = laser.rad0 + (i-SAMPLES/2)*laser.radstep;
-                if (unsafe == 0 && Math.abs(middleTheta) < Math.abs(bestTheta))
+                double actualTheta = MathUtil.mod2pi(middleTheta + currentOrientation);
+                double diff = Math.abs(MathUtil.mod2pi(meanOrientation, actualTheta) - meanOrientation);
+                if (unsafe == 0 && diff < bestDiff) {
+                    bestDiff = diff;
                     bestTheta = middleTheta;
+                }
             }
 
             // Drive in that direction
@@ -97,7 +156,21 @@ public class FollowHall implements ControlLaw, LCMSubscriber
                     dd.left = 1.0;
                     dd.right = Math.cos(bestTheta);
                 }
+            } else {
+                return dd;
             }
+
+            // Add in bias to drive down center (or just right of center) of hall
+            double rightPush = (WALL_RIGHT_CEIL - Math.min(WALL_RIGHT_CEIL, rRight))/WALL_RIGHT_CEIL;
+            double leftPush = (WALL_LEFT_CEIL - Math.min(WALL_LEFT_CEIL, rLeft))/WALL_LEFT_CEIL;
+            dd.right += WALL_WEIGHT*rightPush;
+            dd.left += WALL_WEIGHT*leftPush;
+
+            // Normalize
+            double max = Math.max(Math.abs(dd.right), Math.abs(dd.left));
+            assert (max != 0);
+            dd.right /= max;
+            dd.left /= max;
 
             return dd;
         }
@@ -108,6 +181,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     {
         // Temporary
         LCM.getSingleton().subscribe("LASER", this);
+        LCM.getSingleton().subscribe("POSE", this);
     }
 
     public FollowHall(Map<String, TypedValue> parameters)
@@ -118,6 +192,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
         tasks.addFixedDelay(new UpdateTask(), 1.0/FH_HZ);
 
         LCM.getSingleton().subscribe("LASER", this);
+        LCM.getSingleton().subscribe("POSE", this);
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -179,6 +254,8 @@ public class FollowHall implements ControlLaw, LCMSubscriber
         int fps = 60;
         VisWorld vw;
 
+        double meanOrientation = Double.MAX_VALUE;
+
         public TestThread(VisWorld vw)
         {
             this.vw = vw;
@@ -192,12 +269,30 @@ public class FollowHall implements ControlLaw, LCMSubscriber
                 if (laser == null)
                     continue;
 
-                process(laser);
+                pose_t pose = poseCache.get();
+                if (pose == null)
+                    continue;
+
+                init(pose);
+
+                process(laser, pose);
             }
         }
 
-        private void process(laser_t laser)
+        private void init(pose_t pose)
         {
+            if (meanOrientation == Double.MAX_VALUE)
+                meanOrientation = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
+        }
+
+        private void process(laser_t laser, pose_t pose)
+        {
+            double currentOrientation = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
+            double w0 = (ORIENTATION_SAMPLES-1.0)/ORIENTATION_SAMPLES;
+            double w1 = 1.0 - w0;
+            meanOrientation = w0*meanOrientation + w1*MathUtil.mod2pi(meanOrientation, currentOrientation);
+            meanOrientation = MathUtil.mod2pi(meanOrientation);
+
             ArrayList<double[]> points = new ArrayList<double[]>();
             for (int i = 0; i < laser.nranges; i++) {
                 double t = laser.rad0 + i*laser.radstep;
@@ -211,6 +306,8 @@ public class FollowHall implements ControlLaw, LCMSubscriber
                                     new VzPoints.Style(Color.yellow, 2)));
             vb.swap();
 
+            // Weight direction based on where we've been facing
+
             // Locate the direction closest to being in front of us (without
             // being behind us) that is free.
             // (Later, we'll add some slight push back by walls to try to recenter)
@@ -218,6 +315,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             LinkedList<Double> slidingRanges = new LinkedList<Double>();
             int unsafe = 0;
             double bestTheta = Double.MAX_VALUE;
+            double bestDiff = Double.MAX_VALUE;
             for (int i = 0; i < laser.nranges; i++) {
                 double t = laser.rad0 + i*laser.radstep;
                 if (t < MIN_THETA || t > MAX_THETA)
@@ -234,8 +332,13 @@ public class FollowHall implements ControlLaw, LCMSubscriber
                     continue;
 
                 double middleTheta = laser.rad0 + (i-SAMPLES/2)*laser.radstep;
-                if (unsafe == 0 && Math.abs(middleTheta) < Math.abs(bestTheta))
+                // Map middle theta to global orientation
+                double actualTheta = MathUtil.mod2pi(middleTheta + currentOrientation);
+                double diff = Math.abs(MathUtil.mod2pi(meanOrientation, actualTheta) - meanOrientation);
+                if (unsafe == 0 && diff < bestDiff) {
+                    bestDiff = diff;
                     bestTheta = middleTheta;
+                }
             }
 
             double radius = MIN_RANGE;
