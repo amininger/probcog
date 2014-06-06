@@ -32,11 +32,11 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     private static final int ORIENTATION_SAMPLES = FH_HZ*10;
 
     // Range parameters
-    private static final double WALL_WEIGHT = 0.20;
+    private static final double WALL_WEIGHT = 1.00;
     private static final double MIN_R_THETA = -Math.PI/2;
     private static final double MAX_R_THETA = Math.PI/2;
-    private static final double WALL_RIGHT_CEIL= 2.0;
-    private static final double WALL_LEFT_CEIL = 6.0;
+    private static final double WALL_RIGHT_CEIL= 3.0;
+    private static final double WALL_LEFT_CEIL = 3.0;
 
     PeriodicTasks tasks = new PeriodicTasks(1);
     ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
