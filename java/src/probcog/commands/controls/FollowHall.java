@@ -12,9 +12,10 @@ import java.util.*;
 
 import lcm.lcm.*;
 
+import april.jmat.*;
 import april.lcmtypes.*;
 import april.util.*;
-import april.jmat.*;
+import april.vis.*;
 
 import probcog.commands.*;
 import probcog.lcmtypes.*;
@@ -29,10 +30,10 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     private static final double THETA_SWEEP = Math.atan2(1.0, MIN_RANGE);
     private static final double MIN_THETA = -Math.PI/2 - THETA_SWEEP;
     private static final double MAX_THETA = Math.PI/2 + THETA_SWEEP;
-    private static final int ORIENTATION_SAMPLES = FH_HZ*10;
+    private static final int ORIENTATION_SAMPLES = FH_HZ*5;
 
     // Range parameters
-    private static final double WALL_WEIGHT = 1.00;
+    private static final double WALL_WEIGHT = 0.20;
     private static final double MIN_R_THETA = -Math.PI/2;
     private static final double MAX_R_THETA = Math.PI/2;
     private static final double WALL_RIGHT_CEIL= 3.0;
@@ -48,6 +49,11 @@ public class FollowHall implements ControlLaw, LCMSubscriber
         int midIdx = -1;
         int finIdx = -1;
         double meanOrientation = Double.MAX_VALUE;
+
+        // XXX Debugging
+        VisWorld vw;
+        VisLayer vl;
+        VisCanvas vc;
 
         public UpdateTask()
         {
@@ -100,8 +106,11 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             double rLeft = Double.MAX_VALUE;
             double rRight = Double.MAX_VALUE;
             for (int i = startIdx; i < finIdx; i++) {
+                // XXX
+                if (laser.ranges[i] > 6.0)
+                    continue;
                 double t = laser.rad0+laser.radstep*i;
-                double w = Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)));
+                double w = Math.max(Math.abs(Math.sin(t)), 0.1); // XXX
                 if (i < midIdx) {
                     rRight = Math.min(w*laser.ranges[i], rRight);
                 } else {
