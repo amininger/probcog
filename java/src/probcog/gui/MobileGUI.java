@@ -39,8 +39,6 @@ import probcog.vis.*;
 public class MobileGUI extends JFrame
 {
     private ProbCogSimulator simulator;
-    // XXX Temporary home
-    //private SimpleGraph<CommandNode, CommandEdge> graph = new SimpleGraph<CommandNode, CommandEdge>();
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
@@ -52,6 +50,11 @@ public class MobileGUI extends JFrame
     VisWorld vw;
     VisLayer vl;
     VisCanvas vc;
+    GraphVisEventHandler graphHandler;
+
+    // Temporary graph stuff (where will this graph actually live so that it is
+    // accessible to all who need it?
+    MultiGraph<CommandNode, CommandEdge> graph = new MultiGraph<CommandNode, CommandEdge>();
 
     // Parameter Stuff
     ParameterGUI pg;
@@ -63,10 +66,13 @@ public class MobileGUI extends JFrame
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLayout(new BorderLayout());
 
+
         vw = new VisWorld();
         vl = new VisLayer(vw);
         vc = new VisCanvas(vl);
         vl.addEventHandler(new MobileGUIEventHandler(vw));
+        graphHandler = new GraphVisEventHandler(vw, graph);
+        vl.addEventHandler(graphHandler);
         this.add(vc, BorderLayout.CENTER);
 
     	// Initialize the simulator
@@ -77,11 +83,6 @@ public class MobileGUI extends JFrame
         pg = new ParameterGUI();
         initParameters();
         this.add(pg, BorderLayout.SOUTH);
-
-        // Initialize the graph. Assumes CSE Sim world, as it is hardcoded for it
-        // XXX
-        //initGraph();
-        //instructRobot();    // XXX temporary
 
         // Set GUI modes
         this.setVisible(true);
@@ -115,6 +116,7 @@ public class MobileGUI extends JFrame
                 //drawWorld();
                 drawTrajectory(dt);
                 drawClassifications();
+                drawGraph(graph);
                 TimeUtil.sleep(1000/fps);
             }
         }
@@ -173,6 +175,27 @@ public class MobileGUI extends JFrame
             world = vw;
         }
 
+        public int getDispatchOrder()
+        {
+            return -10000;    // Highest priority
+        }
+
+        public boolean keyPressed(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, KeyEvent e)
+        {
+            // Toggle mode
+            if (e.getKeyCode() == KeyEvent.VK_G)
+                graphHandler.toggle();
+            VisWorld.Buffer vb = vw.getBuffer("graphMode");
+            if (graphHandler.isOn()) {
+                vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.TOP_LEFT,
+                                            LinAlg.scale(0.1),
+                                            new VzText(VzText.ANCHOR.TOP_LEFT_ROUND,
+                                                       "<<monospaced-128-bold,red>>Graph Mode")));
+            }
+            vb.swap();
+            return false;
+        }
+
         public boolean mouseMoved(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
         {
             double[] xy = ray.intersectPlaneXY();
@@ -216,185 +239,6 @@ public class MobileGUI extends JFrame
         pg.addListener(new SimParameterListener());
     }
 
-    // XXX A hand-coded version of the CSE graph, to get off the ground with.
-    /*private void initGraph()
-    {
-        ArrayList<SimpleGraphNode> nodes = new ArrayList<SimpleGraphNode>();
-        CommandNode n;
-        CommandEdge e;
-        CommandEdge.Edge v;
-        n = new CommandNode(new double[]{1,0}); // In front of april-office door
-        nodes.add(graph.addNode(n));
-        n = new CommandNode(new double[]{12.8, 0}); // In front of soar-office door
-        nodes.add(graph.addNode(n));
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");   // count = int, string class
-        v.addLawParam("side", new TypedValue((byte)-1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        v = new CommandEdge.Edge("follow-heading", "count");
-        v.addLawParam("heading", new TypedValue(0.4));
-        v.addLawParam("distance", new TypedValue(0.5));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        e.addEdge(v);
-        v.probability = .95;
-        graph.connect(nodes.get(0), nodes.get(1), e);
-
-        n = new CommandNode(new double[]{66, -40}); // John's office
-        nodes.add(graph.addNode(n));
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");
-        v.addLawParam("side", new TypedValue((byte)-1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        v = new CommandEdge.Edge("follow-heading", "count");
-        v.addLawParam("heading", new TypedValue(-0.7));
-        v.addLawParam("distance", new TypedValue(0.5));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        graph.connect(nodes.get(0), nodes.get(2), e); // april to john's
-
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");
-        v.addLawParam("side", new TypedValue((byte)-1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        v = new CommandEdge.Edge("follow-heading", "count");
-        v.addLawParam("heading", new TypedValue(-0.7));
-        v.addLawParam("distance", new TypedValue(0.5));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        graph.connect(nodes.get(1), nodes.get(2), e);   // soar to john's
-
-        n = new CommandNode(new double[]{66, -24.5});   // ben's office
-        nodes.add(graph.addNode(n));
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");
-        v.addLawParam("side", new TypedValue((byte)-1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(3));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95*.95*.95;
-        e.addEdge(v);
-        v = new CommandEdge.Edge("follow-heading", "count");
-        v.addLawParam("heading", new TypedValue(0.7));
-        v.addLawParam("distance", new TypedValue(0.5));
-        v.addTermParam("count", new TypedValue(3));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95*.95*.95;
-        e.addEdge(v);
-        graph.connect(nodes.get(2), nodes.get(3), e);   // john's to ben's
-
-        n = new CommandNode(new double[]{66, -21.8});   // ed's
-        nodes.add(graph.addNode(n));
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");
-        v.addLawParam("side", new TypedValue((byte)-1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        v = new CommandEdge.Edge("follow-heading", "count");
-        v.addLawParam("heading", new TypedValue(0.7));
-        v.addLawParam("distance", new TypedValue(0.5));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        graph.connect(nodes.get(3), nodes.get(4), e);   // ben's to ed's
-
-        n = new CommandNode(new double[]{66, -4.5});   // conference 1
-        nodes.add(graph.addNode(n));
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");
-        v.addLawParam("side", new TypedValue((byte)-1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(2));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95*.95;
-        e.addEdge(v);
-        v = new CommandEdge.Edge("follow-heading", "count");
-        v.addLawParam("heading", new TypedValue(0.7));
-        v.addLawParam("distance", new TypedValue(0.5));
-        v.addTermParam("count", new TypedValue(2));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95*.95;
-        e.addEdge(v);
-        graph.connect(nodes.get(4), nodes.get(5), e);   // ed's to conference
-
-        n = new CommandNode(new double[]{66, -0.7});  // Kitchen
-        nodes.add(graph.addNode(n));
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");
-        v.addLawParam("side", new TypedValue((byte)-1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        v = new CommandEdge.Edge("follow-heading", "count");
-        v.addLawParam("heading", new TypedValue(0.7));
-        v.addLawParam("distance", new TypedValue(0.5));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        graph.connect(nodes.get(5), nodes.get(6), e);   // conference to kitchen
-
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");
-        v.addLawParam("side", new TypedValue((byte)1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(2));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95*.95;
-        e.addEdge(v);
-        graph.connect(nodes.get(0), nodes.get(6), e);   // april to kitchen
-
-        e = new CommandEdge();
-        v = new CommandEdge.Edge("follow-wall", "count");
-        v.addLawParam("side", new TypedValue((byte)1));
-        v.addLawParam("heading", new TypedValue(0.0));
-        v.addLawParam("distance", new TypedValue(1.0));
-        v.addTermParam("count", new TypedValue(1));
-        v.addTermParam("class", new TypedValue("door"));
-        v.probability = .95;
-        e.addEdge(v);
-        graph.connect(nodes.get(1), nodes.get(6), e);   // soar to kitchen
-    }
-
-    public void instructRobot()
-    {
-        ArrayList<CommandEdge.Edge> path = GraphUtil.bestPath(graph, new double[] {0,0}, new double[] {66, -0.7});
-        for (CommandEdge.Edge edge: path) {
-            System.out.println(edge);
-        }
-
-    }*/
-
     private void drawWorld()
     {
     	VisWorld.Buffer buffer = vw.getBuffer("object-view");
@@ -405,6 +249,26 @@ public class MobileGUI extends JFrame
     	buffer.swap();
     }
 
+    private void drawGraph(MultiGraph<CommandNode, CommandEdge> graph)
+    {
+        VisWorld.Buffer vb = vw.getBuffer("graph");
+        // Render edges...this will take some doing
+
+        // Render vertices
+        ArrayList<double[]> points = new ArrayList<double[]>();
+        for (Integer key: graph.getNodes()) {
+            CommandNode n = graph.getValue(key);
+            if (n == null)
+                continue;
+            points.add(n.getXY());
+        }
+        vb.addBack(new VzPoints(new VisVertexData(points),
+                                new VzPoints.Style(Color.red, 5)));
+
+        vb.swap();
+    }
+
+    // XXX Should be updated to not draw forever/draw noisy data
     private static double dtAcc = 0;
     ArrayList<double[]> poseList = new ArrayList<double[]>();
     private void drawTrajectory(double dt)
@@ -426,27 +290,6 @@ public class MobileGUI extends JFrame
         vw.getBuffer("trajectory").swap();
         dtAcc = 0;
     }
-
-    /*private void drawGraph()
-    {
-        VisWorld.Buffer vb = vw.getBuffer("graph");
-
-        ArrayList<double[]> points = new ArrayList<double[]>();
-        for (SimpleGraphNode n: graph.getNodes()) {
-            for (SimpleGraphNode n_: graph.neighbors(n)) {
-                points.add(graph.getNodeValue(n).getXY());
-                points.add(graph.getNodeValue(n_).getXY());
-            }
-        }
-
-        VisVertexData vvd = new VisVertexData(points);
-        vb.addBack(new VzPoints(vvd,
-                                new VzPoints.Style(Color.yellow, 10)));
-        vb.addBack(new VzLines(vvd,
-                               VzLines.LINES,
-                               new VzLines.Style(Color.red, 2)));
-        vb.swap();
-    }*/
 
     public static void main(String args[])
     {

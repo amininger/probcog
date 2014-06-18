@@ -1,7 +1,9 @@
 package probcog.commands;
 
+import java.io.*;
+
 /** Node value for command version of simple graph */
-public class CommandNode
+public class CommandNode implements Serializable
 {
     double[] xy;
 
