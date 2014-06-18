@@ -252,18 +252,20 @@ public class MobileGUI extends JFrame
     private void drawGraph(MultiGraph<CommandNode, CommandEdge> graph)
     {
         VisWorld.Buffer vb = vw.getBuffer("graph");
-        // Render edges...this will take some doing
+        synchronized (graph) {
+            // Render edges...this will take some doing
 
-        // Render vertices
-        ArrayList<double[]> points = new ArrayList<double[]>();
-        for (Integer key: graph.getNodes()) {
-            CommandNode n = graph.getValue(key);
-            if (n == null)
-                continue;
-            points.add(n.getXY());
+            // Render vertices
+            ArrayList<double[]> points = new ArrayList<double[]>();
+            for (Integer key: graph.getNodes()) {
+                CommandNode n = graph.getValue(key);
+                if (n == null)
+                    continue;
+                points.add(n.getXY());
+            }
+            vb.addBack(new VzPoints(new VisVertexData(points),
+                                    new VzPoints.Style(Color.red, 5)));
         }
-        vb.addBack(new VzPoints(new VisVertexData(points),
-                                new VzPoints.Style(Color.red, 5)));
 
         vb.swap();
     }

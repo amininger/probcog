@@ -17,6 +17,12 @@ public class CommandNode implements Serializable
         this.xy = xy;
     }
 
+    public void setXY(double[] xy)
+    {
+        this.xy[0] = xy[0];
+        this.xy[1] = xy[1];
+    }
+
     public void setXY(double x, double y)
     {
         xy[0] = x;
