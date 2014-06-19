@@ -327,6 +327,7 @@ public class EdgeConstructor extends JFrame
 
         // Null parameters represent unset values. Deal with these accordingly.
         if (nullParameters.size() > 0) {
+            // XXX Would be nice to highlight offending boxes in red...
             System.out.println("WRN: Could not commit edge. The following parameters were unset:");
             for (String s: nullParameters)
                 System.out.println("\t"+s);

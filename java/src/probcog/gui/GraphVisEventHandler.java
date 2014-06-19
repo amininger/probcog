@@ -76,7 +76,7 @@ public class GraphVisEventHandler extends VisEventAdapter
         int bestNode = -1;
         for (Integer key: graph.getNodes()) {
             CommandNode n = graph.getValue(key);
-            double dist = LinAlg.distance(n.getXY(), xy);
+            double dist = LinAlg.distance(n.getXY(), xy, 2);
             if (dist < bestDist) {
                 bestNode = key;
                 bestDist = dist;

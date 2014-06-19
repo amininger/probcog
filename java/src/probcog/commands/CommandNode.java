@@ -2,6 +2,8 @@ package probcog.commands;
 
 import java.io.*;
 
+import april.jmat.*;
+
 /** Node value for command version of simple graph */
 public class CommandNode implements Serializable
 {
@@ -14,7 +16,7 @@ public class CommandNode implements Serializable
 
     public CommandNode(double[] xy)
     {
-        this.xy = xy;
+        this.xy = LinAlg.resize(xy, 2);
     }
 
     public void setXY(double[] xy)

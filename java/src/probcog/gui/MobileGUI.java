@@ -251,9 +251,62 @@ public class MobileGUI extends JFrame
 
     private void drawGraph(MultiGraph<CommandNode, CommandEdge> graph)
     {
+        // Drawing parameters
+        double STEP_SIZE = 0.5;    // [m]
+        double START_ANGLE = Math.toRadians(45);
+        double ANGLE_STEP = Math.toRadians(2.5);
+
+        ArrayList<Color> colors = new ArrayList<Color>(Palette.web.listAll());
+        Collections.shuffle(colors, new Random(18941));
+        HashMap<String, Color> colorMap = new HashMap<String, Color>();
+
         VisWorld.Buffer vb = vw.getBuffer("graph");
         synchronized (graph) {
             // Render edges...this will take some doing
+            for (Integer n0: graph.getNodes()) {
+                for (Integer n1: graph.getNodes()) {
+                    if (n0.equals(n1))
+                        continue;
+
+                    Set<CommandEdge> edges = graph.getEdges(n0, n1);
+                    if (edges == null)
+                        continue;
+
+                    CommandNode a = graph.getValue(n0);
+                    CommandNode b = graph.getValue(n1);
+                    if (a == null || b == null)
+                        continue;
+
+                    double[] axy = a.getXY();
+                    double[] bxy = b.getXY();
+                    double theta0 = Math.atan2(bxy[1]-axy[1], bxy[0]-axy[0]);
+
+                    int idx = 0;
+                    for (CommandEdge e: edges) {
+                        // Pick a color from the palette
+                        if (!colorMap.containsKey(e.law))
+                            colorMap.put(e.law, colors.get(colorMap.size()%colors.size()));
+                        Color color = colorMap.get(e.law);
+
+                        ArrayList<double[]> points = new ArrayList<double[]>();
+                        points.add(axy);
+
+                        double theta1 = MathUtil.mod2pi(theta0 + (START_ANGLE + idx*ANGLE_STEP));
+                        double theta2 = MathUtil.mod2pi(Math.PI + theta0 - (START_ANGLE + idx*ANGLE_STEP));
+                        double r = (idx+1)*STEP_SIZE;
+                        double[] xy0 = LinAlg.add(axy, new double[] {r*Math.cos(theta1), r*Math.sin(theta1)});
+                        double[] xy1 = LinAlg.add(bxy, new double[] {r*Math.cos(theta2), r*Math.sin(theta2)});
+                        points.add(xy0);
+                        points.add(xy1);
+
+                        points.add(bxy);
+                        vb.addBack(new VzLines(new VisVertexData(points),
+                                               VzLines.LINE_STRIP,
+                                               new VzLines.Style(color, 1)));
+                        idx++;
+                    }
+                }
+            }
 
             // Render vertices
             ArrayList<double[]> points = new ArrayList<double[]>();
