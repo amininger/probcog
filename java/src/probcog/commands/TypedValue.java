@@ -1,8 +1,10 @@
 package probcog.commands;
 
+import java.io.*;
+
 import probcog.lcmtypes.typed_value_t;
 
-public class TypedValue
+public class TypedValue implements Serializable
 {
     public static final int TYPE_BOOLEAN = 1 << 0;
     public static final int TYPE_BYTE = 1 << 1;

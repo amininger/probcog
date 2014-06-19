@@ -45,6 +45,7 @@ public class CommandEdge implements Serializable
 
     public CommandEdge(String law, String term)
     {
+        assert (law != null && term != null);
         this.law = law;
         this.term = term;
     }

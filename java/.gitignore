@@ -1,0 +1,4 @@
+build/
+src/abolt/lcmtypes/
+*.swo
+*.jar
