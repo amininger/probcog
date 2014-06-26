@@ -110,6 +110,14 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
                 dd.right = 0.7 * delta / (-Math.PI/2);
             }
 
+            // Friction sucks
+            if (dd.left > 0) {
+                dd.left = Math.max(dd.left, 0.1);
+                dd.right = Math.min(dd.right, -0.1);
+            } else {
+                dd.left = Math.min(dd.left, -0.1);
+                dd.right = Math.max(dd.right, 0.1);
+            }
             return dd;
         }
 
@@ -135,6 +143,9 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
             ArrayList<Double> rightSamples = new ArrayList<Double>();
             ArrayList<Double> leftSamples = new ArrayList<Double>();
             for (int i = startIdx; i < finIdx; i++) {
+                if (laser.ranges[i] < 0)
+                    continue;   // Error return value
+
                 double t = laser.rad0+laser.radstep*i;
                 double w = Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)));
                 if (i < midIdx) {

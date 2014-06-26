@@ -120,9 +120,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
             double r = Double.MAX_VALUE;
             for (int i = startIdx; i <= finIdx; i++) {
-                //double w = 1.0;
-                //if (finIdx - i > (finIdx - startIdx)/2)
-                //    w = .75;
+                // Handle error states
+                if (laser.ranges[i] < 0)
+                    continue;
+
                 double w = MathUtil.clamp(Math.abs(Math.sin(laser.rad0+laser.radstep*i)),
                                           Math.sin(Math.PI/6), 1.0);
                 r = Math.min(r, w*laser.ranges[i]);
@@ -176,6 +177,15 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             } else {
                 dd.left = 0.7 * delta / Math.PI;
                 dd.right = 0.7 * delta / -Math.PI;
+            }
+
+            // Friction sucks
+            if (dd.left > 0) {
+                dd.left = Math.max(dd.left, 0.1);
+                dd.right = Math.min(dd.right, -0.1);
+            } else {
+                dd.left = Math.min(dd.left, -0.1);
+                dd.right = Math.max(dd.right, 0.1);
             }
 
             return dd;

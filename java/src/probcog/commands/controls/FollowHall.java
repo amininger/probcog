@@ -20,6 +20,7 @@ import april.vis.*;
 import probcog.commands.*;
 import probcog.lcmtypes.*;
 
+// TODO: Add orientation stuff if needed
 public class FollowHall implements ControlLaw, LCMSubscriber
 {
     // General parameters
@@ -106,11 +107,15 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             double rLeft = Double.MAX_VALUE;
             double rRight = Double.MAX_VALUE;
             for (int i = startIdx; i < finIdx; i++) {
-                // XXX
+                // Handle error state
+                if (laser.ranges[i] < 0)
+                    continue;
+
+                // XXX This is a magical hand-calibration
                 if (laser.ranges[i] > 6.0)
                     continue;
                 double t = laser.rad0+laser.radstep*i;
-                double w = Math.max(Math.abs(Math.sin(t)), 0.1); // XXX
+                double w = Math.max(Math.abs(Math.sin(t)), 0.1); // XXX as is this
                 if (i < midIdx) {
                     rRight = Math.min(w*laser.ranges[i], rRight);
                 } else {
@@ -127,11 +132,20 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             double bestTheta = Double.MAX_VALUE;
             double bestDiff = Double.MAX_VALUE;
             for (int i = 0; i < laser.nranges; i++) {
+                // Handle error states
+                if (laser.ranges[i] < 0)
+                    continue;
+
                 double t = laser.rad0 + i*laser.radstep;
                 if (t < MIN_THETA || t > MAX_THETA)
                     continue;
+
+                // Measure how many points in our current window are
+                // unsafe. If there are any, this prevents us from
+                // forcing the robot in this direction
                 if (laser.ranges[i] < MIN_RANGE)
                     unsafe++;
+
                 slidingRanges.addLast((double)laser.ranges[i]);
                 if (slidingRanges.size() > SAMPLES) {
                     double r = slidingRanges.removeFirst();
