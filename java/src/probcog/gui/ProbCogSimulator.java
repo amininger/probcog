@@ -34,10 +34,11 @@ public class ProbCogSimulator implements VisConsole.Listener
     public ProbCogSimulator(GetOpt opts,
                             VisWorld vw,
                             VisLayer vl,
-                            VisCanvas vc)
+                            VisCanvas vc,
+                            VisConsole console)
     {
-	    console = new VisConsole(vw, vl, vc);
-	    console.addListener(this);
+	    this.console = console;//new VisConsole(vw, vl, vc);
+	    this.console.addListener(this);
 
         loadWorld(opts);
         sim = new Simulator(vw, vl, console, world);

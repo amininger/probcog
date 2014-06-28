@@ -231,7 +231,7 @@ public class CalibrateArm implements LCMSubscriber
                 jf.add(vc, BorderLayout.CENTER);
 
                 jf.setVisible(true);
-                ProbCogSimulator simulator = new ProbCogSimulator(opts, vw, vl, vc);
+                ProbCogSimulator simulator = new ProbCogSimulator(opts, vw, vl, vc, new VisConsole(vw, vl, vc));
                 SimArm simArm = new SimArm(config, simulator.getWorld());
             } else {
                 ArmDriver ad = new ArmDriver(config);

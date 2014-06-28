@@ -352,7 +352,7 @@ public class ArmCalibration
 
         assert (opts.getString("arm") != null);
         ArmCalibration calibration = new ArmCalibration(opts.getString("arm"));
-        ProbCogSimulator simulator = new ProbCogSimulator(opts, vw, vl, vc);
+        ProbCogSimulator simulator = new ProbCogSimulator(opts, vw, vl, vc, new VisConsole(vw, vl, vc));
 
         ParameterGUI pg = new ParameterGUI();
         pg.addBoolean("relativeMap", "Relative color mapping", false);

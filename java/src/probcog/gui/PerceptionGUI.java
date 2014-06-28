@@ -120,7 +120,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         //sensableManager = SensableManager.getSingleton();
 
     	// Initialize the simulator
-        simulator = new ProbCogSimulator(opts, vw, vl, vc);
+        simulator = new ProbCogSimulator(opts, vw, vl, vc, new VisConsole(vw, vl, vc));
 
         // Initialize object tracker
         tracker = new Tracker(config, opts.getBoolean("kinect"), opts.getBoolean("perfectseg"), simulator.getWorld());

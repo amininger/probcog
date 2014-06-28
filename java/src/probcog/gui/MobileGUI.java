@@ -36,7 +36,7 @@ import probcog.vis.*;
 // import abolt.util.SimUtil;
 // import abolt.objects.SensableManager;
 
-public class MobileGUI extends JFrame
+public class MobileGUI extends JFrame implements VisConsole.Listener
 {
     private ProbCogSimulator simulator;
 
@@ -75,9 +75,12 @@ public class MobileGUI extends JFrame
         vl.addEventHandler(graphHandler);
         this.add(vc, BorderLayout.CENTER);
 
+        VisConsole console = new VisConsole(vw, vl, vc);
+        console.addListener(this);
+
     	// Initialize the simulator
         // CommandInterpreter ci = new CommandInterpreter();
-        simulator = new ProbCogSimulator(opts, vw, vl, vc);
+        simulator = new ProbCogSimulator(opts, vw, vl, vc, console);
 
         // Parameter stuff
         pg = new ParameterGUI();
@@ -230,6 +233,29 @@ public class MobileGUI extends JFrame
         }
     }
 
+    // Graph loading/saving
+    private void saveGraph(String filename) throws IOException
+    {
+        FileOutputStream fout = new FileOutputStream(filename);
+        ObjectOutputStream oout = new ObjectOutputStream(fout);
+        oout.writeObject(graph);
+        oout.close();
+        fout.close();
+    }
+
+    private void loadGraph(String filename) throws IOException
+    {
+        try {
+            FileInputStream fin = new FileInputStream(filename);
+            ObjectInputStream oin = new ObjectInputStream(fin);
+            graph = (MultiGraph<CommandNode, CommandEdge>) oin.readObject();
+            oin.close();
+            fin.close();
+        } catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
+        }
+    }
+
     private void initParameters()
     {
         // Is noise on by default? Assumes simulator HAS been initialization
@@ -345,6 +371,69 @@ public class MobileGUI extends JFrame
         vw.getBuffer("trajectory").swap();
         dtAcc = 0;
     }
+
+    // === VisConsole commands ===
+	public boolean consoleCommand(VisConsole console, PrintStream out, String command)
+    {
+        String toks[] = command.trim().split("\\s+");
+        if (toks.length == 0)
+            return false;
+
+        // Graph handling commands
+        if (toks[0].equals("graph")) {
+            if (toks.length < 2) {
+                out.printf("usage: graph <save | load> [filename]\n");
+                return true;
+            }
+            if (toks[1].equals("load")) {
+                if (toks.length != 3) {
+                    out.printf("usage: graph load <filename>\n");
+                } else {
+                    try {
+                        loadGraph(toks[2]);
+                        out.printf("graph loaded\n");
+                    } catch (IOException ex) {
+                        out.printf("ERR: could not load graph %s\n", toks[2]);
+                    }
+                }
+                return true;
+            } else if (toks[1].equals("save")) {
+                if (toks.length == 2) {
+                    try {
+                        saveGraph("/tmp/probcog-graph.ser");
+                        out.printf("graph saved\n");
+                    } catch (IOException ex) {
+                        out.printf("ERR: could not save graph to file\n");
+                    }
+                } else if (toks.length == 3) {
+                    try {
+                        saveGraph(toks[2]);
+                        out.printf("graph saved\n");
+                    } catch (IOException ex) {
+                        out.printf("ERR: could not save graph to file\n");
+                    }
+                } else {
+                    out.printf("usage: graph save [filename]\n");
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public ArrayList<String> consoleCompletions(VisConsole console, String prefix)
+    {
+        String cs[] = new String[] { "graph load", "graph save" };
+
+        ArrayList<String> as = new ArrayList<String>();
+        for (String s: cs)
+            as.add(s);
+
+        return as;
+    }
+    // ============================
+
 
     public static void main(String args[])
     {

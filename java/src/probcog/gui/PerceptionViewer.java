@@ -89,7 +89,7 @@ public class PerceptionViewer extends JFrame implements LCMSubscriber
         if(opts.getBoolean("kinect")){
             kinectView = new KinectView(config, vw, vl);
         } else {
-            simulator = new ProbCogSimulator(opts, vw, vl, vc);
+            simulator = new ProbCogSimulator(opts, vw, vl, vc, new VisConsole(vw, vl, vc));
             arm = new ArmStatus(config);
             new SimArm(config, simulator.getWorld());
         }
