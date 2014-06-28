@@ -54,6 +54,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 
     // Temporary graph stuff (where will this graph actually live so that it is
     // accessible to all who need it?
+    String graphFilename = "/tmp/probcog-graph.ser";
     MultiGraph<CommandNode, CommandEdge> graph = new MultiGraph<CommandNode, CommandEdge>();
 
     // Parameter Stuff
@@ -74,6 +75,15 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         graphHandler = new GraphVisEventHandler(vw, graph);
         vl.addEventHandler(graphHandler);
         this.add(vc, BorderLayout.CENTER);
+
+        // Load graph if applicable
+        if (opts.getString("graph") != null) {
+            try {
+                loadGraph(opts.getString("graph"));
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
 
         VisConsole console = new VisConsole(vw, vl, vc);
         console.addListener(this);
@@ -390,7 +400,8 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                     out.printf("usage: graph load <filename>\n");
                 } else {
                     try {
-                        loadGraph(toks[2]);
+                        graphFilename = toks[2];
+                        loadGraph(graphFilename);
                         out.printf("graph loaded\n");
                     } catch (IOException ex) {
                         out.printf("ERR: could not load graph %s\n", toks[2]);
@@ -400,14 +411,15 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             } else if (toks[1].equals("save")) {
                 if (toks.length == 2) {
                     try {
-                        saveGraph("/tmp/probcog-graph.ser");
+                        saveGraph(graphFilename);
                         out.printf("graph saved\n");
                     } catch (IOException ex) {
                         out.printf("ERR: could not save graph to file\n");
                     }
                 } else if (toks.length == 3) {
                     try {
-                        saveGraph(toks[2]);
+                        graphFilename = toks[2];
+                        saveGraph(graphFilename);
                         out.printf("graph saved\n");
                     } catch (IOException ex) {
                         out.printf("ERR: could not save graph to file\n");
@@ -442,6 +454,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
+        opts.addString('g', "graph", null, "Graph file");
         opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
 
         if (!opts.parse(args)) {
