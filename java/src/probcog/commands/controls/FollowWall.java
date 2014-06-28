@@ -18,8 +18,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double FW_HZ = 100;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getDomainConfig().requireDouble("robot.geometry.radius");
-    private static final double BACK_THETA = Math.PI/2;
-    private static final double FRONT_THETA = -Math.PI/4;
+    private static final double BACK_THETA = 7*Math.PI/16;
+    private static final double FRONT_THETA = Math.PI/8;
     private static final double MAX_V = 1.0;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
@@ -40,7 +40,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         int finIdx = -1;
 
         // State for PID
-        double K_d = 0.3;
+        double K_d = 0.05;
         double lastRange = -1;
 
         public void run(double dt)
@@ -134,7 +134,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             lastRange = r;
 
             // XXX
-            double prop = MathUtil.clamp(-0.5 + r/goalDistance, -1.0, 1.0);
+            double K_p = r/goalDistance;
+            double prop = MathUtil.clamp(-0.5 + K_p, -1.0, 0.65);
 
             double nearSpeed = 0.5;
             double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);

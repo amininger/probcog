@@ -76,7 +76,10 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         vl.addEventHandler(graphHandler);
         this.add(vc, BorderLayout.CENTER);
 
-        // Load graph if applicable
+        // Load graph if applicable. Graphs can be saved/loaded via the
+        // command line as well as the console. In console:
+        // graph save [optional filename]
+        // graph load [filename]
         if (opts.getString("graph") != null) {
             try {
                 loadGraph(opts.getString("graph"));
