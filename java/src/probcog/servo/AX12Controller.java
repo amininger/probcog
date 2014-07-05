@@ -9,7 +9,7 @@ import april.util.TimeUtil;
 import april.config.Config;
 import april.jmat.MathUtil;
 
-import magic.lcmtypes.*;
+import probcog.lcmtypes.*;
 
 public class AX12Controller extends Thread
 {
