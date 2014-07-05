@@ -70,9 +70,12 @@ public class PanTiltServoController
         tThread = new TrackingThread();
         if (Util.getConfig().getBoolean("camera_driver.pan_tilt_servos.scan", false))
             new ScanningThread().start();
+
         tThread.start();
         panServo.start();
         tiltServo.start();
+
+        tiltServo.setAngleDeg(minTiltAngle); // XXX - Correct place for this?
     }
 
     /* Set Pan Servo speed and angle based on a 3D point with the
