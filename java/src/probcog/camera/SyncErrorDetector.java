@@ -1,4 +1,4 @@
-package probcog.camera.util;
+package probcog.camera;
 
 import java.io.IOException;
 import java.util.*;

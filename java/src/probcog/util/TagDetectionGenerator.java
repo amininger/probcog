@@ -56,7 +56,6 @@ public class TagDetectionGenerator
     public TagDetectionGenerator(PanTiltServoController _servos)
     {
         this.config = Util.getConfig();
-        System.out.println("TagDetectionGenerator initialized");
 
         panTracker  = new AX12Tracker(config.requireString("servo_camera_pan.publish_channel"));
         tiltTracker = new AX12Tracker(config.requireString("servo_camera_tilt.publish_channel"));
@@ -73,11 +72,8 @@ public class TagDetectionGenerator
 
     public void addImage(CameraDriver.LazyImage lim)
     {
-        System.out.println("Attempting to add image");
         if (lim.utime != lastDetection_ut){
-            System.out.println("Adding image");
             imageQueue.put(lim);
-            // System.out.println(imageQueue.size()+" images in queue");
             lastDetection_ut = lim.utime;
         }
     }
@@ -87,12 +83,9 @@ public class TagDetectionGenerator
     {
         public void run()
         {
-            System.out.println("In run");
             while (true) {
-                System.out.println("In true");
                 // Get newest image from queue and process
                 CameraDriver.LazyImage lim = imageQueue.get();
-                System.out.println("running");
                 if (verbose)
                     System.out.println("DBG: TAG: Got image from queue");
                 processImage(lim);
@@ -166,26 +159,19 @@ public class TagDetectionGenerator
 
         ax12_status_t pan  = panTracker.get(lim.utime);
         ax12_status_t tilt = tiltTracker.get(lim.utime);
-        if (pan == null || tilt == null) {
-            if(pan == null)
-                System.out.println("pan is null");
-            if(tilt == null)
-                System.out.println("tilt is null");
+        if (pan == null || tilt == null)
             return;
-        }
 
         double panAngle_rad  = pan.position_radians;
         double tiltAngle_rad = tilt.position_radians;
-
-        System.out.println("Processing image");
 
         BufferedImage im = lim.getImage();
         detections = detector.process(im, new double[] {im.getWidth()/2.0,
                                                         im.getHeight()/2.0});
 
-        System.out.println(detections+" detections found");
-
         if (detections.size() > 0) {
+            System.out.println("detections found: "+detections);
+
             pan_tilt_tag_detections_t tagList = new pan_tilt_tag_detections_t();
             tagList.utime = lim.utime;
 

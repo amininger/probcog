@@ -27,6 +27,8 @@ public class CameraDriver implements LCMSubscriber
     static TagDetectionGenerator tagGenerator;
     ArrayList<Listener> listeners = new ArrayList<Listener>();
 
+    SyncErrorDetector syncDetector;
+
     public interface Listener
     {
         public void handleImage(LazyImage lim);
@@ -175,10 +177,12 @@ public class CameraDriver implements LCMSubscriber
                 // and followed by a detectably-bad frame (which is a common issue)
                 // Of course, we can only publish if this isn't the first good frame
 
-                if (lastLim != null)
+                if (lastLim != null) {
+                    tagGenerator.addImage(lim);
+
                     for (Listener listener : listeners)
                         listener.handleImage(lastLim);
-
+                }
                 lastLim = lim;
             }
         }
@@ -259,7 +263,6 @@ public class CameraDriver implements LCMSubscriber
     public static void main(String args[])
     {
         GetOpt opts  = new GetOpt();
-        System.out.println("Starting camera driver");
 
         opts.addBoolean('h',"help",false,"See this help screen");
         opts.addString('c',"channel","","Subscribe to images on specified LCM Channel (do not open camera)");
@@ -283,7 +286,6 @@ public class CameraDriver implements LCMSubscriber
         // CameraTracker camTracker = new CameraTracker(servos);
 
         try {
-            System.out.println(channel);
             CameraDriver cd = new CameraDriver(Util.getConfig().getChild("camera"), channel);
 
             // cd.addListener(camTracker);
