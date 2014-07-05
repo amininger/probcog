@@ -1,0 +1,10 @@
+struct pan_tilt_tag_detections_t
+{
+    int64_t utime;
+
+    // rigid body transformation between sensor frame and (some) body frame
+    double cam_to_pose[4][4];
+
+    int32_t ndetects;
+    april.lcmtypes.tag_detection_t detections[ndetects];
+}
