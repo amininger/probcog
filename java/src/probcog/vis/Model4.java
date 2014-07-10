@@ -9,7 +9,7 @@ import april.vis.*;
 import april.jmat.LinAlg;
 import april.config.*;
 
-import probcog.util.MagicRobot;
+import probcog.util.*;
 
 public class Model4 extends VisChain
 {
@@ -323,7 +323,7 @@ VisCanvas vc = new VisCanvas(vl);
         jf.setVisible(true);
 
         VisWorld.Buffer vb = vw.getBuffer("model");
-        Config config = magic.util.RobotUtil.getConfig();
+        Config config = Util.getConfig();
 //        vb.addBack(new Model4(null, new Color(0, 150, 20), 1));
 //        vb.addBack(new Model4(null, new Color(120, 0, 0), 1));
         vb.addBack(new Model4(null, 17, new Color(32, 32, 32), 1));
