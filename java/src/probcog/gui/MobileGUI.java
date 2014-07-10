@@ -113,8 +113,8 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
     {
         int fps = 20;
         Object classyLock = new Object();
-        HashMap<Integer, classifications_t> classifications =
-            new HashMap<Integer, classifications_t>();
+        HashMap<Integer, classification_t> classifications =
+            new HashMap<Integer, classification_t>();
 
         public RenderThread()
         {
@@ -144,9 +144,12 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                     pose_t pose = new pose_t(ins);
                     poseCache.put(pose, pose.utime);
                 } else if ("CLASSIFICATIONS".equals(channel)) {
-                    classifications_t classy = new classifications_t(ins);
-                    synchronized (classyLock) {
-                        classifications.put(classy.id, classy);
+                    classification_list_t classy_list = new classification_list_t(ins);
+                    for(int i=0; i<classy_list.num_classifications; i++) {
+                        classification_t classy = classy_list.classifications[i];
+                        synchronized (classyLock) {
+                            classifications.put(classy.id, classy);
+                        }
                     }
                 }
             } catch (IOException ex) {
@@ -167,7 +170,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                 }
                 VisVertexData vvd = new VisVertexData();
                 VisColorData vcd = new VisColorData();
-                for (classifications_t classy: classifications.values()) {
+                for (classification_t classy: classifications.values()) {
                     double yaw = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
                     double[] rel_xyz = LinAlg.transform(LinAlg.rotateZ(yaw), LinAlg.resize(classy.xyzrpy, 3));
                     double[] xyz = LinAlg.add(pose.pos, rel_xyz);

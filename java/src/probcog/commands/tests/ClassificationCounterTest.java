@@ -42,7 +42,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
                 metOrientation = false;
         }
 
-        public void addSample(classifications_t classy)
+        public void addSample(classification_t classy)
         {
             n++;
             mean = mean + 1.0*(classy.confidence-mean)/n;
@@ -139,16 +139,18 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
             LCMDataInputStream ins) throws IOException
     {
         if (channel.equals("CLASSIFICATIONS")) {
-            classifications_t msg = new classifications_t(ins);
+            classification_list_t msg = new classification_list_t(ins);
+            for(classification_t classy : msg.classifications) {
 
-            // Keep running average of "quality" of detection, with a penalty
-            // for not having multiple observations coming into play during
-            // evaluation in conditionMet()
-            if (classType.equals(msg.name)) {
-                if (!observed.containsKey(msg.id)) {
-                    observed.put(msg.id, new DetectionRecord());
+                // Keep running average of "quality" of detection, with a penalty
+                // for not having multiple observations coming into play during
+                // evaluation in conditionMet()
+                if (classType.equals(classy.name)) {
+                    if (!observed.containsKey(classy.id)) {
+                        observed.put(classy.id, new DetectionRecord());
+                    }
+                    observed.get(classy.id).addSample(classy);
                 }
-                observed.get(msg.id).addSample(msg);
             }
         }
     }

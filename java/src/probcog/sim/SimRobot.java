@@ -290,7 +290,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             if (dist > sensingThreshold)
                 return;
 
-            classifications_t classies = new classifications_t();
+            classification_t classies = new classification_t();
             classies.utime = TimeUtil.utime();
             classies.name = "door";
 
@@ -319,7 +319,11 @@ public class SimRobot implements SimObject, LCMSubscriber
                 classies.confidence = 1.0;
             }
 
-            lcm.publish("CLASSIFICATIONS", classies);
+            classification_list_t classy_list = new classification_list_t();
+            classy_list.utime = TimeUtil.utime();
+            classy_list.num_classifications = 1;
+            classy_list.classifications = new classification_t[]{classies};
+            lcm.publish("CLASSIFICATIONS", classy_list);
         }
 
         // Only detect hallways that we can "see". That means that
@@ -345,7 +349,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             if (dist > SENSING_THRESHOLD|| dotp < ORIENTATION_THRESHOLD || relXyzrpy[0] < -0.5)
                 return;
 
-            classifications_t classies = new classifications_t();
+            classification_t classies = new classification_t();
             classies.utime = TimeUtil.utime();
             classies.name = "hallway";
             classies.xyzrpy = relXyzrpy;
@@ -357,7 +361,11 @@ public class SimRobot implements SimObject, LCMSubscriber
                 classies.confidence = 1.0;
             }
 
-            lcm.publish("CLASSIFICATIONS", classies);
+            classification_list_t classy_list = new classification_list_t();
+            classy_list.utime = TimeUtil.utime();
+            classy_list.num_classifications = 1;
+            classy_list.classifications = new classification_t[]{classies};
+            lcm.publish("CLASSIFICATIONS", classy_list);
         }
 
         private double sampleConfidence(double u, double s)
