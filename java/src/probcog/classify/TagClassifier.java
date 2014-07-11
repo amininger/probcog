@@ -14,15 +14,15 @@ import april.tag.TagDetection;
 import probcog.lcmtypes.*;
 import probcog.util.*;
 
-public class TagClassifier implements LCMSubscriber
+public class TagClassifier
 {
     static final double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
 
     static Random classifierRandom = new Random(8437531);
+    LCM lcm = LCM.getSingleton();
+
 
     HashMap<Integer, ArrayList<TagClass>> idToTag;
-
-    LCM lcm = LCM.getSingleton();
 
     /**
      * Read the config file and store information about each tag. Each
@@ -64,7 +64,7 @@ public class TagClassifier implements LCMSubscriber
             }
         }
 
-        lcm.subscribe("TAG_DETECTIONS", this);
+        new ListenerThread().start();
     }
 
     private void publishDetections(pan_tilt_tag_detections_t tagList)
@@ -106,38 +106,46 @@ public class TagClassifier implements LCMSubscriber
     }
 
 
+    class ListenerThread extends Thread implements LCMSubscriber
+    {
+        public ListenerThread()
+        {
+            lcm.subscribe("TAG_DETECTIONS", this);
+        }
+
+        public void run()
+        {
+            while (true) {
+                TimeUtil.sleep(1000/60);
+            }
+        }
+
+
+        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        {
+            try {
+                messageReceivedEx(lcm, channel, ins);
+            } catch (IOException ex) {
+                System.out.println("WRN: "+ex);
+            }
+        }
+
+
+        private void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
+        {
+            if (channel.equals("TAG_DETECTIONS")) {
+                pan_tilt_tag_detections_t tagList = new pan_tilt_tag_detections_t(ins);
+            }
+        }
+    }
+
+
     /**
      * Given the mean and standard deviation, get a Gaussian probability.
      **/
     private double sampleConfidence(double u, double s)
     {
         return MathUtil.clamp(u + classifierRandom.nextGaussian()*s, 0, 1);
-    }
-
-
-    /**
-     * Listen to lcm messages.
-     **/
-    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-    {
-        try {
-            messageReceivedEx(lcm, channel, ins);
-        } catch (IOException ex) {
-            System.out.println("WRN: "+ex);
-        }
-    }
-
-
-    /**
-     * In particular listen for tag detection messages. When one of these
-     * is seen, process the tags by determining what classes/labels they
-     * stand for.
-     **/
-    private void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
-    {
-        if (channel.equals("TAG_DETECTIONS")) {
-            pan_tilt_tag_detections_t tagList = new pan_tilt_tag_detections_t(ins);
-        }
     }
 
 
