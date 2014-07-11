@@ -5,8 +5,6 @@ import april.tag.CameraUtil;
 import april.jmat.LinAlg;
 import april.lcmtypes.pose_t;
 
-// import magic.util.RobotUtil;
-// import magic.lcmtypes.pan_tilt_tag_detections_t;
 import probcog.lcmtypes.*;
 
 public class TagUtil
