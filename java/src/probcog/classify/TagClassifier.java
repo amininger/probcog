@@ -16,6 +16,7 @@ import probcog.util.*;
 
 public class TagClassifier
 {
+    static final String tagConfig = Util.getConfig().requireString("tag_config");
     static final double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
 
     static Random classifierRandom = new Random(8437531);
@@ -135,6 +136,7 @@ public class TagClassifier
         {
             if (channel.equals("TAG_DETECTIONS")) {
                 pan_tilt_tag_detections_t tagList = new pan_tilt_tag_detections_t(ins);
+                publishDetections(tagList);
             }
         }
     }

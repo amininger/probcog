@@ -18,8 +18,16 @@ public class TagUtil
     public static double[][] getTagToPose(double cam2pose[][], TagDetection d, double tagSize_m)
     {
         // get center pixel for tag
-        double M[][]   = CameraUtil.homographyToPose(camera_fc[0], camera_fc[1],
-                                                     tagSize_m, d.homography);
+        double imHeight = 480;
+        double imWidth = 743;
+
+        double M[][] = CameraUtil.homographyToPose(camera_fc[0], camera_fc[1], imWidth/2, imHeight/2, d.homography);
+        M = CameraUtil.scalePose(M, 2.0, tagSize_m);
+
+        // double M[][]   = CameraUtil.homographyToPose(camera_fc[0],
+        //                                              camera_fc[1],
+        //                                              tagSize_m,
+        //                                              d.homography);
 
         // observation-to-body transformation
         return LinAlg.multiplyMany(cam2pose,
