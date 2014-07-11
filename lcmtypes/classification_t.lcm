@@ -1,4 +1,4 @@
-struct classifications_t
+struct classification_t
 {
     int64_t utime;
 
