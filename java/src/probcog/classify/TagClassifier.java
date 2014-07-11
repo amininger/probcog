@@ -34,9 +34,9 @@ public class TagClassifier
      * tag classes associated with it they will all be reported when we
      * see it and publish classifications.
      **/
-    public TagClassifier(GetOpt opts) throws IOException
+    public TagClassifier() throws IOException
     {
-        Config config = new ConfigFile(opts.getString("config"));
+        Config config = new ConfigFile(tagConfig);
 
         idToTag = new HashMap<Integer, ArrayList<TagClass>>();
 
@@ -173,22 +173,8 @@ public class TagClassifier
 
     public static void main(String[] args)
     {
-        GetOpt opts = new GetOpt();
-
-        opts.addBoolean('h', "help", false, "Show this help screen");
-        opts.addString('c', "config", null, "Config file that denotes april tag meanings");
-
-        if (!opts.parse(args)) {
-            System.err.println("ERR: Error parsing args - "+opts.getReason());
-            System.exit(1);
-        }
-        if (opts.getBoolean("help")) {
-            opts.doHelp();
-            System.exit(0);
-        }
-
         try {
-           TagClassifier tc = new TagClassifier(opts);
+           TagClassifier tc = new TagClassifier();
          } catch (IOException ioex) {
             System.err.println("ERR: Error starting tag classifier");
             ioex.printStackTrace();
