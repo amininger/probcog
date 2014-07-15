@@ -10,8 +10,9 @@ import april.config.ConfigUtil;
 import april.jmat.LinAlg;
 import april.lcmtypes.pose_t;
 
+import probcog.servo.DynamixelController;
 import probcog.util.Util;
-// import magic.lcmtypes.*;
+import probcog.lcmtypes.*;
 
 /** This class allows multiple threads to utilyze the pan/tilt servos
  *  without wasting memory and acts as central controller of the servos
@@ -20,8 +21,8 @@ import probcog.util.Util;
 public class PanTiltServoController
 {
     // do not give access to these servos
-    private AX12Controller panServo;
-    private AX12Controller tiltServo;
+    private DynamixelController panServo;
+    private DynamixelController tiltServo;
 
     private int lastServoPriority = Integer.MAX_VALUE;
 
@@ -51,8 +52,9 @@ public class PanTiltServoController
     public PanTiltServoController()
     {
         Orc orc = Orc.makeOrc();
-        panServo = new AX12Controller(orc, Util.getConfig().getChild("servo_camera_pan"));
-        tiltServo = new AX12Controller(orc, Util.getConfig().getChild("servo_camera_tilt"));
+
+        panServo = new DynamixelController(orc, Util.getConfig().getChild("servo_camera_pan"));
+        tiltServo = new DynamixelController(orc, Util.getConfig().getChild("servo_camera_tilt"));
 
         // extrinsic camera parameters
         double poseToPan[][] = ConfigUtil.getRigidBodyTransform(Util.getConfig(),
@@ -68,14 +70,14 @@ public class PanTiltServoController
         verbose |= Util.getConfig().getBoolean("camera_driver.pan_tilt_servos.verbose", false);
 
         tThread = new TrackingThread();
-        if (Util.getConfig().getBoolean("camera_driver.pan_tilt_servos.scan", false))
+        if (Util.getConfig().getBoolean("camera_driver.pan_tilt_servos.scan", false)) {
             new ScanningThread().start();
-
+        }
         tThread.start();
         panServo.start();
         tiltServo.start();
 
-        tiltServo.setAngleDeg(minTiltAngle); // XXX - Correct place for this?
+        tiltServo.setAngleDeg(minTiltAngle);    // XXX Correct place for this?
     }
 
     /* Set Pan Servo speed and angle based on a 3D point with the
@@ -260,6 +262,7 @@ public class PanTiltServoController
 
             while (true) {
                 if (true) {
+                    // This doesn't do anything...?
                     if (panServo.peakGoal(5)) {
                     }
                     do {
