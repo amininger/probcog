@@ -31,7 +31,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     Direction dir;
     private enum Direction { LEFT, RIGHT }
     private double goalDistance = Double.MAX_VALUE;
-    private double targetHeading = 0;
+    private double targetHeading = Double.MAX_VALUE;
 
     private class UpdateTask implements PeriodicTasks.Task
     {
@@ -92,6 +92,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
                 for (int i = startIdx; i <= finIdx; i++) {
                     goalDistance = Math.min(goalDistance, laser.ranges[i]);
                 }
+
+                System.out.printf("Separation distance of %f [m] selected\n", goalDistance);
             }
         }
 
@@ -99,6 +101,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         private void update(laser_t laser, pose_t pose, double dt)
         {
             diff_drive_t dd;
+
+            if (targetHeading == Double.MAX_VALUE)
+                oriented = true;
 
             if (!oriented) {
                 dd = orient(pose, targetHeading);
@@ -270,15 +275,18 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         options.add(new TypedValue((byte)1));
         params.add(new TypedParameter("side",
                                       TypedValue.TYPE_BYTE,
-                                      options));
+                                      options,
+                                      true));
 
         params.add(new TypedParameter("distance",
-                                      TypedValue.TYPE_DOUBLE));  // Could have range limits...
+                                      TypedValue.TYPE_DOUBLE,
+                                      false));  // Could have range limits...
 
         params.add(new TypedParameter("heading",
                                       TypedValue.TYPE_DOUBLE,
                                       new TypedValue(-Math.PI),
-                                      new TypedValue(Math.PI)));
+                                      new TypedValue(Math.PI),
+                                      false));
 
         return params;
     }

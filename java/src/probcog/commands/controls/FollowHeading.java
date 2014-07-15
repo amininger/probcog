@@ -25,7 +25,7 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
     private static final double K_d = 0.05;
 
     double targetHeading = 0;
-    double distance = 0.75;   // XXX distance to be away from wall
+    double distance = 0.75;   // default distance to be away from wall
 
     PeriodicTasks tasks = new PeriodicTasks(1);
     ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
@@ -251,10 +251,12 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         params.add(new TypedParameter("heading",    // [rad] in global coords
                                       TypedValue.TYPE_DOUBLE,
-                                      new TypedValue(-Math.PI/2),
-                                      new TypedValue(Math.PI/2)));
+                                      new TypedValue(-Math.PI),
+                                      new TypedValue(Math.PI),
+                                      true));
         params.add(new TypedParameter("distance",   // [m] from wall
-                                      TypedValue.TYPE_DOUBLE));
+                                      TypedValue.TYPE_DOUBLE,
+                                      false));
         return params;
     }
 

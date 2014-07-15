@@ -114,7 +114,8 @@ public class RotationTest implements ConditionTest, LCMSubscriber
         params.add(new TypedParameter("yaw",
                                       TypedValue.TYPE_DOUBLE,
                                       new TypedValue(0.0),
-                                      new TypedValue(Math.PI)));
+                                      new TypedValue(Math.PI),
+                                      true));
         return params;
     }
 }

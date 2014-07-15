@@ -11,19 +11,20 @@ import java.util.*;
 public class TypedParameter
 {
     private String name;            // What is this parameter called?
-    private boolean required = true;// It it required (true) or optional (false) for construction?
+    private boolean required;// It it required (true) or optional (false) for construction?
 
     private int type;   // XXX Pulls type from TypedValue?
     private TypedValue[] range = new TypedValue[2]; // Min to max
     private Collection<TypedValue> valid = null;
 
-    public TypedParameter(String name, int type)
+    public TypedParameter(String name, int type, boolean required)
     {
         this.name = name;
         this.type = type;
+        this.required = required;
     }
 
-    public TypedParameter(String name, int type, TypedValue min, TypedValue max)
+    public TypedParameter(String name, int type, TypedValue min, TypedValue max, boolean requried)
     {
         assert (type == min.getType() && type == max.getType());
 
@@ -31,9 +32,10 @@ public class TypedParameter
         this.type = type;
         range[0] = min;
         range[1] = max;
+        this.required = required;
     }
 
-    public TypedParameter(String name, int type, Collection<TypedValue> valid)
+    public TypedParameter(String name, int type, Collection<TypedValue> valid, boolean required)
     {
         for (TypedValue v: valid)
             assert (type == v.getType());
@@ -41,6 +43,7 @@ public class TypedParameter
         this.name = name;
         this.type = type;
         this.valid = valid;
+        this.required = required;
     }
 
     public String getName()

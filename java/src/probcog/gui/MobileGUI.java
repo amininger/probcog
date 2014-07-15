@@ -476,7 +476,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         try {
             MobileGUI gui = new MobileGUI(opts);
             if(opts.getBoolean("spoof")) {
-                CommandSpoofer spoof = new CommandSpoofer();
+                probcog.gui.CommandSpoofer spoof = new probcog.gui.CommandSpoofer();
             }
         } catch (IOException ioex) {
             System.err.println("ERR: Error starting GUI");

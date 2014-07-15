@@ -40,7 +40,8 @@ public class TimeoutTest implements ConditionTest
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         params.add(new TypedParameter("timeout",
-                                      TypedValue.TYPE_DOUBLE)); // Timeout [s]
+                                      TypedValue.TYPE_DOUBLE,
+                                      true)); // Timeout [s]
 
         return params;
     }

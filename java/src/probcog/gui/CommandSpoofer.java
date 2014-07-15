@@ -8,18 +8,21 @@ import javax.swing.event.*;
 import javax.swing.text.*;
 import java.util.*;
 
+import lcm.lcm.*;
+
 import april.util.*;
+import april.lcmtypes.*;
 
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
+import probcog.lcmtypes.*;
 import probcog.util.*;
 
-public class EdgeConstructor extends JFrame
+public class CommandSpoofer extends JFrame
 {
+    private LCM lcm = LCM.getSingleton();
     static final String NAME_PARAM = "__NAME__";
-    MultiGraph<CommandNode, CommandEdge> graph;
-    int n0, n1;
 
     Map<String, TypedValue> lawMap = new HashMap<String, TypedValue>();
     Map<String, TypedValue> termMap = new HashMap<String, TypedValue>();
@@ -29,10 +32,10 @@ public class EdgeConstructor extends JFrame
         public void actionPerformed(ActionEvent e)
         {
             String name = e.getActionCommand();
-            if (name.contains("Commit")) {
-                commitEdge();
-            } else if (name.contains("Close")) {
-                closeGUI();
+            if (name.contains("Issue")) {
+                issueCommand();
+            } else if (name.contains("Stop")) {
+                publishStop();
             }
         }
     }
@@ -235,13 +238,15 @@ public class EdgeConstructor extends JFrame
                     TypedValue[] choices = tp.getValid().toArray(new TypedValue[0]);
                     JComboBox combo = new JComboBox(choices);
                     combo.addItemListener(new ComboBoxListener(tp, values));
+                    values.put(tp.getName(), choices[0]);
+
                     combo.setEnabled(tp.isRequired());
                     jcb.addItemListener(new CheckBoxListener(combo, tp, values));
-                    values.put(tp.getName(), choices[0]);
                     internalPane.add(combo);
                 } else {
                     JTextField tf = new JTextField(8);
                     tf.getDocument().addDocumentListener(new TextFieldListener(tp, values));
+
                     tf.setEnabled(tp.isRequired());
                     jcb.addItemListener(new CheckBoxListener(tf, tp, values));
                     internalPane.add(tf);
@@ -255,14 +260,11 @@ public class EdgeConstructor extends JFrame
         }
     }
 
-    public EdgeConstructor(MultiGraph<CommandNode, CommandEdge> graph, int n0, int n1)
+    public CommandSpoofer()
     {
-        super("Edge Constructor "+n0+"-->"+n1);
-        this.graph = graph;
-        this.n0 = n0;
-        this.n1 = n1;
+        super("Command Spoofer");
 
-        System.out.println("Spawning edge constructor");
+        System.out.println("Spawning command spoofer");
         setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 
         // Will need to add in some stuff for composite control laws
@@ -287,15 +289,15 @@ public class EdgeConstructor extends JFrame
         fillPanel(termPanel, termMap, ctf.getParameters());
 
         // Bottom buttons
-        Button commit, close;
-        commit = new Button("Commit Edge");
-        commit.addActionListener(new ButtonListener());
-        close = new Button("Close");
-        close.addActionListener(new ButtonListener());
+        Button issue, stop;
+        issue = new Button("Issue Command");
+        issue.addActionListener(new ButtonListener());
+        stop = new Button("Stop");
+        stop.addActionListener(new ButtonListener());
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
-        buttonPanel.add(commit);
-        buttonPanel.add(close);
+        buttonPanel.add(issue);
+        buttonPanel.add(stop);
         add(buttonPanel);
 
         pack();
@@ -315,7 +317,9 @@ public class EdgeConstructor extends JFrame
         pane.add(internalPane);
     }
 
-    private void commitEdge()
+    private static int id = 0;
+    private String lastControl;
+    private void issueCommand()
     {
         ArrayList<String> nullParameters = new ArrayList<String>();
         for (String key: lawMap.keySet()) {
@@ -330,29 +334,89 @@ public class EdgeConstructor extends JFrame
         // Null parameters represent unset values. Deal with these accordingly.
         if (nullParameters.size() > 0) {
             // XXX Would be nice to highlight offending boxes in red...
-            System.out.println("WRN: Could not commit edge. The following parameters were unset:");
+            System.out.println("WRN: Could not issue command. The following parameters were unset:");
             for (String s: nullParameters)
                 System.out.println("\t"+s);
             return;
         }
 
-        // Commit the edge to the graph
-        CommandEdge edge = new CommandEdge(lawMap.get(NAME_PARAM).toString(), termMap.get(NAME_PARAM).toString());
+        // Issue the appropriate command
+        control_law_t cl = new control_law_t();
+        cl.utime = TimeUtil.utime();
+        cl.name = lawMap.get(NAME_PARAM).toString();
+        cl.id = id++;
+        cl.num_params = lawMap.size()-1;
+        cl.param_names = new String[cl.num_params];
+        cl.param_values = new typed_value_t[cl.num_params];
+
+        int idx = 0;
         for (String key: lawMap.keySet()) {
-            if (key.equals(NAME_PARAM))
+            if (key.equals(NAME_PARAM)) {
                 continue;
-            edge.addLawParam(key, lawMap.get(key));
+            }
+            cl.param_names[idx] = key;
+            cl.param_values[idx] = lawMap.get(key).toLCM();
+            idx++;
         }
+
+        condition_test_t ct = new condition_test_t();
+        ct.name = termMap.get(NAME_PARAM).toString();
+        ct.num_params = termMap.size()-1;
+        ct.param_names = new String[ct.num_params];
+        ct.param_values = new typed_value_t[ct.num_params];
+        ct.compare_type = condition_test_t.CMP_GT;
+        ct.compared_value = (new TypedValue(0)).toLCM();
+
+        idx = 0;
         for (String key: termMap.keySet()) {
-            if (key.equals(NAME_PARAM))
+            if (key.equals(NAME_PARAM)) {
                 continue;
-            edge.addTermParam(key, termMap.get(key));
+            }
+            ct.param_names[idx] = key;
+            ct.param_values[idx] = termMap.get(key).toLCM();
+            idx++;
         }
-        graph.addEdge(n0, n1, edge);    // Note: does not check for repeat edges
+        cl.termination_condition = ct;
+
+        System.out.printf("%s\n", cl.name);
+        for (int i = 0; i < cl.num_params; i++) {
+            System.out.printf("\t%s: %s\n", cl.param_names[i],  cl.param_values[i].value);
+        }
+
+        System.out.printf("%s\n", ct.name);
+        for (int i = 0; i < ct.num_params; i++) {
+            System.out.printf("\t%s: %s\n", ct.param_names[i],  ct.param_values[i].value);
+        }
+
+        lcm.publish("SOAR_COMMAND", cl);
+        lastControl = cl.name;
     }
 
+    private void publishStop()
+    {
+        control_law_status_t status = new control_law_status_t();
+        status.id = id - 1;
+        status.name = lastControl;
+        status.status = "DESTROY";
+
+        control_law_status_list_t status_list = new control_law_status_list_t();
+        status_list.utime = TimeUtil.utime();
+        status_list.nstatuses = 1;
+        status_list.statuses = new control_law_status_t[status_list.nstatuses];
+        status_list.statuses[0] = status;
+
+        lcm.publish("CONTROL_LAW_STATUS", status_list);
+    }
+
+    // No longer used
     private void closeGUI()
     {
         dispose();
     }
+
+    static public void main(String[] args)
+    {
+        CommandSpoofer cs = new CommandSpoofer();
+    }
+
 }

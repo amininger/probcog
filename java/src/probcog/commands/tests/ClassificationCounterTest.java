@@ -115,14 +115,16 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         params.add(new TypedParameter("count",
-                                      TypedValue.TYPE_INT));
-
+                                      TypedValue.TYPE_INT,
+                                      true));
         params.add(new TypedParameter("class",
-                                      TypedValue.TYPE_STRING));
+                                      TypedValue.TYPE_STRING,
+                                      true));
         params.add(new TypedParameter("orientation",
                                       TypedValue.TYPE_DOUBLE,
                                       new TypedValue(-Math.PI),
-                                      new TypedValue(Math.PI)));
+                                      new TypedValue(Math.PI),
+                                      false));
         return params;
     }
 

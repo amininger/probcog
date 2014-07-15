@@ -108,7 +108,8 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         params.add(new TypedParameter("distance",
-                                      TypedValue.TYPE_DOUBLE));
+                                      TypedValue.TYPE_DOUBLE,
+                                      true));
         return params;
     }
 }

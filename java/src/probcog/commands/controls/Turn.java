@@ -100,7 +100,8 @@ public class Turn implements ControlLaw
         options.add(new TypedValue((byte)1));
         params.add(new TypedParameter("direction",
                                       TypedValue.TYPE_BYTE,
-                                      options));
+                                      options,
+                                      true));
         return params;
     }
 

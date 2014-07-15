@@ -6,14 +6,23 @@ import probcog.lcmtypes.typed_value_t;
 
 public class TypedValue implements Serializable
 {
-    public static final int TYPE_BOOLEAN = 1 << 0;
-    public static final int TYPE_BYTE = 1 << 1;
-    public static final int TYPE_SHORT = 1 << 2;
-    public static final int TYPE_INT = 1 << 3;
-    public static final int TYPE_LONG = 1 << 4;
-    public static final int TYPE_FLOAT = 1 << 5;
-    public static final int TYPE_DOUBLE = 1 << 6;
-    public static final int TYPE_STRING = 1 << 7;
+    //public static final int TYPE_BOOLEAN = 1 << 0;
+    //public static final int TYPE_BYTE = 1 << 1;
+    //public static final int TYPE_SHORT = 1 << 2;
+    //public static final int TYPE_INT = 1 << 3;
+    //public static final int TYPE_LONG = 1 << 4;
+    //public static final int TYPE_FLOAT = 1 << 5;
+    //public static final int TYPE_DOUBLE = 1 << 6;
+    //public static final int TYPE_STRING = 1 << 7;
+
+    public static final int TYPE_INT = 1;
+    public static final int TYPE_DOUBLE = 2;
+    public static final int TYPE_STRING = 3;
+    public static final int TYPE_BOOLEAN = 4;
+    public static final int TYPE_SHORT = 5;
+    public static final int TYPE_LONG = 6;
+    public static final int TYPE_BYTE = 7;
+    public static final int TYPE_FLOAT = 8;
 
     private int type;
     private Object value;
@@ -102,6 +111,15 @@ public class TypedValue implements Serializable
                 value = unwrapString(tv);
                 break;
         }
+    }
+
+    public typed_value_t toLCM()
+    {
+        typed_value_t tv = new typed_value_t();
+        tv.type = type; // XXX Synced between types. Gross. Unify
+        tv.value = toString();
+
+        return tv;
     }
 
     // Value retrieval functions. No compile-time safety, but will assert
