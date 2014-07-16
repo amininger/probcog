@@ -266,6 +266,7 @@ public class CommandSpoofer extends JFrame
 
         System.out.println("Spawning command spoofer");
         setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Will need to add in some stuff for composite control laws
         JPanel selectionPanel = new JPanel();
@@ -378,16 +379,6 @@ public class CommandSpoofer extends JFrame
         }
         cl.termination_condition = ct;
 
-        System.out.printf("%s\n", cl.name);
-        for (int i = 0; i < cl.num_params; i++) {
-            System.out.printf("\t%s: %s\n", cl.param_names[i],  cl.param_values[i].value);
-        }
-
-        System.out.printf("%s\n", ct.name);
-        for (int i = 0; i < ct.num_params; i++) {
-            System.out.printf("\t%s: %s\n", ct.param_names[i],  ct.param_values[i].value);
-        }
-
         lcm.publish("SOAR_COMMAND_TX", cl);
         lastControl = cl.name;
     }
@@ -405,6 +396,7 @@ public class CommandSpoofer extends JFrame
         status_list.statuses = new control_law_status_t[status_list.nstatuses];
         status_list.statuses[0] = status;
 
+        // Radio breaks this, currently. XXX
         lcm.publish("CONTROL_LAW_STATUS_TX", status_list);
     }
 
