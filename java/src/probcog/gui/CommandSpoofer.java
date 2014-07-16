@@ -388,7 +388,7 @@ public class CommandSpoofer extends JFrame
             System.out.printf("\t%s: %s\n", ct.param_names[i],  ct.param_values[i].value);
         }
 
-        lcm.publish("SOAR_COMMAND", cl);
+        lcm.publish("SOAR_COMMAND_TX", cl);
         lastControl = cl.name;
     }
 
@@ -405,7 +405,7 @@ public class CommandSpoofer extends JFrame
         status_list.statuses = new control_law_status_t[status_list.nstatuses];
         status_list.statuses[0] = status;
 
-        lcm.publish("CONTROL_LAW_STATUS", status_list);
+        lcm.publish("CONTROL_LAW_STATUS_TX", status_list);
     }
 
     // No longer used

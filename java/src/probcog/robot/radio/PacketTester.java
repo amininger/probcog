@@ -18,6 +18,7 @@ public class PacketTester
         GetOpt opts = new GetOpt();
         opts.addBoolean('h',"help",false,"Show this help screen");
         opts.addInt('n',"bytes",1950,"Number of bytes in image");
+        opts.addDouble('\0',"hz",1,"Rate to send packets");
         opts.addInt('\0',"images",10,"Number of images to send");
 
         if (!opts.parse(args) || opts.getBoolean("help")) {
@@ -48,7 +49,7 @@ public class PacketTester
             lcm.publish("BOGUS_IMAGE_TX", img);
             System.out.println("Sent new message of size " + size);
 
-            TimeUtil.sleep(1000);
+            TimeUtil.sleep((int)(1000/opts.getDouble("hz")));
         }
         System.out.println("Done.");
         System.exit(0);

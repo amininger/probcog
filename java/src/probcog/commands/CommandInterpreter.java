@@ -122,8 +122,8 @@ public class CommandInterpreter
 
 		public ListenerThread()
         {
-			lcm.subscribe("SOAR_COMMAND", this);
-            lcm.subscribe("CONTROL_LAW_STATUS", this);
+			lcm.subscribe("SOAR_COMMAND.*", this);
+            lcm.subscribe("CONTROL_LAW_STATUS.*", this);
 		}
 
 		public void run()
@@ -146,10 +146,10 @@ public class CommandInterpreter
 		public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
             throws IOException
         {
-			if (channel.equals("SOAR_COMMAND")) {
+			if (channel.startsWith("SOAR_COMMAND")) {
 				control_law_t controlLaw = new control_law_t(ins);
 				newCommand(controlLaw);
-			} else if ("CONTROL_LAW_STATUS".equals(channel)) {
+			} else if (channel.startsWith("CONTROL_LAW_STATUS")) {
                 control_law_status_list_t sl = new control_law_status_list_t(ins);
                 statusCache.put(sl, sl.utime);
 
