@@ -158,9 +158,22 @@ public class Util
                           camera.up[0], camera.up[1], camera.up[2]);
     }
 
-    static public void main(String[] args)
+    // Get the ground station ID from the ENV var
+    static int groundStationID = -1;
+    public static int getGNDID()
     {
-        System.out.printf("%d %d %d\n", nextID(), nextID(), nextID());
+        if (groundStationID < 0) {
+            String id_str = System.getenv("BASE_STATION_ID");
+            if (id_str != null) {
+                groundStationID = Integer.parseInt(id_str);
+                System.out.println("NFO: groundStationID parsed as: "+groundStationID);
+            } else {
+                System.err.println("ERR: failed to load 'BASE_STATION_ID'. Exiting.");
+                System.exit(-1);
+            }
+        }
+
+        return groundStationID;
     }
 
     //Lookup the location of the config file, and load it locally
