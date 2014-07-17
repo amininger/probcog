@@ -27,6 +27,8 @@ public class CommandInterpreter
     protected int lawID;    // Could be multiples in future
     protected int testID;   // Could be multiples in future
 
+    // Handle stale/repeat control law messages
+    protected int lastCommandID = -1;
 	protected Queue<control_law_t> waitingCommands;
 
     protected ExpiringMessageCache<control_law_status_list_t> statusCache =
@@ -66,6 +68,12 @@ public class CommandInterpreter
             control_law_t nextCommand;
             synchronized (commandLock) {
                 nextCommand = waitingCommands.poll();
+                // XXX Room for failure around 0 crossover
+                if (nextCommand.id <= lastCommandID &&
+                    nextCommand.id*lastCommandID >= 0)
+                    return;
+
+                lastCommandID = nextCommand.id;
             }
 
             // Get control law parameters

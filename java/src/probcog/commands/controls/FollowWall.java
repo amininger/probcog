@@ -30,7 +30,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     Direction dir;
     private enum Direction { LEFT, RIGHT }
-    private double goalDistance = Double.MAX_VALUE;
+    private double goalDistance = 0.75;
     private double targetHeading = Double.MAX_VALUE;
 
     private class UpdateTask implements PeriodicTasks.Task
@@ -88,14 +88,6 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
             assert (startIdx <= finIdx);
 
-            // If no goal distance was specified, find one
-            if (goalDistance == Double.MAX_VALUE) {
-                for (int i = startIdx; i <= finIdx; i++) {
-                    goalDistance = Math.min(goalDistance, laser.ranges[i]);
-                }
-
-                System.out.printf("Separation distance of %f [m] selected\n", goalDistance);
-            }
         }
 
         // P controller to do wall avoidance. More logic could be added...

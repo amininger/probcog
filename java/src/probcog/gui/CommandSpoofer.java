@@ -27,6 +27,25 @@ public class CommandSpoofer extends JFrame
     Map<String, TypedValue> lawMap = new HashMap<String, TypedValue>();
     Map<String, TypedValue> termMap = new HashMap<String, TypedValue>();
 
+    control_law_t currentMessage = null;
+
+    private class CommandThread extends Thread
+    {
+        int hz = 5;
+
+        public void run()
+        {
+            while (true) {
+                TimeUtil.sleep(1000/hz);
+                if (currentMessage == null)
+                    continue;
+
+                currentMessage.utime = TimeUtil.utime();
+                lcm.publish("SOAR_COMMAND_TX", currentMessage);
+            }
+        }
+    }
+
     private class ButtonListener implements ActionListener
     {
         public void actionPerformed(ActionEvent e)
@@ -303,6 +322,9 @@ public class CommandSpoofer extends JFrame
 
         pack();
         setVisible(true);
+
+        // Publish thread
+        (new CommandThread()).start();
     }
 
     private void fillPanel(JPanel pane, Map<String, TypedValue> values, Map<String, Collection<TypedParameter> > params)
@@ -379,7 +401,7 @@ public class CommandSpoofer extends JFrame
         }
         cl.termination_condition = ct;
 
-        lcm.publish("SOAR_COMMAND_TX", cl);
+        currentMessage = cl;
         lastControl = cl.name;
     }
 
@@ -405,6 +427,7 @@ public class CommandSpoofer extends JFrame
     {
         dispose();
     }
+
 
     static public void main(String[] args)
     {
