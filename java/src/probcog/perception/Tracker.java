@@ -206,8 +206,7 @@ public class Tracker
     	// Get Soar Objects
         HashMap<Integer, Obj> soarObjects = getSoarObjects();
         if(SHOW_TIMERS){
-        	System.out.println("  GET SOAR OBJECTS: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
+        	time = Util.ticktock("  GET SOAR OBJECTS", time);
         	System.out.println("  GET VISIBLE OBJECTS");
         }
 
@@ -219,8 +218,7 @@ public class Tracker
         }
         // Get Visible Objects
         if(SHOW_TIMERS){
-        	System.out.println("  GET VISIBLE OBJECTS: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
+        	time = Util.ticktock("  GET VISIBLE OBJECTS: ", time);
         }
 
         HashMap<Integer, Obj> previousFrame = new HashMap<Integer, Obj>();
@@ -410,8 +408,7 @@ public class Tracker
                 worldState.put(o.getID(), o);
             }
             if(SHOW_TIMERS){
-            	System.out.println("  TRACKING: " + (TimeUtil.utime() - time));
-            	time = TimeUtil.utime();
+            	time = Util.ticktock("  TRACKING" , time);
             }
         }
         
@@ -438,7 +435,7 @@ public class Tracker
     }
 
 
-    /** Returns a list of objects : " + (TimeUtil.utime() - time))that the kinect sees on the table. The objects
+    /** Returns a list of objects that the kinect sees on the table. The objects
      *  are returned as Obj's from the segmenter, and are passed to the
      *  classifiers. The resulting point clouds, their locations, and the
      *  classifications are returned.
@@ -453,8 +450,7 @@ public class Tracker
         }
         ArrayList<Obj> visibleObjects = segmenter.getSegmentedObjects();
         if(SHOW_TIMERS){
-        	System.out.println("    POINT EXTRACTION + SEG: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
+        	time = Util.ticktock("    POINT EXTRACTION + SEG", time);
         }
 
         for(SimObject so : world.objects){
@@ -472,7 +468,7 @@ public class Tracker
         	obj.addAllClassifications(classyManager.classifyAll(obj));
         }
         if(SHOW_TIMERS){
-        	System.out.println("    CLASSIFICATION: " + (TimeUtil.utime() - time));
+        	time = Util.ticktock("    CLASSIFICATION", time);
         }
 
         return visibleObjects;

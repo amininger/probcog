@@ -144,6 +144,9 @@ public class KinectSegment implements Segmenter
                inArmRange(p))
             {
                 points.set(i, new double[4]);
+            } else if(p[0] < .1 && p[1] > -.18){
+            	// XXX: HACK: ONLY FOR AAAI DEMO
+                points.set(i, new double[4]);
             }
         }
         return true;
