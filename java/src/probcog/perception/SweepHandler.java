@@ -1,0 +1,216 @@
+package probcog.perception;
+
+import java.util.*;
+
+import lcm.lcm.*;
+
+import april.config.*;
+import april.jmat.*;
+import april.util.*;
+import april.lcmtypes.*;
+
+import probcog.sensor.*;
+import probcog.lcmtypes.*;
+import probcog.util.*;
+
+public class SweepHandler implements DynamixelPoseLidar.Listener
+{
+    LCM lcm = LCM.getSingleton();
+
+    PoseTracker poseTracker = PoseTracker.getSingleton();
+
+    DynamixelPoseLidar lidar;
+    Object queueLock = new Object();
+    ArrayList<DynamixelPoseLidar.Data> sweepQueue = null;
+    int min_slices = 10;    // Discard sweeps with fewer than this many slices
+
+    // GridMap constants
+    static final double MPP = 0.1;      // [meters/px]
+    static final double SIZE_X = 20.0;  // [meters]
+    static final double SIZE_Y = 20.0;  // [meters]
+    double minHeight = Util.getConfig().requireDouble("obstacle.min_height");
+    double maxHeight = Util.getConfig().requireDouble("obstacle.max_height");
+    Object mapLock = new Object();
+    GridMap map = null;
+
+    /** Broadcasts fake "LASER" messages for control laws to operate on. These
+     *  messages are laser_t still, but take the 3D information coming in and
+     *  make a conservative 2D scan based on the closest obstacles.
+     *
+     *  We cheat a LOT here by assuming our ground is flat and the robot is level.
+     */
+    private class LaserThread extends Thread
+    {
+        int hz = 40;
+
+        public void run()
+        {
+            laser_t laser = new laser_t();
+            laser.rad0 = (float)Math.toRadians(-135);
+            laser.radstep = (float)Math.toRadians(0.5);
+            laser.nranges = (int)(2*Math.abs(laser.rad0/laser.radstep));
+            laser.ranges = new float[laser.nranges];
+            while (true)
+            {
+                Tic tic = new Tic();
+                synchronized (mapLock) {
+                    if (map != null) {
+                        laser.utime = TimeUtil.utime();
+
+                        // This has logging flaws XXX
+                        pose_t pose = poseTracker.get(TimeUtil.utime());
+
+                        double[] xyt = LinAlg.quatPosToXYT(pose.orientation,
+                                                           pose.pos);
+
+                        assert (xyt[0] >= map.x0 && xyt[0] < map.x0+map.width*map.metersPerPixel &&
+                                xyt[1] >= map.y0 && xyt[1] < map.y0+map.height*map.metersPerPixel);
+
+                        // Expensive grid map processing
+                        float step = (float)map.metersPerPixel/2;
+                        for (int i = 0; i < laser.nranges; i++) {
+                            laser.ranges[i] = -1;
+                            float theta = (float)(xyt[0]+laser.rad0+laser.radstep*i);
+                            double x = 0, y = 0;
+                            for (float r = 0; r < 5.0; r+=step) {
+                                x = xyt[0] + r*Math.cos(theta);
+                                y = xyt[1] + r*Math.sin(theta);
+
+                                if (map.getValue(x, y) != 0) {
+                                    laser.ranges[i] = r;
+                                    continue;
+                                }
+                            }
+                        }
+                        lcm.publish("LASER", laser);
+                    }
+                }
+                double time = tic.toc();
+                int delay = (int)Math.max(0, 1000/hz - 1000*(1.0 - time));
+
+                TimeUtil.sleep(delay);
+            }
+        }
+    }
+
+    private class WorkerThread extends Thread
+    {
+        public void run()
+        {
+            while (true) {
+                ArrayList<DynamixelPoseLidar.Data> datas;
+
+                synchronized (queueLock) {
+                    datas = sweepQueue;
+                    sweepQueue = null;
+
+                    if (datas == null) {
+                        try {
+                            queueLock.wait();
+                        } catch (InterruptedException ex) {}
+                    }
+                }
+
+                if (datas != null) {
+                    try {
+                        processDatas(datas);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        System.exit(-1);
+                    }
+                }
+            }
+        }
+
+        private void processDatas(ArrayList<DynamixelPoseLidar.Data> datas)
+        {
+            // Drop incomplete sweeps
+            if (datas.size() < min_slices)
+                return;
+
+            // Initialize map position based on current pose
+            pose_t pose = poseTracker.get(TimeUtil.utime());
+            GridMap gm = GridMap.makeMeters(pose.pos[0], pose.pos[1], SIZE_X/2, SIZE_Y/2, MPP, 0);
+
+            // For each sweep, add those points to the map when relevant. Anything
+            // between min and max height gets added
+            for (DynamixelPoseLidar.Data data: datas) {
+                // Project the points
+
+                // body to local frame
+                double[][] B2L = LinAlg.quatPosToMatrix(data.pose.orientation, data.pose.pos);
+
+                // sensor to body
+                double[][] S2B = LinAlg.multiplyMany(ConfigUtil.getRigidBodyTransform(Util.getConfig(), "HOKUYO_LIDAR"),
+                                                     LinAlg.rotateY(-data.status.position_radians),
+                                                     LinAlg.translate(0,0,Util.getConfig().requireDouble("HOKUYO_LIDAR.zoffset")));
+
+                ArrayList<double[]> pointsRaw = new ArrayList<double[]>();
+                for (int i = 0; i < data.laser.nranges; i++) {
+                    double r = data.laser.ranges[i];
+
+                    // Skip error codes
+                    if (r < 0)
+                        continue;
+
+                    double t = data.laser.rad0 + data.laser.radstep*i;
+
+                    double[] xyz = new double[3];
+                    xyz[0] = r*Math.cos(t);
+                    xyz[1] = r*Math.sin(t);
+                    pointsRaw.add(xyz);
+
+                    // TODO: Glance points filter
+
+                    // Sensor to local frame
+                    double[][] S2L = LinAlg.multiplyMany(B2L, S2B);
+                    ArrayList<double[]> pointsLocal = LinAlg.transform(S2L, pointsRaw);
+
+                    // Put the points in the map
+                    for (double[] p: pointsLocal) {
+                        // Skip non-obstacle points
+                        if (p[2] < minHeight || p[2] > maxHeight)
+                            continue;
+
+                        gm.setValue(p[0], p[1], (byte)1);
+                    }
+                }
+            }
+
+            synchronized (mapLock) {
+                map = gm;
+            }
+        }
+    }
+
+    public SweepHandler()
+    {
+        lidar = new DynamixelPoseLidar(5);
+        lidar.addListener(this);
+
+        (new WorkerThread()).start();
+        // XXX GUI if we want
+    }
+
+    // Unused
+    public void handleData(DynamixelPoseLidar.Data d)
+    {
+    }
+
+    /** Handle incoming sweeps from the DynamixelPoseLidar. */
+    public void handleSweep(ArrayList<DynamixelPoseLidar.Data> ds)
+    {
+        synchronized (queueLock) {
+            if (sweepQueue != null)
+                System.out.println("Dropping sweep");
+
+            sweepQueue = ds;
+            queueLock.notifyAll();
+        }
+    }
+
+    static public void main(String[] args)
+    {
+        new SweepHandler(); //
+    }
+}

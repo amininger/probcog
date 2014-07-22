@@ -1,4 +1,4 @@
-package probcog.sensor;
+package probcog.servo;
 
 import java.io.IOException;
 import java.io.*;

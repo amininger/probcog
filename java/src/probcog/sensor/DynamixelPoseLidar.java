@@ -14,8 +14,6 @@ import april.config.*;
 
 import probcog.lcmtypes.*;
 import probcog.servo.*;
-//import magic.util.*;
-//import magic.lcmtypes.*;
 
 
 public class DynamixelPoseLidar implements LCMSubscriber
