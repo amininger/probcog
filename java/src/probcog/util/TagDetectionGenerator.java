@@ -50,15 +50,15 @@ public class TagDetectionGenerator
     double tiltToCam[][];
 
     PanTiltServoController servos;
-    AX12Tracker panTracker;
-    AX12Tracker tiltTracker;
+    DynamixelTracker panTracker;
+    DynamixelTracker tiltTracker;
 
     public TagDetectionGenerator(PanTiltServoController _servos)
     {
         this.config = Util.getConfig();
 
-        panTracker  = new AX12Tracker(config.requireString("servo_camera_pan.publish_channel"));
-        tiltTracker = new AX12Tracker(config.requireString("servo_camera_tilt.publish_channel"));
+        panTracker  = new DynamixelTracker(config.requireString("servo_camera_pan.publish_channel"));
+        tiltTracker = new DynamixelTracker(config.requireString("servo_camera_tilt.publish_channel"));
 
         TagFamily tf = getTagFamily(config);
         this.detector = setupDetector(tf);
@@ -157,8 +157,8 @@ public class TagDetectionGenerator
     {
         ArrayList<TagDetection> detections;
 
-        ax12_status_t pan  = panTracker.get(lim.utime);
-        ax12_status_t tilt = tiltTracker.get(lim.utime);
+        dynamixel_status_t pan  = panTracker.get(lim.utime);
+        dynamixel_status_t tilt = tiltTracker.get(lim.utime);
         if (pan == null || tilt == null)
             return;
 
