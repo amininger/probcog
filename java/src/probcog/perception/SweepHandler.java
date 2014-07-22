@@ -22,7 +22,7 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
     DynamixelPoseLidar lidar;
     Object queueLock = new Object();
     ArrayList<DynamixelPoseLidar.Data> sweepQueue = null;
-    int min_slices = 10;    // Discard sweeps with fewer than this many slices
+    int min_slices = 5;    // Discard sweeps with fewer than this many slices
 
     // GridMap constants
     static final double MPP = 0.1;      // [meters/px]
@@ -41,7 +41,7 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
      */
     private class LaserThread extends Thread
     {
-        int hz = 40;
+        int hz = 20;
 
         public void run()
         {
@@ -50,45 +50,52 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
             laser.radstep = (float)Math.toRadians(0.5);
             laser.nranges = (int)(2*Math.abs(laser.rad0/laser.radstep));
             laser.ranges = new float[laser.nranges];
+
+            Tic tic = new Tic();
             while (true)
             {
-                Tic tic = new Tic();
+                double time = tic.toctic();
+                int delay = (int)Math.max(0, 1000/hz - 1000*time);
+                System.out.println("Pause: "+delay);
+                TimeUtil.sleep(delay);
+
+                GridMap gm = null;
                 synchronized (mapLock) {
-                    if (map != null) {
-                        laser.utime = TimeUtil.utime();
+                    gm = map;
+                }
+                if (gm == null)
+                    continue;
 
-                        // This has logging flaws XXX
-                        pose_t pose = poseTracker.get(TimeUtil.utime());
+                laser.utime = TimeUtil.utime();
 
-                        double[] xyt = LinAlg.quatPosToXYT(pose.orientation,
-                                                           pose.pos);
+                // This has logging flaws XXX
+                pose_t pose = poseTracker.get(TimeUtil.utime());
 
-                        assert (xyt[0] >= map.x0 && xyt[0] < map.x0+map.width*map.metersPerPixel &&
-                                xyt[1] >= map.y0 && xyt[1] < map.y0+map.height*map.metersPerPixel);
+                double[] xyt = LinAlg.quatPosToXYT(pose.orientation,
+                                                   pose.pos);
 
-                        // Expensive grid map processing
-                        float step = (float)map.metersPerPixel/2;
-                        for (int i = 0; i < laser.nranges; i++) {
-                            laser.ranges[i] = -1;
-                            float theta = (float)(xyt[0]+laser.rad0+laser.radstep*i);
-                            double x = 0, y = 0;
-                            for (float r = 0; r < 5.0; r+=step) {
-                                x = xyt[0] + r*Math.cos(theta);
-                                y = xyt[1] + r*Math.sin(theta);
+                // XXX Not necessarily true :/
+                //assert (xyt[0] >= gm.x0 && xyt[0] < gm.x0+gm.width*gm.metersPerPixel &&
+                //        xyt[1] >= gm.y0 && xyt[1] < gm.y0+gm.height*gm.metersPerPixel);
 
-                                if (map.getValue(x, y) != 0) {
-                                    laser.ranges[i] = r;
-                                    continue;
-                                }
-                            }
+                // Expensive grid map processing
+                float step = (float)gm.metersPerPixel/2;
+                for (int i = 0; i < laser.nranges; i++) {
+                    laser.ranges[i] = -1;
+                    float theta = (float)(xyt[0]+laser.rad0+laser.radstep*i);
+                    double x = 0, y = 0;
+                    for (float r = 0; r < 5.0; r+=step) {
+                        x = xyt[0] + r*Math.cos(theta);
+                        y = xyt[1] + r*Math.sin(theta);
+
+                        if (gm.getValue(x, y) != 0) {
+                            laser.ranges[i] = r;
+                            continue;
                         }
-                        lcm.publish("LASER", laser);
                     }
                 }
-                double time = tic.toc();
-                int delay = (int)Math.max(0, 1000/hz - 1000*(1.0 - time));
-
-                TimeUtil.sleep(delay);
+                System.out.println("PUBLISH");
+                lcm.publish("LASER", laser);
             }
         }
     }
@@ -189,6 +196,7 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
         lidar.addListener(this);
 
         (new WorkerThread()).start();
+        (new LaserThread()).start();
         // XXX GUI if we want
     }
 
@@ -202,7 +210,7 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
     {
         synchronized (queueLock) {
             if (sweepQueue != null)
-                System.out.println("Dropping sweep");
+                System.out.println("Dropping sweep @ "+TimeUtil.utime());
 
             sweepQueue = ds;
             queueLock.notifyAll();
