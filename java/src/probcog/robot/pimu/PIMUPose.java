@@ -31,7 +31,7 @@ public class PIMUPose implements LCMSubscriber
 
     int motorFeedbackCount, pimuCount, txCount;
 
-    Config config = Util.getDomainConfig();
+    Config config = Util.getConfig();
 
     public PIMUPose(GetOpt gopt)
     {

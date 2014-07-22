@@ -23,7 +23,7 @@ public class DynamixelPoseLidar implements LCMSubscriber
     LCM lcm = LCM.getSingleton();
 
     public PoseTracker ptracker = PoseTracker.getSingleton();
-    public DynamixelTracker dynamixelTracker = new DynamixelTracker("Dynamixel_STATUS_HOKUYO");
+    public DynamixelTracker dynamixelTracker = new DynamixelTracker("DYNAMIXEL_STATUS_HOKUYO");
 
     int delay;
 

@@ -59,7 +59,7 @@ public class KinectSensor implements Sensor, LCMSubscriber
     // in use for mobile domain
     public KinectSensor() throws IOException
     {
-        init(Util.getDomainConfig());
+        init(Util.getConfig());
     }
 
     public KinectSensor(Config config_) throws IOException

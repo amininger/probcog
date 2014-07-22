@@ -126,7 +126,7 @@ public class ObstacleMap
         double minHeight, maxHeight;
         public MapThread()
         {
-            Config config = Util.getDomainConfig();
+            Config config = Util.getConfig();
             minHeight = config.requireDouble("obstacle.min_height");
             maxHeight = config.requireDouble("obstacle.max_height");
         }

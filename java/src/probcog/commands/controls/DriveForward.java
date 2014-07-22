@@ -23,7 +23,7 @@ public class DriveForward implements ControlLaw, LCMSubscriber
     static final double VERY_FAR = 3671000;     // Earth's radius [m]
 
     // XXX This needs to change
-    double centerOffsetX_m = Util.getDomainConfig().requireDouble("robot.geometry.centerOffsetX_m");
+    double centerOffsetX_m = Util.getConfig().requireDouble("robot.geometry.centerOffsetX_m");
     private ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
 
     LCM lcm = LCM.getSingleton();
