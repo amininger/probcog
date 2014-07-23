@@ -18,8 +18,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double FW_HZ = 100;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
-    private static final double BACK_THETA = 7*Math.PI/16;
-    private static final double FRONT_THETA = Math.PI/6;
+    private static final double BACK_THETA = 12*Math.PI/36;
+    private static final double FRONT_THETA = 6*Math.PI/36;
     private static final double MAX_V = 1.0;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
@@ -30,7 +30,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     Direction dir;
     private enum Direction { LEFT, RIGHT }
-    private double goalDistance = Double.MAX_VALUE;
+    private double goalDistance = 0.75;
     private double targetHeading = Double.MAX_VALUE;
 
     private class UpdateTask implements PeriodicTasks.Task
@@ -40,7 +40,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         int finIdx = -1;
 
         // State for PID
-        double K_d = 0.05;
+        //double K_d = 0.05;
+        double K_d = 0.01;
         double lastRange = -1;
 
         public void run(double dt)
@@ -87,14 +88,6 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
             assert (startIdx <= finIdx);
 
-            // If no goal distance was specified, find one
-            if (goalDistance == Double.MAX_VALUE) {
-                for (int i = startIdx; i <= finIdx; i++) {
-                    goalDistance = Math.min(goalDistance, laser.ranges[i]);
-                }
-
-                System.out.printf("Separation distance of %f [m] selected\n", goalDistance);
-            }
         }
 
         // P controller to do wall avoidance. More logic could be added...
