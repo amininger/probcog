@@ -1,6 +1,9 @@
 package probcog.perception;
 
 import java.util.*;
+import java.awt.*;
+import java.awt.image.*;
+import javax.swing.*;
 
 import lcm.lcm.*;
 
@@ -8,6 +11,7 @@ import april.config.*;
 import april.jmat.*;
 import april.util.*;
 import april.lcmtypes.*;
+import april.vis.*;
 
 import probcog.sensor.*;
 import probcog.lcmtypes.*;
@@ -15,6 +19,8 @@ import probcog.util.*;
 
 public class SweepHandler implements DynamixelPoseLidar.Listener
 {
+    static final boolean GUI = false;
+
     LCM lcm = LCM.getSingleton();
 
     PoseTracker poseTracker = PoseTracker.getSingleton();
@@ -25,7 +31,7 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
     int min_slices = 5;    // Discard sweeps with fewer than this many slices
 
     // GridMap constants
-    static final double MPP = 0.1;      // [meters/px]
+    static final double MPP = 0.05;      // [meters/px]
     static final double SIZE_X = 20.0;  // [meters]
     static final double SIZE_Y = 20.0;  // [meters]
     double minHeight = Util.getConfig().requireDouble("obstacle.min_height");
@@ -41,7 +47,13 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
      */
     private class LaserThread extends Thread
     {
+        VisWorld vw;
         int hz = 20;
+
+        public LaserThread(VisWorld vw)
+        {
+            this.vw = vw;
+        }
 
         public void run()
         {
@@ -56,7 +68,7 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
             {
                 double time = tic.toctic();
                 int delay = (int)Math.max(0, 1000/hz - 1000*time);
-                System.out.println("Pause: "+delay);
+                //System.out.println("Pause: "+delay);
                 TimeUtil.sleep(delay);
 
                 GridMap gm = null;
@@ -70,6 +82,8 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
 
                 // This has logging flaws XXX
                 pose_t pose = poseTracker.get(TimeUtil.utime());
+                if (pose == null)
+                    continue;
 
                 double[] xyt = LinAlg.quatPosToXYT(pose.orientation,
                                                    pose.pos);
@@ -81,20 +95,19 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
                 // Expensive grid map processing
                 float step = (float)gm.metersPerPixel/2;
                 for (int i = 0; i < laser.nranges; i++) {
-                    laser.ranges[i] = -1;
-                    float theta = (float)(xyt[0]+laser.rad0+laser.radstep*i);
+                    laser.ranges[i] = -0.00001f;
+                    float theta = (float)(xyt[2]+laser.rad0+laser.radstep*i);
                     double x = 0, y = 0;
-                    for (float r = 0; r < 5.0; r+=step) {
+                    for (float r = 0.0f; r < 5.0f; r+=step) {
                         x = xyt[0] + r*Math.cos(theta);
                         y = xyt[1] + r*Math.sin(theta);
 
                         if (gm.getValue(x, y) != 0) {
                             laser.ranges[i] = r;
-                            continue;
+                            break;
                         }
                     }
                 }
-                System.out.println("PUBLISH");
                 lcm.publish("LASER", laser);
             }
         }
@@ -102,6 +115,13 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
 
     private class WorkerThread extends Thread
     {
+        VisWorld vw;
+
+        public WorkerThread(VisWorld vw)
+        {
+            this.vw = vw;
+        }
+
         public void run()
         {
             while (true) {
@@ -121,6 +141,7 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
                 if (datas != null) {
                     try {
                         processDatas(datas);
+
                     } catch (Exception ex) {
                         ex.printStackTrace();
                         System.exit(-1);
@@ -137,7 +158,9 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
 
             // Initialize map position based on current pose
             pose_t pose = poseTracker.get(TimeUtil.utime());
-            GridMap gm = GridMap.makeMeters(pose.pos[0], pose.pos[1], SIZE_X/2, SIZE_Y/2, MPP, 0);
+            if (pose == null)
+                return;
+            GridMap gm = GridMap.makeMeters(pose.pos[0]-SIZE_X/2, pose.pos[1]-SIZE_Y/2, SIZE_X, SIZE_Y, MPP, 0);
 
             // For each sweep, add those points to the map when relevant. Anything
             // between min and max height gets added
@@ -178,12 +201,18 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
                         // Skip non-obstacle points
                         if (p[2] < minHeight || p[2] > maxHeight)
                             continue;
-
-                        gm.setValue(p[0], p[1], (byte)1);
+                        gm.setValue(p[0], p[1], (byte)255);
                     }
+
+                    if (GUI) {
+                        VisWorld.Buffer vb = vw.getBuffer("3dpoints");
+                        vb.addBack(new VzPoints(new VisVertexData(pointsLocal),
+                                                new VzPoints.Style(Color.red, 2)));
+                        vb.swap();
+                    }
+
                 }
             }
-
             synchronized (mapLock) {
                 map = gm;
             }
@@ -195,9 +224,25 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
         lidar = new DynamixelPoseLidar(5);
         lidar.addListener(this);
 
-        (new WorkerThread()).start();
-        (new LaserThread()).start();
-        // XXX GUI if we want
+        VisWorld vw = new VisWorld();
+        VisLayer vl = new VisLayer(vw);
+        VzGrid.addGrid(vw);
+
+        (new WorkerThread(vw)).start();
+        (new LaserThread(vw)).start();
+
+        // GUI Setup
+        if (GUI) {
+            JFrame jf = new JFrame("Sweep Handler");
+            jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            jf.setLayout(new BorderLayout());
+            jf.setSize(800, 600);
+
+            VisCanvas vc = new VisCanvas(vl);
+            jf.add(vc, BorderLayout.CENTER);
+
+            jf.setVisible(true);
+        }
     }
 
     // Unused
@@ -219,6 +264,6 @@ public class SweepHandler implements DynamixelPoseLidar.Listener
 
     static public void main(String[] args)
     {
-        new SweepHandler(); //
+        new SweepHandler();
     }
 }

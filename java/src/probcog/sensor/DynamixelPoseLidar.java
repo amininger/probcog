@@ -170,9 +170,9 @@ public class DynamixelPoseLidar implements LCMSubscriber
 
                     } else {
                         // is this a "full" sweep?
-                        double tmin = 10;
-                        double tmax = -10;
-                        double tzero = 10;
+                        double tmin = 10;   // Minimum theta
+                        double tmax = -10;  // Maximum theta
+                        double tzero = 10;  // The closest to zero we go.
 
                         for (Data dd : sweep) {
                             tmin = Math.min(tmin, dd.status.position_radians);
@@ -180,16 +180,16 @@ public class DynamixelPoseLidar implements LCMSubscriber
                             tzero = Math.min(tzero, Math.abs(dd.status.position_radians));
                         }
 
-                        if (tmin > -.7 || tmax < .2 || tzero > 0.1) {
-                            if (sweep.size() > 5) {
+                        //if (tmin > -.7 || tmax < .2 || tzero > 0.1) {
+                        //    if (sweep.size() > 5) {
                                 // don't bother reporting cases where we just have some noise at the end of our travel.
-                                System.out.printf("DynamixelPoseLidar rejecting bad sweep: %15f %15f %15f (%d scans)\n",
-                                                  tmin, tmax, tzero, sweep.size());
-                            }
-                        } else {
+                        //        System.out.printf("DynamixelPoseLidar rejecting bad sweep: %15f %15f %15f (%d scans)\n",
+                        //                          tmin, tmax, tzero, sweep.size());
+                        //    }
+                        //} else {
                             for (Listener listener : listeners)
                                 listener.handleSweep(sweep);
-                        }
+                        //}
 
                         sweep = new ArrayList<Data>();
                         sweep.add(d);
