@@ -84,7 +84,7 @@ public class MonteCarloBot implements SimObject
             double ranges[] = Sensors.laser(sw, ignore, T_truth, (int) ((rad1-rad0)/radstep), rad0, radstep, maxRange);
 
             double mean = 0;
-            double stddev = 0.01;
+            double stddev = 0.01;   // XXX Laser noise
             for (int i = 0; i < ranges.length; i++) {
                 if (ranges[i] >= maxRange || ranges[i] < 0)
                     continue;
@@ -137,7 +137,7 @@ public class MonteCarloBot implements SimObject
         return shape;
     }
 
-    static Model4 model4 = new Model4(null, Color.red, 0.5);
+    static Model4 model4 = new Model4(null, Color.blue, 0.5);
     public VisObject getVisObject()
     {
         VisChain vc = new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
