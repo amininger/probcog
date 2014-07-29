@@ -81,10 +81,11 @@ public class MonteCarloBot implements SimObject
                                                                        drive.poseOdom.pos),
                                                 LinAlg.translate(0.3, 0, 0.25));
 
+            // XXX This is where most of the low hanging fruit lies
             double ranges[] = Sensors.laser(sw, ignore, T_truth, (int) ((rad1-rad0)/radstep), rad0, radstep, maxRange);
 
             double mean = 0;
-            double stddev = 0.01;   // XXX Laser noise
+            double stddev = 0.01;   // Laser noise
             for (int i = 0; i < ranges.length; i++) {
                 if (ranges[i] >= maxRange || ranges[i] < 0)
                     continue;
@@ -104,7 +105,8 @@ public class MonteCarloBot implements SimObject
             drive.update();
 
             // CHECK CLASSIFICATIONS
-            // XXX
+            // XXX We still need to actually observe classfications, etc so we can stop
+            // XXX This means implementing fake april tags or something. Talk to Lauren
 
             laser.utime += FastDrive.DT*1000000;
             trajectoryTruth.add(drive.poseTruth.pos);

@@ -28,6 +28,7 @@ public class PlanningGUI extends JFrame
     VisLayer vl;
     VisCanvas vc;
     private ProbCogSimulator simulator;
+    private GridMap gm;
 
     public PlanningGUI(GetOpt opts)
     {
@@ -46,9 +47,54 @@ public class PlanningGUI extends JFrame
         simulator = new ProbCogSimulator(opts, vw, vl, vc, console);
         simulator.getWorld().setRunning(false); // Stop the world here, by default
 
+        init(); // This does things like compute a full grid map for wavefront based on the sim world
+
         this.setVisible(true);
     }
 
+    // === GUI And Planning Functionality =====================================
+    private void init()
+    {
+        createGridMap();
+    }
+
+    private void createGridMap()
+    {
+        double N = 50;
+        double MPP = 0.1;
+        double[] down = new double[] {0, 0, -1};
+        // Limited to NxN area surrounding origin. Populate map based on collisions
+        // with non-robot objects.
+        gm = GridMap.makeMeters(-N/2, -N/2, N, N, MPP, 255);
+
+        // XXX There's probably a faster way to do this, but this was easy and it's
+        // a one-time thing
+        for (double y = -N/2+MPP/2; y < N/2; y+=MPP) {
+            for (double x = -N/2+MPP/2; x < N/2; x+=MPP) {
+                for (SimObject obj: simulator.getWorld().objects) {
+                    if (!(obj instanceof SimBox))
+                        continue;
+                    if (Collisions.collisionDistance(new double[] {x, y, 100}, down, obj.getShape(), obj.getPose()) < Double.MAX_VALUE) {
+                        gm.setValue(x, y, (byte)0);
+                    }
+                }
+            }
+        }
+
+        // Debugging
+        if (true) {
+            VisWorld.Buffer vb = vw.getBuffer("debug-gridmap");
+            vb.addBack(new VisChain(LinAlg.translate(-N/2,-N/2),
+                                    LinAlg.scale(MPP),
+                                    new VzImage(new VisTexture(gm.makeBufferedImage(),
+                                                               VisTexture.NO_MIN_FILTER |
+                                                               VisTexture.NO_MAG_FILTER))));
+            vb.swap();
+        }
+    }
+
+
+    // === Support Classes ====================================================
     private class PlanningGUIEventHandler extends VisEventAdapter
     {
         VisWorld world;
