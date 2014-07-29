@@ -1,5 +1,6 @@
 package probcog.sim;
 
+import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
@@ -10,6 +11,7 @@ import april.util.*;
 import april.lcmtypes.*;
 
 import probcog.vis.*;
+import probcog.lcmtypes.*;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
@@ -31,10 +33,6 @@ public class MonteCarloBot implements SimObject
     FollowWall law;
     ClassificationCounterTest test;
 
-    // Parameters
-    double gridmap_meters_per_pixel = 0.1;
-    double gridmap_range = 10;
-
     public MonteCarloBot(SimWorld sw)
     {
         this.sw = sw;
@@ -45,11 +43,13 @@ public class MonteCarloBot implements SimObject
     {
         this.law = law;
         this.test = test;
-        trajectoryTruth.add(drive.poseTruth.pos);
-        trajectoryOdom.add(drive.poseOdom.pos);
 
         drive = new FastDrive(sw, this, xyt);
         drive.centerOfRotation = new double[] { 0.13, 0, 0 };
+
+        trajectoryTruth.add(drive.poseTruth.pos);
+        trajectoryOdom.add(drive.poseOdom.pos);
+
     }
 
     // Simulate all steps, keeping track of trajectory, etc.
@@ -57,8 +57,8 @@ public class MonteCarloBot implements SimObject
     {
         // Precalculated paramters
         HashSet<SimObject> ignore = new HashSet<SimObject>();
-        ignore.add(MonteCarloBot.this);
-        double radstep = Math.atan2(gridmap_meters_per_pixel, gridmap_range);
+        ignore.add(this);
+        double radstep = Math.toRadians(5);
         double minDeg = -135;
         double maxDeg = 135;
         double maxRange = 29.9;
@@ -68,8 +68,11 @@ public class MonteCarloBot implements SimObject
         laser.utime = TimeUtil.utime();
 
         // While control law has not finished OR timeout, try updating
-        int timeout = (int)(10.0/FastDrive.DT);
+        int timeout = (int)(30.0/FastDrive.DT);
+        Tic tic = new Tic();
+        double time = 0;
         while (!test.conditionMet() && timeout > 0) {
+            tic.tic();
             // LASER UPDATE
             double[][] T_truth = LinAlg.matrixAB(LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
                                                                         drive.poseTruth.pos),
@@ -94,38 +97,58 @@ public class MonteCarloBot implements SimObject
             laser.radstep = (float) radstep;
 
             // DRIVE UPDATE
+            law.init(laser);
+            diff_drive_t dd = law.drive(laser, FastDrive.DT);
+            drive.motorCommands[0] = dd.left;
+            drive.motorCommands[1] = dd.right;
             drive.update();
 
             // CHECK CLASSIFICATIONS
             // XXX
 
             laser.utime += FastDrive.DT*1000000;
+            trajectoryTruth.add(drive.poseTruth.pos);
+            trajectoryOdom.add(drive.poseOdom.pos);
 
             // TIME UPDATE
             timeout--;
+            time += tic.toc();
+            //System.out.printf("\t%f [s]\n", tic.toc());
         }
+        System.out.printf("%f [s]\n", time);
     }
 
     // === SimObject interface ===============================
     public double[][] getPose()
     {
-        return null;    // XXX
+        return LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
+                                      drive.poseTruth.pos);
     }
 
     public void setPose(double[][] T)
     {
-        // XXX
+        drive.poseTruth.orientation = LinAlg.matrixToQuat(T);
+        drive.poseTruth.pos = new double[] { T[0][3], T[1][3], 0 };
     }
 
+    static final Shape shape = new SphereShape(0.4);
     public Shape getShape()
     {
-        return null;    // XXX
+        return shape;
     }
 
-    static Model4 model4 = new Model4();
+    static Model4 model4 = new Model4(null, Color.red, 0.5);
     public VisObject getVisObject()
     {
-        return model4;
+        VisChain vc = new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
+                                               VzLines.LINE_STRIP,
+                                               new VzLines.Style(Color.blue, 2)),
+                                   new VzLines(new VisVertexData(trajectoryOdom),
+                                               VzLines.LINE_STRIP,
+                                               new VzLines.Style(Color.red, 2)),
+                                   getPose(),
+                                   model4);
+        return vc;
     }
 
     public void read(StructureReader ins) throws IOException

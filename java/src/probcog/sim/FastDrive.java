@@ -41,7 +41,7 @@ public class FastDrive
     /** Ignore: a set of objects that will not be used for collision detection.
      *  Typically, this includes the robot itself.
      **/
-    public FastDrive(SimWorld vw, SimObject simobj, double[] init_xyt)
+    public FastDrive(SimWorld sw, SimObject simobj, double[] init_xyt)
     {
         this.sw = sw;
         this.simobj = simobj;
@@ -57,77 +57,75 @@ public class FastDrive
         // No fixed delay tasks, here, since we update on request!
     }
 
-    final public static double DT = 1.0 / 50;
+    public static double DT = 1.0 / 5;
     public void update()
     {
-        synchronized (sw) {
-            synchronized (this) {
-                leftMotor.setVoltage(motorCommands[0]*voltageScale);
-                rightMotor.setVoltage(motorCommands[1]*voltageScale);
+        synchronized (this) {
+            leftMotor.setVoltage(motorCommands[0]*voltageScale);
+            rightMotor.setVoltage(motorCommands[1]*voltageScale);
 
-                leftMotor.update(DT);
-                rightMotor.update(DT);
+            leftMotor.update(DT);
+            rightMotor.update(DT);
 
-                // Temporarily make poseTruth point to center of rotation, which
-                // we'll undo at the end.
-                double[] pos_truth = LinAlg.add(poseTruth.pos, LinAlg.quatRotate(poseTruth.orientation, centerOfRotation));
-                double[] pos_odom = LinAlg.add(poseOdom.pos, LinAlg.quatRotate(poseOdom.orientation, centerOfRotation));
+            // Temporarily make poseTruth point to center of rotation, which
+            // we'll undo at the end.
+            double[] pos_truth = LinAlg.add(poseTruth.pos, LinAlg.quatRotate(poseTruth.orientation, centerOfRotation));
+            double[] pos_odom = LinAlg.add(poseOdom.pos, LinAlg.quatRotate(poseOdom.orientation, centerOfRotation));
 
-                double left_rad_per_sec = leftMotor.getRadPerSec();
-                double right_rad_per_sec = rightMotor.getRadPerSec();
+            double left_rad_per_sec = leftMotor.getRadPerSec();
+            double right_rad_per_sec = rightMotor.getRadPerSec();
 
-                double dleft = DT * left_rad_per_sec * wheelDiameter;
-                double dright = DT * right_rad_per_sec * wheelDiameter;
+            double dleft = DT * left_rad_per_sec * wheelDiameter;
+            double dright = DT * right_rad_per_sec * wheelDiameter;
 
-                double dl_truth = (dleft + dright) / 2;
-                double dtheta_truth = (dright - dleft) / baseline;
+            double dl_truth = (dleft + dright) / 2;
+            double dtheta_truth = (dright - dleft) / baseline;
 
-                double r1 = MathUtil.clamp(r.nextGaussian(), -3.0, 3.0);
-                double r2 = MathUtil.clamp(r.nextGaussian(), -3.0, 3.0);
+            double r1 = MathUtil.clamp(r.nextGaussian(), -3.0, 3.0);
+            double r2 = MathUtil.clamp(r.nextGaussian(), -3.0, 3.0);
 
-                double dl_odom = dl_truth + translation_noise*r1*Math.abs(dl_truth);
-                double dtheta_odom = dtheta_truth + rotation_noise*r2*Math.abs(dtheta_truth);
+            double dl_odom = dl_truth + translation_noise*r1*Math.abs(dl_truth);
+            double dtheta_odom = dtheta_truth + rotation_noise*r2*Math.abs(dtheta_truth);
 
-                // Updates
-                double[] dpos_truth = LinAlg.quatRotate(poseTruth.orientation, new double[] {dl_truth, 0, 0});
-                double[] dquat_truth = LinAlg.rollPitchYawToQuat(new double[] {0, 0, dtheta_truth});
+            // Updates
+            double[] dpos_truth = LinAlg.quatRotate(poseTruth.orientation, new double[] {dl_truth, 0, 0});
+            double[] dquat_truth = LinAlg.rollPitchYawToQuat(new double[] {0, 0, dtheta_truth});
 
-                double[] dpos_odom = LinAlg.quatRotate(poseOdom.orientation, new double[] {dl_odom, 0, 0,});
-                double[] dquat_odom = LinAlg.rollPitchYawToQuat(new double[] {0, 0, dtheta_odom});
+            double[] dpos_odom = LinAlg.quatRotate(poseOdom.orientation, new double[] {dl_odom, 0, 0,});
+            double[] dquat_odom = LinAlg.rollPitchYawToQuat(new double[] {0, 0, dtheta_odom});
 
-                double[] newpos_truth = LinAlg.add(pos_truth, dpos_truth);
-                double[] neworient_truth = LinAlg.quatMultiply(poseTruth.orientation, dquat_truth);
+            double[] newpos_truth = LinAlg.add(pos_truth, dpos_truth);
+            double[] neworient_truth = LinAlg.quatMultiply(poseTruth.orientation, dquat_truth);
 
-                double[] newpos_odom = LinAlg.add(pos_odom, dpos_odom);
-                double[] neworient_odom = LinAlg.quatMultiply(poseOdom.orientation, dquat_odom);
+            double[] newpos_odom = LinAlg.add(pos_odom, dpos_odom);
+            double[] neworient_odom = LinAlg.quatMultiply(poseOdom.orientation, dquat_odom);
 
-                // Back to rear axle
-                newpos_truth = LinAlg.add(newpos_truth, LinAlg.quatRotate(neworient_truth, LinAlg.scale(centerOfRotation, -1)));
-                newpos_odom = LinAlg.add(newpos_odom, LinAlg.quatRotate(neworient_odom, LinAlg.scale(centerOfRotation, -1)));
+            // Back to rear axle
+            newpos_truth = LinAlg.add(newpos_truth, LinAlg.quatRotate(neworient_truth, LinAlg.scale(centerOfRotation, -1)));
+            newpos_odom = LinAlg.add(newpos_odom, LinAlg.quatRotate(neworient_odom, LinAlg.scale(centerOfRotation, -1)));
 
-                // Only accept movements that don't run into things
-                boolean okay = true;
-                for (SimObject so: sw.objects) {
-                    if (so == simobj)
-                        continue;
-                    if (Collisions.collision(so.getShape(), so.getPose(),
-                                             simobj.getShape(), LinAlg.quatPosToMatrix(neworient_truth, newpos_truth))) {
-                        okay = false;
-                        break;
-                    }
+            // Only accept movements that don't run into things
+            boolean okay = true;
+            for (SimObject so: sw.objects) {
+                if (so instanceof SimRobot || so instanceof MonteCarloBot)
+                    continue;
+                if (Collisions.collision(so.getShape(), so.getPose(),
+                            simobj.getShape(), LinAlg.quatPosToMatrix(neworient_truth, newpos_truth))) {
+                    okay = false;
+                    break;
                 }
-
-                if (okay) {
-                    poseTruth.pos = newpos_truth;
-                    poseTruth.orientation = neworient_truth;
-
-                    poseOdom.pos = newpos_odom;
-                    poseOdom.orientation = neworient_odom;
-                }
-
-                poseTruth.utime += DT*1000000;  // Fixed time update
-                poseOdom.utime = poseTruth.utime;
             }
+
+            if (okay) {
+                poseTruth.pos = newpos_truth;
+                poseTruth.orientation = neworient_truth;
+
+                poseOdom.pos = newpos_odom;
+                poseOdom.orientation = neworient_odom;
+            }
+
+            poseTruth.utime += DT*1000000;  // Fixed time update
+            poseOdom.utime = poseTruth.utime;
         }
     }
 }

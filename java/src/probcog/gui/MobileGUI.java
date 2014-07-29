@@ -24,6 +24,8 @@ import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.commands.*;
+import probcog.commands.controls.FollowWall;
+import probcog.commands.tests.ClassificationCounterTest;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
@@ -204,6 +206,9 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             // Toggle mode
             if (e.getKeyCode() == KeyEvent.VK_G)
                 graphHandler.toggle();
+            else if (e.getKeyCode() == KeyEvent.VK_T)
+                testMonteCarlo(); // XXX
+
             VisWorld.Buffer vb = vw.getBuffer("graphMode");
             if (graphHandler.isOn()) {
                 vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.TOP_LEFT,
@@ -229,6 +234,34 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             vb.swap();
             return false;
         }
+    }
+
+    // XXX
+    private void testMonteCarlo()
+    {
+        System.out.println("TESTING MONTE CARLO METHOD");
+        // Just run once for now. Initialize robot. Then simulate!
+        MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+        HashMap<String, TypedValue> lawParams = new HashMap<String, TypedValue>();
+        lawParams.put("side", new TypedValue((byte)-1));
+        HashMap<String, TypedValue> testParams = new HashMap<String, TypedValue>();
+        testParams.put("count", new TypedValue(1));
+        testParams.put("class", new TypedValue("door"));
+
+        double[] xyt = null;
+        for (SimObject obj: simulator.getWorld().objects) {
+            if (!(obj instanceof SimRobot))
+                continue;
+            xyt = LinAlg.matrixToXYT(obj.getPose());
+            break;
+        }
+        assert (xyt != null);
+        bot.init(new FollowWall(lawParams), new ClassificationCounterTest(testParams), xyt);
+        bot.simulate();
+
+        VisWorld.Buffer vb = vw.getBuffer("test-simulation");
+        vb.addBack(bot.getVisObject());
+        vb.swap();
     }
 
     class SimParameterListener implements ParameterListener
