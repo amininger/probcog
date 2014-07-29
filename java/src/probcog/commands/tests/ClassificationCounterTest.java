@@ -90,7 +90,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
      *
      *  @return True if condition test is currently satisfied, else false
      **/
-    public boolean conditionMet()
+    synchronized public boolean conditionMet()
     {
         int count = 0;
         for (DetectionRecord d: observed.values()) {
@@ -128,6 +128,17 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         return params;
     }
 
+    // === Sample adding/tracking ============================================
+    synchronized public void addSample(classification_t classy)
+    {
+        if (classType.equals(classy.name)) {
+            if (!observed.containsKey(classy.id)) {
+                observed.put(classy.id, new DetectionRecord());
+            }
+            observed.get(classy.id).addSample(classy);
+        }
+    }
+
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
@@ -137,7 +148,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         }
     }
 
-    synchronized void messageReceivedEx(LCM lcm, String channel,
+    void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
         if (channel.equals("CLASSIFICATIONS")) {
@@ -147,12 +158,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
                 // Keep running average of "quality" of detection, with a penalty
                 // for not having multiple observations coming into play during
                 // evaluation in conditionMet()
-                if (classType.equals(classy.name)) {
-                    if (!observed.containsKey(classy.id)) {
-                        observed.put(classy.id, new DetectionRecord());
-                    }
-                    observed.get(classy.id).addSample(classy);
-                }
+                addSample(classy);
             }
         }
     }

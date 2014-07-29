@@ -33,17 +33,18 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private double goalDistance = 0.75;
     private double targetHeading = Double.MAX_VALUE;
 
+    // Task State
+    boolean oriented = false;
+    int startIdx = -1;
+    int finIdx = -1;
+
+    // State for PID
+    //double K_d = 0.05;
+    double K_d = 0.001;
+    double lastRange = -1;
+
     private class UpdateTask implements PeriodicTasks.Task
     {
-        boolean oriented = false;
-        int startIdx = -1;
-        int finIdx = -1;
-
-        // State for PID
-        //double K_d = 0.05;
-        double K_d = 0.001;
-        double lastRange = -1;
-
         public void run(double dt)
         {
             laser_t laser = laserCache.get();
@@ -68,127 +69,129 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             // logic to prevent running into walls.
             update(laser, pose, dt);
         }
+    }
 
-        private void init(laser_t laser)
-        {
-            // Find indices at which to start/stop scanning
-            switch (dir) {
-                case LEFT:
-                    finIdx = MathUtil.clamp((int)((BACK_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
-                    startIdx = MathUtil.clamp((int)((FRONT_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
-                    break;
-                case RIGHT:
-                    startIdx = MathUtil.clamp((int)((-BACK_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
-                    finIdx = MathUtil.clamp((int)((-FRONT_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
-                    break;
-                default:
-                    assert (false);
-                    break;
-            }
-
-            assert (startIdx <= finIdx);
-
+    // Publicly exposed initializer, used in monte-carlo sim
+    public void init(laser_t laser)
+    {
+        // Find indices at which to start/stop scanning
+        switch (dir) {
+            case LEFT:
+                finIdx = MathUtil.clamp((int)((BACK_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
+                startIdx = MathUtil.clamp((int)((FRONT_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
+                break;
+            case RIGHT:
+                startIdx = MathUtil.clamp((int)((-BACK_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
+                finIdx = MathUtil.clamp((int)((-FRONT_THETA - laser.rad0)/laser.radstep), 0, laser.nranges-1);
+                break;
+            default:
+                assert (false);
+                break;
         }
 
-        // P controller to do wall avoidance. More logic could be added...
-        private void update(laser_t laser, pose_t pose, double dt)
-        {
-            diff_drive_t dd;
+        assert (startIdx <= finIdx);
+    }
 
-            if (targetHeading == Double.MAX_VALUE)
-                oriented = true;
+    // P controller to do wall avoidance. More logic could be added...
+    private void update(laser_t laser, pose_t pose, double dt)
+    {
+        diff_drive_t dd;
 
-            if (!oriented) {
-                dd = orient(pose, targetHeading);
-            } else {
-                dd = drive(laser, dt);
-            }
+        if (targetHeading == Double.MAX_VALUE)
+            oriented = true;
 
-            LCM.getSingleton().publish("DIFF_DRIVE", dd);
+        if (!oriented) {
+            dd = orient(pose, targetHeading);
+        } else {
+            dd = drive(laser, dt);
         }
 
-        private diff_drive_t drive(laser_t laser, double dt)
-        {
-            // Initialize no-speed diff drive
-            diff_drive_t dd = new diff_drive_t();
-            dd.utime = TimeUtil.utime();
-            dd.left_enabled = dd.right_enabled = true;
-            dd.left = 0;
-            dd.right = 0;
+        LCM.getSingleton().publish("DIFF_DRIVE", dd);
+    }
 
-            double r = Double.MAX_VALUE;
-            for (int i = startIdx; i <= finIdx; i++) {
-                // Handle error states
-                if (laser.ranges[i] < 0)
-                    continue;
+    private diff_drive_t orient(pose_t pose, double heading)
+    {
+        double[] rpy = LinAlg.quatToRollPitchYaw(pose.orientation);
 
-                double w = MathUtil.clamp(Math.abs(Math.sin(laser.rad0+laser.radstep*i)),
-                                          Math.sin(Math.PI/6), 1.0);
-                r = Math.min(r, w*laser.ranges[i]);
-            }
-            double deriv = 0;
-            if (lastRange > 0)
-                deriv = (r - lastRange)/dt; // [m/s] of change
-            lastRange = r;
+        diff_drive_t dd = new diff_drive_t();
+        dd.utime = TimeUtil.utime();
+        dd.left_enabled = dd.right_enabled = true;
+        dd.left = 0;
+        dd.right = 0;
 
-            // XXX
-            double K_p = r/goalDistance;
-            double prop = MathUtil.clamp(-0.5 + K_p, -1.0, 1.0);//0.65);
+        double delta = MathUtil.mod2pi(rpy[2] - heading);
 
-            double nearSpeed = 0.5;
-            double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
-            double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
-            if (max < 0.01) {
-                nearSpeed = farSpeed = 0;
-            } else {
-                nearSpeed = MAX_V*nearSpeed/max;
-                farSpeed = MAX_V*farSpeed/max;
-            }
-
-            switch (dir) {
-                case LEFT:
-                    dd.left = nearSpeed;
-                    dd.right = farSpeed;
-                    break;
-                case RIGHT:
-                    dd.right = nearSpeed;
-                    dd.left = farSpeed;
-                    break;
-            }
-
-            return dd;
+        if (Math.abs(delta) < HEADING_THRESH) {
+            oriented = true;
+        } else {
+            dd.left = 0.7 * delta / Math.PI;
+            dd.right = 0.7 * delta / -Math.PI;
         }
 
-        private diff_drive_t orient(pose_t pose, double heading)
-        {
-            double[] rpy = LinAlg.quatToRollPitchYaw(pose.orientation);
-
-            diff_drive_t dd = new diff_drive_t();
-            dd.utime = TimeUtil.utime();
-            dd.left_enabled = dd.right_enabled = true;
-            dd.left = 0;
-            dd.right = 0;
-
-            double delta = MathUtil.mod2pi(rpy[2] - heading);
-
-            if (Math.abs(delta) < HEADING_THRESH) {
-                oriented = true;
-            } else {
-                dd.left = 0.7 * delta / Math.PI;
-                dd.right = 0.7 * delta / -Math.PI;
-            }
-
-            // Friction sucks
-            if (dd.left > 0) {
-                dd.left = Math.max(dd.left, 0.1);
-                dd.right = Math.min(dd.right, -0.1);
-            } else {
-                dd.left = Math.min(dd.left, -0.1);
-                dd.right = Math.max(dd.right, 0.1);
-            }
-
-            return dd;
+        // Friction sucks
+        if (dd.left > 0) {
+            dd.left = Math.max(dd.left, 0.1);
+            dd.right = Math.min(dd.right, -0.1);
+        } else {
+            dd.left = Math.min(dd.left, -0.1);
+            dd.right = Math.max(dd.right, 0.1);
         }
+
+        return dd;
+    }
+
+    // Publicly exposed diff drive fn (can be used repeatedly as if static obj)
+    // after initialized once
+    public diff_drive_t drive(laser_t laser, double dt)
+    {
+        // Initialize no-speed diff drive
+        diff_drive_t dd = new diff_drive_t();
+        dd.utime = TimeUtil.utime();
+        dd.left_enabled = dd.right_enabled = true;
+        dd.left = 0;
+        dd.right = 0;
+
+        double r = Double.MAX_VALUE;
+        for (int i = startIdx; i <= finIdx; i++) {
+            // Handle error states
+            if (laser.ranges[i] < 0)
+                continue;
+
+            double w = MathUtil.clamp(Math.abs(Math.sin(laser.rad0+laser.radstep*i)),
+                    Math.sin(Math.PI/6), 1.0);
+            r = Math.min(r, w*laser.ranges[i]);
+        }
+        double deriv = 0;
+        if (lastRange > 0)
+            deriv = (r - lastRange)/dt; // [m/s] of change
+        lastRange = r;
+
+        // XXX
+        double K_p = r/goalDistance;
+        double prop = MathUtil.clamp(-0.5 + K_p, -1.0, 1.0);//0.65);
+
+        double nearSpeed = 0.5;
+        double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
+        double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
+        if (max < 0.01) {
+            nearSpeed = farSpeed = 0;
+        } else {
+            nearSpeed = MAX_V*nearSpeed/max;
+            farSpeed = MAX_V*farSpeed/max;
+        }
+
+        switch (dir) {
+            case LEFT:
+                dd.left = nearSpeed;
+                dd.right = farSpeed;
+                break;
+            case RIGHT:
+                dd.right = nearSpeed;
+                dd.left = farSpeed;
+                break;
+        }
+
+        return dd;
     }
 
     /** Strictly for use for parameter checking */
