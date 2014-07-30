@@ -7,6 +7,8 @@ import javax.swing.*;
 import java.io.*;
 import java.util.*;
 
+import lcm.lcm.*;
+
 import april.jmat.*;
 import april.lcmtypes.*;
 import april.vis.*;
@@ -20,6 +22,7 @@ import probcog.lcmtypes.*;
 import probcog.vis.*;
 import probcog.util.*;
 import probcog.sim.*;
+import probcog.robot.control.*;
 
 
 public class PlanningGUI extends JFrame
@@ -204,6 +207,23 @@ public class PlanningGUI extends JFrame
                                    VzLines.LINE_STRIP,
                                    new VzLines.Style(Color.yellow, 2)));
             vb.swap();
+
+            // Try following the path XXX
+            Tic tic = new Tic();
+            diff_drive_t dd = new diff_drive_t();
+            while (tic.toc() < 30) {
+                double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
+                double[] orientation = LinAlg.matrixToQuat(robot.getPose());
+                dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8);
+                dd.utime = TimeUtil.utime();
+                LCM.getSingleton().publish("DIFF_DRIVE", dd);
+                TimeUtil.sleep(20);
+            }
+            dd.utime = TimeUtil.utime();
+            dd.left_enabled = dd.right_enabled = true;
+            dd.left = dd.right = 0;
+            LCM.getSingleton().publish("DIFF_DRIVE", dd);
+
         }
     }
 

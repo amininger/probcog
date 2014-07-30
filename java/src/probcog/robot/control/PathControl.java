@@ -1,5 +1,7 @@
 package probcog.robot.control;
 
+import java.util.*;
+
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.util.*;
@@ -12,7 +14,7 @@ public class PathControl
     // Get diff drive command to drive the CENTER of the robot along path
     public static diff_drive_t getDiffDrive(double [] pos_center,
                                             double [] orientation,
-                                            GLineSegment2D path,
+                                            ArrayList<double[]> path,
                                             Params params,
                                             double requestedSpeedLimit)
     {
@@ -27,6 +29,7 @@ public class PathControl
         //   1) If no poses have come
         //   2) If the path is malformed
         if (pos_center == null || orientation == null || path == null ||
+            path.size() < 2 ||
             params.slowdownDist_m < 0.01 ||
             params.minLookahead_m < 0.0001) {
             return diff_drive;
@@ -41,30 +44,73 @@ public class PathControl
 
 
         // 1)
-        double pos[] = {pos_center[0], pos_center[1]};
-        double [] closestPoint = path.closestPoint(pos);
-
-        double lookahead = params.minLookahead_m;
-        if (true) { //scoping
-            // 1b)  Find the appropriate lookahead distance
-            // double prev[] = path.xyr[closestIndex];
-            // double next[] = path.xyr[closestIndex + 1];
-            // prev[2] = Math.min(prev[2], 100*params.maxLookahead_m); //Enable doing math on radii
-            // next[2] = Math.min(next[2], 100*params.maxLookahead_m);
-            // double pDist = LinAlg.distance(LinAlg.resize(prev,2), closestPoint);
-            // double nDist = LinAlg.distance(LinAlg.resize(next,2), closestPoint);
-
-            // double linear = pDist / (pDist + nDist); //Interpolate linearly
-
-            // lookahead = prev[2]*linear + next[2]*(1.0-linear);
-            lookahead = MathUtil.clamp(lookahead,params.minLookahead_m, params.maxLookahead_m);
+        GLineSegment2D closestSegment = null;
+        double closestDist = Double.MAX_VALUE;
+        int closestIndex = -1;
+        double[] pos = new double[] {pos_center[0], pos_center[1]};
+        for (int i = 0; i < path.size()-1; i++) {
+            GLineSegment2D segment = new GLineSegment2D(path.get(i), path.get(i+1));
+            double dist = segment.distanceTo(pos);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestSegment = segment;
+                closestIndex = i;
+            }
         }
 
-        // 2) Find lookahead point
-        double lookaheadPoint[] = LinAlg.resize(path.p2,2); //Default to end of path
+        if (closestSegment == null) {
+            System.err.println("WRN: Closest segment on path is null. Path likely malformed.");
+            return diff_drive;
+        }
+
+        double [] closestPoint = closestSegment.closestPoint(pos);
+
+        double lookahead = params.minLookahead_m;
+        if (false) { //scoping
+            // 1b)  Find the appropriate lookahead distance
+            //double prev[] = path.get(closestIndex);
+            //double next[] = path.get(closestIndex+1);
+            // prev[2] = Math.min(prev[2], 100*params.maxLookahead_m); //Enable doing math on radii
+            // next[2] = Math.min(next[2], 100*params.maxLookahead_m);
+            //double pDist = LinAlg.distance(prev, closestPoint);
+            //double nDist = LinAlg.distance(next, closestPoint);
+
+            //double linear = pDist / (pDist + nDist); //Interpolate linearly
+
+            // lookahead = prev[2]*linear + next[2]*(1.0-linear);
+            //lookahead = MathUtil.clamp(lookahead,params.minLookahead_m, params.maxLookahead_m);
+        }
+
+        // 2) Find lookahead point. We always use the minLookahead, as our paths are
+        // not encoding distances to obstacles at each point
+        GCircle2D lookaheadCircle = new GCircle2D(closestPoint, lookahead);
+        double[] lookaheadPoint = path.get(path.size()-1); // Default to last point
+        for (int i = closestIndex; i < path.size()-1; i++) {
+            double[] nextPt = path.get(i+1);
+            GLineSegment2D segment = new GLineSegment2D(path.get(i), nextPt);
+
+            ArrayList<double[]> isects = lookaheadCircle.intersect(segment);
+            if (isects.size() == 0) {
+                continue;
+            } else if (isects.size() == 1) {
+                lookaheadPoint = isects.get(0);
+                if (i == path.size()-2 && LinAlg.distance(closestPoint, nextPt) <= lookahead) {
+                    // Corner case for the end of the path
+                    lookaheadPoint = nextPt;
+                }
+            } else if (isects.size() == 2) {
+                double[] isect1 = isects.get(0);
+                double[] isect2 = isects.get(1);
+                if (LinAlg.squaredDistance(isect1, nextPt) < LinAlg.squaredDistance(isect2, nextPt)) {
+                    lookaheadPoint = isect1;
+                } else {
+                    lookaheadPoint = isect2;
+                }
+            }
+        }
 
         // 2b) find distance to the end of the path, and the combined speed limit
-        double end[] = LinAlg.resize(path.p2, 2);
+        double[] end = path.get(path.size()-1);
         double endDist = LinAlg.distance(pos, end);
         double endProp = MathUtil.clamp((endDist / params.slowdownDist_m), 0.0, 1.0);
         double endSpeedLimit = endProp*params.maxSpeed_p + (1.0 - endProp)*params.minMotorSpeed_p;
@@ -72,13 +118,15 @@ public class PathControl
         if (endDist < params.destTolerance_m) //return here?
             endSpeedLimit = 0.0;
 
+        // 3) not used w/o distance to obstacle stuff
+
         // 4)
         double combinedSpeedLimit = Math.min(endSpeedLimit, requestedSpeedLimit);
 
-        double cur_pos [] = {pos[0], pos[1],
-                             LinAlg.quatToRollPitchYaw(orientation)[2]};
+        double[] cur_pos = {pos[0], pos[1],
+                            LinAlg.quatToRollPitchYaw(orientation)[2]};
 
-        double [] drive = getKProp(cur_pos, lookaheadPoint, params, combinedSpeedLimit);
+        double[] drive = getKProp(cur_pos, lookaheadPoint, params, combinedSpeedLimit);
 
         diff_drive.left  = drive[RobotDriver.LEFT];
         diff_drive.right = drive[RobotDriver.RIGHT];

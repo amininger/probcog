@@ -32,7 +32,8 @@ public class DriveForward implements ControlLaw, LCMSubscriber
 
     private class DriveTask implements PeriodicTasks.Task
     {
-        GLineSegment2D path;
+        //GLineSegment2D path;
+        ArrayList<double[]> path = null;
         Params storedParams = Params.makeParams();
 
         public DriveTask()
@@ -59,7 +60,10 @@ public class DriveForward implements ControlLaw, LCMSubscriber
                 double[] goal2D = new double[] {start2D[0]+goalX,
                                                 start2D[1]+goalY};
 
-                path = new GLineSegment2D(start2D, goal2D); // XXX - update?
+                //path = new GLineSegment2D(start2D, goal2D); // XXX - update?
+                path = new ArrayList<double[]>();
+                path.add(start2D);
+                path.add(goal2D);
             }
 
             // Get the most recent position
