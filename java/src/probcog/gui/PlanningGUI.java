@@ -29,6 +29,7 @@ public class PlanningGUI extends JFrame
     VisCanvas vc;
     private ProbCogSimulator simulator;
     private GridMap gm;
+    private WavefrontPlanner wfp;
 
     public PlanningGUI(GetOpt opts)
     {
@@ -55,12 +56,17 @@ public class PlanningGUI extends JFrame
     // === GUI And Planning Functionality =====================================
     private void init()
     {
-        createGridMap();
+        // Pre-create a static grid map based on the simulated world for the
+        // wavefront path planner to use
+        if (true) {
+            createGridMap();
+            wfp = new WavefrontPlanner(gm, 0.4);
+        }
     }
 
     private void createGridMap()
     {
-        double N = 50;
+        double N = 30;
         double MPP = 0.1;
         double[] down = new double[] {0, 0, -1};
         // Limited to NxN area surrounding origin. Populate map based on collisions
@@ -114,6 +120,8 @@ public class PlanningGUI extends JFrame
             // Toggle mode
             if (e.getKeyCode() == KeyEvent.VK_T)
                 new MonteCarloThread().start();
+            if (e.getKeyCode() == KeyEvent.VK_W)
+                new WavefrontThread().start();
 
             return false;
         }
@@ -145,6 +153,56 @@ public class PlanningGUI extends JFrame
 
             VisWorld.Buffer vb = vw.getBuffer("test-simulation");
             vb.addBack(bot.getVisObject());
+            vb.swap();
+        }
+    }
+
+    private class WavefrontThread extends Thread
+    {
+        double[] goal = new double[] {14.0, -10};
+
+        public void run()
+        {
+            SimRobot robot = null;
+            for (SimObject obj: simulator.getWorld().objects) {
+                if (!(obj instanceof SimRobot))
+                    continue;
+                robot = (SimRobot)obj;
+                break;
+            }
+            assert (robot != null);
+            double[] start = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
+
+            float[] costMap = wfp.getWavefront(start, goal);
+
+            // Render the wavefront
+            BufferedImage im = new BufferedImage(gm.width, gm.height, BufferedImage.TYPE_BYTE_GRAY);
+            byte[] buf = ((DataBufferByte) (im.getRaster().getDataBuffer())).getData();
+            for (int i = 0; i < costMap.length; i++) {
+                byte v = (byte)255;
+                if (costMap[i] == Float.MAX_VALUE)
+                    v = (byte)0;
+                else if (costMap[i] > 0)
+                    v = (byte)127;
+                buf[i] = v;
+            }
+
+            VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
+            vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
+                                    LinAlg.scale(gm.metersPerPixel),
+                                    new VzImage(new VisTexture(im,
+                                                               VisTexture.NO_MIN_FILTER |
+                                                               VisTexture.NO_MAG_FILTER))));
+            vb.swap();
+
+
+            // Get the path
+            ArrayList<double[]> path = wfp.getPath();
+
+            vb = vw.getBuffer("debug-wavefront-path");
+            vb.addBack(new VzLines(new VisVertexData(path),
+                                   VzLines.LINE_STRIP,
+                                   new VzLines.Style(Color.yellow, 2)));
             vb.swap();
         }
     }
