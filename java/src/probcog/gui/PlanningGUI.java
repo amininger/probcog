@@ -175,9 +175,9 @@ public class PlanningGUI extends JFrame
             // Just run once for now. Initialize robot. Then simulate!
             MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
             HashMap<String, TypedValue> lawParams = new HashMap<String, TypedValue>();
-            lawParams.put("side", new TypedValue((byte)-1));
+            lawParams.put("side", new TypedValue((byte)1));
             HashMap<String, TypedValue> testParams = new HashMap<String, TypedValue>();
-            testParams.put("count", new TypedValue(1));
+            testParams.put("count", new TypedValue(2));
             testParams.put("class", new TypedValue("door"));
 
             double[] xyt = null;

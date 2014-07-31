@@ -12,6 +12,7 @@ import april.lcmtypes.*;
 
 import probcog.vis.*;
 import probcog.lcmtypes.*;
+import probcog.classify.*;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
@@ -30,12 +31,19 @@ public class MonteCarloBot implements SimObject
     ArrayList<double[]> trajectoryTruth = new ArrayList<double[]>();
     ArrayList<double[]> trajectoryOdom = new ArrayList<double[]>();
 
+    TagClassifier tc;
     FollowWall law;
     ClassificationCounterTest test;
 
     public MonteCarloBot(SimWorld sw)
     {
         this.sw = sw;
+        try {
+            this.tc = new TagClassifier(false);
+        } catch (IOException ioex) {
+            ioex.printStackTrace();
+        }
+
     }
 
     // === Random sampling interface =========================
@@ -68,7 +76,7 @@ public class MonteCarloBot implements SimObject
         laser.utime = TimeUtil.utime();
 
         // While control law has not finished OR timeout, try updating
-        int timeout = (int)(30.0/FastDrive.DT);
+        int timeout = (int)(60.0/FastDrive.DT); // XXX What should this be?
         Tic tic = new Tic();
         double time = 0;
         while (!test.conditionMet() && timeout > 0) {
@@ -105,8 +113,22 @@ public class MonteCarloBot implements SimObject
             drive.update();
 
             // CHECK CLASSIFICATIONS
-            // XXX We still need to actually observe classfications, etc so we can stop
-            // XXX This means implementing fake april tags or something. Talk to Lauren
+            double classificationRange = 2.0;  // Config
+            for (SimObject so: sw.objects) {
+                if (!(so instanceof SimAprilTag))
+                    continue;
+                double[] xyzrpy = LinAlg.matrixToXyzrpy(so.getPose());
+                double d = LinAlg.distance(drive.poseTruth.pos, xyzrpy, 2);
+                if (d > classificationRange)
+                    continue;
+                SimAprilTag tag = (SimAprilTag)so;
+                double[] relXyzrpy = relativePose(getPose(), xyzrpy);
+                ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+
+                // Impart upon test
+                for (classification_t classy: classies)
+                    test.addSample(classy);
+            }
 
             laser.utime += FastDrive.DT*1000000;
             trajectoryTruth.add(drive.poseTruth.pos);
@@ -118,6 +140,20 @@ public class MonteCarloBot implements SimObject
             //System.out.printf("\t%f [s]\n", tic.toc());
         }
         System.out.printf("%f [s]\n", time);
+    }
+
+    // Convenience function for classification_t construction
+    private double[] relativePose(double[][] A, double[] xyzrpy)
+    {
+        double[] xyzrpy_A = LinAlg.matrixToXyzrpy(A);
+        double[] p = LinAlg.resize(xyzrpy, 3);
+        p = LinAlg.transform(LinAlg.inverse(A), p);
+        p = LinAlg.resize(p, 6);
+
+        // Relative yaw difference.
+        p[5] = MathUtil.mod2pi(xyzrpy[5] - xyzrpy_A[5]);
+
+        return p;
     }
 
     // === SimObject interface ===============================
