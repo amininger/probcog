@@ -247,7 +247,7 @@ public class CommandSpoofer extends JFrame
                 // Deal with non-required parameters
                 JCheckBox jcb = new JCheckBox();
                 jcb.setSelected(tp.isRequired());
-                jcb.setEnabled(!tp.isRequired());
+                jcb.setEnabled(!(tp.isRequired()));
                 if (tp.isRequired())
                     values.put(tp.getName(), null);
                 internalPane.add(jcb);

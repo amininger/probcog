@@ -24,7 +24,7 @@ public class TypedParameter
         this.required = required;
     }
 
-    public TypedParameter(String name, int type, TypedValue min, TypedValue max, boolean requried)
+    public TypedParameter(String name, int type, TypedValue min, TypedValue max, boolean required)
     {
         assert (type == min.getType() && type == max.getType());
 

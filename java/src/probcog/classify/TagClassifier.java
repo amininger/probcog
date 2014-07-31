@@ -16,14 +16,19 @@ import probcog.util.*;
 
 public class TagClassifier
 {
-    static final String tagConfig = Util.getConfig().requireString("tag_config");
-    static final double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
+    String tagConfig = Util.getConfig().requireString("tag_config");
+    double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
 
     static Random classifierRandom = new Random(8437531);
     LCM lcm = LCM.getSingleton();
 
 
     HashMap<Integer, ArrayList<TagClass>> idToTag;
+
+    public TagClassifier() throws IOException
+    {
+        this(true);
+    }
 
     /**
      * Read the config file and store information about each tag. Each
@@ -34,7 +39,7 @@ public class TagClassifier
      * tag classes associated with it they will all be reported when we
      * see it and publish classifications.
      **/
-    public TagClassifier() throws IOException
+    public TagClassifier(boolean useLcm) throws IOException
     {
         Config config = new ConfigFile(tagConfig);
 
@@ -65,7 +70,30 @@ public class TagClassifier
             }
         }
 
-        new ListenerThread().start();
+        if (useLcm)
+            new ListenerThread().start();
+    }
+
+    /** Return a list of classifications for a tag of a given ID and xyzrpy
+     *  relative to the robot
+     **/
+    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy)
+    {
+        ArrayList<classification_t> classies = new ArrayList<classification_t>();
+        ArrayList<TagClass> tcs = idToTag.get(id);
+        if (tcs == null)
+            return classies;    // No config entries
+
+        for (TagClass tc: tcs) {
+            classification_t classy = new classification_t();
+            classy.name = tc.label;
+            classy.id = id;
+            classy.xyzrpy = xyzrpy;
+            classy.confidence = sampleConfidence(tc.mean, tc.stddev);
+            classies.add(classy);
+        }
+
+        return classies;
     }
 
     private void publishDetections(pan_tilt_tag_detections_t tagList)
@@ -84,18 +112,7 @@ public class TagClassifier
             td.hxy = tagList.detections[i].hxy;
 
             double[][] T2B = TagUtil.getTagToPose(tagList.cam_to_pose, td, tagSize_m);
-
-            // Make a classification_t for each thing the tag can be
-            ArrayList<TagClass> classes = idToTag.get(td.id);
-            for(TagClass tc : classes) {
-
-                classification_t classy = new classification_t();
-                classy.name = tc.label;
-                classy.id = td.id;
-                classy.xyzrpy = LinAlg.matrixToXyzrpy(T2B);
-                classy.confidence = sampleConfidence(tc.mean, tc.stddev);
-                classies.add(classy);
-            }
+            classies.addAll(classifyTag(td.id, LinAlg.matrixToXyzrpy(T2B)));
         }
 
         classification_list_t classy_list = new classification_list_t();

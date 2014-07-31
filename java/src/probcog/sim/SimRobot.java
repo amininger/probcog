@@ -20,6 +20,7 @@ import april.util.*;
 import april.sim.*;
 import april.lcmtypes.*;
 
+import probcog.classify.TagClassifier;
 import probcog.commands.CommandInterpreter;
 import probcog.lcmtypes.*;
 import probcog.util.*;
@@ -263,8 +264,16 @@ public class SimRobot implements SimObject, LCMSubscriber
     // turn noise on and off
     class ClassifyTask implements PeriodicTasks.Task
     {
+        TagClassifier tc;
+
         public ClassifyTask()
         {
+            try {
+                tc = new TagClassifier(false);
+            } catch (IOException ioex) {
+                System.err.println("ERR: Could not create TagClassifier");
+                ioex.printStackTrace();
+            }
         }
 
         public void run(double dt)
@@ -276,6 +285,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             for(SimObject so : sw.objects) {
                 detectDoor(so, xyzrpyBot);
                 detectHallway(so, xyzrpyBot);
+                detectApriltag(so, xyzrpyBot);
             }
         }
 
@@ -365,6 +375,31 @@ public class SimRobot implements SimObject, LCMSubscriber
             classy_list.utime = TimeUtil.utime();
             classy_list.num_classifications = 1;
             classy_list.classifications = new classification_t[]{classies};
+            lcm.publish("CLASSIFICATIONS", classy_list);
+        }
+
+        private void detectApriltag(SimObject so, double[] xyzrpyBot)
+        {
+            if (!(so instanceof SimAprilTag))
+                return;
+            SimAprilTag tag = (SimAprilTag)so;
+            double sensingThreshold = 2.0;
+
+            double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
+            double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
+            if (dist > sensingThreshold)
+                return;
+
+            // Position relative to robot. For now, tossing away orientation data,
+            // but may be relevant later.
+            double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
+
+            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+
+            classification_list_t classy_list = new classification_list_t();
+            classy_list.utime = TimeUtil.utime();
+            classy_list.num_classifications = classies.size();
+            classy_list.classifications = classies.toArray(new classification_t[0]);
             lcm.publish("CLASSIFICATIONS", classy_list);
         }
 

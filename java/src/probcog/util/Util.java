@@ -180,6 +180,10 @@ public class Util
     public static void loadConfig()
     {
         String path = StringUtil.replaceEnvironmentVariables(configPath);
+        // Try to replace with a local version of the file if it exists
+        String localPath = StringUtil.replaceEnvironmentVariables("$ROBOT_CONFIG");
+        if (localPath != null && localPath.length() > 0)
+            path = localPath;
         File file = new File(path);
 
         if (file == null)

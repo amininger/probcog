@@ -27,6 +27,8 @@ import probcog.robot.control.*;
 
 public class PlanningGUI extends JFrame
 {
+    boolean DEBUG = true;
+
     VisWorld vw;
     VisLayer vl;
     VisCanvas vc;
@@ -69,17 +71,51 @@ public class PlanningGUI extends JFrame
 
     private void createGridMap()
     {
-        double N = 30;
+        // Set dimensions
+        double max[] = {-Double.MAX_VALUE, - Double.MAX_VALUE,- Double.MAX_VALUE};
+        double min[] = {Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE};
+        for (SimObject so : simulator.getWorld().objects) {
+            double T[][] = so.getPose();
+            april.sim.Shape s = so.getShape();
+            if (s instanceof BoxShape) {
+                BoxShape bs = (BoxShape) s;
+
+                ArrayList<double[]> vertices = bs.getVertices();
+
+                for (double vertex[] : vertices) {
+                    double global_v[] = LinAlg.transform(T, vertex);
+
+                    for (int l = 0; l < 3; l++) {
+                        max[l] = Math.max(global_v[l],max[l]);
+                        min[l] = Math.min(global_v[l],min[l]);
+                    }
+                }
+
+            } else if (s instanceof SphereShape){
+                SphereShape ss = (SphereShape) s;
+                double r = ss.getRadius();
+                for (int l = 0; l < 3; l++) {
+                    max[l] = Math.max(T[l][3] + r, max[l]);
+                    min[l] = Math.min(T[l][3] - r, min[l]);
+                }
+
+            } else {
+                for (int l = 0; l < 3; l++) {
+                    max[l] = Math.max(T[l][3],max[l]);
+                    min[l] = Math.min(T[l][3],min[l]);
+                }
+                System.out.println("WRN: Unsupported shape type: "+s.getClass().getName());
+            }
+        }
+
         double MPP = 0.1;
         double[] down = new double[] {0, 0, -1};
-        // Limited to NxN area surrounding origin. Populate map based on collisions
-        // with non-robot objects.
-        gm = GridMap.makeMeters(-N/2, -N/2, N, N, MPP, 255);
+        gm = GridMap.makeMeters(min[0], min[1], max[0]-min[0], max[1]-min[1], MPP, 255);
 
         // XXX There's probably a faster way to do this, but this was easy and it's
         // a one-time thing
-        for (double y = -N/2+MPP/2; y < N/2; y+=MPP) {
-            for (double x = -N/2+MPP/2; x < N/2; x+=MPP) {
+        for (double y = min[1]; y < max[1]; y+=.99*MPP) {
+            for (double x = min[0]; x < max[0]; x+=.99*MPP) {
                 for (SimObject obj: simulator.getWorld().objects) {
                     if (!(obj instanceof SimBox))
                         continue;
@@ -91,9 +127,10 @@ public class PlanningGUI extends JFrame
         }
 
         // Debugging
-        if (true) {
+        if (DEBUG) {
             VisWorld.Buffer vb = vw.getBuffer("debug-gridmap");
-            vb.addBack(new VisChain(LinAlg.translate(-N/2,-N/2),
+            vb.setDrawOrder(-2000);
+            vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
                                     LinAlg.scale(MPP),
                                     new VzImage(new VisTexture(gm.makeBufferedImage(),
                                                                VisTexture.NO_MIN_FILTER |
@@ -154,15 +191,18 @@ public class PlanningGUI extends JFrame
             bot.init(new FollowWall(lawParams), new ClassificationCounterTest(testParams), xyt);
             bot.simulate();
 
-            VisWorld.Buffer vb = vw.getBuffer("test-simulation");
-            vb.addBack(bot.getVisObject());
-            vb.swap();
+            if (DEBUG) {
+                VisWorld.Buffer vb = vw.getBuffer("test-simulation");
+                vb.setDrawOrder(-900);
+                vb.addBack(bot.getVisObject());
+                vb.swap();
+            }
         }
     }
 
     private class WavefrontThread extends Thread
     {
-        double[] goal = new double[] {14.0, -10};
+        double[] goal = new double[] {10.0, 1.0};
 
         public void run()
         {
@@ -190,23 +230,29 @@ public class PlanningGUI extends JFrame
                 buf[i] = v;
             }
 
-            VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
-            vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
-                                    LinAlg.scale(gm.metersPerPixel),
-                                    new VzImage(new VisTexture(im,
-                                                               VisTexture.NO_MIN_FILTER |
-                                                               VisTexture.NO_MAG_FILTER))));
-            vb.swap();
+            if (DEBUG) {
+                VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
+                vb.setDrawOrder(-1001);
+                vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
+                                        LinAlg.scale(gm.metersPerPixel),
+                                        new VzImage(new VisTexture(im,
+                                                                   VisTexture.NO_MIN_FILTER |
+                                                                   VisTexture.NO_MAG_FILTER))));
+                vb.swap();
+            }
 
 
             // Get the path
             ArrayList<double[]> path = wfp.getPath();
 
-            vb = vw.getBuffer("debug-wavefront-path");
-            vb.addBack(new VzLines(new VisVertexData(path),
-                                   VzLines.LINE_STRIP,
-                                   new VzLines.Style(Color.yellow, 2)));
-            vb.swap();
+            if (DEBUG) {
+                VisWorld.Buffer vb = vw.getBuffer("debug-wavefront-path");
+                vb.setDrawOrder(-1000);
+                vb.addBack(new VzLines(new VisVertexData(path),
+                                       VzLines.LINE_STRIP,
+                                       new VzLines.Style(Color.yellow, 2)));
+                vb.swap();
+            }
 
             // Try following the path XXX
             Tic tic = new Tic();
@@ -223,7 +269,6 @@ public class PlanningGUI extends JFrame
             dd.left_enabled = dd.right_enabled = true;
             dd.left = dd.right = 0;
             LCM.getSingleton().publish("DIFF_DRIVE", dd);
-
         }
     }
 
