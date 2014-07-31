@@ -10,6 +10,7 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
+import april.jmat.geom.*;
 import april.lcmtypes.*;
 import april.vis.*;
 import april.util.*;
@@ -19,6 +20,7 @@ import probcog.commands.*;
 import probcog.commands.controls.FollowWall;
 import probcog.commands.tests.ClassificationCounterTest;
 import probcog.lcmtypes.*;
+import probcog.navigation.*;
 import probcog.vis.*;
 import probcog.util.*;
 import probcog.sim.*;
@@ -35,6 +37,7 @@ public class PlanningGUI extends JFrame
     private ProbCogSimulator simulator;
     private GridMap gm;
     private WavefrontPlanner wfp;
+    private double[] goal = new double[2];
 
     public PlanningGUI(GetOpt opts)
     {
@@ -144,6 +147,7 @@ public class PlanningGUI extends JFrame
     private class PlanningGUIEventHandler extends VisEventAdapter
     {
         VisWorld world;
+        Tic clickTimer = new Tic();
 
         public PlanningGUIEventHandler(VisWorld vw)
         {
@@ -165,6 +169,29 @@ public class PlanningGUI extends JFrame
 
             return false;
         }
+
+        public boolean mouseClicked(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
+        {
+            int mods = e.getModifiersEx();
+            boolean shift = (mods & MouseEvent.SHIFT_DOWN_MASK) > 0;
+            boolean ctrl = (mods & MouseEvent.CTRL_DOWN_MASK) > 0;
+
+            // Set goal
+            if (shift) {
+                double time = clickTimer.toctic();
+                if (time < 0.4) {
+                    goal = LinAlg.resize(ray.intersectPlaneXY(), 2);
+                    VisWorld.Buffer vb = world.getBuffer("goal");
+                    vb.addBack(new VisChain(LinAlg.translate(goal),
+                                            new VzSphere(0.1, new VzMesh.Style(Color.yellow))));
+                    vb.swap();
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     private class MonteCarloThread extends Thread
@@ -172,26 +199,33 @@ public class PlanningGUI extends JFrame
         public void run()
         {
             System.out.println("TESTING MONTE CARLO METHOD");
-            // Just run once for now. Initialize robot. Then simulate!
-            MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
-            HashMap<String, TypedValue> lawParams = new HashMap<String, TypedValue>();
-            lawParams.put("side", new TypedValue((byte)1));
-            HashMap<String, TypedValue> testParams = new HashMap<String, TypedValue>();
-            testParams.put("count", new TypedValue(2));
-            testParams.put("class", new TypedValue("door"));
-
-            double[] xyt = null;
-            for (SimObject obj: simulator.getWorld().objects) {
-                if (!(obj instanceof SimRobot))
-                    continue;
-                xyt = LinAlg.matrixToXYT(obj.getPose());
-                break;
+            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld());
+            ArrayList<Behavior> behaviors = mcp.plan(goal);
+            if (behaviors.size() < 1) {
+                System.err.println("ERR: Did not find a valid set of behaviors");
+                return;
             }
-            assert (xyt != null);
-            bot.init(new FollowWall(lawParams), new ClassificationCounterTest(testParams), xyt);
-            bot.simulate();
+            // Just run once for now. Initialize robot. Then simulate!
+            //HashMap<String, TypedValue> lawParams = new HashMap<String, TypedValue>();
+            //lawParams.put("side", new TypedValue((byte)1));
+            //HashMap<String, TypedValue> testParams = new HashMap<String, TypedValue>();
+            //testParams.put("count", new TypedValue(2));
+            //testParams.put("class", new TypedValue("door"));
 
+            // Visualization only
             if (DEBUG) {
+                MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+                double[] xyt = null;
+                for (SimObject obj: simulator.getWorld().objects) {
+                    if (!(obj instanceof SimRobot))
+                        continue;
+                    xyt = LinAlg.matrixToXYT(obj.getPose());
+                    break;
+                }
+                assert (xyt != null);
+                bot.init(behaviors.get(0).law, behaviors.get(0).test, xyt);
+                bot.simulate();
+
                 VisWorld.Buffer vb = vw.getBuffer("test-simulation");
                 vb.setDrawOrder(-900);
                 vb.addBack(bot.getVisObject());
@@ -202,8 +236,6 @@ public class PlanningGUI extends JFrame
 
     private class WavefrontThread extends Thread
     {
-        double[] goal = new double[] {10.0, 1.0};
-
         public void run()
         {
             SimRobot robot = null;

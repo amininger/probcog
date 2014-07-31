@@ -201,7 +201,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     public FollowWall(Map<String, TypedValue> parameters)
     {
-        System.out.println("FOLLOW WALL");
+        //System.out.println("FOLLOW WALL");
 
         assert (parameters.containsKey("side"));
         if (parameters.get("side").getByte() < 0)

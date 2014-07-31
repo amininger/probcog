@@ -66,7 +66,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 
     public ClassificationCounterTest(Map<String, TypedValue> parameters)
     {
-        System.out.println("CLASSIFICATION COUNTER TEST");
+        //System.out.println("CLASSIFICATION COUNTER TEST");
 
         assert (parameters.containsKey("count"));
         goalCount = parameters.get("count").getInt();

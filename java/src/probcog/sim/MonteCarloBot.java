@@ -35,6 +35,8 @@ public class MonteCarloBot implements SimObject
     FollowWall law;
     ClassificationCounterTest test;
 
+    boolean success = false;
+
     public MonteCarloBot(SimWorld sw)
     {
         this.sw = sw;
@@ -49,6 +51,7 @@ public class MonteCarloBot implements SimObject
     // === Random sampling interface =========================
     public void init(FollowWall law, ClassificationCounterTest test, double[] xyt)
     {
+        success = false;
         this.law = law;
         this.test = test;
 
@@ -57,7 +60,6 @@ public class MonteCarloBot implements SimObject
 
         trajectoryTruth.add(drive.poseTruth.pos);
         trajectoryOdom.add(drive.poseOdom.pos);
-
     }
 
     // Simulate all steps, keeping track of trajectory, etc.
@@ -139,7 +141,8 @@ public class MonteCarloBot implements SimObject
             time += tic.toc();
             //System.out.printf("\t%f [s]\n", tic.toc());
         }
-        System.out.printf("%f [s]\n", time);
+        success = timeout > 0;
+        //System.out.printf("%f [s]\n", time);
     }
 
     // Convenience function for classification_t construction
@@ -154,6 +157,27 @@ public class MonteCarloBot implements SimObject
         p[5] = MathUtil.mod2pi(xyzrpy[5] - xyzrpy_A[5]);
 
         return p;
+    }
+
+    public boolean success()
+    {
+        return success;
+    }
+
+    public double getTrajectoryLength()
+    {
+        if (trajectoryTruth.size() < 2)
+            return 0;
+
+        double length = 0;
+        double[] prev = trajectoryTruth.get(0);
+        for (int i = 1; i < trajectoryTruth.size(); i++) {
+            double[] curr = trajectoryTruth.get(i);
+            length += LinAlg.distance(curr, prev);
+            prev = curr;
+        }
+
+        return length;
     }
 
     // === SimObject interface ===============================
