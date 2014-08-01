@@ -175,7 +175,6 @@ public class MonteCarloPlanner
                 params.put("class", new TypedValue(tagClass));
 
                 for (int i = 0; i < numSamples; i++) {
-                    mcb.resetTrajectories();
                     mcb.init(law, new ClassificationCounterTest(params), node.data.xyt);
                     mcb.simulate();
                     if (mcb.success()) {

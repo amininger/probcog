@@ -68,12 +68,14 @@ public class PlanningGUI extends JFrame
         // wavefront path planner to use
         if (true) {
             createGridMap();
-            wfp = new WavefrontPlanner(gm, 0.4);
         }
     }
 
     private void createGridMap()
     {
+        if (simulator.getWorld().objects.size() < 1)
+            return;
+
         // Set dimensions
         double max[] = {-Double.MAX_VALUE, - Double.MAX_VALUE,- Double.MAX_VALUE};
         double min[] = {Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE};
@@ -128,6 +130,8 @@ public class PlanningGUI extends JFrame
                 }
             }
         }
+
+        wfp = new WavefrontPlanner(gm, 0.4);
 
         // Debugging
         if (DEBUG) {
@@ -222,12 +226,13 @@ public class PlanningGUI extends JFrame
                     robot = (SimRobot)obj;
                     break;
                 }
-                double[] xyt = LinAlg.matrixToXYT(robot.getPose());
+                assert (robot != null);
+                //double[] xyt = LinAlg.matrixToXYT(robot.getPose());
+                bot.setPose(robot.getPose());
                 for (int i = 0; i < behaviors.size(); i++) {
                     System.out.println(behaviors.get(i));
-                    bot.init(behaviors.get(i).law, behaviors.get(i).test, xyt);
+                    bot.init(behaviors.get(i).law, behaviors.get(i).test);
                     bot.simulate();
-                    xyt = LinAlg.matrixToXYT(bot.getPose());    // XXX Redundant :/
                 }
 
                 VisWorld.Buffer vb = vw.getBuffer("test-simulation");

@@ -18,7 +18,7 @@ public class SimAprilTag implements SimObject
     double[][] T = LinAlg.identity(4);
 
     SimWorld sw;
-    int id;
+    int id = 0;
     VisObject obj;
     Shape shape;
 
@@ -26,10 +26,8 @@ public class SimAprilTag implements SimObject
     {
         this.sw = sw;
         id = Util.nextID();
+        updateVisObject();
 
-        obj = new VisChain(new VzRectangle(0.5, 0.5, new VzMesh.Style(Color.magenta)),
-                           LinAlg.scale(0.005),
-                           new VzText(VzText.ANCHOR.CENTER, "<<dropshadow=false,monospaced-128>>"+id));
         shape = new BoxShape(0.5, 0.5, -0.1);
     }
 
@@ -53,6 +51,13 @@ public class SimAprilTag implements SimObject
         return obj;
     }
 
+    private void updateVisObject()
+    {
+        obj = new VisChain(new VzRectangle(0.5, 0.5, new VzMesh.Style(Color.magenta)),
+                           LinAlg.scale(0.005),
+                           new VzText(VzText.ANCHOR.CENTER, "<<dropshadow=false,monospaced-128>>"+id));
+    }
+
     public Shape getShape()
     {
         return shape;
@@ -67,6 +72,7 @@ public class SimAprilTag implements SimObject
         // ID Consistency IS important, since we want to map to config later.
         // Randomly generated the first time, but loaded from file later.
         this.id = ins.readInt();
+        updateVisObject();
     }
 
     public void write(StructureWriter outs) throws IOException

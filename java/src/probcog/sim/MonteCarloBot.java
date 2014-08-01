@@ -27,7 +27,7 @@ public class MonteCarloBot implements SimObject
     Object runLock = new Object();
     boolean running = false;
 
-    FastDrive drive;
+    FastDrive drive = null;
     ArrayList<double[]> trajectoryTruth = new ArrayList<double[]>();
     ArrayList<double[]> trajectoryOdom = new ArrayList<double[]>();
 
@@ -49,10 +49,15 @@ public class MonteCarloBot implements SimObject
     }
 
     // === Random sampling interface =========================
-    public void resetTrajectories()
+    private void resetTrajectories()
     {
         trajectoryTruth.clear();
         trajectoryOdom.clear();
+    }
+
+    public void init(FollowWall law, ClassificationCounterTest test)
+    {
+        init(law, test, null);
     }
 
     public void init(FollowWall law, ClassificationCounterTest test, double[] xyt)
@@ -61,11 +66,14 @@ public class MonteCarloBot implements SimObject
         this.law = law;
         this.test = test;
 
-        drive = new FastDrive(sw, this, xyt);
-        drive.centerOfRotation = new double[] { 0.13, 0, 0 };
+        if (xyt != null) {
+            drive = new FastDrive(sw, this, xyt);
+            drive.centerOfRotation = new double[] { 0.13, 0, 0 };
 
-        trajectoryTruth.add(drive.poseTruth.pos);
-        trajectoryOdom.add(drive.poseOdom.pos);
+            resetTrajectories();
+            trajectoryTruth.add(drive.poseTruth.pos);
+            trajectoryOdom.add(drive.poseOdom.pos);
+        }
     }
 
     // Simulate all steps, keeping track of trajectory, etc.
@@ -195,6 +203,10 @@ public class MonteCarloBot implements SimObject
 
     public void setPose(double[][] T)
     {
+        if (drive == null) {
+            drive = new FastDrive(sw, this, LinAlg.matrixToXYT(T));
+            drive.centerOfRotation = new double[] { 0.13, 0, 0 };
+        }
         drive.poseTruth.orientation = LinAlg.matrixToQuat(T);
         drive.poseTruth.pos = new double[] { T[0][3], T[1][3], 0 };
     }
