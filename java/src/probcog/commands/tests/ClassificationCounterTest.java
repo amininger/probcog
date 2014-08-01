@@ -107,6 +107,11 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         return count >= goalCount;
     }
 
+    public String getClassType()
+    {
+        return classType;
+    }
+
     /** Get the parameters that can be set for this condition test.
      *
      *  @return An iterable collection of all possible parameters.

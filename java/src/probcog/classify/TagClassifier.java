@@ -22,8 +22,8 @@ public class TagClassifier
     static Random classifierRandom = new Random(8437531);
     LCM lcm = LCM.getSingleton();
 
-
     HashMap<Integer, ArrayList<TagClass>> idToTag;
+    HashSet<String> tagClasses = new HashSet<String>();
 
     public TagClassifier() throws IOException
     {
@@ -57,6 +57,8 @@ public class TagClassifier
             if(label.equals("") || (ids == null))
                 break;
 
+            tagClasses.add(label);
+
             TagClass tag = new TagClass(label, mean, stddev);
             for(int id : ids) {
                 ArrayList<TagClass> allTags;
@@ -72,6 +74,26 @@ public class TagClassifier
 
         if (useLcm)
             new ListenerThread().start();
+    }
+
+    /** Get an exhaustive list of the classes of tags that exist in the world. */
+    public Set<String> getAllClasses()
+    {
+        return tagClasses;  // Not data safe. READ ONLY USE PLEASE
+    }
+
+    /** Get the classes associated with a particular tag */
+    public Set<String> getClasses(int id)
+    {
+        HashSet<String> classes = new HashSet<String>();
+        ArrayList<TagClass> tcs = idToTag.get(id);
+        if (tcs == null)
+            return classes;
+
+        for (TagClass tc: tcs)
+            classes.add(tc.label);
+
+        return classes;
     }
 
     /** Return a list of classifications for a tag of a given ID and xyzrpy

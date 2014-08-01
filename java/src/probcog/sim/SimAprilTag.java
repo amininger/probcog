@@ -27,7 +27,9 @@ public class SimAprilTag implements SimObject
         this.sw = sw;
         id = Util.nextID();
 
-        obj = new VzRectangle(0.5, 0.5, new VzMesh.Style(Color.magenta));
+        obj = new VisChain(new VzRectangle(0.5, 0.5, new VzMesh.Style(Color.magenta)),
+                           LinAlg.scale(0.005),
+                           new VzText(VzText.ANCHOR.CENTER, "<<dropshadow=false,monospaced-128>>"+id));
         shape = new BoxShape(0.5, 0.5, -0.1);
     }
 

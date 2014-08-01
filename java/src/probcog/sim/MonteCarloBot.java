@@ -49,6 +49,12 @@ public class MonteCarloBot implements SimObject
     }
 
     // === Random sampling interface =========================
+    public void resetTrajectories()
+    {
+        trajectoryTruth.clear();
+        trajectoryOdom.clear();
+    }
+
     public void init(FollowWall law, ClassificationCounterTest test, double[] xyt)
     {
         success = false;

@@ -259,6 +259,13 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         return "FOLLOW_WALL";
     }
 
+    public String getSide()
+    {
+        if (dir == Direction.LEFT)
+            return "LEFT";
+        return "RIGHT";
+    }
+
     /** Get the parameters that can be set for this control law.
      *
      *  @return An iterable collection of all possible parameters

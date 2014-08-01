@@ -215,16 +215,20 @@ public class PlanningGUI extends JFrame
             // Visualization only
             if (DEBUG) {
                 MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
-                double[] xyt = null;
+                SimRobot robot = null;
                 for (SimObject obj: simulator.getWorld().objects) {
                     if (!(obj instanceof SimRobot))
                         continue;
-                    xyt = LinAlg.matrixToXYT(obj.getPose());
+                    robot = (SimRobot)obj;
                     break;
                 }
-                assert (xyt != null);
-                bot.init(behaviors.get(0).law, behaviors.get(0).test, xyt);
-                bot.simulate();
+                double[] xyt = LinAlg.matrixToXYT(robot.getPose());
+                for (int i = 0; i < behaviors.size(); i++) {
+                    System.out.println(behaviors.get(i));
+                    bot.init(behaviors.get(i).law, behaviors.get(i).test, xyt);
+                    bot.simulate();
+                    xyt = LinAlg.matrixToXYT(bot.getPose());    // XXX Redundant :/
+                }
 
                 VisWorld.Buffer vb = vw.getBuffer("test-simulation");
                 vb.setDrawOrder(-900);
