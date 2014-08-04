@@ -113,6 +113,11 @@ public class MonteCarloBot implements SimObject
     // Simulate all steps, keeping track of trajectory, etc.
     public void simulate()
     {
+        simulate(30.0); // XXX What should this be?
+    }
+
+    public void simulate(double seconds)
+    {
         // Precalculated paramters
         HashSet<SimObject> ignore = new HashSet<SimObject>();
         ignore.add(this);
@@ -126,7 +131,7 @@ public class MonteCarloBot implements SimObject
         laser.utime = TimeUtil.utime();
 
         // While control law has not finished OR timeout, try updating
-        int timeout = (int)(60.0/FastDrive.DT); // XXX What should this be?
+        int timeout = (int)(seconds/FastDrive.DT);
         Tic tic = new Tic();
         double time = 0;
         while ((test == null || !test.conditionMet()) && timeout > 0) {

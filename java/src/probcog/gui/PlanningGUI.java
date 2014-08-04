@@ -202,8 +202,13 @@ public class PlanningGUI extends JFrame
     {
         public void run()
         {
+            if (DEBUG) {
+                VisWorld.Buffer vb = vw.getBuffer("test-simulation");
+                vb.swap();
+            }
+
             System.out.println("TESTING MONTE CARLO METHOD");
-            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld());
+            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), vw);
             ArrayList<Behavior> behaviors = mcp.plan(goal);
             if (behaviors.size() < 1) {
                 System.err.println("ERR: Did not find a valid set of behaviors");

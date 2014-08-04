@@ -29,10 +29,11 @@ import probcog.vis.*;
 public class MonteCarloPlanner
 {
     private boolean debug = true;
+    VisWorld vw;
     Stopwatch watch = new Stopwatch();
 
-    // Search parameters
-    int searchDepth = 3;    // XXX This seems to actually be depth+1?
+    // Search parameters XXX MOVE TO CONFIG
+    int searchDepth = 10;    // XXX Iterative deepening?
     int numSamples = 10;
 
     SimWorld sw;
@@ -42,12 +43,18 @@ public class MonteCarloPlanner
 
     ArrayList<FollowWall> controls = new ArrayList<FollowWall>();
 
+    public MonteCarloPlanner(SimWorld sw)
+    {
+        this(sw, null);
+    }
+
     /** Initialize the planner based on a simulated world.
      *  It's assumed that there will only be one robot in this world.
      **/
-    public MonteCarloPlanner(SimWorld sw)
+    public MonteCarloPlanner(SimWorld sw, VisWorld vw)
     {
         this.sw = sw;
+        this.vw = vw;
         for (SimObject so: sw.objects) {
             if (so instanceof SimRobot)
                 robot = (SimRobot)so;
@@ -117,12 +124,8 @@ public class MonteCarloPlanner
         // 1) Build an ordered list of the L2 distances from each tag to the goal.
         // 2) Build our search tree
         watch.start("preprocessing");
-        watch.start("sort");
+        // XXX Could make the sorting better with a full-map wavefront if desperate
         Collections.sort(tags, new TagDistanceComparator(goal));
-        watch.stop();
-        //watch.start("tree-building");
-        //Tree<Behavior> tree = buildTree(searchDepth, goal);
-        //watch.stop();
         watch.stop();
 
         watch.start("DFS");
@@ -130,13 +133,13 @@ public class MonteCarloPlanner
         watch.stop();
 
         // Search tree for node with closest XYT to goal. In-order traversal?
-        watch.start("search");
+        watch.start("Path extraction");
         Node<Behavior> bestNode = tree.root;
-        double bestDist = LinAlg.distance(goal, bestNode.data.xyt, 2);
+        double bestDist = LinAlg.distance(goal, bestNode.data.randomXYT(), 2);  // XXX
         System.out.println("Tree size: "+tree.size());
         ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
         for (Node<Behavior> node: nodes) {
-            double dist = LinAlg.distance(goal, node.data.xyt, 2);
+            double dist = LinAlg.distance(goal, node.data.randomXYT(), 2);      // XXX
             if (dist < bestDist) {
                 bestDist = dist;
                 bestNode = node;
@@ -162,9 +165,15 @@ public class MonteCarloPlanner
     private Tree<Behavior> dfsSearch(double[] goal)
     {
         double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt, null, null));
+        ArrayList<double[]> xyts = new ArrayList<double[]>();
+        xyts.add(xyt);
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, null, null));
 
         dfsHelper(tree.root, goal, 1);
+        if (vw != null) {
+            VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
+            vb.swap(); // Cleanup
+        }
 
         return tree;
     }
@@ -176,7 +185,7 @@ public class MonteCarloPlanner
             return false;
         }
 
-        if (LinAlg.distance(node.data.xyt, goal, 2) < 2.5) {
+        if (LinAlg.distance(node.data.randomXYT(), goal, 2) < 2.5) {    // XXX
             return true;    // Found the goal
         }
 
@@ -184,7 +193,7 @@ public class MonteCarloPlanner
         HashMap<TagRecord, FollowWall> bestLaw = new HashMap<TagRecord, FollowWall>();
         MonteCarloBot mcb = new MonteCarloBot(sw);
         for (FollowWall law: controls) {
-            mcb.init(law, null, node.data.xyt);
+            mcb.init(law, null, node.data.randomXYT()); // XXX
             mcb.simulate(); // This will always timeout.
             for (TagRecord rec: mcb.tagRecords) {
                 if (!bestLaw.containsKey(rec))
@@ -210,23 +219,28 @@ public class MonteCarloPlanner
             params.put("count", new TypedValue(rec.count));
 
             // Try multiple simulations to evaluate the step
-            int count = 0;
-            double[] mean_xyt = new double[3];
+            ArrayList<double[]> xyts = new ArrayList<double[]>();
             for (int i = 0; i < numSamples; i++) {
-                mcb.init(bestLaw.get(rec), new ClassificationCounterTest(params), node.data.xyt);
+                mcb.init(bestLaw.get(rec), new ClassificationCounterTest(params), node.data.randomXYT());
                 mcb.simulate();
-                if (mcb.success()) {
-                    count++;
-                    LinAlg.plusEquals(mean_xyt, LinAlg.matrixToXYT(mcb.getPose()));
+                if (vw != null) {
+                    VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
+                    vb.setDrawOrder(-500);
+                    vb.addBack(mcb.getVisObject());
+                    vb.swap();
                 }
-                if (count < 1)
-                    continue;
-                mean_xyt = LinAlg.scale(mean_xyt, 1.0/count);
-                Node<Behavior> newNode = node.addChild(new Behavior(mean_xyt, bestLaw.get(rec), new ClassificationCounterTest(params)));
-
-                if (dfsHelper(newNode, goal, depth+1))
-                    return true;
+                if (mcb.success()) {
+                    // XXX This pose is not necessarily where we actually are! Would
+                    // be preferable to at least calculate it relative to the tag
+                    xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                }
             }
+            if (xyts.size() < 1)
+                continue;
+            Node<Behavior> newNode = node.addChild(new Behavior(xyts, bestLaw.get(rec), new ClassificationCounterTest(params)));
+
+            if (dfsHelper(newNode, goal, depth+1))
+                return true;
         }
 
         return false;
@@ -235,7 +249,9 @@ public class MonteCarloPlanner
     private Tree<Behavior> buildTree(int depth, double[] goal)
     {
         double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt, null, null));
+        ArrayList<double[]> xyts = new ArrayList<double[]>();
+        xyts.add(xyt);
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, null, null));
 
         // Populate lower levels of tree
         ArrayList<Node<Behavior> > nodes = new ArrayList<Node<Behavior> >();
@@ -265,18 +281,16 @@ public class MonteCarloPlanner
         // and evaluate various actions.
         for (FollowWall law: controls) {
             for (String tagClass: classes) {
-                int count = 0;
-                double[] mean_xyt = new double[3];
+                ArrayList<double[]> xyts = new ArrayList<double[]>();
                 params.put("class", new TypedValue(tagClass));
 
                 for (int i = 0; i < numSamples; i++) {
                     //watch.start(""+i);
-                    mcb.init(law, new ClassificationCounterTest(params), node.data.xyt);
+                    mcb.init(law, new ClassificationCounterTest(params), node.data.randomXYT());
                     mcb.simulate();
                     //watch.stop();
                     if (mcb.success()) {
-                        count++;
-                        LinAlg.plusEquals(mean_xyt, LinAlg.matrixToXYT(mcb.getPose()));
+                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
                     }
                 }
                 // Check to make sure at least one instance of this plan succeeded
@@ -284,13 +298,12 @@ public class MonteCarloPlanner
                 // store a distribution of states in our behavior? For example, we could
                 // sample a random XYT from the previous distribution every time when starting
                 // or from a distribution estimating the spread of XYTs.
-                if (count < 1)
+                if (xyts.size() < 1)
                     continue;
-                mean_xyt = LinAlg.scale(mean_xyt, 1.0/count);
 
                 // Should we consider closeness to goal?
                 // Store to tree for future consideration
-                node.addChild(new Behavior(mean_xyt, law, new ClassificationCounterTest(params)));
+                node.addChild(new Behavior(xyts, law, new ClassificationCounterTest(params)));
             }
         }
     }
