@@ -54,7 +54,7 @@ public class SimAprilTag implements SimObject
     private void updateVisObject()
     {
         obj = new VisChain(new VzRectangle(0.5, 0.5, new VzMesh.Style(Color.magenta)),
-                           LinAlg.scale(0.005),
+                           LinAlg.scale(0.0025),
                            new VzText(VzText.ANCHOR.CENTER, "<<dropshadow=false,monospaced-128>>"+id));
     }
 

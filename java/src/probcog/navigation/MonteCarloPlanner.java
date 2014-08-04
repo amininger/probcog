@@ -13,6 +13,7 @@ import probcog.commands.*;
 import probcog.commands.controls.FollowWall;
 import probcog.commands.tests.ClassificationCounterTest;
 import probcog.sim.*;
+import probcog.sim.MonteCarloBot.TagRecord;
 import probcog.util.*;
 import probcog.util.Tree.Node;
 import probcog.vis.*;
@@ -32,7 +33,7 @@ public class MonteCarloPlanner
 
     // Search parameters
     int searchDepth = 3;    // XXX This seems to actually be depth+1?
-    int numSamples = 1;
+    int numSamples = 10;
 
     SimWorld sw;
     SimRobot robot = null;
@@ -119,17 +120,21 @@ public class MonteCarloPlanner
         watch.start("sort");
         Collections.sort(tags, new TagDistanceComparator(goal));
         watch.stop();
-        watch.start("tree-building");
-        Tree<Behavior> tree = buildTree(searchDepth, goal);
+        //watch.start("tree-building");
+        //Tree<Behavior> tree = buildTree(searchDepth, goal);
+        //watch.stop();
         watch.stop();
+
+        watch.start("DFS");
+        Tree<Behavior> tree = dfsSearch(goal);
         watch.stop();
 
         // Search tree for node with closest XYT to goal. In-order traversal?
         watch.start("search");
         Node<Behavior> bestNode = tree.root;
         double bestDist = LinAlg.distance(goal, bestNode.data.xyt, 2);
+        System.out.println("Tree size: "+tree.size());
         ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
-        //System.out.println("Tree size: "+ nodes.size());
         for (Node<Behavior> node: nodes) {
             double dist = LinAlg.distance(goal, node.data.xyt, 2);
             if (dist < bestDist) {
@@ -151,6 +156,80 @@ public class MonteCarloPlanner
         if (debug)
             watch.print();
         return behaviors;
+    }
+
+    /** Do a depth first search for the best set of laws to follow */
+    private Tree<Behavior> dfsSearch(double[] goal)
+    {
+        double[] xyt = LinAlg.matrixToXYT(robot.getPose());
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt, null, null));
+
+        dfsHelper(tree.root, goal, 1);
+
+        return tree;
+    }
+
+    // XXX Depends on fact that tags were already sorted by distance to goal
+    private boolean dfsHelper(Node<Behavior> node, double[] goal, int depth)
+    {
+        if (depth > searchDepth) {
+            return false;
+        }
+
+        if (LinAlg.distance(node.data.xyt, goal, 2) < 2.5) {
+            return true;    // Found the goal
+        }
+
+        // Find possible tags we can reach and which control laws will do it
+        HashMap<TagRecord, FollowWall> bestLaw = new HashMap<TagRecord, FollowWall>();
+        MonteCarloBot mcb = new MonteCarloBot(sw);
+        for (FollowWall law: controls) {
+            mcb.init(law, null, node.data.xyt);
+            mcb.simulate(); // This will always timeout.
+            for (TagRecord rec: mcb.tagRecords) {
+                if (!bestLaw.containsKey(rec))
+                    bestLaw.put(rec, law);  // XXX right now, first come first serve. Should really let other law take over if it can. Assuming that, within timeout period, not a big deal for now
+            }
+        }
+
+        // Iterate through these laws based on which ones will likely terminate
+        // the closest to the goal
+        for (SimAprilTag tag: tags) {
+            // Find associated tag record through forced iteration...:/
+            TagRecord rec = null;
+            for (TagRecord tr: bestLaw.keySet()) {
+                if (tag.getID() != tr.id)
+                    continue;
+                rec = tr;
+                break;
+            }
+            if (rec == null)
+                continue;
+            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+            params.put("class", new TypedValue(rec.tagClass));
+            params.put("count", new TypedValue(rec.count));
+
+            // Try multiple simulations to evaluate the step
+            int count = 0;
+            double[] mean_xyt = new double[3];
+            for (int i = 0; i < numSamples; i++) {
+                mcb.init(bestLaw.get(rec), new ClassificationCounterTest(params), node.data.xyt);
+                mcb.simulate();
+                if (mcb.success()) {
+                    count++;
+                    LinAlg.plusEquals(mean_xyt, LinAlg.matrixToXYT(mcb.getPose()));
+                }
+                if (count < 1)
+                    continue;
+                mean_xyt = LinAlg.scale(mean_xyt, 1.0/count);
+                Node<Behavior> newNode = node.addChild(new Behavior(mean_xyt, bestLaw.get(rec), new ClassificationCounterTest(params)));
+
+                if (dfsHelper(newNode, goal, depth+1))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private Tree<Behavior> buildTree(int depth, double[] goal)
@@ -191,10 +270,10 @@ public class MonteCarloPlanner
                 params.put("class", new TypedValue(tagClass));
 
                 for (int i = 0; i < numSamples; i++) {
-                    watch.start(""+i);
+                    //watch.start(""+i);
                     mcb.init(law, new ClassificationCounterTest(params), node.data.xyt);
                     mcb.simulate();
-                    watch.stop();
+                    //watch.stop();
                     if (mcb.success()) {
                         count++;
                         LinAlg.plusEquals(mean_xyt, LinAlg.matrixToXYT(mcb.getPose()));

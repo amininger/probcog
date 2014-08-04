@@ -32,9 +32,11 @@ public class Tree<T>
             this.parent = parent;
         }
 
-        public void addChild(T data)
+        public Node<T> addChild(T data)
         {
-            children.add(new Node(data, this));
+            Node<T> n = new Node(data, this);
+            children.add(n);
+            return n;
         }
 
         public String toString()
@@ -43,6 +45,20 @@ public class Tree<T>
             f.format("data: [%s], %d children\n", data, children.size());
             return f.toString();
         }
+
+        public int size()
+        {
+            int s = 1;
+            for (Node<T> child: children) {
+                s += child.size();
+            }
+            return s;
+        }
+    }
+
+    public int size()
+    {
+        return root.size();
     }
 
     /** Return a list of the nodes of this tree for in-order traversal */
@@ -55,9 +71,6 @@ public class Tree<T>
 
     private void traversalHelper(Node<T> node, ArrayList<Node<T> > nodes)
     {
-        if (node.children.size() < 1)
-            return;
-
         for (Node<T> n: node.children)
             traversalHelper(n, nodes);
 

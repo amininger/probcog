@@ -48,11 +48,45 @@ public class MonteCarloBot implements SimObject
 
     }
 
+    // Track which tags we saw and, for each class for said tag, what that class
+    // count for that tag was, aka, home many "doors" did we see before this "door"?
+    private HashMap<String, Integer> classCount = new HashMap<String, Integer>();
+    public HashSet<TagRecord> tagRecords = new HashSet<TagRecord>();
+    static public class TagRecord
+    {
+        public int id;
+        public int count;
+        public String tagClass;
+
+        public TagRecord(int id, int count, String tagClass)
+        {
+            this.id = id;
+            this.count = count;
+            this.tagClass = tagClass;
+        }
+
+        public int hashCode()
+        {
+            return new Integer(id).hashCode();
+        }
+
+        public boolean equals(Object o)
+        {
+            if (o == null)
+                return false;
+            if (!(o instanceof TagRecord))
+                return false;
+            TagRecord rec = (TagRecord)o;
+            return id == rec.id;
+        }
+    }
+
     // === Random sampling interface =========================
     private void resetTrajectories()
     {
         trajectoryTruth.clear();
         trajectoryOdom.clear();
+        classCount.clear();
     }
 
     public void init(FollowWall law, ClassificationCounterTest test)
@@ -95,7 +129,7 @@ public class MonteCarloBot implements SimObject
         int timeout = (int)(60.0/FastDrive.DT); // XXX What should this be?
         Tic tic = new Tic();
         double time = 0;
-        while (!test.conditionMet() && timeout > 0) {
+        while ((test == null || !test.conditionMet()) && timeout > 0) {
             tic.tic();
             // LASER UPDATE
             double[][] T_truth = LinAlg.matrixAB(LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
@@ -141,9 +175,24 @@ public class MonteCarloBot implements SimObject
                 double[] relXyzrpy = relativePose(getPose(), xyzrpy);
                 ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
 
-                // Impart upon test
-                for (classification_t classy: classies)
-                    test.addSample(classy);
+                // If the test object exists, add classification samples.
+                // Otherwise, store relevant information about the tag. Only use
+                // the FIRST tag class
+                if (test == null) {
+                    Set<String> tagClasses = tc.getClasses(tag.getID());
+                    String c = tagClasses.iterator().next(); // Only ever have the one
+                    if (!classCount.containsKey(c))
+                        classCount.put(c, 0);
+
+                    TagRecord rec = new TagRecord(tag.getID(), classCount.get(c)+1, c);
+                    if (!tagRecords.contains(rec)) {
+                        tagRecords.add(rec);
+                        classCount.put(c, classCount.get(c)+1);
+                    }
+                } else {
+                    for (classification_t classy: classies)
+                        test.addSample(classy);
+                }
             }
 
             laser.utime += FastDrive.DT*1000000;
