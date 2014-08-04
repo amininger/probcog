@@ -27,8 +27,11 @@ import probcog.vis.*;
  **/
 public class MonteCarloPlanner
 {
+    private boolean debug = true;
+    Stopwatch watch = new Stopwatch();
+
     // Search parameters
-    int searchDepth = 3;
+    int searchDepth = 3;    // XXX This seems to actually be depth+1?
     int numSamples = 1;
 
     SimWorld sw;
@@ -106,19 +109,27 @@ public class MonteCarloPlanner
      */
     public ArrayList<Behavior> plan(double[] goal)
     {
+        watch.start("plan");
         ArrayList<Behavior> behaviors = new ArrayList<Behavior>();
 
         // Preprocessing for heuristics.
         // 1) Build an ordered list of the L2 distances from each tag to the goal.
         // 2) Build our search tree
+        watch.start("preprocessing");
+        watch.start("sort");
         Collections.sort(tags, new TagDistanceComparator(goal));
+        watch.stop();
+        watch.start("tree-building");
         Tree<Behavior> tree = buildTree(searchDepth, goal);
+        watch.stop();
+        watch.stop();
 
         // Search tree for node with closest XYT to goal. In-order traversal?
+        watch.start("search");
         Node<Behavior> bestNode = tree.root;
         double bestDist = LinAlg.distance(goal, bestNode.data.xyt, 2);
         ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
-        System.out.println("Tree size: "+ nodes.size());
+        //System.out.println("Tree size: "+ nodes.size());
         for (Node<Behavior> node: nodes) {
             double dist = LinAlg.distance(goal, node.data.xyt, 2);
             if (dist < bestDist) {
@@ -126,6 +137,7 @@ public class MonteCarloPlanner
                 bestNode = node;
             }
         }
+        watch.stop();
 
         // Trace back behaviors to reach said node
         while (bestNode.parent != null) {
@@ -134,6 +146,10 @@ public class MonteCarloPlanner
         }
 
         Collections.reverse(behaviors);
+        watch.stop();
+
+        if (debug)
+            watch.print();
         return behaviors;
     }
 
@@ -175,8 +191,10 @@ public class MonteCarloPlanner
                 params.put("class", new TypedValue(tagClass));
 
                 for (int i = 0; i < numSamples; i++) {
+                    watch.start(""+i);
                     mcb.init(law, new ClassificationCounterTest(params), node.data.xyt);
                     mcb.simulate();
+                    watch.stop();
                     if (mcb.success()) {
                         count++;
                         LinAlg.plusEquals(mean_xyt, LinAlg.matrixToXYT(mcb.getPose()));
