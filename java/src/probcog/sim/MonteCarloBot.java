@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
+import april.config.*;
 import april.jmat.*;
 import april.sim.*;
 import april.vis.*;
@@ -16,6 +17,7 @@ import probcog.classify.*;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
+import probcog.util.*;
 
 public class MonteCarloBot implements SimObject
 {
@@ -117,7 +119,7 @@ public class MonteCarloBot implements SimObject
     // Simulate all steps, keeping track of trajectory, etc.
     public void simulate()
     {
-        simulate(60.0); // XXX What should this be?
+        simulate(Util.getConfig().requireDouble("monte_carlo.default_forward_search_time"));
     }
 
     public void simulate(double seconds)
@@ -127,10 +129,10 @@ public class MonteCarloBot implements SimObject
         // Precalculated paramters
         HashSet<SimObject> ignore = new HashSet<SimObject>();
         ignore.add(this);
-        double radstep = Math.toRadians(5);
-        double minDeg = -135;
-        double maxDeg = 135;
-        double maxRange = 29.9;
+        double radstep = Math.toRadians(Util.getConfig().requireDouble("monte_carlo.step_degrees"));
+        double minDeg = Util.getConfig().requireDouble("monte_carlo.min_degrees");
+        double maxDeg = Util.getConfig().requireDouble("monte_carlo.max_degrees");
+        double maxRange = Util.getConfig().requireDouble("monte_carlo.max_range");
         double rad0 = Math.toRadians(minDeg);
         double rad1 = Math.toRadians(maxDeg);
         laser_t laser = new laser_t();

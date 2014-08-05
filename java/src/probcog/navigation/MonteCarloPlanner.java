@@ -33,9 +33,9 @@ public class MonteCarloPlanner
     Stopwatch watch = new Stopwatch();
 
     // Search parameters XXX MOVE TO CONFIG
-    boolean iterativeDeepening = false;
-    int searchDepth = 10;
-    int numSamples = 10;
+    boolean iterativeDeepening = Util.getConfig().requireBoolean("monte_carlo.iterative_deepening");
+    int searchDepth = Util.getConfig().requireInt("monte_carlo.max_search_depth");
+    int numSamples = Util.getConfig().requireInt("monte_carlo.num_samples");
 
     SimWorld sw;
     SimRobot robot = null;
@@ -200,7 +200,7 @@ public class MonteCarloPlanner
             return false;
         }
 
-        if (LinAlg.distance(node.data.randomXYT(), goal, 2) < 2.5) {    // XXX
+        if (LinAlg.distance(node.data.randomXYT(), goal, 2) < 3.0) {    // XXX This can't stay
             return true;    // Found the goal
         }
 
