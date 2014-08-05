@@ -20,6 +20,7 @@ public class Tree<T>
         public T data;
         public Node<T> parent;
         public ArrayList<Node<T> > children = new ArrayList<Node<T> >();
+        public int depth;
 
         public Node(T data)
         {
@@ -30,11 +31,13 @@ public class Tree<T>
         {
             this.data = data;
             this.parent = parent;
+            this.depth = 0;
         }
 
         public Node<T> addChild(T data)
         {
             Node<T> n = new Node(data, this);
+            n.depth = depth+1;
             children.add(n);
             return n;
         }
@@ -59,6 +62,25 @@ public class Tree<T>
     public int size()
     {
         return root.size();
+    }
+
+    /** Return a list of all of the leaves in the tree */
+    public ArrayList<Node<T> > getLeaves()
+    {
+        ArrayList<Node<T> > leaves = new ArrayList<Node<T> >();
+        leafHelper(root, leaves);
+        return leaves;
+    }
+
+    private void leafHelper(Node<T> node, ArrayList<Node<T> > leaves)
+    {
+        if (node.children.size() < 1) {
+            leaves.add(node);
+            return;
+        }
+
+        for (Node<T> child: node.children)
+            leafHelper(child, leaves);
     }
 
     /** Return a list of the nodes of this tree for in-order traversal */

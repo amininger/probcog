@@ -33,7 +33,8 @@ public class MonteCarloPlanner
     Stopwatch watch = new Stopwatch();
 
     // Search parameters XXX MOVE TO CONFIG
-    int searchDepth = 10;    // XXX Iterative deepening?
+    boolean iterativeDeepening = false;
+    int searchDepth = 10;
     int numSamples = 10;
 
     SimWorld sw;
@@ -169,7 +170,21 @@ public class MonteCarloPlanner
         xyts.add(xyt);
         Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, null, null));
 
-        dfsHelper(tree.root, goal, 1);
+        // iterative deepening search
+        int i = 1;
+        if (!iterativeDeepening)
+            i = searchDepth;
+
+        boolean done = false;
+        for (; i <= searchDepth; i++) {
+            for (Node<Behavior> leaf: tree.getLeaves()) {
+                done = dfsHelper(leaf, goal, leaf.depth, i);
+                if (done)
+                    break;
+            }
+            if (done)
+                break;
+        }
         if (vw != null) {
             VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
             vb.swap(); // Cleanup
@@ -179,9 +194,9 @@ public class MonteCarloPlanner
     }
 
     // XXX Depends on fact that tags were already sorted by distance to goal
-    private boolean dfsHelper(Node<Behavior> node, double[] goal, int depth)
+    private boolean dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
     {
-        if (depth > searchDepth) {
+        if (depth > maxDepth) {
             return false;
         }
 
@@ -239,7 +254,7 @@ public class MonteCarloPlanner
                 continue;
             Node<Behavior> newNode = node.addChild(new Behavior(xyts, bestLaw.get(rec), new ClassificationCounterTest(params)));
 
-            if (dfsHelper(newNode, goal, depth+1))
+            if (dfsHelper(newNode, goal, depth+1, maxDepth))
                 return true;
         }
 

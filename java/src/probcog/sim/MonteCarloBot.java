@@ -30,11 +30,13 @@ public class MonteCarloBot implements SimObject
     FastDrive drive = null;
     ArrayList<double[]> trajectoryTruth = new ArrayList<double[]>();
     ArrayList<double[]> trajectoryOdom = new ArrayList<double[]>();
+    VisColorData vcd = new VisColorData();
 
     TagClassifier tc;
     FollowWall law;
     ClassificationCounterTest test;
 
+    int simSinceReset = 0;
     boolean success = false;
 
     public MonteCarloBot(SimWorld sw)
@@ -84,6 +86,8 @@ public class MonteCarloBot implements SimObject
     // === Random sampling interface =========================
     private void resetTrajectories()
     {
+        simSinceReset = 0;
+        vcd = new VisColorData();
         trajectoryTruth.clear();
         trajectoryOdom.clear();
         classCount.clear();
@@ -113,11 +117,13 @@ public class MonteCarloBot implements SimObject
     // Simulate all steps, keeping track of trajectory, etc.
     public void simulate()
     {
-        simulate(30.0); // XXX What should this be?
+        simulate(60.0); // XXX What should this be?
     }
 
     public void simulate(double seconds)
     {
+        simSinceReset++;
+
         // Precalculated paramters
         HashSet<SimObject> ignore = new HashSet<SimObject>();
         ignore.add(this);
@@ -201,8 +207,15 @@ public class MonteCarloBot implements SimObject
             }
 
             laser.utime += FastDrive.DT*1000000;
+
+
+            // Visualization etc.
             trajectoryTruth.add(drive.poseTruth.pos);
             trajectoryOdom.add(drive.poseOdom.pos);
+            if (simSinceReset%2 == 1)
+                vcd.add(0xffff0000);  // BGR
+            else
+                vcd.add(0xffff00ff);  // BGR
 
             // TIME UPDATE
             timeout--;
@@ -276,10 +289,10 @@ public class MonteCarloBot implements SimObject
     {
         VisChain vc = new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
                                                VzLines.LINE_STRIP,
-                                               new VzLines.Style(Color.blue, 2)),
-                                   new VzLines(new VisVertexData(trajectoryOdom),
-                                               VzLines.LINE_STRIP,
-                                               new VzLines.Style(Color.red, 2)),
+                                               new VzLines.Style(vcd, 2)),
+                                   //new VzLines(new VisVertexData(trajectoryOdom),
+                                   //            VzLines.LINE_STRIP,
+                                   //            new VzLines.Style(Color.red, 2)),
                                    getPose(),
                                    model4);
         return vc;
