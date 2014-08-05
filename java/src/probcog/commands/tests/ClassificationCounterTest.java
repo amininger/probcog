@@ -26,6 +26,9 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     private String classType = "";
     private HashMap<Integer, DetectionRecord> observed;
 
+    // XXX HACK
+    long startUtime;
+
     class DetectionRecord
     {
         public int n;
@@ -83,6 +86,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         // Initialize
         // XXX - Here we need to spin up a classifier and tell it what to look for
 
+        startUtime = TimeUtil.utime();
         LCM.getSingleton().subscribe("CLASSIFICATIONS", this);
     }
 
@@ -158,8 +162,8 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     {
         if (channel.equals("CLASSIFICATIONS")) {
             classification_list_t msg = new classification_list_t(ins);
-            for(classification_t classy : msg.classifications) {
 
+            for(classification_t classy : msg.classifications) {
                 // Keep running average of "quality" of detection, with a penalty
                 // for not having multiple observations coming into play during
                 // evaluation in conditionMet()

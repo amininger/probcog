@@ -174,6 +174,7 @@ public class MonteCarloBot implements SimObject
             drive.motorCommands[0] = dd.left;
             drive.motorCommands[1] = dd.right;
             drive.update();
+            laser.utime += FastDrive.DT*1000000;
 
             // CHECK CLASSIFICATIONS
             double classificationRange = 2.0;  // Config
@@ -208,7 +209,6 @@ public class MonteCarloBot implements SimObject
                 }
             }
 
-            laser.utime += FastDrive.DT*1000000;
 
 
             // Visualization etc.
