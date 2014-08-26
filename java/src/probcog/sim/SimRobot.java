@@ -436,7 +436,9 @@ public class SimRobot implements SimObject, LCMSubscriber
             } else {
                 pose = drive.poseTruth;
             }
-            lcm.publish("POSE", pose);
+            //lcm.publish("POSE", pose);
+            lcm.publish("POSE", drive.poseOdom);
+            lcm.publish("POSE_TRUTH", drive.poseTruth);
         }
     }
 
