@@ -58,14 +58,16 @@ public class MonteCarloBot implements SimObject
     public HashSet<TagRecord> tagRecords = new HashSet<TagRecord>();
     static public class TagRecord
     {
+        public double traveled;
         public int id;
         public int count;
         public String tagClass;
 
-        public TagRecord(int id, int count, String tagClass)
+        public TagRecord(int id, int count, double traveled, String tagClass)
         {
             this.id = id;
             this.count = count;
+            this.traveled = traveled;
             this.tagClass = tagClass;
         }
 
@@ -81,7 +83,7 @@ public class MonteCarloBot implements SimObject
             if (!(o instanceof TagRecord))
                 return false;
             TagRecord rec = (TagRecord)o;
-            return id == rec.id;
+            return id == rec.id; // && traveled >= rec.traveled; // A bit of a hack
         }
     }
 
@@ -198,7 +200,7 @@ public class MonteCarloBot implements SimObject
                     if (!classCount.containsKey(c))
                         classCount.put(c, 0);
 
-                    TagRecord rec = new TagRecord(tag.getID(), classCount.get(c)+1, c);
+                    TagRecord rec = new TagRecord(tag.getID(), classCount.get(c)+1, getOdomLength(), c);
                     if (!tagRecords.contains(rec)) {
                         tagRecords.add(rec);
                         classCount.put(c, classCount.get(c)+1);
@@ -256,6 +258,22 @@ public class MonteCarloBot implements SimObject
         double[] prev = trajectoryTruth.get(0);
         for (int i = 1; i < trajectoryTruth.size(); i++) {
             double[] curr = trajectoryTruth.get(i);
+            length += LinAlg.distance(curr, prev);
+            prev = curr;
+        }
+
+        return length;
+    }
+
+    public double getOdomLength()
+    {
+        if (trajectoryOdom.size() < 2)
+            return 0;
+
+        double length = 0;
+        double[] prev = trajectoryOdom.get(0);
+        for (int i = 1; i < trajectoryOdom.size(); i++) {
+            double[] curr = trajectoryOdom.get(i);
             length += LinAlg.distance(curr, prev);
             prev = curr;
         }

@@ -198,19 +198,27 @@ public class MonteCarloPlanner
     // XXX Depends on fact that tags were already sorted by distance to goal
     private boolean dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
     {
-        if (debug && node != null && node.data != null && node.data.law != null && node.data.test != null) {
-            for (int i = 0; i < depth; i++)
+        if (debug) {
+            System.out.printf("|");
+            for (int i = 0; i < depth; i++) {
                 System.out.printf("==");
-            System.out.printf("%s", node.data.toString());
-        }
-
-        if (depth > maxDepth) {
-            return false;
+            }
+            if (node != null && node.data != null && node.data.law != null && node.data.test != null)
+                System.out.printf("%s", node.data.toString());
+            else
+                System.out.printf("\n");
         }
 
         if (LinAlg.distance(node.data.randomXYT(), goal, 2) < 3.0) {    // XXX This can't stay
+            System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
             return true;    // Found the goal
         }
+
+        if (depth > maxDepth) {
+            System.out.printf("--TOO DEEP--\n");
+            return false;
+        }
+
 
         // Find possible tags we can reach and which control laws will do it
         HashMap<TagRecord, FollowWall> bestLaw = new HashMap<TagRecord, FollowWall>();
@@ -219,8 +227,11 @@ public class MonteCarloPlanner
             mcb.init(law, null, node.data.randomXYT()); // XXX
             mcb.simulate(); // This will always timeout.
             for (TagRecord rec: mcb.tagRecords) {
-                if (!bestLaw.containsKey(rec))
-                    bestLaw.put(rec, law);  // XXX right now, first come first serve. Should really let other law take over if it can. Assuming that, within timeout period, not a big deal for now
+                if (!bestLaw.containsKey(rec)) {
+                    // XXX Want to work rec.traveled into here XXX
+                    // Right now, first come, first serve
+                    bestLaw.put(rec, law);
+                }
             }
         }
 
