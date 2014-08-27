@@ -76,8 +76,10 @@ public class MonteCarloPlanner
         // Initialize planning components
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
         params.put("side", new TypedValue((byte)-1));
+        params.put("distance", new TypedValue((double)1.0));
         controls.add(new FollowWall(params));
         params.put("side", new TypedValue((byte)1));
+        params.put("distance", new TypedValue((double)1.0));
         controls.add(new FollowWall(params));
     }
 
@@ -196,6 +198,12 @@ public class MonteCarloPlanner
     // XXX Depends on fact that tags were already sorted by distance to goal
     private boolean dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
     {
+        if (debug && node != null && node.data != null && node.data.law != null && node.data.test != null) {
+            for (int i = 0; i < depth; i++)
+                System.out.printf("==");
+            System.out.printf("%s", node.data.toString());
+        }
+
         if (depth > maxDepth) {
             return false;
         }

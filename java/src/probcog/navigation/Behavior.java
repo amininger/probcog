@@ -35,7 +35,7 @@ public class Behavior
     public String toString()
     {
         Formatter f = new Formatter();
-        f.format("Follow %s until %s\n", law.getSide(), test.getClassType());
+        f.format("Follow %s until %d %s\n", law.getSide(), test.getCount(), test.getClassType());
         return f.toString();
     }
 }
