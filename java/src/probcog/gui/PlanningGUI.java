@@ -27,9 +27,10 @@ import probcog.sim.*;
 import probcog.robot.control.*;
 
 
-public class PlanningGUI extends JFrame
+public class PlanningGUI extends JFrame implements LCMSubscriber
 {
     boolean DEBUG = true;
+    LCM lcm = LCM.getSingleton();
 
     VisWorld vw;
     VisLayer vl;
@@ -38,6 +39,8 @@ public class PlanningGUI extends JFrame
     private GridMap gm;
     private WavefrontPlanner wfp;
     private double[] goal = new double[2];
+
+    ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
 
     public PlanningGUI(GetOpt opts)
     {
@@ -57,6 +60,8 @@ public class PlanningGUI extends JFrame
         simulator.getWorld().setRunning(false); // Stop the world here, by default
 
         init(); // This does things like compute a full grid map for wavefront based on the sim world
+
+        lcm.subscribe("POSE", this);
 
         this.setVisible(true);
     }
@@ -252,6 +257,7 @@ public class PlanningGUI extends JFrame
     {
         public void run()
         {
+            // XXX Noisy pose
             SimRobot robot = null;
             for (SimObject obj: simulator.getWorld().objects) {
                 if (!(obj instanceof SimRobot))
@@ -260,7 +266,8 @@ public class PlanningGUI extends JFrame
                 break;
             }
             assert (robot != null);
-            double[] start = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
+            //double[] start = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
+            double[] start = LinAlg.resize(LinAlg.matrixToXYT(getNoisyPose()), 2);
 
             float[] costMap = wfp.getWavefront(start, goal);
 
@@ -300,12 +307,15 @@ public class PlanningGUI extends JFrame
                 vb.swap();
             }
 
-            // Try following the path XXX
+            // Try following the path  XXX
             Tic tic = new Tic();
             diff_drive_t dd = new diff_drive_t();
             while (tic.toc() < 30) {
-                double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
-                double[] orientation = LinAlg.matrixToQuat(robot.getPose());
+                // Noisy pose
+                //double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
+                //double[] orientation = LinAlg.matrixToQuat(robot.getPose());
+                double[] pos = LinAlg.resize(LinAlg.matrixToXYT(getNoisyPose()), 2);
+                double[] orientation = LinAlg.matrixToQuat(getNoisyPose());
                 dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8);
                 dd.utime = TimeUtil.utime();
                 LCM.getSingleton().publish("DIFF_DRIVE", dd);
@@ -347,5 +357,31 @@ public class PlanningGUI extends JFrame
             ex.printStackTrace();
             System.exit(1);
         }
+    }
+
+    // === LCM Handling =======================================================
+    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+    {
+        try {
+            if ("POSE".equals(channel)) {
+                pose_t pose = new pose_t(ins);
+                synchronized (poseCache) {
+                    poseCache.put(pose, pose.utime);
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    public double[][] getNoisyPose()
+    {
+        pose_t pose = poseCache.get();
+        if (pose == null) {
+            System.err.println("ERR: Could not find a recent enough pose");
+            return LinAlg.identity(4);
+        }
+        return LinAlg.quatPosToMatrix(pose.orientation, pose.pos);
     }
 }

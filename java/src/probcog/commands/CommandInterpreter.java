@@ -156,7 +156,8 @@ public class CommandInterpreter
         {
 			if (channel.startsWith("SOAR_COMMAND")) {
 				control_law_t controlLaw = new control_law_t(ins);
-				newCommand(controlLaw);
+                if (controlLaw.id > lastCommandID)
+                    newCommand(controlLaw);
 			} else if (channel.startsWith("CONTROL_LAW_STATUS")) {
                 control_law_status_list_t sl = new control_law_status_list_t(ins);
                 statusCache.put(sl, sl.utime);

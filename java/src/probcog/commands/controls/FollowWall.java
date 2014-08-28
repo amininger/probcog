@@ -20,7 +20,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
     private static final double BACK_THETA = 12*Math.PI/36;
     private static final double FRONT_THETA = 6*Math.PI/36;
-    private static final double MAX_V = 0.8;
+    private static final double MAX_V = 0.5;
+    private static final double MIN_V = 0.3;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
@@ -144,6 +145,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     // after initialized once
     public diff_drive_t drive(laser_t laser, double dt)
     {
+        double[] xAxis = new double[] {1.0, 0};
+        double[] yAxis = new double[] {0, 1.0};
+
         // Initialize no-speed diff drive
         diff_drive_t dd = new diff_drive_t();
         dd.utime = TimeUtil.utime();
@@ -152,15 +156,39 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         dd.right = 0;
 
         double r = Double.MAX_VALUE;
+        double rFront = Double.MAX_VALUE;
         for (int i = startIdx; i <= finIdx; i++) {
             // Handle error states
             if (laser.ranges[i] < 0)
                 continue;
 
-            double w = MathUtil.clamp(Math.abs(Math.sin(laser.rad0+laser.radstep*i)),
-                    Math.sin(Math.PI/6), 1.0);
+            double t = laser.rad0 + laser.radstep*i;
+            double w = MathUtil.clamp(Math.abs(Math.sin(t)),
+                                      Math.sin(Math.PI/6),
+                                      1.0);
             r = Math.min(r, w*laser.ranges[i]);
         }
+
+        for (int i = 0; i < laser.nranges; i++) {
+            // Handle error states
+            if (laser.ranges[i] < 0)
+                continue;
+
+            double t = laser.rad0 + laser.radstep*i;
+
+            // Points in front
+            double[] xy = new double[] {laser.ranges[i]*Math.cos(t),
+                                        laser.ranges[i]*Math.sin(t)};
+            double width = Math.abs(LinAlg.dotProduct(xy, yAxis));
+            if (width > 0.3)
+                continue;
+
+            double dist = LinAlg.dotProduct(xy, xAxis);
+            if (dist > 0.1) {
+                rFront = Math.min(rFront, dist);
+            }
+        }
+
         double deriv = 0;
         if (lastRange > 0)
             deriv = (r - lastRange)/dt; // [m/s] of change
@@ -179,6 +207,14 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             nearSpeed = MAX_V*nearSpeed/max;
             farSpeed = MAX_V*farSpeed/max;
         }
+
+        // Special case turn-in-place when near a dead end in front
+        //System.out.printf("%f\n", rFront);
+        if (rFront < goalDistance) {
+            nearSpeed = MIN_V;
+            farSpeed = -MIN_V;
+        }
+
 
         switch (dir) {
             case LEFT:

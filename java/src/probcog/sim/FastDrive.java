@@ -12,7 +12,7 @@ public class FastDrive
 {
     public Motor leftMotor = new Motor();
     public Motor rightMotor = new Motor();
-    public double voltageScale = 12.0;
+    public double voltageScale = 24.0;
 
     // True pose of the robot's rear axle (see centerOfRotation)
     public pose_t poseTruth = new pose_t();
@@ -28,7 +28,7 @@ public class FastDrive
 
     // XXX Move to config?
     public double wheelDiameter = 0.25; // diameter of wheels [m]
-    public double baseline = 0.35;      // distance between left and right wheels [m]
+    public double baseline = 0.46;      // distance between left and right wheels [m]
 
     // Noise parameters
     public double translation_noise = 0.1;
@@ -55,6 +55,23 @@ public class FastDrive
         // allow it to be perfect
 
         // No fixed delay tasks, here, since we update on request!
+
+        // Motor setup
+        double K_t = 0.7914*1;    // torque constant in [Nm / A] * multiplier to speed us up
+        leftMotor.torque_constant = K_t;
+        rightMotor.torque_constant = K_t;
+        double K_emf = 1.406; // emf constant [V/(rad/s)]
+        leftMotor.emf_constant = K_emf;
+        rightMotor.emf_constant = K_emf;
+        double K_wr = 5.5;  // XXX Old winding resistance [ohms]
+        leftMotor.winding_resistance = K_wr;
+        rightMotor.winding_resistance = K_wr;
+        double K_inertia = 0.5; // XXX Old inertia [kg m^2]
+        leftMotor.inertia = K_inertia;
+        rightMotor.inertia = K_inertia;
+        double K_drag = 1.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
+        leftMotor.drag_constant = K_drag;
+        rightMotor.drag_constant = K_drag;
     }
 
     public static double DT = 1.0 / 5;

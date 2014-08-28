@@ -76,8 +76,31 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         CommandInterpreter ci = new CommandInterpreter();
 
+        // Reproduce this in monte-carlo bot
         drive = new DifferentialDrive(sw, this, new double[3]);
-        drive.centerOfRotation = new double[] { 0.13, 0, 0 };
+        drive.centerOfRotation = new double[] { 0.23, 0, 0 };
+        drive.voltageScale = 24.0;
+        drive.wheelDiameter = 0.25;
+        drive.baseline = 0.46;  // As measured to wheel centers
+        drive.translation_noise = 0.1;
+        drive.rotation_noise = 0.05;
+
+        // Motor setup
+        double K_t = 0.7914*1;    // torque constant in [Nm / A] * multiplier to speed us up
+        drive.leftMotor.torque_constant = K_t;
+        drive.rightMotor.torque_constant = K_t;
+        double K_emf = 1.406; // emf constant [V/(rad/s)]
+        drive.leftMotor.emf_constant = K_emf;
+        drive.rightMotor.emf_constant = K_emf;
+        double K_wr = 5.5;  // XXX Old winding resistance [ohms]
+        drive.leftMotor.winding_resistance = K_wr;
+        drive.rightMotor.winding_resistance = K_wr;
+        double K_inertia = 0.5; // XXX Old inertia [kg m^2]
+        drive.leftMotor.inertia = K_inertia;
+        drive.rightMotor.inertia = K_inertia;
+        double K_drag = 1.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
+        drive.leftMotor.drag_constant = K_drag;
+        drive.rightMotor.drag_constant = K_drag;
 
         lcm.subscribe("GAMEPAD", this);
         lcm.subscribe("DIFF_DRIVE", this);
@@ -436,7 +459,9 @@ public class SimRobot implements SimObject, LCMSubscriber
             } else {
                 pose = drive.poseTruth;
             }
-            lcm.publish("POSE", pose);
+            //lcm.publish("POSE", pose);
+            lcm.publish("POSE", drive.poseOdom);
+            lcm.publish("POSE_TRUTH", drive.poseTruth);
         }
     }
 
