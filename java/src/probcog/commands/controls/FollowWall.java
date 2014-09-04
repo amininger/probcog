@@ -256,6 +256,22 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         tasks.addFixedDelay(new UpdateTask(), 1.0/FW_HZ);
     }
 
+    // Ignore heading for now
+    public int hashCode()
+    {
+        return dir.hashCode() ^ new Double(goalDistance).hashCode();
+    }
+
+    public boolean equals(Object o)
+    {
+        if (o == null)
+            return false;
+        else if (!(o instanceof FollowWall))
+            return false;
+        FollowWall fw = (FollowWall)o;
+        return dir == fw.dir && goalDistance == fw.goalDistance;
+    }
+
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {

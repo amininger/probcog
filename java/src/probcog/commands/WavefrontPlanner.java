@@ -38,17 +38,19 @@ public class WavefrontPlanner
         initMap();
 
         // Starting/finishing indices. Note: we search BACK from the goal
-        int sx = (int) ((s[0]-gm.x0)/gm.metersPerPixel);
-        int sy = (int) ((s[1]-gm.y0)/gm.metersPerPixel);
+        int sx = Integer.MAX_VALUE;
+        int sy = Integer.MAX_VALUE;
         int gx = (int) ((g[0]-gm.x0)/gm.metersPerPixel);
         int gy = (int) ((g[1]-gm.y0)/gm.metersPerPixel);
         int w = gm.width;
         int h = gm.height;
+        if (s != null) {
+            sx = (int) ((s[0]-gm.x0)/gm.metersPerPixel);
+            sy = (int) ((s[1]-gm.y0)/gm.metersPerPixel);
+        }
 
-        // Error check start/goal. We only accept plans within our grid map.
-        if (sx < 0 || sx >= w ||
-            sy < 0 || sy >= h ||
-            gx < 0 || gx >= w ||
+        // Error check goal. We only accept plans within our grid map.
+        if (gx < 0 || gx >= w ||
             gy < 0 || gy >= h)
             assert (false);
 
@@ -96,14 +98,14 @@ public class WavefrontPlanner
             }
         }
 
-        // Finished without finding goal. Error! You gave us an impossible task
-        assert (false);
+        assert (s == null); // Otherwise, you asked for the impossible
 
+        // Finished without finding goal. Just send back a cost map
         return costMap;
     }
 
     // XXX This is sub-optimal, but we split out cost map computation for
-    // quick visualization
+    // quick visualization. Only call if we found a path!
     /** Get a path corresponding to the existing cost map */
     public ArrayList<double[]> getPath()
     {

@@ -86,7 +86,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.rotation_noise = 0.05;
 
         // Motor setup
-        double K_t = 0.7914*1;    // torque constant in [Nm / A] * multiplier to speed us up
+        double K_t = 0.7914*2;    // torque constant in [Nm / A] * multiplier to speed us up
         drive.leftMotor.torque_constant = K_t;
         drive.rightMotor.torque_constant = K_t;
         double K_emf = 1.406; // emf constant [V/(rad/s)]

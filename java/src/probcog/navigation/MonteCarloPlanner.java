@@ -37,6 +37,9 @@ public class MonteCarloPlanner
     int searchDepth = Util.getConfig().requireInt("monte_carlo.max_search_depth");
     int numSamples = Util.getConfig().requireInt("monte_carlo.num_samples");
 
+    WavefrontPlanner wfp;
+    GridMap gm;
+
     SimWorld sw;
     SimRobot robot = null;
     ArrayList<SimAprilTag> tags = new ArrayList<SimAprilTag>();
@@ -44,17 +47,57 @@ public class MonteCarloPlanner
 
     ArrayList<FollowWall> controls = new ArrayList<FollowWall>();
 
-    public MonteCarloPlanner(SimWorld sw)
+    private class LawRecordPair
     {
-        this(sw, null);
+        public FollowWall law;
+        public TagRecord rec;
+
+        public LawRecordPair(FollowWall law, TagRecord rec)
+        {
+            this.law = law;
+            this.rec = rec;
+        }
+    }
+
+    private class LRPComparator implements Comparator<LawRecordPair>
+    {
+        // Assumes tags are sorted in list, if this is to be useful
+        public int compare(LawRecordPair a, LawRecordPair b)
+        {
+            // Lower is better
+            int idxa = Integer.MAX_VALUE;
+            int idxb = Integer.MAX_VALUE;
+            for (int i = 0; i < tags.size(); i++) {
+                SimAprilTag tag = tags.get(i);
+                if (a.rec.id == tag.getID())
+                    idxa = i;
+                if (b.rec.id == tag.getID())
+                    idxb = i;
+                if (idxa != Integer.MAX_VALUE || idxb != Integer.MAX_VALUE)
+                    break;
+            }
+
+            if (idxa < idxb)
+                return -1;
+            else if (idxa > idxb)
+                return 1;
+            return 0;
+        }
+    }
+
+    // XXX Someday, we won't need to use the sim world, perhaps
+    public MonteCarloPlanner(SimWorld sw, GridMap gm)
+    {
+        this(sw, gm, null);
     }
 
     /** Initialize the planner based on a simulated world.
      *  It's assumed that there will only be one robot in this world.
      **/
-    public MonteCarloPlanner(SimWorld sw, VisWorld vw)
+    public MonteCarloPlanner(SimWorld sw, GridMap gm, VisWorld vw)
     {
         this.sw = sw;
+        this.gm = gm;
         this.vw = vw;
         for (SimObject so: sw.objects) {
             if (so instanceof SimRobot)
@@ -81,21 +124,36 @@ public class MonteCarloPlanner
         params.put("side", new TypedValue((byte)1));
         params.put("distance", new TypedValue((double)1.0));
         controls.add(new FollowWall(params));
+
+        // Initialize wavefront planner used for rough distance
+        this.wfp = new WavefrontPlanner(gm, 0.4);   // XXX
     }
 
     private class TagDistanceComparator implements Comparator<SimAprilTag>
     {
-        double[] goal;
+        //double[] goal;
+        float[] wf;
 
-        public TagDistanceComparator(double[] goal)
+        public TagDistanceComparator(float[] wf)
         {
-            this.goal = goal;
+            //this.goal = goal;
+            //this.wf = wfp.getWavefront(null, goal);
+            this.wf = wf;
         }
 
         public int compare(SimAprilTag a, SimAprilTag b)
         {
-            double da = LinAlg.squaredDistance(LinAlg.matrixToXyzrpy(a.getPose()), goal, 2);
-            double db = LinAlg.squaredDistance(LinAlg.matrixToXyzrpy(b.getPose()), goal, 2);
+            //double da = LinAlg.squaredDistance(LinAlg.matrixToXyzrpy(a.getPose()), goal, 2);
+            //double db = LinAlg.squaredDistance(LinAlg.matrixToXyzrpy(b.getPose()), goal, 2);
+            double[] axy = LinAlg.matrixToXyzrpy(a.getPose());
+            double[] bxy = LinAlg.matrixToXyzrpy(b.getPose());
+
+            int ixa = (int) Math.floor((axy[0] - gm.x0) / gm.metersPerPixel);
+            int iya = (int) Math.floor((axy[1] - gm.y0) / gm.metersPerPixel);
+            int ixb = (int) Math.floor((bxy[0] - gm.x0) / gm.metersPerPixel);
+            int iyb = (int) Math.floor((bxy[1] - gm.y0) / gm.metersPerPixel);
+            double da = wf[iya * gm.width + ixa];
+            double db = wf[iyb * gm.width + ixb];
 
             if (da < db)
                 return -1;
@@ -111,7 +169,7 @@ public class MonteCarloPlanner
             if (!(o instanceof TagDistanceComparator))
                 return false;
             TagDistanceComparator tdc = (TagDistanceComparator)o;
-            return Arrays.equals(goal, tdc.goal);
+            return (this == tdc);
         }
     }
 
@@ -127,8 +185,9 @@ public class MonteCarloPlanner
         // 1) Build an ordered list of the L2 distances from each tag to the goal.
         // 2) Build our search tree
         watch.start("preprocessing");
-        // XXX Could make the sorting better with a full-map wavefront if desperate
-        Collections.sort(tags, new TagDistanceComparator(goal));
+        float[] wf = wfp.getWavefront(null, goal);
+        Collections.sort(tags, new TagDistanceComparator(wf));
+        //Collections.sort(tags, new TagDistanceComparator(goal));
         watch.stop();
 
         watch.start("DFS");
@@ -219,13 +278,68 @@ public class MonteCarloPlanner
             return false;
         }
 
+        // XXX How would we incorporate more laws?
+        // GOAL: Forward simulate for a fixed period for n iterations and see
+        // what possible control laws emerge. We have IDs associated with
+        // every obstacle (and could imagine doing so in our real map), so we
+        // can claim that we trying to terminate based on sighting obstacle N.
+        // It's possible different controls may result in terminations at the
+        // same obstacle! We want to keep track of all such possibilities, and
+        // we'd like to be able to iterate through them later in order of which
+        // ones are closest to our goal.
+        ArrayList<LawRecordPair> lrps = new ArrayList<LawRecordPair>();
+        MonteCarloBot mcb;
+        for (FollowWall law: controls) {
+            mcb = new MonteCarloBot(sw);
+            for (int i = 0; i < numSamples; i++) {
+                mcb.init(law, null, node.data.randomXYT());
+                mcb.simulate(); // This will always timeout
+            }
+            for (TagRecord rec: mcb.tagRecords)
+                lrps.add(new LawRecordPair(law, rec));
+        }
 
+        // Test our record/law pairs based on tag distance to goal
+        // and (heuristic warning!) estimated distance traveled. XXX Not implemented yet
+        Collections.sort(lrps, new LRPComparator());
+        mcb = new MonteCarloBot(sw);
+        for (LawRecordPair lrp: lrps) {
+            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+            params.put("class", new TypedValue(lrp.rec.tagClass));
+            params.put("count", new TypedValue(lrp.rec.count));
+
+            // Try multiple simulations to evaluate the step
+            ArrayList<double[]> xyts = new ArrayList<double[]>();
+            for (int i = 0; i < numSamples; i++) {
+                mcb.init(lrp.law, new ClassificationCounterTest(params), node.data.randomXYT());
+                mcb.simulate();
+                if (vw != null) {
+                    VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
+                    vb.setDrawOrder(-500);
+                    vb.addBack(mcb.getVisObject());
+                    vb.swap();
+                }
+                if (mcb.success()) {
+                    // XXX This pose is not necessarily where we actually are! Would
+                    // be preferable to at least calculate it relative to the tag
+                    xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                }
+            }
+            if (xyts.size() < 1)
+                continue;
+            Node<Behavior> newNode = node.addChild(new Behavior(xyts, lrp.law, new ClassificationCounterTest(params)));
+
+            if (dfsHelper(newNode, goal, depth+1, maxDepth))
+                return true;
+        }
+
+        /*
         // Find possible tags we can reach and which control laws will do it
         HashMap<TagRecord, FollowWall> bestLaw = new HashMap<TagRecord, FollowWall>();
         MonteCarloBot mcb = new MonteCarloBot(sw);
         for (FollowWall law: controls) {
             mcb.init(law, null, node.data.randomXYT()); // XXX
-            mcb.simulate(); // This will always timeout.
+            mcb.simulate(); // This will always timeout. Is one representative of our options?
             for (TagRecord rec: mcb.tagRecords) {
                 if (!bestLaw.containsKey(rec)) {
                     // XXX Want to work rec.traveled into here XXX
@@ -275,7 +389,7 @@ public class MonteCarloPlanner
 
             if (dfsHelper(newNode, goal, depth+1, maxDepth))
                 return true;
-        }
+        }*/
 
         return false;
     }

@@ -26,6 +26,7 @@ public class Behavior
         return xyts.get(0);
     }
 
+    // Uniformly sample an XYT from the samples
     public double[] randomXYT()
     {
         assert (xyts.size() > 0);

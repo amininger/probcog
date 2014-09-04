@@ -124,8 +124,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
         // XXX There's probably a faster way to do this, but this was easy and it's
         // a one-time thing
-        for (double y = min[1]; y < max[1]; y+=.99*MPP) {
-            for (double x = min[0]; x < max[0]; x+=.99*MPP) {
+        for (double y = min[1]; y < max[1]; y+=.5*MPP) {
+            for (double x = min[0]; x < max[0]; x+=.5*MPP) {
                 for (SimObject obj: simulator.getWorld().objects) {
                     if (!(obj instanceof SimBox))
                         continue;
@@ -213,7 +213,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             }
 
             System.out.println("TESTING MONTE CARLO METHOD");
-            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), vw);
+            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
             ArrayList<Behavior> behaviors = mcp.plan(goal);
             if (behaviors.size() < 1) {
                 System.err.println("ERR: Did not find a valid set of behaviors");

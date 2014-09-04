@@ -96,18 +96,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
      **/
     synchronized public boolean conditionMet()
     {
-        int count = 0;
-        for (DetectionRecord d: observed.values()) {
-            // Compute a sample weighted confidence. This helps account for
-            // some of the noise in sampling. Chosen fairly arbitrarily to
-            // heavily penalize few sample while minimally penalizing many samples,
-            // but could be revisited
-            double conf = (1.0 - 1.0/d.n)*d.mean;
-            if (conf > CONFIDENCE_THRESHOLD && d.metOrientation)
-                count++;
-
-        }
-
+        int count = getCurrentCount();
         return count >= goalCount;
     }
 
@@ -145,12 +134,33 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     // === Sample adding/tracking ============================================
     synchronized public void addSample(classification_t classy)
     {
-        if (classType.equals(classy.name)) {
-            if (!observed.containsKey(classy.id)) {
-                observed.put(classy.id, new DetectionRecord());
+        synchronized (observed) {
+            if (classType.equals(classy.name)) {
+                if (!observed.containsKey(classy.id)) {
+                    observed.put(classy.id, new DetectionRecord());
+                }
+                observed.get(classy.id).addSample(classy);
             }
-            observed.get(classy.id).addSample(classy);
         }
+    }
+
+    public int getCurrentCount()
+    {
+        int count = 0;
+        synchronized (observed) {
+            for (DetectionRecord d: observed.values()) {
+                // Compute a sample weighted confidence. This helps account for
+                // some of the noise in sampling. Chosen fairly arbitrarily to
+                // heavily penalize few sample while minimally penalizing many samples,
+                // but could be revisited
+                //double conf = (1.0 - 1.0/d.n)*d.mean;
+                double conf = d.mean;   // XXX
+                if (conf > CONFIDENCE_THRESHOLD && d.metOrientation)
+                    count++;
+
+            }
+        }
+        return count;
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)

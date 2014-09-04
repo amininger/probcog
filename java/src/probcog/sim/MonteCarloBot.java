@@ -52,9 +52,8 @@ public class MonteCarloBot implements SimObject
 
     }
 
-    // Track which tags we saw and, for each class for said tag, what that class
-    // count for that tag was, aka, home many "doors" did we see before this "door"?
-    private HashMap<String, Integer> classCount = new HashMap<String, Integer>();
+    private HashMap<String, ClassificationCounterTest> testMap =
+        new HashMap<String, ClassificationCounterTest>();
     public HashSet<TagRecord> tagRecords = new HashSet<TagRecord>();
     static public class TagRecord
     {
@@ -73,7 +72,7 @@ public class MonteCarloBot implements SimObject
 
         public int hashCode()
         {
-            return new Integer(id).hashCode();
+            return new Integer(id).hashCode() ^ new Integer(count).hashCode();
         }
 
         public boolean equals(Object o)
@@ -83,7 +82,7 @@ public class MonteCarloBot implements SimObject
             if (!(o instanceof TagRecord))
                 return false;
             TagRecord rec = (TagRecord)o;
-            return id == rec.id; // && traveled >= rec.traveled; // A bit of a hack
+            return id == rec.id && count == rec.count;
         }
     }
 
@@ -94,7 +93,8 @@ public class MonteCarloBot implements SimObject
         vcd = new VisColorData();
         trajectoryTruth.clear();
         trajectoryOdom.clear();
-        classCount.clear();
+        testMap.clear();
+        // NOTE: does not reset tagRecords.
     }
 
     public void init(FollowWall law, ClassificationCounterTest test)
@@ -195,15 +195,22 @@ public class MonteCarloBot implements SimObject
                 // Otherwise, store relevant information about the tag. Only use
                 // the FIRST tag class
                 if (test == null) {
-                    Set<String> tagClasses = tc.getClasses(tag.getID());
-                    String c = tagClasses.iterator().next(); // Only ever have the one
-                    if (!classCount.containsKey(c))
-                        classCount.put(c, 0);
+                    String c = classies.get(0).name;
+                    if (!testMap.containsKey(c)) {
+                        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                        params.put("count", new TypedValue(Integer.MAX_VALUE));
+                        params.put("class", new TypedValue(c));
+                        testMap.put(c, new ClassificationCounterTest(params));
+                    }
+                    ClassificationCounterTest cTest = testMap.get(c);
+                    cTest.addSample(classies.get(0));
+                    int count = cTest.getCurrentCount();
+                    if (count < 1)
+                        continue;
+                    TagRecord rec = new TagRecord(tag.getID(), cTest.getCurrentCount(), getOdomLength(), c);
 
-                    TagRecord rec = new TagRecord(tag.getID(), classCount.get(c)+1, getOdomLength(), c);
                     if (!tagRecords.contains(rec)) {
                         tagRecords.add(rec);
-                        classCount.put(c, classCount.get(c)+1);
                     }
                 } else {
                     for (classification_t classy: classies)
