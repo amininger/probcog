@@ -1,6 +1,9 @@
 package probcog.navigation;
 
+import java.awt.Color;
 import java.util.*;
+
+import april.vis.*;
 
 import probcog.commands.*;
 import probcog.commands.controls.FollowWall;
@@ -31,6 +34,14 @@ public class Behavior
     {
         assert (xyts.size() > 0);
         return xyts.get(r.nextInt(xyts.size()));
+    }
+
+    public VisObject getVisObject()
+    {
+        VisVertexData vvd = new VisVertexData();
+        for (double[] xyt: xyts)
+            vvd.add(xyt, 1, 2); // Not very efficient
+        return new VzPoints(vvd, new VzPoints.Style(Color.red, 5));
     }
 
     public String toString()

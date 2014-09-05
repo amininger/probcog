@@ -35,7 +35,8 @@ public class MonteCarloPlanner
     // Search parameters XXX MOVE TO CONFIG
     boolean iterativeDeepening = Util.getConfig().requireBoolean("monte_carlo.iterative_deepening");
     int searchDepth = Util.getConfig().requireInt("monte_carlo.max_search_depth");
-    int numSamples = Util.getConfig().requireInt("monte_carlo.num_samples");
+    int numExploreSamples = Util.getConfig().requireInt("monte_carlo.num_exploration_samples");
+    int numSamples = Util.getConfig().requireInt("monte_carlo.num_evaluation_samples");
 
     WavefrontPlanner wfp;
     GridMap gm;
@@ -291,7 +292,7 @@ public class MonteCarloPlanner
         MonteCarloBot mcb;
         for (FollowWall law: controls) {
             mcb = new MonteCarloBot(sw);
-            for (int i = 0; i < numSamples; i++) {
+            for (int i = 0; i < numExploreSamples; i++) {
                 mcb.init(law, null, node.data.randomXYT());
                 mcb.simulate(); // This will always timeout
             }
@@ -332,64 +333,6 @@ public class MonteCarloPlanner
             if (dfsHelper(newNode, goal, depth+1, maxDepth))
                 return true;
         }
-
-        /*
-        // Find possible tags we can reach and which control laws will do it
-        HashMap<TagRecord, FollowWall> bestLaw = new HashMap<TagRecord, FollowWall>();
-        MonteCarloBot mcb = new MonteCarloBot(sw);
-        for (FollowWall law: controls) {
-            mcb.init(law, null, node.data.randomXYT()); // XXX
-            mcb.simulate(); // This will always timeout. Is one representative of our options?
-            for (TagRecord rec: mcb.tagRecords) {
-                if (!bestLaw.containsKey(rec)) {
-                    // XXX Want to work rec.traveled into here XXX
-                    // Right now, first come, first serve
-                    bestLaw.put(rec, law);
-                }
-            }
-        }
-
-        // Iterate through these laws based on which ones will likely terminate
-        // the closest to the goal
-        for (SimAprilTag tag: tags) {
-            // Find associated tag record through forced iteration...:/
-            TagRecord rec = null;
-            for (TagRecord tr: bestLaw.keySet()) {
-                if (tag.getID() != tr.id)
-                    continue;
-                rec = tr;
-                break;
-            }
-            if (rec == null)
-                continue;
-            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-            params.put("class", new TypedValue(rec.tagClass));
-            params.put("count", new TypedValue(rec.count));
-
-            // Try multiple simulations to evaluate the step
-            ArrayList<double[]> xyts = new ArrayList<double[]>();
-            for (int i = 0; i < numSamples; i++) {
-                mcb.init(bestLaw.get(rec), new ClassificationCounterTest(params), node.data.randomXYT());
-                mcb.simulate();
-                if (vw != null) {
-                    VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
-                    vb.setDrawOrder(-500);
-                    vb.addBack(mcb.getVisObject());
-                    vb.swap();
-                }
-                if (mcb.success()) {
-                    // XXX This pose is not necessarily where we actually are! Would
-                    // be preferable to at least calculate it relative to the tag
-                    xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-                }
-            }
-            if (xyts.size() < 1)
-                continue;
-            Node<Behavior> newNode = node.addChild(new Behavior(xyts, bestLaw.get(rec), new ClassificationCounterTest(params)));
-
-            if (dfsHelper(newNode, goal, depth+1, maxDepth))
-                return true;
-        }*/
 
         return false;
     }
