@@ -21,7 +21,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double BACK_THETA = 12*Math.PI/36;
     private static final double FRONT_THETA = 6*Math.PI/36;
     private static final double MAX_V = 0.5;
-    private static final double MIN_V = 0.3;
+    private static final double MIN_V = 0.4;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
@@ -195,11 +195,14 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         lastRange = r;
 
         // XXX
-        double K_p = r/goalDistance;
-        double prop = MathUtil.clamp(-0.5 + K_p, -1.0, 1.0);//0.65);
+        double G_weight = goalDistance;
+        double K_p = (1.0 - r/G_weight);
+        double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
 
-        double nearSpeed = 0.5;
-        double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
+        //double nearSpeed = 0.5;
+        //double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
+        double farSpeed = 0.5;
+        double nearSpeed = MathUtil.clamp(prop + K_d*deriv, 0, 1.0);    // XXX
         double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
         if (max < 0.01) {
             nearSpeed = farSpeed = 0;
@@ -210,7 +213,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         // Special case turn-in-place when near a dead end in front
         //System.out.printf("%f\n", rFront);
-        if (rFront < goalDistance) {
+        if (rFront < goalDistance + 0.5) {
             nearSpeed = MIN_V;
             farSpeed = -MIN_V;
         }

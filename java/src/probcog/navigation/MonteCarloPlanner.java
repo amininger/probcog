@@ -120,10 +120,10 @@ public class MonteCarloPlanner
         // Initialize planning components
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
         params.put("side", new TypedValue((byte)-1));
-        params.put("distance", new TypedValue((double)1.0));
+        params.put("distance", new TypedValue((double)0.9));
         controls.add(new FollowWall(params));
         params.put("side", new TypedValue((byte)1));
-        params.put("distance", new TypedValue((double)1.0));
+        params.put("distance", new TypedValue((double)0.9));
         controls.add(new FollowWall(params));
 
         // Initialize wavefront planner used for rough distance
