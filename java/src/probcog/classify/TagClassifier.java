@@ -53,13 +53,14 @@ public class TagClassifier
             int[] ids = config.getInts("classes.c"+i+".ids", null);
             double mean = config.getDouble("classes.c"+i+".mean", 0);
             double stddev = config.getDouble("classes.c"+i+".stddev", 0);
+            double pctdet = config.getDouble("classes.c"+i+".pct_detect", 1.0);
 
             if(label.equals("") || (ids == null))
                 break;
 
             tagClasses.add(label);
 
-            TagClass tag = new TagClass(label, mean, stddev);
+            TagClass tag = new TagClass(label, mean, stddev, pctdet);
             for(int id : ids) {
                 ArrayList<TagClass> allTags;
                 if(idToTag.containsKey(id))
@@ -107,6 +108,8 @@ public class TagClassifier
             return classies;    // No config entries
 
         for (TagClass tc: tcs) {
+            if (classifierRandom.nextDouble() > tc.pctdet)
+                continue;
             classification_t classy = new classification_t();
             classy.name = tc.label;
             classy.id = id;
@@ -201,12 +204,14 @@ public class TagClassifier
         String label;
         double mean;
         double stddev;
+        double pctdet;
 
-        public TagClass(String label, double mean, double stdeev)
+        public TagClass(String label, double mean, double stddev, double pctdet)
         {
             this.label = label;
             this.mean = mean;
             this.stddev = stddev;
+            this.pctdet = pctdet;
         }
     }
 

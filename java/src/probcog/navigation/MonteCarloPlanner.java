@@ -14,6 +14,7 @@ import probcog.commands.controls.FollowWall;
 import probcog.commands.tests.ClassificationCounterTest;
 import probcog.sim.*;
 import probcog.sim.MonteCarloBot.TagRecord;
+import probcog.sim.MonteCarloBot.Cluster;
 import probcog.util.*;
 import probcog.util.Tree.Node;
 import probcog.vis.*;
@@ -40,6 +41,7 @@ public class MonteCarloPlanner
 
     WavefrontPlanner wfp;
     GridMap gm;
+    float[] wf;
 
     SimWorld sw;
     SimRobot robot = null;
@@ -62,26 +64,49 @@ public class MonteCarloPlanner
 
     private class LRPComparator implements Comparator<LawRecordPair>
     {
-        // Assumes tags are sorted in list, if this is to be useful
+        float[] wf;
+
+        public LRPComparator(float[] wf)
+        {
+            this.wf = wf;
+        }
+
         public int compare(LawRecordPair a, LawRecordPair b)
         {
-            // Lower is better
-            int idxa = Integer.MAX_VALUE;
-            int idxb = Integer.MAX_VALUE;
-            for (int i = 0; i < tags.size(); i++) {
-                SimAprilTag tag = tags.get(i);
-                if (a.rec.id == tag.getID())
-                    idxa = i;
-                if (b.rec.id == tag.getID())
-                    idxb = i;
-                if (idxa != Integer.MAX_VALUE || idxb != Integer.MAX_VALUE)
-                    break;
-            }
+            // Downside: now we'd rather reliably go SOMEPLACE rather than the
+            // place we want to go.
+            // First, bias our search towards repeatability. How consistently
+            // can we land our points at effectively the same place?
+            Cluster ca = a.rec.getClusters().get(0);
+            Cluster cb = b.rec.getClusters().get(0);
 
-            if (idxa < idxb)
+            //System.out.printf("%d : %d\n", ca.size(), cb.size());
+            //if (ca.size() > cb.size())
+            //    return -1;
+            //else if (ca.size() < cb.size())
+            //    return 1;
+
+            // Next, make sure these points wind up close to the goal. In lots
+            // of cases, we expect to have numerous "reliable" options, so it
+            // is preferable to choose the ones we perceive as making more
+            // forward progress.
+            double[] axyt = ca.getMean();
+            double[] bxyt = cb.getMean();
+            float wa = (float)ca.size()/a.rec.size();
+            float wb = (float)cb.size()/b.rec.size();
+
+            int ixa = (int) Math.floor((axyt[0]-gm.x0)/gm.metersPerPixel);
+            int iya = (int) Math.floor((axyt[1]-gm.y0)/gm.metersPerPixel);
+            int ixb = (int) Math.floor((bxyt[0]-gm.x0)/gm.metersPerPixel);
+            int iyb = (int) Math.floor((bxyt[1]-gm.y0)/gm.metersPerPixel);
+            // assert validity of these indices? They *should* always be inbounds
+            float da = wf[iya*gm.width + ixa]/wa;   // XXX HACK THAT SORTA WORKS
+            float db = wf[iyb*gm.width + ixb]/wb;
+            if (da < db)
                 return -1;
-            else if (idxa > idxb)
+            else if (da > db)
                 return 1;
+
             return 0;
         }
     }
@@ -120,10 +145,10 @@ public class MonteCarloPlanner
         // Initialize planning components
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
         params.put("side", new TypedValue((byte)-1));
-        params.put("distance", new TypedValue((double)0.9));
+        params.put("distance", new TypedValue((double)0.75));
         controls.add(new FollowWall(params));
         params.put("side", new TypedValue((byte)1));
-        params.put("distance", new TypedValue((double)0.9));
+        params.put("distance", new TypedValue((double)0.75));
         controls.add(new FollowWall(params));
 
         // Initialize wavefront planner used for rough distance
@@ -186,7 +211,7 @@ public class MonteCarloPlanner
         // 1) Build an ordered list of the L2 distances from each tag to the goal.
         // 2) Build our search tree
         watch.start("preprocessing");
-        float[] wf = wfp.getWavefront(null, goal);
+        this.wf = wfp.getWavefront(null, goal);
         Collections.sort(tags, new TagDistanceComparator(wf));
         //Collections.sort(tags, new TagDistanceComparator(goal));
         watch.stop();
@@ -296,15 +321,20 @@ public class MonteCarloPlanner
                 mcb.init(law, null, node.data.randomXYT());
                 mcb.simulate(); // This will always timeout
             }
-            for (TagRecord rec: mcb.tagRecords)
+            for (TagRecord rec: mcb.tagRecords.values())
                 lrps.add(new LawRecordPair(law, rec));
         }
 
         // Test our record/law pairs based on tag distance to goal
         // and (heuristic warning!) estimated distance traveled. XXX Not implemented yet
-        Collections.sort(lrps, new LRPComparator());
+        Collections.sort(lrps, new LRPComparator(wf));
         mcb = new MonteCarloBot(sw);
         for (LawRecordPair lrp: lrps) {
+            //if (debug) {
+            //    System.out.println();
+            //    lrp.rec.printStats();
+            //}
+
             HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
             params.put("class", new TypedValue(lrp.rec.tagClass));
             params.put("count", new TypedValue(lrp.rec.count));

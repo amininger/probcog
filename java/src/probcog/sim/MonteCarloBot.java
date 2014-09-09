@@ -39,6 +39,7 @@ public class MonteCarloBot implements SimObject
     ClassificationCounterTest test;
 
     int simSinceReset = 0;
+    int iteration = 0;
     boolean success = false;
 
     public MonteCarloBot(SimWorld sw)
@@ -52,27 +53,157 @@ public class MonteCarloBot implements SimObject
 
     }
 
+    static private class XYTStats
+    {
+        public double[] mean;
+        public double[][] cov;
+    }
+
+    static public class ClusterSizeComparator implements Comparator<Cluster>
+    {
+        public int compare(Cluster a, Cluster b)
+        {
+            int sa = a.xyts.size();
+            int sb = b.xyts.size();
+
+            if (sa > sb)
+                return -1;
+            else if (sa < sb)
+                return -1;
+            return 0;
+        }
+    }
+
+    static public class Cluster
+    {
+        // Computed statistics about xyts
+        public ArrayList<double[]> xyts = new ArrayList<double[]>();
+        public XYTStats stats = null;
+
+        public void addXYT(double[] xyt)
+        {
+            xyts.add(xyt);
+            stats = null;
+        }
+
+        public void evaluate()
+        {
+            if (stats != null)
+                return;
+            stats = computeStats(xyts);
+        }
+
+        public double[] getMean()
+        {
+            evaluate();
+            return stats.mean;
+        }
+
+        public double[][] getVar()
+        {
+            evaluate();
+            return stats.cov;
+        }
+
+        public int size()
+        {
+            return xyts.size();
+        }
+    }
+
     private HashMap<String, ClassificationCounterTest> testMap =
         new HashMap<String, ClassificationCounterTest>();
-    public HashSet<TagRecord> tagRecords = new HashSet<TagRecord>();
+    public HashMap<TagRecord, TagRecord> tagRecords = new HashMap<TagRecord, TagRecord>();
     static public class TagRecord
     {
         public double traveled;
-        public int id;
+        public int age;
         public int count;
         public String tagClass;
+        public ArrayList<double[]> xyts = new ArrayList<double[]>();
 
-        public TagRecord(int id, int count, double traveled, String tagClass)
+        ArrayList<Cluster> clusters = new ArrayList<Cluster>();
+        XYTStats stats = null;
+
+        public TagRecord(int age, int count, double traveled, String tagClass)
         {
-            this.id = id;
+            this.age = age;
             this.count = count;
             this.traveled = traveled;
             this.tagClass = tagClass;
         }
 
+        public void addXYT(double[] xyt)
+        {
+            xyts.add(xyt);
+            stats = null;
+        }
+
+        public void evaluate()
+        {
+            if (stats != null)
+                return;
+            stats = computeStats(xyts);
+
+            // Clustering. Quite naive
+            clusters.clear();
+            for (double[] xyt: xyts) {
+                double bestDist = Double.MAX_VALUE;
+                Cluster bestCluster = null;
+                for (Cluster c: clusters) {
+                    double dist = LinAlg.distance(xyt, c.getMean(), 2);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestCluster = c;
+                    }
+                }
+
+                // XXX Magical clustering parameter
+                if (bestDist < 0.5) {
+                    bestCluster.addXYT(xyt);
+                } else {
+                    Cluster c = new Cluster();
+                    c.addXYT(xyt);
+                    clusters.add(c);
+                }
+            }
+
+            // Evaluate clusters
+            int numxyts = 0;
+            for (Cluster c: clusters)
+                numxyts += c.size();
+            assert (numxyts == size());
+
+            Collections.sort(clusters, new ClusterSizeComparator());
+        }
+
+        public double[] getMean()
+        {
+            evaluate();
+            return stats.mean;
+        }
+
+        public double[][] getVar()
+        {
+            evaluate();
+            return stats.cov;
+        }
+
+        public ArrayList<Cluster> getClusters()
+        {
+            evaluate();
+            assert (clusters.size() > 0);
+            return clusters;
+        }
+
+        public int size()
+        {
+            return xyts.size();
+        }
+
         public int hashCode()
         {
-            return new Integer(id).hashCode() ^ new Integer(count).hashCode();
+            return new Integer(count).hashCode() ^ tagClass.hashCode();
         }
 
         public boolean equals(Object o)
@@ -82,8 +213,38 @@ public class MonteCarloBot implements SimObject
             if (!(o instanceof TagRecord))
                 return false;
             TagRecord rec = (TagRecord)o;
-            return id == rec.id && count == rec.count;
+            return count == rec.count && tagClass.equals(rec.tagClass);
         }
+    }
+
+    static private XYTStats computeStats(ArrayList<double[]> xyts)
+    {
+        XYTStats stats = new XYTStats();
+        stats.mean = new double[3];
+        stats.cov = new double[3][3];
+
+        if (xyts.size() < 1)
+            return stats;
+
+        for (int i = 0; i < xyts.size(); i++) {
+            double[] xyt = xyts.get(i);
+            LinAlg.plusEquals(stats.mean, xyt);
+            for (int c = 0; c < 3; c++) {
+                for (int r = 0; r < 3; r++) {
+                    stats.cov[r][c] += xyt[r]*xyt[c];
+                }
+            }
+        }
+
+        stats.mean = LinAlg.scale(stats.mean, 1.0/xyts.size());
+        for (int c = 0; c < 3; c++) {
+            for (int r = 0; r < 3; r++) {
+                stats.cov[r][c] /= xyts.size();
+                stats.cov[r][c] -= stats.mean[r]*stats.mean[c];
+            }
+        }
+
+        return stats;
     }
 
     // === Random sampling interface =========================
@@ -127,6 +288,7 @@ public class MonteCarloBot implements SimObject
     public void simulate(double seconds)
     {
         simSinceReset++;
+        iteration++;
 
         // Precalculated paramters
         HashSet<SimObject> ignore = new HashSet<SimObject>();
@@ -195,23 +357,32 @@ public class MonteCarloBot implements SimObject
                 // Otherwise, store relevant information about the tag. Only use
                 // the FIRST tag class
                 if (test == null) {
-                    String c = classies.get(0).name;
-                    if (!testMap.containsKey(c)) {
+                    if (classies.size() < 1)
+                        continue;
+                    String name = classies.get(0).name;
+                    if (!testMap.containsKey(name)) {
                         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                         params.put("count", new TypedValue(Integer.MAX_VALUE));
-                        params.put("class", new TypedValue(c));
-                        testMap.put(c, new ClassificationCounterTest(params));
+                        params.put("class", new TypedValue(name));
+                        testMap.put(name, new ClassificationCounterTest(params));
                     }
-                    ClassificationCounterTest cTest = testMap.get(c);
+                    ClassificationCounterTest cTest = testMap.get(name);
                     cTest.addSample(classies.get(0));
                     int count = cTest.getCurrentCount();
                     if (count < 1)
                         continue;
-                    TagRecord rec = new TagRecord(tag.getID(), cTest.getCurrentCount(), getOdomLength(), c);
+                    TagRecord rec = new TagRecord(iteration, count, getOdomLength(), name);
 
-                    if (!tagRecords.contains(rec)) {
-                        tagRecords.add(rec);
+                    if (!tagRecords.containsKey(rec)) {
+                        tagRecords.put(rec, rec);
+                        tagRecords.get(rec).addXYT(LinAlg.matrixToXYT(getPose()));
                     }
+                    TagRecord temp = tagRecords.get(rec);
+                    if (temp.age != iteration) {
+                        temp.addXYT(LinAlg.matrixToXYT(getPose()));
+                        temp.age = iteration;
+                    }
+
                 } else {
                     for (classification_t classy: classies)
                         test.addSample(classy);

@@ -18,7 +18,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double FW_HZ = 100;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
-    private static final double BACK_THETA = 12*Math.PI/36;
+    private static final double BACK_THETA = 16*Math.PI/36;
     private static final double FRONT_THETA = 6*Math.PI/36;
     private static final double MAX_V = 0.5;
     private static final double MIN_V = 0.4;
@@ -195,7 +195,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         lastRange = r;
 
         // XXX
-        double G_weight = goalDistance;
+        double G_weight = Math.sqrt(goalDistance);
         double K_p = (1.0 - r/G_weight);
         double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
 

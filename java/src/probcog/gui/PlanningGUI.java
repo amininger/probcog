@@ -252,7 +252,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
                 // Show behaviors distribution
                 vb = vw.getBuffer("test-distribution");
-                vb.setDrawOrder(-901);
+                vb.setDrawOrder(10);
                 for (Behavior b: behaviors) {
                     vb.addBack(b.getVisObject());
                 }
