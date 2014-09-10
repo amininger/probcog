@@ -132,7 +132,7 @@ public class Behavior
     //
     // The grid map and corresponding wavefront are used to evaluate best-case
     // distance to the goal from our current location.
-    public double getMaxScore(GridMap gm, float[] wavefront, int numSamples, int depth)
+    public double getBestScore(GridMap gm, float[] wavefront, int numSamples, int depth)
     {
         if (behaviorScore < Double.MAX_VALUE)
             return behaviorScore;

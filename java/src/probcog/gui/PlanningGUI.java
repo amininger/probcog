@@ -174,7 +174,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     continue;
 
                 int code = name.hashCode();
-                Color c = ColorUtil.seededColor(code^138810921);
+                Color c = ColorUtil.seededColor(code^17132477);
                 vb.addBack(new VisChain(tag.getPose(),
                                         new VzRectangle(0.7, 0.7, new VzMesh.Style(c))));
             }

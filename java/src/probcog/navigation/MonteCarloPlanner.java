@@ -56,8 +56,8 @@ public class MonteCarloPlanner
             Cluster ca = a.getClusters().get(0);
             Cluster cb = b.getClusters().get(0);
 
-            float wa = (float)ca.size()/(float)numSamples;
-            float wb = (float)cb.size()/(float)numSamples;
+            float wa = (float)ca.size()/(float)numExploreSamples;
+            float wb = (float)cb.size()/(float)numExploreSamples;
 
             // Bias our searches to get us close to the goal fast
             double[] axyt = a.getMean();
@@ -72,9 +72,9 @@ public class MonteCarloPlanner
             int iyb = (int) Math.floor((bxyt[1]-gm.y0)/gm.metersPerPixel);
 
             // assert validity of these indices? They *should* always be inbounds
-            float da = (wf[iya*gm.width + ixa] + adist)/wa;
-            float db = (wf[iyb*gm.width + ixb] + bdist)/wb;
-            //System.out.printf("%f - %f\n", da, db);
+            float da = (wf[iya*gm.width + ixa] + adist) - 30.0f*wa;
+            float db = (wf[iyb*gm.width + ixb] + bdist) - 30.0f*wb;
+            //System.out.printf("%f - %f\n%f -- %f\n", da, db, wa, wb);
             if (da < db)
                 return -1;
             else if (da > db)
@@ -250,14 +250,8 @@ public class MonteCarloPlanner
                 System.out.printf("\n");
         }
 
-        // Don't search beyond our max depth.
-        if (depth >= maxDepth) {
-            System.out.printf("--TOO DEEP--\n");
-            return;
-        }
-
         // Prune out solutions that are worse than our best so far.
-        /*double nodeScore = node.data.getMaxScore(gm, wf, numSamples, depth);
+        /*double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
         if (nodeScore > solnScore) {
             System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
             return;
@@ -270,9 +264,16 @@ public class MonteCarloPlanner
         if (pct >= ARRIVAL_RATE_THRESH) {
             System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
             soln = node;
-            solnScore = soln.data.getMaxScore(gm, wf, numSamples, depth);
+            solnScore = soln.data.getBestScore(gm, wf, numSamples, depth);
             return;
         }
+
+        // Don't search beyond our max depth.
+        if (depth >= maxDepth) {
+            System.out.printf("--TOO DEEP--\n");
+            return;
+        }
+
 
         // XXX How would we incorporate more laws?
         // GOAL: Forward simulate for a fixed period for n iterations and see
@@ -306,7 +307,7 @@ public class MonteCarloPlanner
             // simulating many branches.
             // This is probably NOT a great thing to do, since we don't have
             // all that many samples.
-            double recScore = rec.getMaxScore(gm, wf, numExploreSamples, depth+1);
+            double recScore = rec.getBestScore(gm, wf, numExploreSamples, depth+1);
             if (solnScore < recScore) {
                 System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
                 continue;
