@@ -13,8 +13,7 @@ import probcog.commands.*;
 import probcog.commands.controls.FollowWall;
 import probcog.commands.tests.ClassificationCounterTest;
 import probcog.sim.*;
-import probcog.sim.MonteCarloBot.TagRecord;
-import probcog.sim.MonteCarloBot.Cluster;
+import probcog.navigation.Behavior.Cluster;
 import probcog.util.*;
 import probcog.util.Tree.Node;
 import probcog.vis.*;
@@ -50,34 +49,22 @@ public class MonteCarloPlanner
 
     ArrayList<FollowWall> controls = new ArrayList<FollowWall>();
 
-    private class LawRecordPair
+    private class BehaviorSearchComparator implements Comparator<Behavior>
     {
-        public FollowWall law;
-        public TagRecord rec;
-
-        public LawRecordPair(FollowWall law, TagRecord rec)
+        public int compare(Behavior a, Behavior b)
         {
-            this.law = law;
-            this.rec = rec;
-        }
-    }
+            Cluster ca = a.getClusters().get(0);
+            Cluster cb = b.getClusters().get(0);
 
-    private class LRPComparator implements Comparator<LawRecordPair>
-    {
-        public int compare(LawRecordPair a, LawRecordPair b)
-        {
-            Cluster ca = a.rec.getClusters().get(0);
-            Cluster cb = b.rec.getClusters().get(0);
-
-            float wa = (float)ca.size()/(float)a.rec.size();
-            float wb = (float)cb.size()/(float)b.rec.size();
+            float wa = (float)ca.size()/(float)numSamples;
+            float wb = (float)cb.size()/(float)numSamples;
 
             // Bias our searches to get us close to the goal fast
-            double[] axyt = a.rec.getMean();
-            double[] bxyt = b.rec.getMean();
+            double[] axyt = a.getMean();
+            double[] bxyt = b.getMean();
 
-            float adist = (float)a.rec.distanceTraveled;
-            float bdist = (float)b.rec.distanceTraveled;
+            float adist = (float)a.getMeanDistTraveled();
+            float bdist = (float)b.getMeanDistTraveled();
 
             int ixa = (int) Math.floor((axyt[0]-gm.x0)/gm.metersPerPixel);
             int iya = (int) Math.floor((axyt[1]-gm.y0)/gm.metersPerPixel);
@@ -223,11 +210,7 @@ public class MonteCarloPlanner
     private Node<Behavior> dfsSearch(double[] goal)
     {
         double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-        ArrayList<double[]> xyts = new ArrayList<double[]>();
-        xyts.add(xyt);
-        ArrayList<Double> dists = new ArrayList<Double>();
-        dists.add(0.0);
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, dists, null, null));
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt, 0.0, null, null));
 
         // iterative deepening search
         int i = 1;
@@ -297,7 +280,7 @@ public class MonteCarloPlanner
         // same obstacle! We want to keep track of all such possibilities, and
         // we'd like to be able to iterate through them later in order of which
         // ones are closest to our goal.
-        ArrayList<LawRecordPair> lrps = new ArrayList<LawRecordPair>();
+        ArrayList<Behavior> recs = new ArrayList<Behavior>();
         MonteCarloBot mcb;
         for (FollowWall law: controls) {
             mcb = new MonteCarloBot(sw);
@@ -306,30 +289,32 @@ public class MonteCarloPlanner
                 mcb.init(law, null, pair.xyt, pair.dist);
                 mcb.simulate(); // This will always timeout
             }
-            for (TagRecord rec: mcb.tagRecords.values())
-                lrps.add(new LawRecordPair(law, rec));
+            for (Behavior rec: mcb.tagRecords.values())
+                recs.add(rec);
         }
 
         // Test our record/law pairs based on tag distance to goal
-        // and (heuristic warning!) estimated distance traveled. XXX Not implemented yet
-        Collections.sort(lrps, new LRPComparator());
+        // and (heuristic warning!) estimated distance traveled.
+        Collections.sort(recs, new BehaviorSearchComparator());
         mcb = new MonteCarloBot(sw);
-        for (LawRecordPair lrp: lrps) {
-            //if (debug) {
-            //    System.out.println();
-            //    lrp.rec.printStats();
-            //}
+        for (Behavior rec: recs) {
+            // Prune out solutions that are worse than our best so far.
+            // This is an early attempt at pruning to avoid spending more time
+            // simulating many branches.
+            // This is probably NOT a great thing to do, since we don't have
+            // all that many samples.
+            if (soln != null && rec.getMaxScore(gm, wf, numSamples) > soln.data.getMaxScore(gm, wf)) {
+                System.out.printf("--PRUNED--\n");
+                continue;
+            }
 
-            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-            params.put("class", new TypedValue(lrp.rec.tagClass));
-            params.put("count", new TypedValue(lrp.rec.count));
 
             // Try multiple simulations to evaluate the step
             ArrayList<double[]> xyts = new ArrayList<double[]>();
             ArrayList<Double> distances = new ArrayList<Double>();
             for (int i = 0; i < numSamples; i++) {
                 Behavior.XYTPair pair = node.data.randomXYT();
-                mcb.init(lrp.law, new ClassificationCounterTest(params), pair.xyt, pair.dist);
+                mcb.init(rec.law, rec.test.clone(), pair.xyt, pair.dist);
                 mcb.simulate();
                 if (vw != null) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
@@ -345,7 +330,7 @@ public class MonteCarloPlanner
             }
             if (xyts.size() < 1)
                 continue;
-            Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, lrp.law, new ClassificationCounterTest(params)));
+            Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, rec.test.clone()));
 
             dfsHelper(newNode, goal, depth+1, maxDepth);
         }

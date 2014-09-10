@@ -14,6 +14,8 @@ import probcog.lcmtypes.*;
 
 public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 {
+    LCM lcm = LCM.getSingleton();
+
     // Default parameters...should these be settable?
     static final double CONFIDENCE_THRESHOLD = 0.8;
     static final double ORIENTATION_THRESHOLD = Math.toRadians(15);
@@ -87,7 +89,21 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         // XXX - Here we need to spin up a classifier and tell it what to look for
 
         startUtime = TimeUtil.utime();
-        LCM.getSingleton().subscribe("CLASSIFICATIONS", this);
+        lcm.subscribe("CLASSIFICATIONS", this);
+    }
+
+    public ClassificationCounterTest clone()
+    {
+        ClassificationCounterTest test = new ClassificationCounterTest();
+        test.goalCount = goalCount;
+        test.classType = classType;
+        test.orientation = orientation;
+        test.observed = new HashMap<Integer, DetectionRecord>();
+
+        test.startUtime = TimeUtil.utime();
+        test.lcm.subscribe("CLASSIFICATIONS", this);
+
+        return test;
     }
 
     /** Query whether or not the condition being tested for is currently true.
