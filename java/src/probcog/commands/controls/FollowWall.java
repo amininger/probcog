@@ -40,8 +40,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     int finIdx = -1;
 
     // State for PID
-    double K_d = 0.05;
-    //double K_d = 0.001;
+    //double K_d = 0.05;
+    double K_d = 0.001;
     double lastRange = -1;
 
     private class UpdateTask implements PeriodicTasks.Task

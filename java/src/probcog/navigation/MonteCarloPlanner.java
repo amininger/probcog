@@ -207,6 +207,7 @@ public class MonteCarloPlanner
 
     /** Do a depth first search for the best set of laws to follow */
     private Node<Behavior> soln;
+    private double solnScore;
     private Node<Behavior> dfsSearch(double[] goal)
     {
         double[] xyt = LinAlg.matrixToXYT(robot.getPose());
@@ -218,6 +219,7 @@ public class MonteCarloPlanner
             i = searchDepth;
 
         soln = null;
+        solnScore = Double.MAX_VALUE;
         for (; i <= searchDepth; i++) {
             for (Node<Behavior> leaf: tree.getLeaves()) {
                 dfsHelper(leaf, goal, leaf.depth, i);
@@ -255,8 +257,9 @@ public class MonteCarloPlanner
         }
 
         // Prune out solutions that are worse than our best so far.
-        if (soln != null && node.data.getMaxScore(gm, wf) > soln.data.getMaxScore(gm, wf)) {
-            System.out.printf("--PRUNED--\n");
+        double nodeScore = node.data.getMaxScore(gm, wf, numSamples);
+        if (nodeScore > solnScore) {
+            System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
             return;
         }
 
@@ -264,10 +267,10 @@ public class MonteCarloPlanner
         // the pruning filter. Thus, this is a better solution.
         double pct = node.data.getPctNearGoal(gm, wf);
         double ARRIVAL_RATE_THRESH = 0.1;
-        System.out.println("--PCT: "+pct+"--");
         if (pct >= ARRIVAL_RATE_THRESH) {
             System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
             soln = node;
+            solnScore = soln.data.getMaxScore(gm, wf, numSamples);
             return;
         }
 
@@ -303,8 +306,9 @@ public class MonteCarloPlanner
             // simulating many branches.
             // This is probably NOT a great thing to do, since we don't have
             // all that many samples.
-            if (soln != null && rec.getMaxScore(gm, wf, numSamples) > soln.data.getMaxScore(gm, wf)) {
-                System.out.printf("--PRUNED--\n");
+            double recScore = rec.getMaxScore(gm, wf, numExploreSamples);
+            if (solnScore < recScore) {
+                System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
                 continue;
             }
 
