@@ -30,6 +30,7 @@ public class MonteCarloBot implements SimObject
     boolean running = false;
 
     FastDrive drive = null;
+    double initialDistanceTraveled = 0;
     ArrayList<double[]> trajectoryTruth = new ArrayList<double[]>();
     ArrayList<double[]> trajectoryOdom = new ArrayList<double[]>();
     VisColorData vcd = new VisColorData();
@@ -116,7 +117,7 @@ public class MonteCarloBot implements SimObject
     public HashMap<TagRecord, TagRecord> tagRecords = new HashMap<TagRecord, TagRecord>();
     static public class TagRecord
     {
-        public double traveled;
+        public double distanceTraveled;
         public int age;
         public int count;
         public String tagClass;
@@ -125,11 +126,11 @@ public class MonteCarloBot implements SimObject
         ArrayList<Cluster> clusters = new ArrayList<Cluster>();
         XYTStats stats = null;
 
-        public TagRecord(int age, int count, double traveled, String tagClass)
+        public TagRecord(int age, int count, double distanceTraveled, String tagClass)
         {
             this.age = age;
             this.count = count;
-            this.traveled = traveled;
+            this.distanceTraveled = distanceTraveled;
             this.tagClass = tagClass;
         }
 
@@ -260,10 +261,13 @@ public class MonteCarloBot implements SimObject
 
     public void init(FollowWall law, ClassificationCounterTest test)
     {
-        init(law, test, null);
+        init(law, test, null, 0);
     }
 
-    public void init(FollowWall law, ClassificationCounterTest test, double[] xyt)
+    public void init(FollowWall law,
+                     ClassificationCounterTest test,
+                     double[] xyt,
+                     double initialDistanceTraveled)
     {
         success = false;
         this.law = law;
@@ -274,6 +278,7 @@ public class MonteCarloBot implements SimObject
             drive.centerOfRotation = new double[] { 0.13, 0, 0 };
 
             resetTrajectories();
+            this.initialDistanceTraveled = initialDistanceTraveled;
             trajectoryTruth.add(drive.poseTruth.pos);
             trajectoryOdom.add(drive.poseOdom.pos);
         }
@@ -304,7 +309,8 @@ public class MonteCarloBot implements SimObject
 
         // Initialize a list of things we saw to start with. These tags are
         // ignored during the simulation of this control law.
-        HashSet<SimAprilTag> initiallySeenTags = getSeenTags();
+        HashSet<SimAprilTag> invisibleTags = getSeenTags();
+        HashSet<SimAprilTag> observedTags = new HashSet<SimAprilTag>();
 
         // While control law has not finished OR timeout, try updating
         int timeout = (int)(seconds/FastDrive.DT);
@@ -347,8 +353,18 @@ public class MonteCarloBot implements SimObject
             // CHECK CLASSIFICATIONS
             HashSet<SimAprilTag> seenTags = getSeenTags();
             for (SimAprilTag tag: seenTags) {
-                if (initiallySeenTags.contains(tag))
+                if (invisibleTags.contains(tag))
                     continue; // XXX
+
+                if (!observedTags.contains(tag) && tc.tagIsVisible(tag.getID())) {
+                    observedTags.add(tag);
+                } else {
+                    invisibleTags.add(tag);
+                }
+
+                if (!observedTags.contains(tag))
+                    continue;
+
 
                 double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
                 double[] relXyzrpy = relativePose(getPose(), xyzrpy);
@@ -370,8 +386,9 @@ public class MonteCarloBot implements SimObject
                     ClassificationCounterTest cTest = testMap.get(name);
                     cTest.addSample(classies.get(0));
                     int count = cTest.getCurrentCount();
-                    if (count < 1)
+                    if (count < 1) {
                         continue;
+                    }
                     TagRecord rec = new TagRecord(iteration, count, getOdomLength(), name);
 
                     if (!tagRecords.containsKey(rec)) {
@@ -459,7 +476,7 @@ public class MonteCarloBot implements SimObject
             prev = curr;
         }
 
-        return length;
+        return initialDistanceTraveled + length;
     }
 
     public double getOdomLength()
@@ -475,7 +492,7 @@ public class MonteCarloBot implements SimObject
             prev = curr;
         }
 
-        return length;
+        return initialDistanceTraveled + length;
     }
 
     // === SimObject interface ===============================

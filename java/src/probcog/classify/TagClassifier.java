@@ -97,6 +97,16 @@ public class TagClassifier
         return classes;
     }
 
+    public boolean tagIsVisible(int id)
+    {
+        ArrayList<TagClass> tcs = idToTag.get(id);
+        if (tcs == null)
+            return false;
+
+        TagClass tc = tcs.get(0);
+        return classifierRandom.nextDouble() < tc.pctdet;
+    }
+
     /** Return a list of classifications for a tag of a given ID and xyzrpy
      *  relative to the robot
      **/
@@ -108,8 +118,6 @@ public class TagClassifier
             return classies;    // No config entries
 
         for (TagClass tc: tcs) {
-            if (classifierRandom.nextDouble() > tc.pctdet)
-                continue;
             classification_t classy = new classification_t();
             classy.name = tc.label;
             classy.id = id;
