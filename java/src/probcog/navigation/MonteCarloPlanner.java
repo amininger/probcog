@@ -64,36 +64,17 @@ public class MonteCarloPlanner
 
     private class LRPComparator implements Comparator<LawRecordPair>
     {
-        float[] wf;
-
-        public LRPComparator(float[] wf)
-        {
-            this.wf = wf;
-        }
-
         public int compare(LawRecordPair a, LawRecordPair b)
         {
-            // Downside: now we'd rather reliably go SOMEPLACE rather than the
-            // place we want to go.
-            // First, bias our search towards repeatability. How consistently
-            // can we land our points at effectively the same place?
             Cluster ca = a.rec.getClusters().get(0);
             Cluster cb = b.rec.getClusters().get(0);
 
-            //System.out.printf("%d : %d\n", ca.size(), cb.size());
-            //if (ca.size() > cb.size())
-            //    return -1;
-            //else if (ca.size() < cb.size())
-            //    return 1;
+            float wa = (float)ca.size()/(float)a.rec.size();
+            float wb = (float)cb.size()/(float)b.rec.size();
 
-            // Next, make sure these points wind up close to the goal. In lots
-            // of cases, we expect to have numerous "reliable" options, so it
-            // is preferable to choose the ones we perceive as making more
-            // forward progress.
-            double[] axyt = ca.getMean();
-            double[] bxyt = cb.getMean();
-            float wa = (float)ca.size()/a.rec.size();
-            float wb = (float)cb.size()/b.rec.size();
+            // Bias our searches to get us close to the goal fast
+            double[] axyt = a.rec.getMean();
+            double[] bxyt = b.rec.getMean();
 
             float adist = (float)a.rec.distanceTraveled;
             float bdist = (float)b.rec.distanceTraveled;
@@ -102,11 +83,10 @@ public class MonteCarloPlanner
             int iya = (int) Math.floor((axyt[1]-gm.y0)/gm.metersPerPixel);
             int ixb = (int) Math.floor((bxyt[0]-gm.x0)/gm.metersPerPixel);
             int iyb = (int) Math.floor((bxyt[1]-gm.y0)/gm.metersPerPixel);
+
             // assert validity of these indices? They *should* always be inbounds
-            //float da = (wf[iya*gm.width + ixa]) - 25*wa;
-            //float db = (wf[iyb*gm.width + ixb]) - 25*wb;
-            float da = (wf[iya*gm.width + ixa] + .90f*adist) - 25*wa;
-            float db = (wf[iyb*gm.width + ixb] + .90f*bdist) - 25*wb;
+            float da = (wf[iya*gm.width + ixa] + adist)/wa;
+            float db = (wf[iyb*gm.width + ixb] + bdist)/wb;
             //System.out.printf("%f - %f\n", da, db);
             if (da < db)
                 return -1;
@@ -222,35 +202,16 @@ public class MonteCarloPlanner
         watch.stop();
 
         watch.start("DFS");
-        Tree<Behavior> tree = dfsSearch(goal);
-        watch.stop();
-
-        // XXX Search tree for node with closest XYT to goal. In-order traversal?
-        // XXX This should really somehow come cout of the dfsSearch
-        watch.start("Path extraction");
-        Node<Behavior> bestNode = tree.root;
-        Behavior.XYTPair pair = bestNode.data.randomXYT();
-        double bestDist = LinAlg.distance(goal, pair.xyt, 2);   // XXX Ick
-        System.out.println("Tree size: "+tree.size());
-        ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
-        for (Node<Behavior> node: nodes) {
-            pair = node.data.randomXYT();
-            double dist = LinAlg.distance(goal, pair.xyt, 2);
-            if (dist < bestDist) {
-                bestDist = dist;
-                bestNode = node;
-            }
-        }
+        Node<Behavior> soln = dfsSearch(goal);
         watch.stop();
 
         // Trace back behaviors to reach said node
-        while (bestNode.parent != null) {
-            behaviors.add(bestNode.data);
-            bestNode = bestNode.parent;
+        while (soln != null && soln.parent != null) {
+            behaviors.add(soln.data);
+            soln = soln.parent;
         }
 
         Collections.reverse(behaviors);
-        watch.stop();
 
         if (debug)
             watch.print();
@@ -258,7 +219,8 @@ public class MonteCarloPlanner
     }
 
     /** Do a depth first search for the best set of laws to follow */
-    private Tree<Behavior> dfsSearch(double[] goal)
+    private Node<Behavior> soln;
+    private Node<Behavior> dfsSearch(double[] goal)
     {
         double[] xyt = LinAlg.matrixToXYT(robot.getPose());
         ArrayList<double[]> xyts = new ArrayList<double[]>();
@@ -272,14 +234,14 @@ public class MonteCarloPlanner
         if (!iterativeDeepening)
             i = searchDepth;
 
-        boolean done = false;
+        soln = null;
         for (; i <= searchDepth; i++) {
             for (Node<Behavior> leaf: tree.getLeaves()) {
-                done = dfsHelper(leaf, goal, leaf.depth, i);
-                if (done)
+                dfsHelper(leaf, goal, leaf.depth, i);
+                if (soln != null)
                     break;
             }
-            if (done)
+            if (soln != null)
                 break;
         }
         if (vw != null) {
@@ -287,10 +249,10 @@ public class MonteCarloPlanner
             vb.swap(); // Cleanup
         }
 
-        return tree;
+        return soln;
     }
 
-    private boolean dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
+    private void dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
     {
         if (debug) {
             System.out.printf("|");
@@ -303,16 +265,27 @@ public class MonteCarloPlanner
                 System.out.printf("\n");
         }
 
-        // XXX GROSS! Want to save best traj to date, but not terminate immediately
-        Behavior.XYTPair pair = node.data.randomXYT();
-        if (LinAlg.distance(pair.xyt, goal, 2) < 3.0) {    // XXX This can't stay
-            System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-            return true;    // Found the goal
+        // Don't search beyond our max depth.
+        if (depth >= maxDepth) {
+            System.out.printf("--TOO DEEP--\n");
+            return;
         }
 
-        if (depth > maxDepth) {
-            System.out.printf("--TOO DEEP--\n");
-            return false;
+        // Prune out solutions that are worse than our best so far.
+        if (soln != null && node.data.getMaxScore(gm, wf) > soln.data.getMaxScore(gm, wf)) {
+            System.out.printf("--PRUNED--\n");
+            return;
+        }
+
+        // This must have a better score than we currently have, because we got past
+        // the pruning filter. Thus, this is a better solution.
+        double pct = node.data.getPctNearGoal(gm, wf);
+        double ARRIVAL_RATE_THRESH = 0.1;
+        System.out.println("--PCT: "+pct+"--");
+        if (pct >= ARRIVAL_RATE_THRESH) {
+            System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+            soln = node;
+            return;
         }
 
         // XXX How would we incorporate more laws?
@@ -329,7 +302,7 @@ public class MonteCarloPlanner
         for (FollowWall law: controls) {
             mcb = new MonteCarloBot(sw);
             for (int i = 0; i < numExploreSamples; i++) {
-                pair = node.data.randomXYT();
+                Behavior.XYTPair pair = node.data.randomXYT();
                 mcb.init(law, null, pair.xyt, pair.dist);
                 mcb.simulate(); // This will always timeout
             }
@@ -339,7 +312,7 @@ public class MonteCarloPlanner
 
         // Test our record/law pairs based on tag distance to goal
         // and (heuristic warning!) estimated distance traveled. XXX Not implemented yet
-        Collections.sort(lrps, new LRPComparator(wf));
+        Collections.sort(lrps, new LRPComparator());
         mcb = new MonteCarloBot(sw);
         for (LawRecordPair lrp: lrps) {
             //if (debug) {
@@ -355,7 +328,7 @@ public class MonteCarloPlanner
             ArrayList<double[]> xyts = new ArrayList<double[]>();
             ArrayList<Double> distances = new ArrayList<Double>();
             for (int i = 0; i < numSamples; i++) {
-                pair = node.data.randomXYT();
+                Behavior.XYTPair pair = node.data.randomXYT();
                 mcb.init(lrp.law, new ClassificationCounterTest(params), pair.xyt, pair.dist);
                 mcb.simulate();
                 if (vw != null) {
@@ -374,10 +347,9 @@ public class MonteCarloPlanner
                 continue;
             Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, lrp.law, new ClassificationCounterTest(params)));
 
-            if (dfsHelper(newNode, goal, depth+1, maxDepth))
-                return true;
+            dfsHelper(newNode, goal, depth+1, maxDepth);
         }
 
-        return false;
+        return;
     }
 }

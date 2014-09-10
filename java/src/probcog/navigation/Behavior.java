@@ -19,6 +19,7 @@ public class Behavior
     public ClassificationCounterTest test;  // Test to check against
 
     // Bookkeeping for evaluating search
+    double behaviorScore = Double.MAX_VALUE;
     public ArrayList<double[]> xyts = new ArrayList<double[]>();
     public ArrayList<Double> distances = new ArrayList<Double>();
     public class XYTPair
@@ -52,6 +53,9 @@ public class Behavior
     // distance to the goal from our current location.
     public double getMaxScore(GridMap gm, float[] wavefront)
     {
+        if (behaviorScore < Double.MAX_VALUE)
+            return behaviorScore;
+
         double meanDistance = 0;
         for (int i = 0; i < xyts.size(); i++) {
             double dist = distances.get(i);
@@ -67,7 +71,44 @@ public class Behavior
 
         // XXX Factor in goodness of arrival rate, too. We sort of do right now
         // by calculating a mean distance, but it's not quite what we want.
-        return -meanDistance;
+        behaviorScore = -meanDistance*getPctNearGoal(gm, wavefront);
+        return behaviorScore;
+    }
+
+    public double getPctNearGoal(GridMap gm, float[] wavefront)
+    {
+        if (xyts.size() < 1)
+            return 0;
+
+        double GOAL_THRESH = 3.0;
+        int count = 0;
+        for (int i = 0; i < xyts.size(); i++) {
+            double[] xyt = xyts.get(i);
+            int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
+            int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
+            double wfdist = (double)wavefront[iy*gm.width + ix];
+            if (wfdist < GOAL_THRESH)
+                count++;
+        }
+
+        return (double)count/(double)xyts.size();
+    }
+
+    public double getMeanDistToGoal(GridMap gm, float[] wavefront)
+    {
+        if (xyts.size() < 1)
+            return Double.MAX_VALUE;
+
+        double mean = 0;
+        for (int i = 0; i < xyts.size(); i++) {
+            double[] xyt = xyts.get(i);
+            int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
+            int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
+            double wfdist = (double)wavefront[iy*gm.width + ix];
+            mean += wfdist;
+        }
+
+        return mean /= xyts.size();
     }
 
     public XYTPair getXYT()
