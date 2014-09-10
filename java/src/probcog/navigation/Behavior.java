@@ -123,11 +123,6 @@ public class Behavior
         this.distances = distances;
     }
 
-    public double getMaxScore(GridMap gm, float[] wavefront)
-    {
-        return getMaxScore(gm, wavefront, xyts.size());
-    }
-
     // Get the best possible score we could still achieve with this chain of
     // behaviors. This is some combination of our distribution of XYTS along with
     // the distance we likely traveled to arrive at that distribution. We prefer
@@ -137,7 +132,7 @@ public class Behavior
     //
     // The grid map and corresponding wavefront are used to evaluate best-case
     // distance to the goal from our current location.
-    public double getMaxScore(GridMap gm, float[] wavefront, int numSamples)
+    public double getMaxScore(GridMap gm, float[] wavefront, int numSamples, int depth)
     {
         if (behaviorScore < Double.MAX_VALUE)
             return behaviorScore;
@@ -159,13 +154,8 @@ public class Behavior
         // out, much like in DART. This lets us bound our search earlier.
         getClusters();
         double maxClusterPct = (double)clusters.get(0).size()/(double)numSamples;
-        behaviorScore = meanDistance / maxClusterPct;
+        behaviorScore = meanDistance / (maxClusterPct);
         return behaviorScore;
-    }
-
-    public double getPctNearGoal(GridMap gm, float[] wavefront)
-    {
-        return getPctNearGoal(gm, wavefront, xyts.size());
     }
 
     public double getPctNearGoal(GridMap gm, float[] wavefront, int numSamples)

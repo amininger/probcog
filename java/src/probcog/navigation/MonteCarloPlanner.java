@@ -257,20 +257,20 @@ public class MonteCarloPlanner
         }
 
         // Prune out solutions that are worse than our best so far.
-        double nodeScore = node.data.getMaxScore(gm, wf, numSamples);
+        /*double nodeScore = node.data.getMaxScore(gm, wf, numSamples, depth);
         if (nodeScore > solnScore) {
             System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
             return;
-        }
+        }*/
 
         // This must have a better score than we currently have, because we got past
         // the pruning filter. Thus, this is a better solution.
-        double pct = node.data.getPctNearGoal(gm, wf);
+        double pct = node.data.getPctNearGoal(gm, wf, numSamples);
         double ARRIVAL_RATE_THRESH = 0.1;
         if (pct >= ARRIVAL_RATE_THRESH) {
             System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
             soln = node;
-            solnScore = soln.data.getMaxScore(gm, wf, numSamples);
+            solnScore = soln.data.getMaxScore(gm, wf, numSamples, depth);
             return;
         }
 
@@ -306,7 +306,7 @@ public class MonteCarloPlanner
             // simulating many branches.
             // This is probably NOT a great thing to do, since we don't have
             // all that many samples.
-            double recScore = rec.getMaxScore(gm, wf, numExploreSamples);
+            double recScore = rec.getMaxScore(gm, wf, numExploreSamples, depth+1);
             if (solnScore < recScore) {
                 System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
                 continue;
