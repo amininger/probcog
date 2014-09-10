@@ -15,12 +15,14 @@ public class Behavior
     public ArrayList<double[]> xyts = new ArrayList<double[]>();
     public FollowWall law;                  // Law to follow
     public ClassificationCounterTest test;  // Test to check against
+    public double distanceTraveled;
 
-    public Behavior(ArrayList<double[]> xyts, FollowWall law, ClassificationCounterTest test)
+    public Behavior(ArrayList<double[]> xyts, double dist, FollowWall law, ClassificationCounterTest test)
     {
         this.xyts = xyts;
         this.law = law;
         this.test = test;
+        this.distanceTraveled = dist;
     }
 
     public double[] getXYT()

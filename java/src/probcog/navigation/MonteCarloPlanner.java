@@ -52,11 +52,13 @@ public class MonteCarloPlanner
 
     private class LawRecordPair
     {
+        public double totalDistance;
         public FollowWall law;
         public TagRecord rec;
 
-        public LawRecordPair(FollowWall law, TagRecord rec)
+        public LawRecordPair(double dist, FollowWall law, TagRecord rec)
         {
+            this.totalDistance = dist;
             this.law = law;
             this.rec = rec;
         }
@@ -95,13 +97,19 @@ public class MonteCarloPlanner
             float wa = (float)ca.size()/a.rec.size();
             float wb = (float)cb.size()/b.rec.size();
 
+            float adist = (float)a.totalDistance + (float)a.rec.traveled;
+            float bdist = (float)b.totalDistance + (float)b.rec.traveled;
+
             int ixa = (int) Math.floor((axyt[0]-gm.x0)/gm.metersPerPixel);
             int iya = (int) Math.floor((axyt[1]-gm.y0)/gm.metersPerPixel);
             int ixb = (int) Math.floor((bxyt[0]-gm.x0)/gm.metersPerPixel);
             int iyb = (int) Math.floor((bxyt[1]-gm.y0)/gm.metersPerPixel);
             // assert validity of these indices? They *should* always be inbounds
-            float da = wf[iya*gm.width + ixa]/wa;   // XXX HACK THAT SORTA WORKS
-            float db = wf[iyb*gm.width + ixb]/wb;
+            float da = (wf[iya*gm.width + ixa]) - 25*wa;
+            float db = (wf[iyb*gm.width + ixb]) - 25*wb;
+            //float da = (wf[iya*gm.width + ixa] + .5f*adist) - 25*wa;
+            //float db = (wf[iyb*gm.width + ixb] + .5f*bdist) - 25*wb;
+            //System.out.printf("%f - %f\n", da, db);
             if (da < db)
                 return -1;
             else if (da > db)
@@ -255,7 +263,7 @@ public class MonteCarloPlanner
         double[] xyt = LinAlg.matrixToXYT(robot.getPose());
         ArrayList<double[]> xyts = new ArrayList<double[]>();
         xyts.add(xyt);
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, null, null));
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, 0, null, null));
 
         // iterative deepening search
         int i = 1;
@@ -322,7 +330,7 @@ public class MonteCarloPlanner
                 mcb.simulate(); // This will always timeout
             }
             for (TagRecord rec: mcb.tagRecords.values())
-                lrps.add(new LawRecordPair(law, rec));
+                lrps.add(new LawRecordPair(node.data.distanceTraveled, law, rec));
         }
 
         // Test our record/law pairs based on tag distance to goal
@@ -334,6 +342,7 @@ public class MonteCarloPlanner
             //    System.out.println();
             //    lrp.rec.printStats();
             //}
+            double totalDistance = lrp.totalDistance + lrp.rec.traveled;
 
             HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
             params.put("class", new TypedValue(lrp.rec.tagClass));
@@ -358,74 +367,12 @@ public class MonteCarloPlanner
             }
             if (xyts.size() < 1)
                 continue;
-            Node<Behavior> newNode = node.addChild(new Behavior(xyts, lrp.law, new ClassificationCounterTest(params)));
+            Node<Behavior> newNode = node.addChild(new Behavior(xyts, totalDistance, lrp.law, new ClassificationCounterTest(params)));
 
             if (dfsHelper(newNode, goal, depth+1, maxDepth))
                 return true;
         }
 
         return false;
-    }
-
-    private Tree<Behavior> buildTree(int depth, double[] goal)
-    {
-        double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-        ArrayList<double[]> xyts = new ArrayList<double[]>();
-        xyts.add(xyt);
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, null, null));
-
-        // Populate lower levels of tree
-        ArrayList<Node<Behavior> > nodes = new ArrayList<Node<Behavior> >();
-        nodes.add(tree.root);
-        for (int i = 0; i < searchDepth; i++) {
-            ArrayList<Node<Behavior> > nextNodes = new ArrayList<Node<Behavior> >();
-            for (Node<Behavior> node: nodes) {
-                makeChildren(node, goal);
-                nextNodes.addAll(node.children);
-            }
-            nodes = nextNodes;
-        }
-
-        return tree;
-    }
-
-    private void makeChildren(Node<Behavior> node, double[] goal)
-    {
-        MonteCarloBot mcb = new MonteCarloBot(sw);
-
-        // Parameters for termination condition
-        Set<String> classes = tagdb.getAllClasses();
-        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-        params.put("count", new TypedValue(1)); // We only ever consider counting one object
-
-        // For every combination of termination condition and control law, simulate
-        // and evaluate various actions.
-        for (FollowWall law: controls) {
-            for (String tagClass: classes) {
-                ArrayList<double[]> xyts = new ArrayList<double[]>();
-                params.put("class", new TypedValue(tagClass));
-
-                for (int i = 0; i < numSamples; i++) {
-                    //watch.start(""+i);
-                    mcb.init(law, new ClassificationCounterTest(params), node.data.randomXYT());
-                    mcb.simulate();
-                    //watch.stop();
-                    if (mcb.success()) {
-                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-                    }
-                }
-                // Check to make sure at least one instance of this plan succeeded
-                // XXX This could be more important later. What if we want to actually
-                // store a distribution of states in our behavior? For example, we could
-                // sample a random XYT from the previous distribution every time when starting
-                // or from a distribution estimating the spread of XYTs.
-                if (xyts.size() < 1)
-                    continue;
-
-                // Should we consider closeness to goal?
-                // Store to tree for future consideration
-                node.addChild(new Behavior(xyts, law, new ClassificationCounterTest(params)));
-            }
-        }
     }
 }

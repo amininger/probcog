@@ -84,7 +84,7 @@ public class WavefrontPlanner
                 // We are assuming fixed-cost movement between all cells (there
                 // is no such thing as cell cost weighting), so we can measure
                 // cost as being the distance between cells
-                float cost = costMap[n] + (float)LinAlg.magnitude(neighbor);
+                float cost = costMap[n] + (float)(LinAlg.magnitude(neighbor)*gm.metersPerPixel);
                 costMap[np] = cost;
                 c = ((npx & 0xffff) << 16) | (npy & 0xffff);
                 wavefront.add(c, -cost);

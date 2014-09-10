@@ -16,6 +16,7 @@ import april.vis.*;
 import april.util.*;
 import april.sim.*;
 
+import probcog.classify.*;
 import probcog.commands.*;
 import probcog.commands.controls.FollowWall;
 import probcog.commands.tests.ClassificationCounterTest;
@@ -60,6 +61,10 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         simulator.getWorld().setRunning(false); // Stop the world here, by default
 
         init(); // This does things like compute a full grid map for wavefront based on the sim world
+
+        // Render some bonus information about tags types, etc.
+        vl.backgroundColor = new Color(0x55, 0x55, 0x55, 0xff);
+        draw();
 
         lcm.subscribe("POSE", this);
 
@@ -139,18 +144,45 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         wfp = new WavefrontPlanner(gm, 0.4);
 
         // Debugging
-        if (DEBUG) {
-            VisWorld.Buffer vb = vw.getBuffer("debug-gridmap");
-            vb.setDrawOrder(-2000);
-            vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
-                                    LinAlg.scale(MPP),
-                                    new VzImage(new VisTexture(gm.makeBufferedImage(),
-                                                               VisTexture.NO_MIN_FILTER |
-                                                               VisTexture.NO_MAG_FILTER))));
-            vb.swap();
-        }
+        //if (DEBUG) {
+        //    VisWorld.Buffer vb = vw.getBuffer("debug-gridmap");
+        //    vb.setDrawOrder(-2000);
+        //    vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
+        //                            LinAlg.scale(MPP),
+        //                            new VzImage(new VisTexture(gm.makeBufferedImage(),
+        //                                                       VisTexture.NO_MIN_FILTER |
+        //                                                       VisTexture.NO_MAG_FILTER))));
+        //    vb.swap();
+        //}
     }
 
+    private void draw()
+    {
+        VisWorld.Buffer vb = vw.getBuffer("tag-classes");
+        vb.setDrawOrder(-1000);
+        try {
+            TagClassifier tc = new TagClassifier(false);
+            for (SimObject so: simulator.getWorld().objects) {
+                if (!(so instanceof SimAprilTag))
+                    continue;
+                SimAprilTag tag = (SimAprilTag)so;
+                Set<String> tagClasses = tc.getClasses(tag.getID());
+                String name = null;
+                if (tagClasses.size() > 0)
+                    name = tagClasses.iterator().next();
+                else
+                    continue;
+
+                int code = name.hashCode();
+                Color c = ColorUtil.seededColor(code^138810921);
+                vb.addBack(new VisChain(tag.getPose(),
+                                        new VzRectangle(0.7, 0.7, new VzMesh.Style(c))));
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        vb.swap();
+    }
 
     // === Support Classes ====================================================
     private class PlanningGUIEventHandler extends VisEventAdapter

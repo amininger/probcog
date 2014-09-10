@@ -302,6 +302,10 @@ public class MonteCarloBot implements SimObject
         laser_t laser = new laser_t();
         laser.utime = TimeUtil.utime();
 
+        // Initialize a list of things we saw to start with. These tags are
+        // ignored during the simulation of this control law.
+        HashSet<SimAprilTag> initiallySeenTags = getSeenTags();
+
         // While control law has not finished OR timeout, try updating
         int timeout = (int)(seconds/FastDrive.DT);
         Tic tic = new Tic();
@@ -341,15 +345,12 @@ public class MonteCarloBot implements SimObject
             laser.utime += FastDrive.DT*1000000;
 
             // CHECK CLASSIFICATIONS
-            double classificationRange = 2.0;  // Config
-            for (SimObject so: sw.objects) {
-                if (!(so instanceof SimAprilTag))
-                    continue;
-                double[] xyzrpy = LinAlg.matrixToXyzrpy(so.getPose());
-                double d = LinAlg.distance(drive.poseTruth.pos, xyzrpy, 2);
-                if (d > classificationRange)
-                    continue;
-                SimAprilTag tag = (SimAprilTag)so;
+            HashSet<SimAprilTag> seenTags = getSeenTags();
+            for (SimAprilTag tag: seenTags) {
+                if (initiallySeenTags.contains(tag))
+                    continue; // XXX
+
+                double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
                 double[] relXyzrpy = relativePose(getPose(), xyzrpy);
                 ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
 
@@ -406,6 +407,24 @@ public class MonteCarloBot implements SimObject
         }
         success = timeout > 0;
         //System.out.printf("%f [s]\n", time);
+    }
+
+    public HashSet<SimAprilTag> getSeenTags()
+    {
+        HashSet<SimAprilTag> seenTags = new HashSet<SimAprilTag>();
+
+        double classificationRange = 2.0;  // XXX Config
+        for (SimObject so: sw.objects) {
+            if (!(so instanceof SimAprilTag))
+                continue;
+            double[] xyzrpy = LinAlg.matrixToXyzrpy(so.getPose());
+            double d = LinAlg.distance(drive.poseTruth.pos, xyzrpy, 2);
+            if (d > classificationRange)
+                continue;
+            seenTags.add((SimAprilTag)so);
+        }
+
+        return seenTags;
     }
 
     // Convenience function for classification_t construction
