@@ -58,7 +58,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
         VisConsole console = new VisConsole(vw, vl, vc);
         simulator = new ProbCogSimulator(opts, vw, vl, vc, console);
-        simulator.getWorld().setRunning(false); // Stop the world here, by default
+        //simulator.getWorld().setRunning(false); // Stop the world here, by default
 
         init(); // This does things like compute a full grid map for wavefront based on the sim world
 
@@ -141,7 +141,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             }
         }
 
-        wfp = new WavefrontPlanner(gm, 0.4);
+        wfp = new WavefrontPlanner(gm, 0.5);
 
         // Debugging
         //if (DEBUG) {
@@ -207,6 +207,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 new MonteCarloThread().start();
             if (e.getKeyCode() == KeyEvent.VK_W)
                 new WavefrontThread().start();
+            if (e.getKeyCode() == KeyEvent.VK_Q)
+                new DataThread().start();
 
             return false;
         }
@@ -365,6 +367,196 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             dd.left_enabled = dd.right_enabled = true;
             dd.left = dd.right = 0;
             LCM.getSingleton().publish("DIFF_DRIVE", dd);
+        }
+    }
+
+    // Run data gathering trials. Execute a patrol mission that goes around to
+    // random hallways in the building for a fixed number of goals. We try to do
+    // this for both a wavefront follower AND our planner. At the end, we measure
+    // deviation from our actual goal positions. (TODO: Make us drive all the way
+    // up to goal, if possible. We have a constant offset issue).
+    private class DataThread extends Thread
+    {
+        CommandCoordinator coordinator = new CommandCoordinator();
+
+        // Trial parameters
+        int NUM_TRIALS = 2;
+        ArrayList<Integer> goalIDs = new ArrayList<Integer>();
+
+        double[][] initialPose;
+
+        public void run()
+        {
+            System.out.println("Starting long test...");
+
+            // Create a set of goals for our test.
+            System.out.println("Initializing goals...");
+            Random r = new Random();
+            initGoals(r);
+
+            // Find the sim robot and save pose for test reset
+            SimRobot robot = getRobot();
+            initialPose = robot.getPose();
+
+            // First, try the wavefront follower
+            System.out.println("Trying wavefront...");
+            tryWavefront();
+
+            // Reset the robot pose
+            System.out.println("Resetting...");
+            robot.setPose(initialPose);
+
+            // Then, try our planner
+            System.out.println("Trying Monte Carlo...");
+            tryMonteCarlo();
+
+            System.out.println("DONE!");
+        }
+
+        private void initGoals(Random r)
+        {
+            // Generate a set of goals
+            TagClassifier tc = null;
+            try {
+                tc = new TagClassifier(false);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                System.exit(1);
+            }
+            ArrayList<Integer> hallways = new ArrayList(tc.getIDsForClass("hallway"));
+            assert (hallways.size() > 1);
+
+            int idx = r.nextInt(hallways.size());
+            while (goalIDs.size() < NUM_TRIALS) {
+                goalIDs.add(hallways.get(idx));
+
+                int newIdx = r.nextInt(hallways.size()-1);
+                if (newIdx >= idx)
+                    idx = newIdx + 1;
+                else
+                    idx = newIdx;
+            }
+        }
+
+        private SimRobot getRobot()
+        {
+            SimRobot robot = null;
+            for (SimObject obj: simulator.getWorld().objects) {
+                if (!(obj instanceof SimRobot))
+                    continue;
+                robot = (SimRobot)obj;
+                break;
+            }
+            return robot;
+        }
+
+        private SimAprilTag getTag(int id)
+        {
+            SimAprilTag tag = null;
+            for (SimObject obj: simulator.getWorld().objects) {
+                if (!(obj instanceof SimAprilTag))
+                    continue;
+                SimAprilTag temp = (SimAprilTag)obj;
+                if (temp.getID() == id) {
+                    tag = temp;
+                    break;
+                }
+            }
+
+            return tag;
+        }
+
+        private void tryWavefront()
+        {
+            for (Integer id: goalIDs) {
+                System.out.println("NFO: Wavefront pursuing tag "+id);
+                SimRobot robot = getRobot();
+                assert (robot != null);
+
+                SimAprilTag tag = getTag(id);
+                assert (tag != null);
+
+                double[] startXY = LinAlg.matrixToXYT(robot.getPose()); // Noisy pose XXX
+                double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
+
+                float[] costMap = wfp.getWavefront(startXY, goalXY);
+                // Render the wavefront
+                BufferedImage im = new BufferedImage(gm.width, gm.height, BufferedImage.TYPE_BYTE_GRAY);
+                byte[] buf = ((DataBufferByte) (im.getRaster().getDataBuffer())).getData();
+                for (int i = 0; i < costMap.length; i++) {
+                    byte v = (byte)255;
+                    if (costMap[i] == Float.MAX_VALUE)
+                        v = (byte)0;
+                    else if (costMap[i] > 0)
+                        v = (byte)127;
+                    buf[i] = v;
+                }
+
+                if (DEBUG) {
+                    VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
+                    vb.setDrawOrder(-1001);
+                    vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
+                                LinAlg.scale(gm.metersPerPixel),
+                                new VzImage(new VisTexture(im,
+                                        VisTexture.NO_MIN_FILTER |
+                                        VisTexture.NO_MAG_FILTER))));
+                    vb.swap();
+
+                    vb = vw.getBuffer("debug-wavefront-goal");
+                    vb.addBack(new VisChain(LinAlg.translate(goalXY[0], goalXY[1], 1.0),
+                                            new VzSphere(0.2, new VzMesh.Style(Color.green))));
+                    vb.swap();
+                }
+
+                // Get the path
+                ArrayList<double[]> path = wfp.getPath();
+
+                if (path.size() < 2)
+                    TimeUtil.sleep(5);
+
+                if (DEBUG) {
+                    VisWorld.Buffer vb = vw.getBuffer("debug-wavefront-path");
+                    vb.setDrawOrder(-1000);
+                    vb.addBack(new VzLines(new VisVertexData(path),
+                                           VzLines.LINE_STRIP,
+                                           new VzLines.Style(Color.yellow, 2)));
+                    vb.swap();
+                }
+
+                // Try following the path
+                Tic tic = new Tic();
+                diff_drive_t dd = new diff_drive_t();
+                while (followingPath(robot, dd)) {
+                    // XXX Noisy Pose
+                    double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
+                    double[] orientation = LinAlg.matrixToQuat(robot.getPose());
+                    dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8);
+                    dd.utime = TimeUtil.utime();
+                    LCM.getSingleton().publish("DIFF_DRIVE", dd);
+                    TimeUtil.sleep(20);
+                }
+                dd.utime = TimeUtil.utime();
+                dd.left_enabled = dd.right_enabled = true;
+                dd.left = dd.right = 0;
+                LCM.getSingleton().publish("DIFF_DRIVE", dd);
+            }
+        }
+
+        private boolean followingPath(SimRobot robot, diff_drive_t dd)
+        {
+            // We are following the path when:
+            // 1) The robot has not collided with anything and
+            // 2) The robot has not yet reached what (it thinks) is the goal
+            if (dd.utime > 0 && dd.left == 0 && dd.right == 0)
+                return false;
+
+            // XXX Collision
+            return true;
+        }
+
+        private void tryMonteCarlo()
+        {
+            // XXX
         }
     }
 

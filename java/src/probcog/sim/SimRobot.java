@@ -79,7 +79,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         // Reproduce this in monte-carlo bot
         drive = new DifferentialDrive(sw, this, new double[3]);
         drive.centerOfRotation = new double[] { 0.23, 0, 0 };
-        drive.voltageScale = 24.0;
+        /*drive.voltageScale = 24.0;
         drive.wheelDiameter = 0.25;
         drive.baseline = 0.46;  // As measured to wheel centers
         drive.translation_noise = 0.1;
@@ -100,7 +100,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.rightMotor.inertia = K_inertia;
         double K_drag = 1.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
         drive.leftMotor.drag_constant = K_drag;
-        drive.rightMotor.drag_constant = K_drag;
+        drive.rightMotor.drag_constant = K_drag;*/
 
         lcm.subscribe("GAMEPAD", this);
         lcm.subscribe("DIFF_DRIVE", this);
@@ -192,6 +192,12 @@ public class SimRobot implements SimObject, LCMSubscriber
     {
         return LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
                                       drive.poseTruth.pos);
+    }
+
+    public double[][] getNoisyPose()
+    {
+        return LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
+                                      drive.poseOdom.pos);
     }
 
     public void setPose(double T[][])

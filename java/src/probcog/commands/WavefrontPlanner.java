@@ -8,6 +8,7 @@ import april.util.*;
 /** A tool for computing wavefront paths through the environment */
 public class WavefrontPlanner
 {
+    boolean failure = false;
     GridMap gm;
     float[] costMap;
     double[] start, goal;
@@ -31,11 +32,15 @@ public class WavefrontPlanner
             costMap[i] = gm.data[i] == 0 ? Float.MAX_VALUE : -1;
         start = null;
         goal = null;
+        failure = false;
     }
 
     public float[] getWavefront(double[] s, double[] g)
     {
         initMap();
+
+        goal = g;
+        start = s;
 
         // Starting/finishing indices. Note: we search BACK from the goal
         int sx = Integer.MAX_VALUE;
@@ -98,7 +103,7 @@ public class WavefrontPlanner
             }
         }
 
-        assert (s == null); // Otherwise, you asked for the impossible
+        failure = true;
 
         // Finished without finding goal. Just send back a cost map
         return costMap;
@@ -111,6 +116,11 @@ public class WavefrontPlanner
     {
         assert (start != null && goal != null);
         ArrayList<double[]> path = new ArrayList<double[]>();
+
+        if (failure) {
+            System.out.println("ERR: No path was found");
+            return path;
+        }
 
         // Starting/finishing indices.
         int sx = (int) ((start[0]-gm.x0)/gm.metersPerPixel);
