@@ -154,7 +154,7 @@ public class Behavior
         // out, much like in DART. This lets us bound our search earlier.
         getClusters();
         double maxClusterPct = (double)clusters.get(0).size()/(double)numSamples;
-        behaviorScore = meanDistance / (maxClusterPct);
+        behaviorScore = meanDistance - 50.0*(maxClusterPct);    // Not perfect, but interesting
         return behaviorScore;
     }
 

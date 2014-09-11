@@ -165,8 +165,10 @@ public class MonteCarloBot implements SimObject
             HashSet<SimAprilTag> seenTags = getSeenTags();
             for (SimAprilTag tag: seenTags) {
                 if (invisibleTags.contains(tag))
-                    continue; // XXX
+                    continue;   // XXX This is currently NOT supported in the real world
 
+                // Check to see if we saw a given tag this time. Note that this
+                // does not support the possibility that counting higher is harder
                 if (!observedTags.contains(tag) && tc.tagIsVisible(tag.getID())) {
                     observedTags.add(tag);
                 } else {

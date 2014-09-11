@@ -19,7 +19,8 @@ public class TagClassifier
     String tagConfig = Util.getConfig().requireString("tag_config");
     double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
 
-    static Random classifierRandom = new Random(8437531);
+    //static Random classifierRandom = new Random(104395301);
+    Random classifierRandom = new Random();
     LCM lcm = LCM.getSingleton();
 
     HashMap<Integer, ArrayList<TagClass>> idToTag;

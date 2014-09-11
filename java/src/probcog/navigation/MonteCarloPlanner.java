@@ -60,21 +60,17 @@ public class MonteCarloPlanner
             float wb = (float)cb.size()/(float)numExploreSamples;
 
             // Bias our searches to get us close to the goal fast
-            double[] axyt = a.getMean();
-            double[] bxyt = b.getMean();
-
             float adist = (float)a.getMeanDistTraveled();
             float bdist = (float)b.getMeanDistTraveled();
 
-            int ixa = (int) Math.floor((axyt[0]-gm.x0)/gm.metersPerPixel);
-            int iya = (int) Math.floor((axyt[1]-gm.y0)/gm.metersPerPixel);
-            int ixb = (int) Math.floor((bxyt[0]-gm.x0)/gm.metersPerPixel);
-            int iyb = (int) Math.floor((bxyt[1]-gm.y0)/gm.metersPerPixel);
+            float awf = (float)a.getMeanDistToGoal(gm, wf);
+            float bwf = (float)b.getMeanDistToGoal(gm, wf);
 
             // assert validity of these indices? They *should* always be inbounds
-            float da = (wf[iya*gm.width + ixa] + adist) - 30.0f*wa;
-            float db = (wf[iyb*gm.width + ixb] + bdist) - 30.0f*wb;
-            //System.out.printf("%f - %f\n%f -- %f\n", da, db, wa, wb);
+            //float da = (wf[iya*gm.width + ixa] + adist);// - 30.0f*wa;
+            //float db = (wf[iyb*gm.width + ixb] + bdist);// - 30.0f*wb;
+            float da = awf;
+            float db = bwf;
             if (da < db)
                 return -1;
             else if (da > db)
@@ -251,11 +247,11 @@ public class MonteCarloPlanner
         }
 
         // Prune out solutions that are worse than our best so far.
-        /*double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
+        double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
         if (nodeScore > solnScore) {
             System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
             return;
-        }*/
+        }
 
         // This must have a better score than we currently have, because we got past
         // the pruning filter. Thus, this is a better solution.
@@ -273,7 +269,6 @@ public class MonteCarloPlanner
             System.out.printf("--TOO DEEP--\n");
             return;
         }
-
 
         // XXX How would we incorporate more laws?
         // GOAL: Forward simulate for a fixed period for n iterations and see
