@@ -185,6 +185,35 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         vb.swap();
     }
 
+    private SimRobot getRobot()
+    {
+        SimRobot robot = null;
+        for (SimObject obj: simulator.getWorld().objects) {
+            if (!(obj instanceof SimRobot))
+                continue;
+            robot = (SimRobot)obj;
+            break;
+        }
+        return robot;
+    }
+
+    private SimAprilTag getTag(int id)
+    {
+        SimAprilTag tag = null;
+        for (SimObject obj: simulator.getWorld().objects) {
+            if (!(obj instanceof SimAprilTag))
+                continue;
+            SimAprilTag temp = (SimAprilTag)obj;
+            if (temp.getID() == id) {
+                tag = temp;
+                break;
+            }
+        }
+
+        return tag;
+    }
+
+
     // === Support Classes ====================================================
     private class PlanningGUIEventHandler extends VisEventAdapter
     {
@@ -247,9 +276,14 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 vb.swap();
             }
 
+            SimRobot robot = getRobot();
+
             System.out.println("TESTING MONTE CARLO METHOD");
+            ArrayList<double[]> starts = new ArrayList<double[]>();
+            starts.add(LinAlg.matrixToXYT(robot.getPose()));
+
             MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
-            ArrayList<Behavior> behaviors = mcp.plan(goal);
+            ArrayList<Behavior> behaviors = mcp.plan(starts, goal);
             if (behaviors.size() < 1) {
                 System.err.println("ERR: Did not find a valid set of behaviors");
                 return;
@@ -264,14 +298,6 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             // Visualization only
             if (DEBUG) {
                 MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
-                SimRobot robot = null;
-                for (SimObject obj: simulator.getWorld().objects) {
-                    if (!(obj instanceof SimRobot))
-                        continue;
-                    robot = (SimRobot)obj;
-                    break;
-                }
-                assert (robot != null);
                 //double[] xyt = LinAlg.matrixToXYT(robot.getPose());
                 bot.setPose(robot.getPose());
                 for (int i = 0; i < behaviors.size(); i++) {
@@ -465,34 +491,6 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             }
         }
 
-        private SimRobot getRobot()
-        {
-            SimRobot robot = null;
-            for (SimObject obj: simulator.getWorld().objects) {
-                if (!(obj instanceof SimRobot))
-                    continue;
-                robot = (SimRobot)obj;
-                break;
-            }
-            return robot;
-        }
-
-        private SimAprilTag getTag(int id)
-        {
-            SimAprilTag tag = null;
-            for (SimObject obj: simulator.getWorld().objects) {
-                if (!(obj instanceof SimAprilTag))
-                    continue;
-                SimAprilTag temp = (SimAprilTag)obj;
-                if (temp.getID() == id) {
-                    tag = temp;
-                    break;
-                }
-            }
-
-            return tag;
-        }
-
         double[] lastPose = null;
         int samePoseCount = 0;
         private void tryWavefront()
@@ -606,6 +604,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         private void tryMonteCarlo()
         {
             MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
+            ArrayList<double[]> starts = new ArrayList<double[]>();
             for (Integer id: goalIDs) {
                 System.out.println("NFO: Wavefront pursuing tag "+id);
                 SimRobot robot = getRobot();
@@ -614,11 +613,20 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 SimAprilTag tag = getTag(id);
                 assert (tag != null);
 
-                // XXX Change this up since we don't care about pose in the same way
-                double[] startXY = LinAlg.matrixToXYT(robot.getNoisyPose(L2G));
+                if (starts.size() == 0)
+                    starts.add(LinAlg.matrixToXYT(robot.getPose()));
                 double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
 
-                ArrayList<Behavior> behaviors = mcp.plan(goalXY);
+                ArrayList<Behavior> behaviors = mcp.plan(starts, goalXY);
+
+                // Here's where things get fun. We'd like to use our
+                // end distribution of points represent our NEW set
+                // of start positions for next time. The idea being,
+                // we're trusting our simulation to keep us localized
+                // enough to navigate.
+                if (behaviors.size() > 0) {
+                    starts = behaviors.get(behaviors.size()-1).xyts;
+                }
 
                 for (Behavior b: behaviors) {
                     issueCommand(b);

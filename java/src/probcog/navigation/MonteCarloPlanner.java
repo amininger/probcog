@@ -170,7 +170,8 @@ public class MonteCarloPlanner
     /** Plan a list of behaviors to follow to get within shorter wavefront or
      *  direct drive distance of the goal.
      */
-    public ArrayList<Behavior> plan(double[] goal)
+    public ArrayList<Behavior> plan(ArrayList<double[]> starts,
+                                    double[] goal)
     {
         watch.start("plan");
         ArrayList<Behavior> behaviors = new ArrayList<Behavior>();
@@ -184,7 +185,7 @@ public class MonteCarloPlanner
         watch.stop();
 
         watch.start("DFS");
-        Node<Behavior> soln = dfsSearch(goal);
+        Node<Behavior> soln = dfsSearch(starts, goal);
         watch.stop();
 
         // Trace back behaviors to reach said node
@@ -203,12 +204,20 @@ public class MonteCarloPlanner
     /** Do a depth first search for the best set of laws to follow */
     private Node<Behavior> soln;
     private double solnScore;
-    private Node<Behavior> dfsSearch(double[] goal)
+    private Node<Behavior> dfsSearch(ArrayList<double[]> starts, double[] goal)
     {
-        double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt, 0.0, null, null));
+        //double[] xyt = LinAlg.matrixToXYT(robot.getPose());
+        //Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt, 0.0, null, null));
+        ArrayList<Double> dists = new ArrayList<Double>();
+        for (double[] s: starts)
+            dists.add(0.0);
 
-        // iterative deepening search
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(starts,
+                                                              dists,
+                                                              null,
+                                                              null));
+        // iterative deepening search, if called for. We're trying
+        // to avoid this, for now.
         int i = 1;
         if (!iterativeDeepening)
             i = searchDepth;
