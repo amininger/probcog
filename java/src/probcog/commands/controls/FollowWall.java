@@ -348,4 +348,21 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         return params;
     }
+
+    public control_law_t getLCM()
+    {
+        control_law_t cl = new control_law_t();
+        cl.name = "follow-wall";
+        cl.num_params = 3;
+        cl.param_names = new String[cl.num_params];
+        cl.param_values = new typed_value_t[cl.num_params];
+        cl.param_names[0] = "side";
+        cl.param_values[0] = new TypedValue((byte)(dir == Direction.LEFT ? 1 : -1)).toLCM();
+        cl.param_names[1] = "distance";
+        cl.param_values[1] = new TypedValue(goalDistance).toLCM();
+        cl.param_names[2] = "heading";
+        cl.param_values[2] = new TypedValue(targetHeading).toLCM();
+
+        return cl;
+    }
 }

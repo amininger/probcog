@@ -147,6 +147,27 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         return params;
     }
 
+    public condition_test_t getLCM()
+    {
+        condition_test_t ct = new condition_test_t();
+        ct.name = "count";
+        ct.num_params = 3;
+        ct.param_names = new String[ct.num_params];
+        ct.param_values = new typed_value_t[ct.num_params];
+        ct.param_names[0] = "count";
+        ct.param_values[0] = new TypedValue(goalCount).toLCM();
+        ct.param_names[1] = "class";
+        ct.param_values[1] = new TypedValue(classType).toLCM();
+        ct.param_names[2] = "orientation";
+        ct.param_values[2] = new TypedValue(orientation).toLCM();
+
+        // Not used
+        ct.compare_type = condition_test_t.CMP_GT;
+        ct.compared_value = new TypedValue(0).toLCM();
+
+        return ct;
+    }
+
     // === Sample adding/tracking ============================================
     synchronized public void addSample(classification_t classy)
     {

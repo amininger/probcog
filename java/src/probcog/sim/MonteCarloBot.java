@@ -120,7 +120,8 @@ public class MonteCarloBot implements SimObject
 
         // Initialize a list of things we saw to start with. These tags are
         // ignored during the simulation of this control law.
-        HashSet<SimAprilTag> invisibleTags = getSeenTags();
+        // HashSet<SimAprilTag> invisibleTags = getSeenTags(); XXX
+        HashSet<SimAprilTag> invisibleTags = new HashSet<SimAprilTag>();
         HashSet<SimAprilTag> observedTags = new HashSet<SimAprilTag>();
 
         // While control law has not finished OR timeout, try updating

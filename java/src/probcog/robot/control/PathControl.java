@@ -11,12 +11,15 @@ import probcog.robot.robot.RobotDriver;
 
 public class PathControl
 {
+    static diff_drive_t last_drive = new diff_drive_t();
+
     // Get diff drive command to drive the CENTER of the robot along path
     public static diff_drive_t getDiffDrive(double [] pos_center,
                                             double [] orientation,
                                             ArrayList<double[]> path,
                                             Params params,
-                                            double requestedSpeedLimit)
+                                            double requestedSpeedLimit,
+                                            double dt)
     {
         diff_drive_t diff_drive = new diff_drive_t();
 
@@ -126,10 +129,11 @@ public class PathControl
         double[] cur_pos = {pos[0], pos[1],
                             LinAlg.quatToRollPitchYaw(orientation)[2]};
 
-        double[] drive = getKProp(cur_pos, lookaheadPoint, params, combinedSpeedLimit);
+        double[] drive = getKProp(cur_pos, lookaheadPoint, params, combinedSpeedLimit, dt);
 
         diff_drive.left  = drive[RobotDriver.LEFT];
         diff_drive.right = drive[RobotDriver.RIGHT];
+        last_drive = diff_drive;
         return diff_drive;
     }
 
@@ -139,7 +143,8 @@ public class PathControl
      */
     private static double[] getKProp(double pos[], double target[],
                                      Params params,
-                                     double maxSpeed)
+                                     double maxSpeed,
+                                     double dt)
     {
         assert(maxSpeed <= 1 && maxSpeed >= 0);
 
@@ -181,6 +186,21 @@ public class PathControl
         double scale = maxSpeed / norm;
 
         double speeds[] = LinAlg.scale(targetSpeeds, scale);
+        double max = Math.max(Math.abs(speeds[0]), Math.abs(speeds[1]));
+        double r0, r1;
+        r0 = r1 = 0;
+        if (max != 0) {
+            r0 = Math.abs(speeds[0]/max);
+            r1 = Math.abs(speeds[1]/max);
+        }
+
+        // Don't let speeds change more than .5/second. Make sure to increase
+        // speeds proportionally!
+        double left = last_drive.left;
+        double right = last_drive.right;
+        double DELTA = 0.5;
+        //speeds[RobotDriver.LEFT] = r0*MathUtil.clamp(speeds[0], left-dt*DELTA, left+dt*DELTA);
+        //speeds[RobotDriver.RIGHT] = r1*MathUtil.clamp(speeds[1], right-dt*DELTA, right+dt*DELTA);
 
         // ensures we don't overheat the motors
         if (Math.abs(speeds[0]) < params.minMotorSpeed_p && Math.abs(speeds[1]) < params.minMotorSpeed_p)

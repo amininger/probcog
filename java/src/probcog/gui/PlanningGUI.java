@@ -36,6 +36,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
     VisWorld vw;
     VisLayer vl;
     VisCanvas vc;
+    int commandID = 0;
     private ProbCogSimulator simulator;
     private GridMap gm;
     private WavefrontPlanner wfp;
@@ -308,8 +309,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 break;
             }
             assert (robot != null);
-            //double[] start = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
-            double[] start = LinAlg.resize(LinAlg.matrixToXYT(getNoisyPose()), 2);
+            double[] L2G = robot.getL2G();
+            double[] start = LinAlg.resize(LinAlg.matrixToXYT(robot.getNoisyPose(L2G)), 2);
 
             float[] costMap = wfp.getWavefront(start, goal);
 
@@ -351,14 +352,14 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
             // Try following the path  XXX
             Tic tic = new Tic();
+            Tic stepTic = new Tic();
             diff_drive_t dd = new diff_drive_t();
-            while (tic.toc() < 30) {
+            while (tic.toc() < 60) {
                 // Noisy pose
-                //double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
-                //double[] orientation = LinAlg.matrixToQuat(robot.getPose());
-                double[] pos = LinAlg.resize(LinAlg.matrixToXYT(getNoisyPose()), 2);
-                double[] orientation = LinAlg.matrixToQuat(getNoisyPose());
-                dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8);
+                double dt = stepTic.toctic();
+                double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getNoisyPose(L2G)), 2);
+                double[] orientation = LinAlg.matrixToQuat(robot.getNoisyPose(L2G));
+                dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8, dt);
                 dd.utime = TimeUtil.utime();
                 LCM.getSingleton().publish("DIFF_DRIVE", dd);
                 TimeUtil.sleep(20);
@@ -375,9 +376,12 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
     // this for both a wavefront follower AND our planner. At the end, we measure
     // deviation from our actual goal positions. (TODO: Make us drive all the way
     // up to goal, if possible. We have a constant offset issue).
-    private class DataThread extends Thread
+    private class DataThread extends Thread implements LCMSubscriber
     {
-        CommandCoordinator coordinator = new CommandCoordinator();
+        LCM lcm = LCM.getSingleton();
+
+        Object statusLock = new Object();
+        control_law_status_list_t lastStatus = null;
 
         // Trial parameters
         int NUM_TRIALS = 2;
@@ -385,6 +389,27 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
         double[][] initialPose;
         double[] L2G;
+
+        public DataThread()
+        {
+            lcm.subscribe("CONTROL_LAW_STATUS.*", this);
+        }
+
+        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        {
+            try {
+                if (channel.startsWith("CONTROL_LAW_STATUS")) {
+                    control_law_status_list_t status = new control_law_status_list_t(ins);
+                    synchronized (statusLock) {
+                        lastStatus = status;
+                        statusLock.notifyAll();
+                    }
+                }
+            } catch (IOException ex) {
+                System.err.println("ERR: Could not handle message on channel - "+channel);
+                ex.printStackTrace();
+            }
+        }
 
         public void run()
         {
@@ -468,9 +493,12 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             return tag;
         }
 
+        double[] lastPose = null;
+        int samePoseCount = 0;
         private void tryWavefront()
         {
             for (Integer id: goalIDs) {
+                samePoseCount = 0;
                 System.out.println("NFO: Wavefront pursuing tag "+id);
                 SimRobot robot = getRobot();
                 assert (robot != null);
@@ -527,11 +555,13 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
                 // Try following the path
                 Tic tic = new Tic();
+                Tic stepTic = new Tic();
                 diff_drive_t dd = new diff_drive_t();
                 while (followingPath(robot, dd)) {
+                    double dt = stepTic.toctic();
                     double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getNoisyPose(L2G)), 2);
                     double[] orientation = LinAlg.matrixToQuat(robot.getNoisyPose(L2G));
-                    dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8);
+                    dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8, dt);
                     dd.utime = TimeUtil.utime();
                     LCM.getSingleton().publish("DIFF_DRIVE", dd);
                     TimeUtil.sleep(20);
@@ -546,28 +576,96 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         private boolean followingPath(SimRobot robot, diff_drive_t dd)
         {
             // We are following the path when:
-            // 1) The robot has not collided with anything and
-            // 2) The robot has not yet reached what (it thinks) is the goal
+            // 1) The robot has not yet reached what (it thinks) is the goal
+            // 2) The robot has not collided with anything and
             if (dd.utime > 0 && dd.left == 0 && dd.right == 0)
                 return false;
 
-            for (SimObject so: simulator.getWorld().objects) {
-                if (!(so instanceof SimBox))
-                    continue;
-                if (Collisions.collision(so.getShape(),
-                                         so.getPose(),
-                                         robot.getShape(),
-                                         robot.getPose()))
-                    return false;
+            // We detect collisions by seeing if the robot has moved recently
+            if (lastPose != null) {
+                double[] currPose = LinAlg.matrixToXYT(robot.getPose());
+                if (MathUtil.doubleEquals(lastPose[0], currPose[0]) &&
+                    MathUtil.doubleEquals(lastPose[1], currPose[1]) &&
+                    MathUtil.doubleEquals(lastPose[2], currPose[2]))
+                {
+                    samePoseCount++;
+                } else {
+                    samePoseCount = 0;
+                }
+                lastPose = currPose;
+            } else {
+                lastPose = LinAlg.matrixToXYT(robot.getPose());
             }
+
+            if (samePoseCount >= 10)
+                return false;
 
             return true;
         }
 
         private void tryMonteCarlo()
         {
-            // XXX
+            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
+            for (Integer id: goalIDs) {
+                System.out.println("NFO: Wavefront pursuing tag "+id);
+                SimRobot robot = getRobot();
+                assert (robot != null);
+
+                SimAprilTag tag = getTag(id);
+                assert (tag != null);
+
+                // XXX Change this up since we don't care about pose in the same way
+                double[] startXY = LinAlg.matrixToXYT(robot.getNoisyPose(L2G));
+                double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
+
+                ArrayList<Behavior> behaviors = mcp.plan(goalXY);
+
+                for (Behavior b: behaviors) {
+                    issueCommand(b);
+
+                    while (true) {
+                        synchronized (statusLock) {
+                            try {
+                                statusLock.wait();
+                            } catch (InterruptedException ex){}
+                            if (lastStatus == null)
+                                continue;
+
+                            control_law_status_t s = null;
+                            for (int i = 0; i < lastStatus.nstatuses; i++) {
+                                if (lastStatus.statuses[i].id == commandID-1)
+                                    s = lastStatus.statuses[i];
+                            }
+                            if (s != null && s.status.equals("SUCCESS")) {
+                                System.out.println("WE DID IT! Moving on...");
+                                break;  // XXX HANDLE ME
+                            } else if (s != null && s.status.equals("FAILURE")) {
+                                System.out.println("YOU SUCK!");
+                                break;  // XXX HANDLE ME
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        private void issueCommand(Behavior b)
+        {
+            // Issue the appropriate command
+            control_law_t cl = b.law.getLCM();
+            cl.utime = TimeUtil.utime();
+            cl.id = commandID++;
+
+            condition_test_t ct = b.test.getLCM();
+            cl.termination_condition = ct;
+
+            // Publishing
+            lcm.publish("SOAR_COMMAND", cl);
+            lcm.publish("SOAR_COMMAND", cl);
+            lcm.publish("SOAR_COMMAND", cl);
+        }
+
+
     }
 
     static public void main(String[] args)
@@ -615,15 +713,5 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             ex.printStackTrace();
             System.exit(1);
         }
-    }
-
-    public double[][] getNoisyPose()
-    {
-        pose_t pose = poseCache.get();
-        if (pose == null) {
-            System.err.println("ERR: Could not find a recent enough pose");
-            return LinAlg.identity(4);
-        }
-        return LinAlg.quatPosToMatrix(pose.orientation, pose.pos);
     }
 }

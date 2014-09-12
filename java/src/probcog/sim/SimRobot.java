@@ -95,7 +95,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         double K_wr = 5.5;  // XXX Old winding resistance [ohms]
         drive.leftMotor.winding_resistance = K_wr;
         drive.rightMotor.winding_resistance = K_wr;
-        double K_inertia = 0.5; // XXX Old inertia [kg m^2]
+        double K_inertia = 0.2; // XXX Old inertia [kg m^2]
         drive.leftMotor.inertia = K_inertia;
         drive.rightMotor.inertia = K_inertia;
         double K_drag = 1.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
