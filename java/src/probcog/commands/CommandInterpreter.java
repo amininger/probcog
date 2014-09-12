@@ -168,7 +168,7 @@ public class CommandInterpreter
                     {
                         String status = sl.statuses[0].status;
                         if (!CommandCoordinator.Status.EXECUTING.name().equals(status)) {
-                            System.out.println("STATUS == "+status);
+                            //System.out.println("STATUS == "+status);
                             coordinator.destroyConditionTest(testID);
                             coordinator.destroyControlLaw(lawID);
                         }

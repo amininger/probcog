@@ -18,6 +18,7 @@ import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
 import probcog.util.*;
+import probcog.navigation.*;
 
 public class MonteCarloBot implements SimObject
 {
@@ -30,6 +31,7 @@ public class MonteCarloBot implements SimObject
     boolean running = false;
 
     FastDrive drive = null;
+    double initialDistanceTraveled = 0;
     ArrayList<double[]> trajectoryTruth = new ArrayList<double[]>();
     ArrayList<double[]> trajectoryOdom = new ArrayList<double[]>();
     VisColorData vcd = new VisColorData();
@@ -39,6 +41,7 @@ public class MonteCarloBot implements SimObject
     ClassificationCounterTest test;
 
     int simSinceReset = 0;
+    int iteration = 0;
     boolean success = false;
 
     public MonteCarloBot(SimWorld sw)
@@ -52,40 +55,9 @@ public class MonteCarloBot implements SimObject
 
     }
 
-    // Track which tags we saw and, for each class for said tag, what that class
-    // count for that tag was, aka, home many "doors" did we see before this "door"?
-    private HashMap<String, Integer> classCount = new HashMap<String, Integer>();
-    public HashSet<TagRecord> tagRecords = new HashSet<TagRecord>();
-    static public class TagRecord
-    {
-        public double traveled;
-        public int id;
-        public int count;
-        public String tagClass;
-
-        public TagRecord(int id, int count, double traveled, String tagClass)
-        {
-            this.id = id;
-            this.count = count;
-            this.traveled = traveled;
-            this.tagClass = tagClass;
-        }
-
-        public int hashCode()
-        {
-            return new Integer(id).hashCode();
-        }
-
-        public boolean equals(Object o)
-        {
-            if (o == null)
-                return false;
-            if (!(o instanceof TagRecord))
-                return false;
-            TagRecord rec = (TagRecord)o;
-            return id == rec.id; // && traveled >= rec.traveled; // A bit of a hack
-        }
-    }
+    private HashMap<String, ClassificationCounterTest> testMap =
+        new HashMap<String, ClassificationCounterTest>();
+    public HashMap<Behavior, Behavior> tagRecords = new HashMap<Behavior, Behavior>();
 
     // === Random sampling interface =========================
     private void resetTrajectories()
@@ -94,15 +66,19 @@ public class MonteCarloBot implements SimObject
         vcd = new VisColorData();
         trajectoryTruth.clear();
         trajectoryOdom.clear();
-        classCount.clear();
+        testMap.clear();
+        // NOTE: does not reset tagRecords.
     }
 
     public void init(FollowWall law, ClassificationCounterTest test)
     {
-        init(law, test, null);
+        init(law, test, null, 0);
     }
 
-    public void init(FollowWall law, ClassificationCounterTest test, double[] xyt)
+    public void init(FollowWall law,
+                     ClassificationCounterTest test,
+                     double[] xyt,
+                     double initialDistanceTraveled)
     {
         success = false;
         this.law = law;
@@ -113,6 +89,7 @@ public class MonteCarloBot implements SimObject
             drive.centerOfRotation = new double[] { 0.13, 0, 0 };
 
             resetTrajectories();
+            this.initialDistanceTraveled = initialDistanceTraveled;
             trajectoryTruth.add(drive.poseTruth.pos);
             trajectoryOdom.add(drive.poseOdom.pos);
         }
@@ -127,6 +104,7 @@ public class MonteCarloBot implements SimObject
     public void simulate(double seconds)
     {
         simSinceReset++;
+        iteration++;
 
         // Precalculated paramters
         HashSet<SimObject> ignore = new HashSet<SimObject>();
@@ -139,6 +117,12 @@ public class MonteCarloBot implements SimObject
         double rad1 = Math.toRadians(maxDeg);
         laser_t laser = new laser_t();
         laser.utime = TimeUtil.utime();
+
+        // Initialize a list of things we saw to start with. These tags are
+        // ignored during the simulation of this control law.
+        // HashSet<SimAprilTag> invisibleTags = getSeenTags(); XXX
+        HashSet<SimAprilTag> invisibleTags = new HashSet<SimAprilTag>();
+        HashSet<SimAprilTag> observedTags = new HashSet<SimAprilTag>();
 
         // While control law has not finished OR timeout, try updating
         int timeout = (int)(seconds/FastDrive.DT);
@@ -179,15 +163,24 @@ public class MonteCarloBot implements SimObject
             laser.utime += FastDrive.DT*1000000;
 
             // CHECK CLASSIFICATIONS
-            double classificationRange = 2.0;  // Config
-            for (SimObject so: sw.objects) {
-                if (!(so instanceof SimAprilTag))
+            HashSet<SimAprilTag> seenTags = getSeenTags();
+            for (SimAprilTag tag: seenTags) {
+                if (invisibleTags.contains(tag))
+                    continue;   // XXX This is currently NOT supported in the real world
+
+                // Check to see if we saw a given tag this time. Note that this
+                // does not support the possibility that counting higher is harder
+                if (!observedTags.contains(tag) && tc.tagIsVisible(tag.getID())) {
+                    observedTags.add(tag);
+                } else {
+                    invisibleTags.add(tag);
+                }
+
+                if (!observedTags.contains(tag))
                     continue;
-                double[] xyzrpy = LinAlg.matrixToXyzrpy(so.getPose());
-                double d = LinAlg.distance(drive.poseTruth.pos, xyzrpy, 2);
-                if (d > classificationRange)
-                    continue;
-                SimAprilTag tag = (SimAprilTag)so;
+
+
+                double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
                 double[] relXyzrpy = relativePose(getPose(), xyzrpy);
                 ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
 
@@ -195,23 +188,42 @@ public class MonteCarloBot implements SimObject
                 // Otherwise, store relevant information about the tag. Only use
                 // the FIRST tag class
                 if (test == null) {
-                    Set<String> tagClasses = tc.getClasses(tag.getID());
-                    String c = tagClasses.iterator().next(); // Only ever have the one
-                    if (!classCount.containsKey(c))
-                        classCount.put(c, 0);
+                    if (classies.size() < 1)
+                        continue;
+                    String name = classies.get(0).name;
+                    if (!testMap.containsKey(name)) {
+                        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                        params.put("count", new TypedValue(Integer.MAX_VALUE));
+                        params.put("class", new TypedValue(name));
+                        testMap.put(name, new ClassificationCounterTest(params));
+                    }
 
-                    TagRecord rec = new TagRecord(tag.getID(), classCount.get(c)+1, getOdomLength(), c);
-                    if (!tagRecords.contains(rec)) {
-                        tagRecords.add(rec);
-                        classCount.put(c, classCount.get(c)+1);
+                    ClassificationCounterTest cTest = testMap.get(name);
+                    cTest.addSample(classies.get(0));
+                    int count = cTest.getCurrentCount();
+                    if (count < 1) {
+                        continue;
+                    }
+
+                    HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                    params.put("count", new TypedValue(count));
+                    params.put("class", new TypedValue(name));
+                    double[] xyt = LinAlg.matrixToXYT(getPose());
+                    Behavior rec = new Behavior(iteration, xyt, getTrajectoryLength(), law, new ClassificationCounterTest(params));
+
+                    if (!tagRecords.containsKey(rec)) {
+                        tagRecords.put(rec, rec);
+                    }
+                    Behavior temp = tagRecords.get(rec);
+                    if (temp.ageOfLastObservation != iteration) {
+                        temp.addObservation(xyt, getTrajectoryLength());
+                        temp.ageOfLastObservation = iteration;
                     }
                 } else {
                     for (classification_t classy: classies)
                         test.addSample(classy);
                 }
             }
-
-
 
             // Visualization etc.
             trajectoryTruth.add(drive.poseTruth.pos);
@@ -228,6 +240,24 @@ public class MonteCarloBot implements SimObject
         }
         success = timeout > 0;
         //System.out.printf("%f [s]\n", time);
+    }
+
+    public HashSet<SimAprilTag> getSeenTags()
+    {
+        HashSet<SimAprilTag> seenTags = new HashSet<SimAprilTag>();
+
+        double classificationRange = 2.0;  // XXX Config
+        for (SimObject so: sw.objects) {
+            if (!(so instanceof SimAprilTag))
+                continue;
+            double[] xyzrpy = LinAlg.matrixToXyzrpy(so.getPose());
+            double d = LinAlg.distance(drive.poseTruth.pos, xyzrpy, 2);
+            if (d > classificationRange)
+                continue;
+            seenTags.add((SimAprilTag)so);
+        }
+
+        return seenTags;
     }
 
     // Convenience function for classification_t construction
@@ -262,7 +292,7 @@ public class MonteCarloBot implements SimObject
             prev = curr;
         }
 
-        return length;
+        return initialDistanceTraveled + length;
     }
 
     public double getOdomLength()
@@ -278,7 +308,7 @@ public class MonteCarloBot implements SimObject
             prev = curr;
         }
 
-        return length;
+        return initialDistanceTraveled + length;
     }
 
     // === SimObject interface ===============================

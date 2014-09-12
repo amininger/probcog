@@ -86,7 +86,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.rotation_noise = 0.05;
 
         // Motor setup
-        double K_t = 0.7914*1;    // torque constant in [Nm / A] * multiplier to speed us up
+        double K_t = 0.7914*2;    // torque constant in [Nm / A] * multiplier to speed us up
         drive.leftMotor.torque_constant = K_t;
         drive.rightMotor.torque_constant = K_t;
         double K_emf = 1.406; // emf constant [V/(rad/s)]
@@ -95,7 +95,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         double K_wr = 5.5;  // XXX Old winding resistance [ohms]
         drive.leftMotor.winding_resistance = K_wr;
         drive.rightMotor.winding_resistance = K_wr;
-        double K_inertia = 0.5; // XXX Old inertia [kg m^2]
+        double K_inertia = 0.2; // XXX Old inertia [kg m^2]
         drive.leftMotor.inertia = K_inertia;
         drive.rightMotor.inertia = K_inertia;
         double K_drag = 1.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
@@ -192,6 +192,45 @@ public class SimRobot implements SimObject, LCMSubscriber
     {
         return LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
                                       drive.poseTruth.pos);
+    }
+
+    public double[][] getNoisyPose(double[] L2G)
+    {
+        double[][] M = LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
+                                              drive.poseOdom.pos);
+        if (L2G == null)
+            return M;
+
+        double[] M_xyt = LinAlg.matrixToXYT(M);
+        M_xyt = LinAlg.xytMultiply(L2G, M_xyt);
+        return LinAlg.xytToMatrix(M_xyt);
+    }
+
+    /* Get a transformation that will convert the current local pose into the
+     * current global pose. Returns an XYT
+     */
+    public double[] getL2G()
+    {
+        double[] gxyt = LinAlg.matrixToXYT(getPose());
+        double[] lxyt = LinAlg.matrixToXYT(getNoisyPose(null));
+        double[] L2G = new double[3];
+
+        // L2G * lxyt = gxyt
+        // c = cos(L2G[2])
+        // s = sin(L2G[2])
+        // gxyt[0] = c*lxyt[0] - s*lxyt[1] + L2G[0];
+        // gxyt[1] = s*lxyt[0] + c*lxyt[1] + L2G[1];
+        // gxyt[2] = lxyt[2] + L2G[2];
+
+        // Angle is easy to compute
+        L2G[2] = gxyt[2] - lxyt[2];
+        double s = Math.sin(L2G[2]);
+        double c = Math.cos(L2G[2]);
+
+        L2G[0] = gxyt[0] - c*lxyt[0] + s*lxyt[1];
+        L2G[1] = gxyt[1] - s*lxyt[0] - c*lxyt[1];
+
+        return L2G;
     }
 
     public void setPose(double T[][])

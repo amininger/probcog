@@ -19,10 +19,12 @@ public class TagClassifier
     String tagConfig = Util.getConfig().requireString("tag_config");
     double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
 
-    static Random classifierRandom = new Random(8437531);
+    //static Random classifierRandom = new Random(104395301);
+    Random classifierRandom = new Random();
     LCM lcm = LCM.getSingleton();
 
     HashMap<Integer, ArrayList<TagClass>> idToTag;
+    HashMap<String, Set<Integer> > tagClassToIDs;
     HashSet<String> tagClasses = new HashSet<String>();
 
     public TagClassifier() throws IOException
@@ -44,6 +46,7 @@ public class TagClassifier
         Config config = new ConfigFile(tagConfig);
 
         idToTag = new HashMap<Integer, ArrayList<TagClass>>();
+        tagClassToIDs = new HashMap<String, Set<Integer> >();
 
         // Read in all possible tag classes with associated tag ids
         // and store them in hashmap accessed by tag id.
@@ -53,13 +56,17 @@ public class TagClassifier
             int[] ids = config.getInts("classes.c"+i+".ids", null);
             double mean = config.getDouble("classes.c"+i+".mean", 0);
             double stddev = config.getDouble("classes.c"+i+".stddev", 0);
+            double pctdet = config.getDouble("classes.c"+i+".pct_detect", 1.0);
 
             if(label.equals("") || (ids == null))
                 break;
 
+            if (!tagClassToIDs.containsKey(label))
+                tagClassToIDs.put(label, new HashSet<Integer>());
+
             tagClasses.add(label);
 
-            TagClass tag = new TagClass(label, mean, stddev);
+            TagClass tag = new TagClass(label, mean, stddev, pctdet);
             for(int id : ids) {
                 ArrayList<TagClass> allTags;
                 if(idToTag.containsKey(id))
@@ -67,13 +74,23 @@ public class TagClassifier
                 else
                     allTags = new ArrayList<TagClass>();
 
+
                 allTags.add(tag);
                 idToTag.put(id, allTags);
+                tagClassToIDs.get(label).add(id);
             }
         }
 
         if (useLcm)
             new ListenerThread().start();
+    }
+
+    /** Get an exhaustive list of all of the tag IDs matching a particular class */
+    public Set<Integer> getIDsForClass(String tagClass)
+    {
+        if (tagClassToIDs.containsKey(tagClass))
+            return tagClassToIDs.get(tagClass);
+        return new HashSet<Integer>();
     }
 
     /** Get an exhaustive list of the classes of tags that exist in the world. */
@@ -94,6 +111,16 @@ public class TagClassifier
             classes.add(tc.label);
 
         return classes;
+    }
+
+    public boolean tagIsVisible(int id)
+    {
+        ArrayList<TagClass> tcs = idToTag.get(id);
+        if (tcs == null)
+            return false;
+
+        TagClass tc = tcs.get(0);
+        return classifierRandom.nextDouble() < tc.pctdet;
     }
 
     /** Return a list of classifications for a tag of a given ID and xyzrpy
@@ -201,12 +228,14 @@ public class TagClassifier
         String label;
         double mean;
         double stddev;
+        double pctdet;
 
-        public TagClass(String label, double mean, double stdeev)
+        public TagClass(String label, double mean, double stddev, double pctdet)
         {
             this.label = label;
             this.mean = mean;
             this.stddev = stddev;
+            this.pctdet = pctdet;
         }
     }
 

@@ -1,6 +1,6 @@
 // This file holds ALL constants, configurations probcog needs
 
-tag_config = "/home/april/probcog/config/tags_example.config";
+tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.config.real-cse";
 
 proc_config = "procman/proc.config";
 
@@ -477,17 +477,19 @@ espeak {
 // === Real time simulation stuff begins here ===
 monte_carlo {
     // Search parameters
-    iterative_deepening = true;
-    max_search_depth = 10;
-    num_exploration_samples = 5;
-    num_evaluation_samples = 25;
+    iterative_deepening = false;
+    max_search_depth = 8;
+    num_exploration_samples = 10;
+    num_evaluation_samples = 50;
 
     start_search_depth = 3; // XXX Currently unused
 
     // Robot parameters
-    default_forward_search_time = 60.0; // [s]
-    step_degrees = 5;
-    min_degrees = -135;
-    max_degrees = 135;
+    default_steps_per_second = 5;
+    steps_per_second = 20;  // Ignore right now?
+    default_forward_search_time = 60.0; // [s] XXX
+    step_degrees = 3;
+    min_degrees = -90; //-135;
+    max_degrees = 90; //135;
     max_range = 29.9;
 }

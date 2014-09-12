@@ -2,10 +2,13 @@ package probcog.sim;
 
 import java.util.*;
 
+import april.config.*;
 import april.sim.*;
 import april.util.*;
 import april.jmat.*;
 import april.lcmtypes.*;
+
+import probcog.util.Util;
 
 /** A class that acts as a fixed-speed update DifferentialDrive. */
 public class FastDrive
@@ -57,7 +60,7 @@ public class FastDrive
         // No fixed delay tasks, here, since we update on request!
 
         // Motor setup
-        double K_t = 0.7914*1;    // torque constant in [Nm / A] * multiplier to speed us up
+        double K_t = 0.7914*2;    // torque constant in [Nm / A] * multiplier to speed us up
         leftMotor.torque_constant = K_t;
         rightMotor.torque_constant = K_t;
         double K_emf = 1.406; // emf constant [V/(rad/s)]
@@ -66,7 +69,7 @@ public class FastDrive
         double K_wr = 5.5;  // XXX Old winding resistance [ohms]
         leftMotor.winding_resistance = K_wr;
         rightMotor.winding_resistance = K_wr;
-        double K_inertia = 0.5; // XXX Old inertia [kg m^2]
+        double K_inertia = 0.5; // XXX Old inertia [kg m^2] ... different from SimRobot
         leftMotor.inertia = K_inertia;
         rightMotor.inertia = K_inertia;
         double K_drag = 1.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
@@ -74,15 +77,20 @@ public class FastDrive
         rightMotor.drag_constant = K_drag;
     }
 
-    public static double DT = 1.0 / 5;
+    public static double DT = 1.0 / Util.getConfig().requireInt("monte_carlo.default_steps_per_second");
     public void update()
+    {
+        update(DT);
+    }
+
+    public void update(double dt)
     {
         synchronized (this) {
             leftMotor.setVoltage(motorCommands[0]*voltageScale);
             rightMotor.setVoltage(motorCommands[1]*voltageScale);
 
-            leftMotor.update(DT);
-            rightMotor.update(DT);
+            leftMotor.update(dt);
+            rightMotor.update(dt);
 
             // Temporarily make poseTruth point to center of rotation, which
             // we'll undo at the end.
@@ -92,8 +100,8 @@ public class FastDrive
             double left_rad_per_sec = leftMotor.getRadPerSec();
             double right_rad_per_sec = rightMotor.getRadPerSec();
 
-            double dleft = DT * left_rad_per_sec * wheelDiameter;
-            double dright = DT * right_rad_per_sec * wheelDiameter;
+            double dleft = dt * left_rad_per_sec * wheelDiameter;
+            double dright = dt * right_rad_per_sec * wheelDiameter;
 
             double dl_truth = (dleft + dright) / 2;
             double dtheta_truth = (dright - dleft) / baseline;
@@ -141,7 +149,7 @@ public class FastDrive
                 poseOdom.orientation = neworient_odom;
             }
 
-            poseTruth.utime += DT*1000000;  // Fixed time update
+            poseTruth.utime += dt*1000000;  // Fixed time update
             poseOdom.utime = poseTruth.utime;
         }
     }

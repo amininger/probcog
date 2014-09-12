@@ -13,7 +13,7 @@ import probcog.commands.*;
 import probcog.commands.controls.FollowWall;
 import probcog.commands.tests.ClassificationCounterTest;
 import probcog.sim.*;
-import probcog.sim.MonteCarloBot.TagRecord;
+import probcog.navigation.Behavior.Cluster;
 import probcog.util.*;
 import probcog.util.Tree.Node;
 import probcog.vis.*;
@@ -35,7 +35,12 @@ public class MonteCarloPlanner
     // Search parameters XXX MOVE TO CONFIG
     boolean iterativeDeepening = Util.getConfig().requireBoolean("monte_carlo.iterative_deepening");
     int searchDepth = Util.getConfig().requireInt("monte_carlo.max_search_depth");
-    int numSamples = Util.getConfig().requireInt("monte_carlo.num_samples");
+    int numExploreSamples = Util.getConfig().requireInt("monte_carlo.num_exploration_samples");
+    int numSamples = Util.getConfig().requireInt("monte_carlo.num_evaluation_samples");
+
+    WavefrontPlanner wfp;
+    GridMap gm;
+    float[] wf;
 
     SimWorld sw;
     SimRobot robot = null;
@@ -44,17 +49,50 @@ public class MonteCarloPlanner
 
     ArrayList<FollowWall> controls = new ArrayList<FollowWall>();
 
-    public MonteCarloPlanner(SimWorld sw)
+    private class BehaviorSearchComparator implements Comparator<Behavior>
     {
-        this(sw, null);
+        public int compare(Behavior a, Behavior b)
+        {
+            Cluster ca = a.getClusters().get(0);
+            Cluster cb = b.getClusters().get(0);
+
+            float wa = (float)ca.size()/(float)numExploreSamples;
+            float wb = (float)cb.size()/(float)numExploreSamples;
+
+            // Bias our searches to get us close to the goal fast
+            float adist = (float)a.getMeanDistTraveled();
+            float bdist = (float)b.getMeanDistTraveled();
+
+            float awf = (float)a.getMeanDistToGoal(gm, wf);
+            float bwf = (float)b.getMeanDistToGoal(gm, wf);
+
+            // assert validity of these indices? They *should* always be inbounds
+            //float da = (wf[iya*gm.width + ixa] + adist);// - 30.0f*wa;
+            //float db = (wf[iyb*gm.width + ixb] + bdist);// - 30.0f*wb;
+            float da = awf;
+            float db = bwf;
+            if (da < db)
+                return -1;
+            else if (da > db)
+                return 1;
+
+            return 0;
+        }
+    }
+
+    // XXX Someday, we won't need to use the sim world, perhaps
+    public MonteCarloPlanner(SimWorld sw, GridMap gm)
+    {
+        this(sw, gm, null);
     }
 
     /** Initialize the planner based on a simulated world.
      *  It's assumed that there will only be one robot in this world.
      **/
-    public MonteCarloPlanner(SimWorld sw, VisWorld vw)
+    public MonteCarloPlanner(SimWorld sw, GridMap gm, VisWorld vw)
     {
         this.sw = sw;
+        this.gm = gm;
         this.vw = vw;
         for (SimObject so: sw.objects) {
             if (so instanceof SimRobot)
@@ -76,26 +114,40 @@ public class MonteCarloPlanner
         // Initialize planning components
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
         params.put("side", new TypedValue((byte)-1));
-        params.put("distance", new TypedValue((double)1.0));
+        params.put("distance", new TypedValue((double)0.85));
         controls.add(new FollowWall(params));
         params.put("side", new TypedValue((byte)1));
-        params.put("distance", new TypedValue((double)1.0));
         controls.add(new FollowWall(params));
+
+        // Initialize wavefront planner used for rough distance
+        this.wfp = new WavefrontPlanner(gm, 0.4);   // XXX
     }
 
     private class TagDistanceComparator implements Comparator<SimAprilTag>
     {
-        double[] goal;
+        //double[] goal;
+        float[] wf;
 
-        public TagDistanceComparator(double[] goal)
+        public TagDistanceComparator(float[] wf)
         {
-            this.goal = goal;
+            //this.goal = goal;
+            //this.wf = wfp.getWavefront(null, goal);
+            this.wf = wf;
         }
 
         public int compare(SimAprilTag a, SimAprilTag b)
         {
-            double da = LinAlg.squaredDistance(LinAlg.matrixToXyzrpy(a.getPose()), goal, 2);
-            double db = LinAlg.squaredDistance(LinAlg.matrixToXyzrpy(b.getPose()), goal, 2);
+            //double da = LinAlg.squaredDistance(LinAlg.matrixToXyzrpy(a.getPose()), goal, 2);
+            //double db = LinAlg.squaredDistance(LinAlg.matrixToXyzrpy(b.getPose()), goal, 2);
+            double[] axy = LinAlg.matrixToXyzrpy(a.getPose());
+            double[] bxy = LinAlg.matrixToXyzrpy(b.getPose());
+
+            int ixa = (int) Math.floor((axy[0] - gm.x0) / gm.metersPerPixel);
+            int iya = (int) Math.floor((axy[1] - gm.y0) / gm.metersPerPixel);
+            int ixb = (int) Math.floor((bxy[0] - gm.x0) / gm.metersPerPixel);
+            int iyb = (int) Math.floor((bxy[1] - gm.y0) / gm.metersPerPixel);
+            double da = wf[iya * gm.width + ixa];
+            double db = wf[iyb * gm.width + ixb];
 
             if (da < db)
                 return -1;
@@ -111,7 +163,7 @@ public class MonteCarloPlanner
             if (!(o instanceof TagDistanceComparator))
                 return false;
             TagDistanceComparator tdc = (TagDistanceComparator)o;
-            return Arrays.equals(goal, tdc.goal);
+            return (this == tdc);
         }
     }
 
@@ -127,37 +179,22 @@ public class MonteCarloPlanner
         // 1) Build an ordered list of the L2 distances from each tag to the goal.
         // 2) Build our search tree
         watch.start("preprocessing");
-        // XXX Could make the sorting better with a full-map wavefront if desperate
-        Collections.sort(tags, new TagDistanceComparator(goal));
+        this.wf = wfp.getWavefront(null, goal);
+        Collections.sort(tags, new TagDistanceComparator(wf));
+        //Collections.sort(tags, new TagDistanceComparator(goal));
         watch.stop();
 
         watch.start("DFS");
-        Tree<Behavior> tree = dfsSearch(goal);
-        watch.stop();
-
-        // Search tree for node with closest XYT to goal. In-order traversal?
-        watch.start("Path extraction");
-        Node<Behavior> bestNode = tree.root;
-        double bestDist = LinAlg.distance(goal, bestNode.data.randomXYT(), 2);  // XXX
-        System.out.println("Tree size: "+tree.size());
-        ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
-        for (Node<Behavior> node: nodes) {
-            double dist = LinAlg.distance(goal, node.data.randomXYT(), 2);      // XXX
-            if (dist < bestDist) {
-                bestDist = dist;
-                bestNode = node;
-            }
-        }
+        Node<Behavior> soln = dfsSearch(goal);
         watch.stop();
 
         // Trace back behaviors to reach said node
-        while (bestNode.parent != null) {
-            behaviors.add(bestNode.data);
-            bestNode = bestNode.parent;
+        while (soln != null && soln.parent != null) {
+            behaviors.add(soln.data);
+            soln = soln.parent;
         }
 
         Collections.reverse(behaviors);
-        watch.stop();
 
         if (debug)
             watch.print();
@@ -165,26 +202,27 @@ public class MonteCarloPlanner
     }
 
     /** Do a depth first search for the best set of laws to follow */
-    private Tree<Behavior> dfsSearch(double[] goal)
+    private Node<Behavior> soln;
+    private double solnScore;
+    private Node<Behavior> dfsSearch(double[] goal)
     {
         double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-        ArrayList<double[]> xyts = new ArrayList<double[]>();
-        xyts.add(xyt);
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, null, null));
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt, 0.0, null, null));
 
         // iterative deepening search
         int i = 1;
         if (!iterativeDeepening)
             i = searchDepth;
 
-        boolean done = false;
+        soln = null;
+        solnScore = Double.MAX_VALUE;
         for (; i <= searchDepth; i++) {
             for (Node<Behavior> leaf: tree.getLeaves()) {
-                done = dfsHelper(leaf, goal, leaf.depth, i);
-                if (done)
+                dfsHelper(leaf, goal, leaf.depth, i);
+                if (soln != null)
                     break;
             }
-            if (done)
+            if (soln != null)
                 break;
         }
         if (vw != null) {
@@ -192,11 +230,10 @@ public class MonteCarloPlanner
             vb.swap(); // Cleanup
         }
 
-        return tree;
+        return soln;
     }
 
-    // XXX Depends on fact that tags were already sorted by distance to goal
-    private boolean dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
+    private void dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
     {
         if (debug) {
             System.out.printf("|");
@@ -209,53 +246,75 @@ public class MonteCarloPlanner
                 System.out.printf("\n");
         }
 
-        if (LinAlg.distance(node.data.randomXYT(), goal, 2) < 3.0) {    // XXX This can't stay
+        // Prune out solutions that are worse than our best so far.
+        double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
+        if (nodeScore > solnScore) {
+            System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
+            return;
+        }
+
+        // This must have a better score than we currently have, because we got past
+        // the pruning filter. Thus, this is a better solution.
+        double pct = node.data.getPctNearGoal(gm, wf, numSamples);
+        double ARRIVAL_RATE_THRESH = 0.1;
+        if (pct >= ARRIVAL_RATE_THRESH) {
             System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-            return true;    // Found the goal
+            soln = node;
+            solnScore = soln.data.getBestScore(gm, wf, numSamples, depth);
+            return;
         }
 
-        if (depth > maxDepth) {
+        // Don't search beyond our max depth.
+        if (depth >= maxDepth) {
             System.out.printf("--TOO DEEP--\n");
-            return false;
+            return;
         }
 
-
-        // Find possible tags we can reach and which control laws will do it
-        HashMap<TagRecord, FollowWall> bestLaw = new HashMap<TagRecord, FollowWall>();
-        MonteCarloBot mcb = new MonteCarloBot(sw);
+        // XXX How would we incorporate more laws?
+        // GOAL: Forward simulate for a fixed period for n iterations and see
+        // what possible control laws emerge. We have IDs associated with
+        // every obstacle (and could imagine doing so in our real map), so we
+        // can claim that we trying to terminate based on sighting obstacle N.
+        // It's possible different controls may result in terminations at the
+        // same obstacle! We want to keep track of all such possibilities, and
+        // we'd like to be able to iterate through them later in order of which
+        // ones are closest to our goal.
+        ArrayList<Behavior> recs = new ArrayList<Behavior>();
+        MonteCarloBot mcb;
         for (FollowWall law: controls) {
-            mcb.init(law, null, node.data.randomXYT()); // XXX
-            mcb.simulate(); // This will always timeout.
-            for (TagRecord rec: mcb.tagRecords) {
-                if (!bestLaw.containsKey(rec)) {
-                    // XXX Want to work rec.traveled into here XXX
-                    // Right now, first come, first serve
-                    bestLaw.put(rec, law);
-                }
+            mcb = new MonteCarloBot(sw);
+            for (int i = 0; i < numExploreSamples; i++) {
+                Behavior.XYTPair pair = node.data.randomXYT();
+                mcb.init(law, null, pair.xyt, pair.dist);
+                mcb.simulate(); // This will always timeout
             }
+            for (Behavior rec: mcb.tagRecords.values())
+                recs.add(rec);
         }
 
-        // Iterate through these laws based on which ones will likely terminate
-        // the closest to the goal
-        for (SimAprilTag tag: tags) {
-            // Find associated tag record through forced iteration...:/
-            TagRecord rec = null;
-            for (TagRecord tr: bestLaw.keySet()) {
-                if (tag.getID() != tr.id)
-                    continue;
-                rec = tr;
-                break;
-            }
-            if (rec == null)
+        // Test our record/law pairs based on tag distance to goal
+        // and (heuristic warning!) estimated distance traveled.
+        Collections.sort(recs, new BehaviorSearchComparator());
+        mcb = new MonteCarloBot(sw);
+        for (Behavior rec: recs) {
+            // Prune out solutions that are worse than our best so far.
+            // This is an early attempt at pruning to avoid spending more time
+            // simulating many branches.
+            // This is probably NOT a great thing to do, since we don't have
+            // all that many samples.
+            double recScore = rec.getBestScore(gm, wf, numExploreSamples, depth+1);
+            if (solnScore < recScore) {
+                System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
                 continue;
-            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-            params.put("class", new TypedValue(rec.tagClass));
-            params.put("count", new TypedValue(rec.count));
+            }
+
 
             // Try multiple simulations to evaluate the step
             ArrayList<double[]> xyts = new ArrayList<double[]>();
+            ArrayList<Double> distances = new ArrayList<Double>();
             for (int i = 0; i < numSamples; i++) {
-                mcb.init(bestLaw.get(rec), new ClassificationCounterTest(params), node.data.randomXYT());
+                Behavior.XYTPair pair = node.data.randomXYT();
+                mcb.init(rec.law, rec.test.clone(), pair.xyt, pair.dist);
                 mcb.simulate();
                 if (vw != null) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
@@ -264,81 +323,18 @@ public class MonteCarloPlanner
                     vb.swap();
                 }
                 if (mcb.success()) {
-                    // XXX This pose is not necessarily where we actually are! Would
-                    // be preferable to at least calculate it relative to the tag
+                    // Find where we are and how much we've driven to get there
                     xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                    distances.add(mcb.getTrajectoryLength());
                 }
             }
             if (xyts.size() < 1)
                 continue;
-            Node<Behavior> newNode = node.addChild(new Behavior(xyts, bestLaw.get(rec), new ClassificationCounterTest(params)));
+            Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, rec.test.clone()));
 
-            if (dfsHelper(newNode, goal, depth+1, maxDepth))
-                return true;
+            dfsHelper(newNode, goal, depth+1, maxDepth);
         }
 
-        return false;
-    }
-
-    private Tree<Behavior> buildTree(int depth, double[] goal)
-    {
-        double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-        ArrayList<double[]> xyts = new ArrayList<double[]>();
-        xyts.add(xyt);
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyts, null, null));
-
-        // Populate lower levels of tree
-        ArrayList<Node<Behavior> > nodes = new ArrayList<Node<Behavior> >();
-        nodes.add(tree.root);
-        for (int i = 0; i < searchDepth; i++) {
-            ArrayList<Node<Behavior> > nextNodes = new ArrayList<Node<Behavior> >();
-            for (Node<Behavior> node: nodes) {
-                makeChildren(node, goal);
-                nextNodes.addAll(node.children);
-            }
-            nodes = nextNodes;
-        }
-
-        return tree;
-    }
-
-    private void makeChildren(Node<Behavior> node, double[] goal)
-    {
-        MonteCarloBot mcb = new MonteCarloBot(sw);
-
-        // Parameters for termination condition
-        Set<String> classes = tagdb.getAllClasses();
-        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-        params.put("count", new TypedValue(1)); // We only ever consider counting one object
-
-        // For every combination of termination condition and control law, simulate
-        // and evaluate various actions.
-        for (FollowWall law: controls) {
-            for (String tagClass: classes) {
-                ArrayList<double[]> xyts = new ArrayList<double[]>();
-                params.put("class", new TypedValue(tagClass));
-
-                for (int i = 0; i < numSamples; i++) {
-                    //watch.start(""+i);
-                    mcb.init(law, new ClassificationCounterTest(params), node.data.randomXYT());
-                    mcb.simulate();
-                    //watch.stop();
-                    if (mcb.success()) {
-                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-                    }
-                }
-                // Check to make sure at least one instance of this plan succeeded
-                // XXX This could be more important later. What if we want to actually
-                // store a distribution of states in our behavior? For example, we could
-                // sample a random XYT from the previous distribution every time when starting
-                // or from a distribution estimating the spread of XYTs.
-                if (xyts.size() < 1)
-                    continue;
-
-                // Should we consider closeness to goal?
-                // Store to tree for future consideration
-                node.addChild(new Behavior(xyts, law, new ClassificationCounterTest(params)));
-            }
-        }
+        return;
     }
 }

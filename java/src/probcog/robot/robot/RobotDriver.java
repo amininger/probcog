@@ -32,7 +32,8 @@ public class RobotDriver implements LCMSubscriber
     public final static int BTN_MANUAL_MASK  = 0x30;  // either of the top trigger btns
     public final static int MOTOR_PERIOD_MS = 20;
 
-    public static final double BASELINE_METERS = 0.3429;
+    //public static final double BASELINE_METERS = 0.3429;
+    public static final double BASELINE_METERS = 0.46;
 
     public static final double DEADBAND_THRESH = 0.05; // consider velocities less than this to be zero.
 

@@ -18,10 +18,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double FW_HZ = 100;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
-    private static final double BACK_THETA = 12*Math.PI/36;
+    private static final double BACK_THETA = 16*Math.PI/36;
     private static final double FRONT_THETA = 6*Math.PI/36;
     private static final double MAX_V = 0.5;
-    private static final double MIN_V = 0.3;
+    private static final double MIN_V = 0.4;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
@@ -40,8 +40,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     int finIdx = -1;
 
     // State for PID
-    //double K_d = 0.05;
-    double K_d = 0.001;
+    double K_d = 0.05;
+    //double K_d = 0.001;
     double lastRange = -1;
 
     private class UpdateTask implements PeriodicTasks.Task
@@ -195,11 +195,14 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         lastRange = r;
 
         // XXX
-        double K_p = r/goalDistance;
-        double prop = MathUtil.clamp(-0.5 + K_p, -1.0, 1.0);//0.65);
+        double G_weight = Math.pow(goalDistance, .5);
+        double K_p = (1.0 - r/G_weight);
+        double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
 
-        double nearSpeed = 0.5;
-        double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
+        //double nearSpeed = 0.5;
+        //double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
+        double farSpeed = 0.5;
+        double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0.0, 1.0);    // XXX
         double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
         if (max < 0.01) {
             nearSpeed = farSpeed = 0;
@@ -210,7 +213,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         // Special case turn-in-place when near a dead end in front
         //System.out.printf("%f\n", rFront);
-        if (rFront < goalDistance) {
+        if (rFront < goalDistance + 0.5) {
             nearSpeed = MIN_V;
             farSpeed = -MIN_V;
         }
@@ -254,6 +257,22 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         LCM.getSingleton().subscribe("LASER", this);
         LCM.getSingleton().subscribe("POSE", this);
         tasks.addFixedDelay(new UpdateTask(), 1.0/FW_HZ);
+    }
+
+    // Ignore heading for now
+    public int hashCode()
+    {
+        return dir.hashCode() ^ new Double(goalDistance).hashCode();
+    }
+
+    public boolean equals(Object o)
+    {
+        if (o == null)
+            return false;
+        else if (!(o instanceof FollowWall))
+            return false;
+        FollowWall fw = (FollowWall)o;
+        return dir == fw.dir && goalDistance == fw.goalDistance;
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -328,5 +347,22 @@ public class FollowWall implements ControlLaw, LCMSubscriber
                                       false));
 
         return params;
+    }
+
+    public control_law_t getLCM()
+    {
+        control_law_t cl = new control_law_t();
+        cl.name = "follow-wall";
+        cl.num_params = 3;
+        cl.param_names = new String[cl.num_params];
+        cl.param_values = new typed_value_t[cl.num_params];
+        cl.param_names[0] = "side";
+        cl.param_values[0] = new TypedValue((byte)(dir == Direction.LEFT ? 1 : -1)).toLCM();
+        cl.param_names[1] = "distance";
+        cl.param_values[1] = new TypedValue(goalDistance).toLCM();
+        cl.param_names[2] = "heading";
+        cl.param_values[2] = new TypedValue(targetHeading).toLCM();
+
+        return cl;
     }
 }

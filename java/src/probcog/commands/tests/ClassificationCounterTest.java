@@ -14,6 +14,8 @@ import probcog.lcmtypes.*;
 
 public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 {
+    LCM lcm = LCM.getSingleton();
+
     // Default parameters...should these be settable?
     static final double CONFIDENCE_THRESHOLD = 0.8;
     static final double ORIENTATION_THRESHOLD = Math.toRadians(15);
@@ -87,7 +89,21 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         // XXX - Here we need to spin up a classifier and tell it what to look for
 
         startUtime = TimeUtil.utime();
-        LCM.getSingleton().subscribe("CLASSIFICATIONS", this);
+        lcm.subscribe("CLASSIFICATIONS", this);
+    }
+
+    public ClassificationCounterTest clone()
+    {
+        ClassificationCounterTest test = new ClassificationCounterTest();
+        test.goalCount = goalCount;
+        test.classType = classType;
+        test.orientation = orientation;
+        test.observed = new HashMap<Integer, DetectionRecord>();
+
+        test.startUtime = TimeUtil.utime();
+        test.lcm.subscribe("CLASSIFICATIONS", this);
+
+        return test;
     }
 
     /** Query whether or not the condition being tested for is currently true.
@@ -96,18 +112,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
      **/
     synchronized public boolean conditionMet()
     {
-        int count = 0;
-        for (DetectionRecord d: observed.values()) {
-            // Compute a sample weighted confidence. This helps account for
-            // some of the noise in sampling. Chosen fairly arbitrarily to
-            // heavily penalize few sample while minimally penalizing many samples,
-            // but could be revisited
-            double conf = (1.0 - 1.0/d.n)*d.mean;
-            if (conf > CONFIDENCE_THRESHOLD && d.metOrientation)
-                count++;
-
-        }
-
+        int count = getCurrentCount();
         return count >= goalCount;
     }
 
@@ -142,15 +147,57 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         return params;
     }
 
+    public condition_test_t getLCM()
+    {
+        condition_test_t ct = new condition_test_t();
+        ct.name = "count";
+        ct.num_params = 3;
+        ct.param_names = new String[ct.num_params];
+        ct.param_values = new typed_value_t[ct.num_params];
+        ct.param_names[0] = "count";
+        ct.param_values[0] = new TypedValue(goalCount).toLCM();
+        ct.param_names[1] = "class";
+        ct.param_values[1] = new TypedValue(classType).toLCM();
+        ct.param_names[2] = "orientation";
+        ct.param_values[2] = new TypedValue(orientation).toLCM();
+
+        // Not used
+        ct.compare_type = condition_test_t.CMP_GT;
+        ct.compared_value = new TypedValue(0).toLCM();
+
+        return ct;
+    }
+
     // === Sample adding/tracking ============================================
     synchronized public void addSample(classification_t classy)
     {
-        if (classType.equals(classy.name)) {
-            if (!observed.containsKey(classy.id)) {
-                observed.put(classy.id, new DetectionRecord());
+        synchronized (observed) {
+            if (classType.equals(classy.name)) {
+                if (!observed.containsKey(classy.id)) {
+                    observed.put(classy.id, new DetectionRecord());
+                }
+                observed.get(classy.id).addSample(classy);
             }
-            observed.get(classy.id).addSample(classy);
         }
+    }
+
+    public int getCurrentCount()
+    {
+        int count = 0;
+        synchronized (observed) {
+            for (DetectionRecord d: observed.values()) {
+                // Compute a sample weighted confidence. This helps account for
+                // some of the noise in sampling. Chosen fairly arbitrarily to
+                // heavily penalize few sample while minimally penalizing many samples,
+                // but could be revisited
+                //double conf = (1.0 - 1.0/d.n)*d.mean;
+                double conf = d.mean;   // XXX
+                if (conf > CONFIDENCE_THRESHOLD && d.metOrientation)
+                    count++;
+
+            }
+        }
+        return count;
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
