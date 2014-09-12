@@ -384,6 +384,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         ArrayList<Integer> goalIDs = new ArrayList<Integer>();
 
         double[][] initialPose;
+        double[] L2G;
 
         public void run()
         {
@@ -397,6 +398,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             // Find the sim robot and save pose for test reset
             SimRobot robot = getRobot();
             initialPose = robot.getPose();
+            L2G = robot.getL2G();
 
             // First, try the wavefront follower
             System.out.println("Trying wavefront...");
@@ -476,7 +478,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 SimAprilTag tag = getTag(id);
                 assert (tag != null);
 
-                double[] startXY = LinAlg.matrixToXYT(robot.getPose()); // Noisy pose XXX
+                double[] startXY = LinAlg.matrixToXYT(robot.getNoisyPose(L2G));
                 double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
 
                 float[] costMap = wfp.getWavefront(startXY, goalXY);
@@ -527,9 +529,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 Tic tic = new Tic();
                 diff_drive_t dd = new diff_drive_t();
                 while (followingPath(robot, dd)) {
-                    // XXX Noisy Pose
-                    double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getPose()), 2);
-                    double[] orientation = LinAlg.matrixToQuat(robot.getPose());
+                    double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getNoisyPose(L2G)), 2);
+                    double[] orientation = LinAlg.matrixToQuat(robot.getNoisyPose(L2G));
                     dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8);
                     dd.utime = TimeUtil.utime();
                     LCM.getSingleton().publish("DIFF_DRIVE", dd);
@@ -550,7 +551,16 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             if (dd.utime > 0 && dd.left == 0 && dd.right == 0)
                 return false;
 
-            // XXX Collision
+            for (SimObject so: simulator.getWorld().objects) {
+                if (!(so instanceof SimBox))
+                    continue;
+                if (Collisions.collision(so.getShape(),
+                                         so.getPose(),
+                                         robot.getShape(),
+                                         robot.getPose()))
+                    return false;
+            }
+
             return true;
         }
 

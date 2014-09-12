@@ -40,8 +40,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     int finIdx = -1;
 
     // State for PID
-    //double K_d = 0.05;
-    double K_d = 0.001;
+    double K_d = 0.05;
+    //double K_d = 0.001;
     double lastRange = -1;
 
     private class UpdateTask implements PeriodicTasks.Task
@@ -202,7 +202,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         //double nearSpeed = 0.5;
         //double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
         double farSpeed = 0.5;
-        double nearSpeed = MathUtil.clamp(prop + K_d*deriv, 0.0, 1.0);    // XXX
+        double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0.0, 1.0);    // XXX
         double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
         if (max < 0.01) {
             nearSpeed = farSpeed = 0;
