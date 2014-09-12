@@ -120,7 +120,7 @@ public class MonteCarloPlanner
         controls.add(new FollowWall(params));
 
         // Initialize wavefront planner used for rough distance
-        this.wfp = new WavefrontPlanner(gm, 0.4);   // XXX
+        this.wfp = new WavefrontPlanner(gm, 0.5);   // XXX
     }
 
     private class TagDistanceComparator implements Comparator<SimAprilTag>
@@ -181,7 +181,6 @@ public class MonteCarloPlanner
         watch.start("preprocessing");
         this.wf = wfp.getWavefront(null, goal);
         Collections.sort(tags, new TagDistanceComparator(wf));
-        //Collections.sort(tags, new TagDistanceComparator(goal));
         watch.stop();
 
         watch.start("DFS");
@@ -214,6 +213,7 @@ public class MonteCarloPlanner
         if (!iterativeDeepening)
             i = searchDepth;
 
+        // Reset state from last search
         soln = null;
         solnScore = Double.MAX_VALUE;
         for (; i <= searchDepth; i++) {

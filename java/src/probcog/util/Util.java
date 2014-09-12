@@ -13,7 +13,7 @@ import probcog.sensor.*;
 
 public class Util
 {
-    public static String configPath = "$PROBCOG_HOME/config/robot.config";
+    public static String configPath = "$PROBCOG_HOME/config/robot.config.local";
     private static Config config = null;
 
     /** Give a string of key=token pairs, extract the token
