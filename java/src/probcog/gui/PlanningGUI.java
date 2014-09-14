@@ -653,6 +653,9 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                             }
                         }
                     }
+
+                    // Last step...visually servo towards tag
+
                 }
             }
         }

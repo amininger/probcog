@@ -120,8 +120,9 @@ public class MonteCarloBot implements SimObject
 
         // Initialize a list of things we saw to start with. These tags are
         // ignored during the simulation of this control law.
-        // HashSet<SimAprilTag> invisibleTags = getSeenTags(); XXX
-        HashSet<SimAprilTag> invisibleTags = new HashSet<SimAprilTag>();
+        HashSet<SimAprilTag> initiallySeenTags = getSeenTags();
+        HashSet<SimAprilTag> invisibleTags = getSeenTags();
+        //HashSet<SimAprilTag> invisibleTags = new HashSet<SimAprilTag>();
         HashSet<SimAprilTag> observedTags = new HashSet<SimAprilTag>();
 
         // While control law has not finished OR timeout, try updating
@@ -195,6 +196,9 @@ public class MonteCarloBot implements SimObject
                         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                         params.put("count", new TypedValue(Integer.MAX_VALUE));
                         params.put("class", new TypedValue(name));
+                        for (SimAprilTag sat: initiallySeenTags) {
+                            params.put("ignore_"+sat.getID(), new TypedValue(sat.getID()));
+                        }
                         testMap.put(name, new ClassificationCounterTest(params));
                     }
 
@@ -208,6 +212,9 @@ public class MonteCarloBot implements SimObject
                     HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                     params.put("count", new TypedValue(count));
                     params.put("class", new TypedValue(name));
+                    for (SimAprilTag sat: initiallySeenTags) {
+                        params.put("ignore_"+sat.getID(), new TypedValue(sat.getID()));
+                    }
                     double[] xyt = LinAlg.matrixToXYT(getPose());
                     Behavior rec = new Behavior(iteration, xyt, getTrajectoryLength(), law, new ClassificationCounterTest(params));
 

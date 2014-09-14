@@ -12,12 +12,13 @@ import april.util.*;
 import probcog.commands.*;
 import probcog.lcmtypes.*;
 
-public class DriveTowardsTag implements LCMSubscriber
+public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 {
+    private static final double DTT_HZ = 100;
     LCM lcm = LCM.getSingleton();
     PeriodicTasks tasks = new PeriodicTasks(1);
 
-    static final double TURN_THRESH = Math.toRadians(30);
+    static final double TURN_THRESH = Math.toRadians(15);
     static final double DIST_THRESH = 2.0;
     static final double MIN_SPEED = 0.2;    // Avoid deadband
     static final double MAX_SPEED = 0.5;
@@ -45,6 +46,7 @@ public class DriveTowardsTag implements LCMSubscriber
                 double theta = Math.atan2(lastClassification.xyzrpy[1],
                                           lastClassification.xyzrpy[0]);
                 diff_drive_t dd = new diff_drive_t();
+                dd.utime = TimeUtil.utime();
                 dd.left_enabled = dd.right_enabled = true;
                 dd.left = dd.right = 0;
                 if (Math.abs(theta) > TURN_THRESH) {
@@ -58,8 +60,8 @@ public class DriveTowardsTag implements LCMSubscriber
                 } else {
                     double mag = MathUtil.clamp(MAX_SPEED*(dist/DIST_THRESH), MIN_SPEED, MAX_SPEED);
 
-                    dd.left = mag*(theta/(Math.PI/2));
-                    dd.right = mag*(theta/(-Math.PI/2));
+                    dd.left = 0.3 + mag*(theta/(Math.PI/2));
+                    dd.right = 0.3 + mag*(theta/(-Math.PI/2));
                 }
 
                 lcm.publish("DIFF_DRIVE", dd);
@@ -77,6 +79,7 @@ public class DriveTowardsTag implements LCMSubscriber
         targetID = parameters.get("id").getInt();
 
         lcm.subscribe("CLASSIFICATIONS", this);
+        tasks.addFixedDelay(new DriveTask(), 1.0/DTT_HZ);
         tasks.setRunning(true);
     }
 

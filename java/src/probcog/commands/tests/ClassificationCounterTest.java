@@ -27,6 +27,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     private double orientation = -Math.PI;
     private String classType = "";
     private HashMap<Integer, DetectionRecord> observed;
+    private HashSet<Integer> ignore = new HashSet<Integer>();
 
     // XXX HACK
     long startUtime;
@@ -83,6 +84,13 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         if (parameters.containsKey("orientation"))
             orientation = parameters.get("orientation").getDouble();
 
+        // Hidden parameters. Used to hack in tag ignorance
+        for (String key: parameters.keySet()) {
+            if (!key.startsWith("ignore"))
+                continue;
+            ignore.add(parameters.get(key).getInt());
+        }
+
         observed = new HashMap<Integer, DetectionRecord>();
 
         // Initialize
@@ -99,6 +107,8 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         test.classType = classType;
         test.orientation = orientation;
         test.observed = new HashMap<Integer, DetectionRecord>();
+        for (Integer i: ignore)
+            test.ignore.add(i);
 
         test.startUtime = TimeUtil.utime();
         test.lcm.subscribe("CLASSIFICATIONS", this);
@@ -151,7 +161,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     {
         condition_test_t ct = new condition_test_t();
         ct.name = "count";
-        ct.num_params = 3;
+        ct.num_params = 3+ignore.size();
         ct.param_names = new String[ct.num_params];
         ct.param_values = new typed_value_t[ct.num_params];
         ct.param_names[0] = "count";
@@ -160,6 +170,12 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         ct.param_values[1] = new TypedValue(classType).toLCM();
         ct.param_names[2] = "orientation";
         ct.param_values[2] = new TypedValue(orientation).toLCM();
+        int idx = 0;
+        for (Integer i: ignore) {
+            ct.param_names[3+idx] = "ignore_"+i;
+            ct.param_values[3+idx] = new TypedValue(i).toLCM();
+            idx++;
+        }
 
         // Not used
         ct.compare_type = condition_test_t.CMP_GT;
@@ -171,6 +187,9 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     // === Sample adding/tracking ============================================
     synchronized public void addSample(classification_t classy)
     {
+        if (ignore.contains(classy.id))
+            return;
+
         synchronized (observed) {
             if (classType.equals(classy.name)) {
                 if (!observed.containsKey(classy.id)) {

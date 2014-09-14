@@ -347,8 +347,8 @@ public class SimRobot implements SimObject, LCMSubscriber
             for(SimObject so : sw.objects) {
                 detectDoor(so, xyzrpyBot);
                 detectHallway(so, xyzrpyBot);
-                detectApriltag(so, xyzrpyBot);
             }
+            detectApriltags(sw.objects, xyzrpyBot);
         }
 
         private void detectDoor(SimObject so, double[] xyzrpyBot)
@@ -440,26 +440,29 @@ public class SimRobot implements SimObject, LCMSubscriber
             lcm.publish("CLASSIFICATIONS", classy_list);
         }
 
-        private void detectApriltag(SimObject so, double[] xyzrpyBot)
+        private void detectApriltags(Collection<SimObject> sos, double[] xyzrpyBot)
         {
-            if (!(so instanceof SimAprilTag))
-                return;
-            SimAprilTag tag = (SimAprilTag)so;
-            double sensingThreshold = 2.0;
-
-            double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
-            double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
-            if (dist > sensingThreshold)
-                return;
-
-            // Position relative to robot. For now, tossing away orientation data,
-            // but may be relevant later.
-            double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
-
-            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
-
+            ArrayList<classification_t> classies = new ArrayList<classification_t>();
             classification_list_t classy_list = new classification_list_t();
             classy_list.utime = TimeUtil.utime();
+            for (SimObject so: sos) {
+                if (!(so instanceof SimAprilTag))
+                    continue;
+                SimAprilTag tag = (SimAprilTag)so;
+                double sensingThreshold = 2.0;
+
+                double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
+                double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
+                if (dist > sensingThreshold)
+                    continue;
+
+                // Position relative to robot. For now, tossing away orientation data,
+                // but may be relevant later.
+                double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
+
+                ArrayList<classification_t> temp = tc.classifyTag(tag.getID(), relXyzrpy);
+                classies.addAll(temp);
+            }
             classy_list.num_classifications = classies.size();
             classy_list.classifications = classies.toArray(new classification_t[0]);
             lcm.publish("CLASSIFICATIONS", classy_list);
