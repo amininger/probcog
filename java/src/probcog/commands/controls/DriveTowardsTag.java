@@ -18,7 +18,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     LCM lcm = LCM.getSingleton();
     PeriodicTasks tasks = new PeriodicTasks(1);
 
-    static final double TURN_THRESH = Math.toRadians(15);
+    static final double TURN_THRESH = Math.toRadians(30);
     static final double DIST_THRESH = 2.0;
     static final double MIN_SPEED = 0.2;    // Avoid deadband
     static final double MAX_SPEED = 0.5;
@@ -34,8 +34,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         {
         }
 
-        // Try to drive in the general direction of a tag, slowing down
-        // when we get sufficiently close to the tag.
+        // Try to drive towards the tag, avoiding walls and obstacles as you go.
         public void run(double dt)
         {
             synchronized (classyLock) {
@@ -58,10 +57,10 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                         dd.right = -MAX_TURN;
                     }
                 } else {
-                    double mag = MathUtil.clamp(MAX_SPEED*(dist/DIST_THRESH), MIN_SPEED, MAX_SPEED);
+                    //double mag = MathUtil.clamp(MAX_SPEED*(dist/DIST_THRESH), MIN_SPEED, MAX_SPEED);
 
-                    dd.left = 0.3 + mag*(theta/(Math.PI/2));
-                    dd.right = 0.3 + mag*(theta/(-Math.PI/2));
+                    dd.left = 0.3 + 0.6*(theta/(-Math.PI/2));
+                    dd.right = 0.3 + 0.6*(theta/(Math.PI/2));
                 }
 
                 lcm.publish("DIFF_DRIVE", dd);

@@ -30,6 +30,7 @@ public class ConditionTestFactory
     private void init()
     {
         registerConditionTest("distance", DistanceTest.class.getName());
+        registerConditionTest("near-tag", NearTag.class.getName());
         registerConditionTest("rotation", RotationTest.class.getName());
         registerConditionTest("count", ClassificationCounterTest.class.getName());
         registerConditionTest("timeout", TimeoutTest.class.getName());

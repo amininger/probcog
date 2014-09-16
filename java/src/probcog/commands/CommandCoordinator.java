@@ -153,8 +153,8 @@ public class CommandCoordinator
 
             // Automatically insert a failure condition for getting too close
             // to an obstacle...
-            int termId = registerConditionTest(new ObstacleTest(new HashMap<String, TypedValue>()));
-            registerTerminationCondition(termId, id, CommandCoordinator.Status.FAILURE);
+            //int termId = registerConditionTest(new ObstacleTest(new HashMap<String, TypedValue>()));
+            //registerTerminationCondition(termId, id, CommandCoordinator.Status.FAILURE);
 
             return id;
         }
