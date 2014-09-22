@@ -8,8 +8,8 @@ import april.util.*;
 import april.vis.*;
 
 import probcog.commands.*;
-import probcog.commands.controls.FollowWall;
-import probcog.commands.tests.ClassificationCounterTest;
+import probcog.commands.controls.*;
+import probcog.commands.tests.*;
 
 // Used to represent a law-test pair, along with some state for distributions
 // of states associated with executing this pair.
@@ -18,8 +18,10 @@ public class Behavior
     Random r = new Random();
 
     // Control state
-    public FollowWall law;                  // Law to follow
-    public ClassificationCounterTest test;  // Test to check against
+    public ControlLaw law;
+    public ConditionTest test;
+    //public FollowWall law;                  // Law to follow
+    //public ClassificationCounterTest test;  // Test to check against
 
     // Bookkeeping for evaluating search.
     private double behaviorScore = Double.MAX_VALUE;
@@ -98,12 +100,14 @@ public class Behavior
         }
     }
 
-    public Behavior(double[] xyt, double distance, FollowWall law, ClassificationCounterTest test)
+    //public Behavior(double[] xyt, double distance, FollowWall law, ClassificationCounterTest test)
+    public Behavior(double[] xyt, double distance, ControlLaw law, ConditionTest test)
     {
         this(0, xyt, distance, law, test);
     }
 
-    public Behavior(int age, double[] xyt, double distance, FollowWall law, ClassificationCounterTest test)
+    //public Behavior(int age, double[] xyt, double distance, FollowWall law, ClassificationCounterTest test)
+    public Behavior(int age, double[] xyt, double distance, ControlLaw law, ConditionTest test)
     {
         xyts.add(xyt);
         distances.add(distance);
@@ -112,7 +116,8 @@ public class Behavior
         this.test = test;
     }
 
-    public Behavior(ArrayList<double[]> xyts, ArrayList<Double> distances, FollowWall law, ClassificationCounterTest test)
+    //public Behavior(ArrayList<double[]> xyts, ArrayList<Double> distances, FollowWall law, ClassificationCounterTest test)
+    public Behavior(ArrayList<double[]> xyts, ArrayList<Double> distances, ControlLaw law, ConditionTest test)
     {
         assert (xyts.size() == distances.size());
 
@@ -325,17 +330,19 @@ public class Behavior
         return stats;
     }
 
-    public String toString()
+    /*public String toString()
     {
         Formatter f = new Formatter();
         f.format("Follow %s until %d %s\n", law.getSide(), test.getCount(), test.getClassType());
         return f.toString();
-    }
+    }*/
 
-
+    // XXX These only exist to support MonteCarloBot's hash table for class counting.
     public int hashCode()
     {
-        return new Integer(test.getCount()).hashCode() ^ test.getClassType().hashCode();
+        assert (test instanceof ClassificationCounterTest);
+        ClassificationCounterTest cct = (ClassificationCounterTest)test;
+        return new Integer(cct.getCount()).hashCode() ^ cct.getClassType().hashCode();
     }
 
     public boolean equals(Object o)
@@ -345,6 +352,10 @@ public class Behavior
         if (!(o instanceof Behavior))
             return false;
         Behavior b = (Behavior)o;
-        return test.getCount() == b.test.getCount() && test.getClassType().equals(b.test.getClassType());
+
+        assert (test instanceof ClassificationCounterTest);
+        ClassificationCounterTest cct = (ClassificationCounterTest)test;
+        ClassificationCounterTest bcct = (ClassificationCounterTest)b.test;
+        return cct.getCount() == bcct.getCount() && cct.getClassType().equals(bcct.getClassType());
     }
 }

@@ -75,6 +75,11 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         return dd;
     }
 
+    public int getID()
+    {
+        return targetID;
+    }
+
     public DriveTowardsTag()
     {
     }
@@ -141,21 +146,17 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         return params;
     }
 
-    public condition_test_t getLCM()
+    public control_law_t getLCM()
     {
-        condition_test_t ct = new condition_test_t();
-        ct.name = "count";
-        ct.num_params = 1;
-        ct.param_names = new String[ct.num_params];
-        ct.param_values = new typed_value_t[ct.num_params];
-        ct.param_names[0] = "id";
-        ct.param_values[0] = new TypedValue(targetID).toLCM();
+        control_law_t cl = new control_law_t();
+        cl.name = "drive-to-tag";
+        cl.num_params = 1;
+        cl.param_names = new String[cl.num_params];
+        cl.param_values = new typed_value_t[cl.num_params];
+        cl.param_names[0] = "id";
+        cl.param_values[0] = new TypedValue(targetID).toLCM();
 
-        // Not used
-        ct.compare_type = condition_test_t.CMP_GT;
-        ct.compared_value = new TypedValue(0).toLCM();
-
-        return ct;
+        return cl;
     }
 
 }

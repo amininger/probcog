@@ -10,8 +10,8 @@ import april.vis.*;
 
 import probcog.classify.*;
 import probcog.commands.*;
-import probcog.commands.controls.FollowWall;
-import probcog.commands.tests.ClassificationCounterTest;
+import probcog.commands.controls.*;
+import probcog.commands.tests.*;
 import probcog.sim.*;
 import probcog.navigation.Behavior.Cluster;
 import probcog.util.*;
@@ -167,12 +167,21 @@ public class MonteCarloPlanner
         }
     }
 
+    public ArrayList<Behavior> plan(ArrayList<double[]> starts,
+                                    double[] goal)
+    {
+        return plan(starts, goal, null);
+    }
+
     /** Plan a list of behaviors to follow to get within shorter wavefront or
      *  direct drive distance of the goal.
      */
     public ArrayList<Behavior> plan(ArrayList<double[]> starts,
-                                    double[] goal)
+                                    double[] goal,
+                                    SimAprilTag optionalTargetTag)
     {
+        goalTag = optionalTargetTag;
+
         watch.start("plan");
         ArrayList<Behavior> behaviors = new ArrayList<Behavior>();
 
@@ -202,6 +211,7 @@ public class MonteCarloPlanner
     }
 
     /** Do a depth first search for the best set of laws to follow */
+    private SimAprilTag goalTag;
     private Node<Behavior> soln;
     private double solnScore;
     private Node<Behavior> dfsSearch(ArrayList<double[]> starts, double[] goal)
@@ -244,14 +254,15 @@ public class MonteCarloPlanner
 
     private void dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
     {
+        MonteCarloBot mcb;
         if (debug) {
             System.out.printf("|");
             for (int i = 0; i < depth; i++) {
                 System.out.printf("==");
             }
-            if (node != null && node.data != null && node.data.law != null && node.data.test != null)
+            /*if (node != null && node.data != null && node.data.law != null && node.data.test != null)
                 System.out.printf("%s", node.data.toString());
-            else
+            else*/
                 System.out.printf("\n");
         }
 
@@ -268,6 +279,39 @@ public class MonteCarloPlanner
         double ARRIVAL_RATE_THRESH = 0.1;
         if (pct >= ARRIVAL_RATE_THRESH) {
             System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+
+            // Time to try out hard-coded last step of attacking the goal tag
+            if (goalTag != null) {
+                HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                params.put("id", new TypedValue(goalTag.getID()));
+                DriveTowardsTag dtt = new DriveTowardsTag(params);
+                params.put("distance", new TypedValue(0.5));
+
+                ArrayList<double[]> xyts = new ArrayList<double[]>();
+                ArrayList<Double> distances = new ArrayList<Double>();
+
+                mcb = new MonteCarloBot(sw);
+                for (int i = 0; i < numSamples; i++) {
+                    Behavior.XYTPair pair = node.data.randomXYT();
+                    mcb.init(dtt, new NearTag(params), pair.xyt, pair.dist);
+                    mcb.simulate(10.0);
+                    if (vw != null) {
+                        VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
+                        vb.setDrawOrder(-500);
+                        vb.addBack(mcb.getVisObject());
+                        vb.swap();
+                    }
+                    if (mcb.success()) {
+                        // Find where we are and how much we've driven to get there
+                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                        distances.add(mcb.getTrajectoryLength());
+                    }
+                }
+
+                Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, dtt, new NearTag(params)));
+                node = newNode;
+            }
+
             soln = node;
             solnScore = soln.data.getBestScore(gm, wf, numSamples, depth);
             return;
@@ -289,7 +333,6 @@ public class MonteCarloPlanner
         // we'd like to be able to iterate through them later in order of which
         // ones are closest to our goal.
         ArrayList<Behavior> recs = new ArrayList<Behavior>();
-        MonteCarloBot mcb;
         for (FollowWall law: controls) {
             mcb = new MonteCarloBot(sw);
             for (int i = 0; i < numExploreSamples; i++) {
@@ -323,7 +366,7 @@ public class MonteCarloPlanner
             ArrayList<Double> distances = new ArrayList<Double>();
             for (int i = 0; i < numSamples; i++) {
                 Behavior.XYTPair pair = node.data.randomXYT();
-                mcb.init(rec.law, rec.test.clone(), pair.xyt, pair.dist);
+                mcb.init(rec.law, ((ClassificationCounterTest)rec.test).clone(), pair.xyt, pair.dist);
                 mcb.simulate();
                 if (vw != null) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
@@ -339,7 +382,7 @@ public class MonteCarloPlanner
             }
             if (xyts.size() < 1)
                 continue;
-            Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, rec.test.clone()));
+            Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, ((ClassificationCounterTest)rec.test).clone()));
 
             dfsHelper(newNode, goal, depth+1, maxDepth);
         }

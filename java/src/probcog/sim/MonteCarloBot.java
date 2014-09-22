@@ -37,8 +37,12 @@ public class MonteCarloBot implements SimObject
     VisColorData vcd = new VisColorData();
 
     TagClassifier tc;
-    FollowWall law;
-    ClassificationCounterTest test;
+
+    // Control law/condition test. Need to be cast appropriately for use...
+    ControlLaw law;
+    ConditionTest test;
+    //FollowWall law;
+    //ClassificationCounterTest test;
 
     int simSinceReset = 0;
     int iteration = 0;
@@ -70,13 +74,16 @@ public class MonteCarloBot implements SimObject
         // NOTE: does not reset tagRecords.
     }
 
-    public void init(FollowWall law, ClassificationCounterTest test)
+    //public void init(FollowWall law, ClassificationCounterTest test)
+    public void init(ControlLaw law, ConditionTest test)
     {
         init(law, test, null, 0);
     }
 
-    public void init(FollowWall law,
-                     ClassificationCounterTest test,
+    //public void init(FollowWall law,
+    //                 ClassificationCounterTest test,
+    public void init(ControlLaw law,
+                     ConditionTest test,
                      double[] xyt,
                      double initialDistanceTraveled)
     {
@@ -155,9 +162,34 @@ public class MonteCarloBot implements SimObject
             laser.rad0 = (float) rad0;
             laser.radstep = (float) radstep;
 
+            diff_drive_t dd = new diff_drive_t();
+            dd.utime = TimeUtil.utime();
+            dd.left_enabled = dd.right_enabled = false;
+            dd.left = dd.right = 0;
             // DRIVE UPDATE
-            law.init(laser);
-            diff_drive_t dd = law.drive(laser, FastDrive.DT);
+            if (law instanceof FollowWall) {
+                FollowWall fw = (FollowWall)law;
+                fw.init(laser);
+                dd = fw.drive(laser, FastDrive.DT);
+            } else if (law instanceof DriveTowardsTag) {
+                DriveTowardsTag dtt = (DriveTowardsTag)law;
+                HashSet<SimAprilTag> currentTags = getSeenTags();
+                for (SimAprilTag tag: currentTags) {
+                    if (dtt.getID() == tag.getID()) {
+                        double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
+                        double[] relXyzrpy = relativePose(getPose(), xyzrpy);
+                        ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+                        if (classies.size() < 1)
+                            continue;
+
+                        dd = dtt.drive(tc.classifyTag(tag.getID(), relXyzrpy).get(0), FastDrive.DT);
+                    }
+                }
+
+            } else {
+                System.out.println("ERR: This type of control law is not supported");
+                assert (false);
+            }
             drive.motorCommands[0] = dd.left;
             drive.motorCommands[1] = dd.right;
             drive.update();
@@ -166,6 +198,17 @@ public class MonteCarloBot implements SimObject
             // CHECK CLASSIFICATIONS
             HashSet<SimAprilTag> seenTags = getSeenTags();
             for (SimAprilTag tag: seenTags) {
+                double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
+                double[] relXyzrpy = relativePose(getPose(), xyzrpy);
+                ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+
+                // Update the condition test, if necessary
+                if (test instanceof NearTag) {
+                    NearTag nt = (NearTag)test;
+                    if (classies.size() > 0)
+                        nt.processTag(classies.get(0));
+                }
+
                 if (invisibleTags.contains(tag))
                     continue;   // XXX This is currently NOT supported in the real world
 
@@ -179,11 +222,6 @@ public class MonteCarloBot implements SimObject
 
                 if (!observedTags.contains(tag))
                     continue;
-
-
-                double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
-                double[] relXyzrpy = relativePose(getPose(), xyzrpy);
-                ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
 
                 // If the test object exists, add classification samples.
                 // Otherwise, store relevant information about the tag. Only use
@@ -226,9 +264,10 @@ public class MonteCarloBot implements SimObject
                         temp.addObservation(xyt, getTrajectoryLength());
                         temp.ageOfLastObservation = iteration;
                     }
-                } else {
+                } else if (test instanceof ClassificationCounterTest) {
+                    ClassificationCounterTest cct = (ClassificationCounterTest)test;
                     for (classification_t classy: classies)
-                        test.addSample(classy);
+                        cct.addSample(classy);
                 }
             }
 

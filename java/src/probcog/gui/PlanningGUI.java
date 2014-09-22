@@ -18,8 +18,8 @@ import april.sim.*;
 
 import probcog.classify.*;
 import probcog.commands.*;
-import probcog.commands.controls.FollowWall;
-import probcog.commands.tests.ClassificationCounterTest;
+import probcog.commands.controls.*;
+import probcog.commands.tests.*;
 import probcog.lcmtypes.*;
 import probcog.navigation.*;
 import probcog.vis.*;
@@ -617,7 +617,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     starts.add(LinAlg.matrixToXYT(robot.getPose()));
                 double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
 
-                ArrayList<Behavior> behaviors = mcp.plan(starts, goalXY);
+                ArrayList<Behavior> behaviors = mcp.plan(starts, goalXY, tag);
 
                 // Here's where things get fun. We'd like to use our
                 // end distribution of points represent our NEW set
@@ -656,6 +656,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
                     // Last step...visually servo towards tag
 
+
                 }
             }
         }
@@ -663,11 +664,25 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         private void issueCommand(Behavior b)
         {
             // Issue the appropriate command
-            control_law_t cl = b.law.getLCM();
+            control_law_t cl = null;
+            if (b.law instanceof FollowWall) {
+                cl = ((FollowWall)b.law).getLCM();
+            } else if (b.law instanceof DriveTowardsTag) {
+                cl = ((DriveTowardsTag)b.law).getLCM();
+            } else {
+                assert (false);
+            }
             cl.utime = TimeUtil.utime();
             cl.id = commandID++;
 
-            condition_test_t ct = b.test.getLCM();
+            condition_test_t ct = null;
+            if (b.test instanceof ClassificationCounterTest) {
+                ct = ((ClassificationCounterTest)b.test).getLCM();
+            } else if (b.test instanceof NearTag) {
+                ct = ((NearTag)b.test).getLCM();
+            } else {
+                assert (false);
+            }
             cl.termination_condition = ct;
 
             // Publishing

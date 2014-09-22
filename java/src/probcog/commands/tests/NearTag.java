@@ -41,7 +41,6 @@ public class NearTag implements ConditionTest, LCMSubscriber
             return;
 
         closestDistance = LinAlg.magnitude(LinAlg.resize(c.xyzrpy, 2));
-
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -90,5 +89,24 @@ public class NearTag implements ConditionTest, LCMSubscriber
                                       false));
 
         return params;
+    }
+
+    public condition_test_t getLCM()
+    {
+        condition_test_t ct = new condition_test_t();
+        ct.name = "near-tag";
+        ct.num_params = 2;
+        ct.param_names = new String[ct.num_params];
+        ct.param_values = new typed_value_t[ct.num_params];
+        ct.param_names[0] = "id";
+        ct.param_values[0] = new TypedValue(tagID).toLCM();
+        ct.param_names[1] = "distance";
+        ct.param_values[1] = new TypedValue(stoppingDistance).toLCM();
+
+        // Not used
+        ct.compare_type = condition_test_t.CMP_GT;
+        ct.compared_value = new TypedValue(0).toLCM();
+
+        return ct;
     }
 }
