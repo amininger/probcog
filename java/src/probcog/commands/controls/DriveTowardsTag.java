@@ -18,7 +18,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     LCM lcm = LCM.getSingleton();
     PeriodicTasks tasks = new PeriodicTasks(1);
 
-    static final double TURN_THRESH = Math.toRadians(30);
+    static final double TURN_THRESH = Math.toRadians(90);
     static final double DIST_THRESH = 2.0;
     static final double MIN_SPEED = 0.2;    // Avoid deadband
     static final double MAX_SPEED = 0.5;
