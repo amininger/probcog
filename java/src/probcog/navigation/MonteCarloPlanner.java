@@ -1,5 +1,6 @@
 package probcog.navigation;
 
+import java.awt.image.*;
 import java.io.*;
 import java.util.*;
 
@@ -190,6 +191,29 @@ public class MonteCarloPlanner
         // 2) Build our search tree
         watch.start("preprocessing");
         this.wf = wfp.getWavefront(null, goal);
+
+        if (debug) {
+            // Render the wavefront
+            BufferedImage im = new BufferedImage(gm.width, gm.height, BufferedImage.TYPE_BYTE_GRAY);
+            byte[] buf = ((DataBufferByte) (im.getRaster().getDataBuffer())).getData();
+            for (int i = 0; i < wf.length; i++) {
+                byte v = (byte)255;
+                if (wf[i] == Float.MAX_VALUE)
+                    v = (byte)0;
+                else if (wf[i] > 0)
+                    v = (byte)(wf[i]*255/100.0);
+                buf[i] = v;
+            }
+
+            VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
+            vb.setDrawOrder(-1001);
+            vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
+                                    LinAlg.scale(gm.metersPerPixel),
+                                    new VzImage(new VisTexture(im,
+                                                               VisTexture.NO_MIN_FILTER |
+                                                               VisTexture.NO_MAG_FILTER))));
+            vb.swap();
+        }
         Collections.sort(tags, new TagDistanceComparator(wf));
         watch.stop();
 
@@ -205,8 +229,11 @@ public class MonteCarloPlanner
 
         Collections.reverse(behaviors);
 
-        if (debug)
+        if (debug) {
             watch.print();
+            VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
+            vb.swap();
+        }
         return behaviors;
     }
 

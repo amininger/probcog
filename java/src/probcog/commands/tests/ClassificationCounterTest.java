@@ -138,7 +138,14 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 
     public String toString()
     {
-        return String.format("%d %s", getCount(), getClassType());
+        String temp = String.format("%d %s", getCount(), getClassType());
+        if (ignore.size() > 0) {
+            temp += " ignoring ";
+            for (Integer i: ignore) {
+                temp += i + ", ";
+            }
+        }
+        return temp;
     }
 
     /** Get the parameters that can be set for this condition test.

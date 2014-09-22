@@ -614,7 +614,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         private void tryMonteCarlo()
         {
             MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
-            ArrayList<double[]> starts = new ArrayList<double[]>();
+            ArrayList<double[]> starts = null;
             for (Integer id: goalIDs) {
                 System.out.println("NFO: Wavefront pursuing tag "+id);
                 SimRobot robot = getRobot();
@@ -623,8 +623,11 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 SimAprilTag tag = getTag(id);
                 assert (tag != null);
 
-                if (starts.size() == 0)
+                if (starts == null) {
+                    starts = new ArrayList<double[]>();
                     starts.add(LinAlg.matrixToXYT(robot.getPose()));
+                }
+
                 double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
 
                 if (DEBUG) {
@@ -643,6 +646,9 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 // enough to navigate.
                 if (behaviors.size() > 0) {
                     starts = behaviors.get(behaviors.size()-1).xyts;
+                } else {
+                    System.out.println("ERR: Could not find a valid plan");
+                    continue;
                 }
 
                 for (Behavior b: behaviors) {

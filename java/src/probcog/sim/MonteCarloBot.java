@@ -247,6 +247,8 @@ public class MonteCarloBot implements SimObject
                         continue;
                     }
 
+                    // XXX Is there a bug in how we do this, here? One that could cause
+                    // later planning iterations to goof?
                     HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                     params.put("count", new TypedValue(count));
                     params.put("class", new TypedValue(name));
