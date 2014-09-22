@@ -26,7 +26,8 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
     private int targetID;
     private Object classyLock = new Object();
-    private classification_t lastClassification = null;
+    ExpiringMessageCache<classification_t> lastClassification =
+        new ExpiringMessageCache<classification_t>(0.5);
 
     private class DriveTask implements PeriodicTasks.Task
     {
@@ -38,10 +39,9 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         public void run(double dt)
         {
             synchronized (classyLock) {
-                if (lastClassification == null)
-                    return;
+                classification_t classy = lastClassification.get();
 
-                diff_drive_t dd = drive(lastClassification, dt);
+                diff_drive_t dd = drive(classy, dt);
                 lcm.publish("DIFF_DRIVE", dd);
             }
         }
@@ -49,14 +49,18 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
     public diff_drive_t drive(classification_t classy, double dt)
     {
-        double dist = LinAlg.magnitude(LinAlg.resize(classy.xyzrpy, 2));
-        double theta = Math.atan2(classy.xyzrpy[1],
-                                  classy.xyzrpy[0]);
-
         diff_drive_t dd = new diff_drive_t();
         dd.utime = TimeUtil.utime();
         dd.left_enabled = dd.right_enabled = true;
         dd.left = dd.right = 0;
+
+        if (classy == null)
+            return dd;
+
+        double dist = LinAlg.magnitude(LinAlg.resize(classy.xyzrpy, 2));
+        double theta = Math.atan2(classy.xyzrpy[1],
+                                  classy.xyzrpy[0]);
+
         if (Math.abs(theta) > TURN_THRESH) {
             if (theta > 0) {
                 dd.left = -MAX_TURN;
@@ -91,7 +95,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
         lcm.subscribe("CLASSIFICATIONS", this);
         tasks.addFixedDelay(new DriveTask(), 1.0/DTT_HZ);
-        tasks.setRunning(true);
+        //tasks.setRunning(true);
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -103,7 +107,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                 for (int i = 0; i < cl.num_classifications; i++) {
                     if (cl.classifications[i].id == targetID) {
                         synchronized (classyLock) {
-                            lastClassification = cl.classifications[i];
+                            lastClassification.put(cl.classifications[i], cl.utime);
                         }
                     }
                 }
