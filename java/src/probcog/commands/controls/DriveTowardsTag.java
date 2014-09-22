@@ -41,31 +41,38 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                 if (lastClassification == null)
                     return;
 
-                double dist = LinAlg.magnitude(LinAlg.resize(lastClassification.xyzrpy, 2));
-                double theta = Math.atan2(lastClassification.xyzrpy[1],
-                                          lastClassification.xyzrpy[0]);
-                diff_drive_t dd = new diff_drive_t();
-                dd.utime = TimeUtil.utime();
-                dd.left_enabled = dd.right_enabled = true;
-                dd.left = dd.right = 0;
-                if (Math.abs(theta) > TURN_THRESH) {
-                    if (theta > 0) {
-                        dd.left = -MAX_TURN;
-                        dd.right = MAX_TURN;
-                    } else {
-                        dd.left = MAX_TURN;
-                        dd.right = -MAX_TURN;
-                    }
-                } else {
-                    //double mag = MathUtil.clamp(MAX_SPEED*(dist/DIST_THRESH), MIN_SPEED, MAX_SPEED);
-
-                    dd.left = 0.3 + 0.6*(theta/(-Math.PI/2));
-                    dd.right = 0.3 + 0.6*(theta/(Math.PI/2));
-                }
-
+                diff_drive_t dd = drive(lastClassification, dt);
                 lcm.publish("DIFF_DRIVE", dd);
             }
         }
+    }
+
+    public diff_drive_t drive(classification_t classy, double dt)
+    {
+        double dist = LinAlg.magnitude(LinAlg.resize(classy.xyzrpy, 2));
+        double theta = Math.atan2(classy.xyzrpy[1],
+                                  classy.xyzrpy[0]);
+
+        diff_drive_t dd = new diff_drive_t();
+        dd.utime = TimeUtil.utime();
+        dd.left_enabled = dd.right_enabled = true;
+        dd.left = dd.right = 0;
+        if (Math.abs(theta) > TURN_THRESH) {
+            if (theta > 0) {
+                dd.left = -MAX_TURN;
+                dd.right = MAX_TURN;
+            } else {
+                dd.left = MAX_TURN;
+                dd.right = -MAX_TURN;
+            }
+        } else {
+            //double mag = MathUtil.clamp(MAX_SPEED*(dist/DIST_THRESH), MIN_SPEED, MAX_SPEED);
+
+            dd.left = 0.3 + 0.6*(theta/(-Math.PI/2));
+            dd.right = 0.3 + 0.6*(theta/(Math.PI/2));
+        }
+
+        return dd;
     }
 
     public DriveTowardsTag()

@@ -35,6 +35,15 @@ public class NearTag implements ConditionTest, LCMSubscriber
         lcm.subscribe("CLASSIFICATIONS", this);
     }
 
+    public void processTag(classification_t c)
+    {
+        if (c == null || c.id != tagID)
+            return;
+
+        closestDistance = LinAlg.magnitude(LinAlg.resize(c.xyzrpy, 2));
+
+    }
+
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
@@ -49,9 +58,7 @@ public class NearTag implements ConditionTest, LCMSubscriber
                     }
                 }
 
-                if (c != null) {
-                    closestDistance = LinAlg.magnitude(LinAlg.resize(c.xyzrpy, 2));
-                }
+                processTag(c);
             }
         } catch (IOException ex) {
             System.err.println("ERR: Could not handle message on channel - "+channel);
