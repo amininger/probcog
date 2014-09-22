@@ -239,6 +239,8 @@ public class Behavior
             return;
         stats = computeStats(xyts);
 
+        assert (xyts.size() > 0);
+
         // Clustering. Quite naive
         clusters.clear();
         for (double[] xyt: xyts) {

@@ -569,6 +569,16 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 dd.left = dd.right = 0;
                 LCM.getSingleton().publish("DIFF_DRIVE", dd);
             }
+
+            if (DEBUG) {
+                String buffers[] = new String[] {"debug-wavefront-path",
+                                                 "debug-wavefront-goal",
+                                                 "debug-wavefront"};
+                for (String name: buffers) {
+                    VisWorld.Buffer vb = vw.getBuffer(name);
+                    vb.swap();
+                }
+            }
         }
 
         private boolean followingPath(SimRobot robot, diff_drive_t dd)
@@ -617,6 +627,13 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     starts.add(LinAlg.matrixToXYT(robot.getPose()));
                 double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
 
+                if (DEBUG) {
+                    VisWorld.Buffer vb = vw.getBuffer("debug-mc-goal");
+                    vb.addBack(new VisChain(LinAlg.translate(goalXY[0], goalXY[1], 1.0),
+                                            new VzSphere(0.2, new VzMesh.Style(Color.green))));
+                    vb.swap();
+                }
+
                 ArrayList<Behavior> behaviors = mcp.plan(starts, goalXY, tag);
 
                 // Here's where things get fun. We'd like to use our
@@ -653,6 +670,14 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                             }
                         }
                     }
+                }
+            }
+
+            if (DEBUG) {
+                String buffers[] = new String[] {"debug-mc-goal"};
+                for (String name: buffers) {
+                    VisWorld.Buffer vb = vw.getBuffer(name);
+                    vb.swap();
                 }
             }
         }
