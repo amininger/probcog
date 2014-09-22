@@ -321,6 +321,11 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         return "RIGHT";
     }
 
+    public String toString()
+    {
+        return String.format("Follow %s wall @ %2.3f [m]", getSide(), goalDistance);
+    }
+
     /** Get the parameters that can be set for this control law.
      *
      *  @return An iterable collection of all possible parameters

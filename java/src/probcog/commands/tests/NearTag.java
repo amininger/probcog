@@ -91,6 +91,11 @@ public class NearTag implements ConditionTest, LCMSubscriber
         return params;
     }
 
+    public String toString()
+    {
+        return String.format("Tag %d", tagID);
+    }
+
     public condition_test_t getLCM()
     {
         condition_test_t ct = new condition_test_t();

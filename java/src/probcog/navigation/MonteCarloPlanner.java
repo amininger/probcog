@@ -260,9 +260,9 @@ public class MonteCarloPlanner
             for (int i = 0; i < depth; i++) {
                 System.out.printf("==");
             }
-            /*if (node != null && node.data != null && node.data.law != null && node.data.test != null)
+            if (node != null && node.data != null && node.data.law != null && node.data.test != null)
                 System.out.printf("%s", node.data.toString());
-            else*/
+            else
                 System.out.printf("\n");
         }
 

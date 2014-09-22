@@ -330,12 +330,10 @@ public class Behavior
         return stats;
     }
 
-    /*public String toString()
+    public String toString()
     {
-        Formatter f = new Formatter();
-        f.format("Follow %s until %d %s\n", law.getSide(), test.getCount(), test.getClassType());
-        return f.toString();
-    }*/
+        return String.format("%s until %s\n", law.toString(), test.toString());
+    }
 
     // XXX These only exist to support MonteCarloBot's hash table for class counting.
     public int hashCode()

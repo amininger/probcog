@@ -136,6 +136,10 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         return "DRIVE_TO_TAG";
     }
 
+    public String toString()
+    {
+        return String.format("Drive to tag %d", targetID);
+    }
 
     /** Get the parameters that can be set for this condition test.
      *
@@ -162,5 +166,4 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
         return cl;
     }
-
 }

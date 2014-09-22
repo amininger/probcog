@@ -23,4 +23,6 @@ public interface ControlLaw
      *  @return An iterable collection of all possible parameters
      **/
     public Collection<TypedParameter> getParameters();
+
+    public String toString();
 }
