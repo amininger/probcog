@@ -5,6 +5,7 @@ import java.awt.image.*;
 import java.awt.event.*;
 import javax.swing.*;
 import java.io.*;
+import java.text.*;
 import java.util.*;
 
 import lcm.lcm.*;
@@ -416,9 +417,32 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         double[][] initialPose;
         double[] L2G;
 
+        // Data collection file for trajectories (fout) and then a more specific
+        // one for collecting information about planning with our algorithm
+        TextStructureWriter fout;
+        TextStructureWriter foutPlan;
+
+        // Track pose for data collection
+        Object poseLock = new Object();
+        boolean collecting = false;
+        ArrayList<pose_t> poseHistory = new ArrayList<pose_t>();
+
         public DataThread()
         {
+            try {
+                String date = (new SimpleDateFormat("yyMMdd_kkmmss")).format(new Date());
+                String filename = "/tmp/monte-carlo-"+date;
+                String filename2 = "/tmp/mc-plan-"+date;
+                fout = new TextStructureWriter(new BufferedWriter(new FileWriter(filename)));
+                foutPlan = new TextStructureWriter(new BufferedWriter(new FileWriter(filename2)));
+            } catch (IOException ex) {
+                System.err.println("ERR: Could not open output file");
+                ex.printStackTrace();
+                System.exit(1);
+            }
+
             lcm.subscribe("CONTROL_LAW_STATUS.*", this);
+            lcm.subscribe("POSE_TRUTH", this);
         }
 
         public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -429,6 +453,19 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     synchronized (statusLock) {
                         lastStatus = status;
                         statusLock.notifyAll();
+                    }
+                } else if (channel.equals("POSE_TRUTH")) {
+                    pose_t pose = new pose_t(ins);
+                    synchronized (poseLock) {
+                        boolean ok = true;
+                        long utime = TimeUtil.utime();
+                        if (poseHistory.size() > 0) {
+                            long poseUtime = poseHistory.get(poseHistory.size()-1).utime;
+                            ok = (utime-poseUtime) >= 1*1000000;
+                        }
+                        if (collecting && ok) {
+                            poseHistory.add(pose);
+                        }
                     }
                 }
             } catch (IOException ex) {
@@ -451,19 +488,47 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             initialPose = robot.getPose();
             L2G = robot.getL2G();
 
-            // First, try the wavefront follower
-            System.out.println("Trying wavefront...");
-            tryWavefront();
+            try {
+                fout.writeComment("Number of patrol points to visit (trials)");
+                fout.writeInt(NUM_TRIALS);
+                fout.writeComment("Other data will be in the following format:");
+                fout.writeComment("\tgoal point");
+                fout.writeComment("\ttrajectory length n");
+                fout.writeComment("\ttrajectory point 0");
+                fout.writeComment("\ttrajectory point 1");
+                fout.writeComment("\t...");
+                fout.writeComment("\ttrajectory point n-1");
 
-            // Reset the robot pose
-            System.out.println("Resetting...");
-            robot.setPose(initialPose);
+                // First, try the wavefront follower
+                fout.writeComment("Noisy Wavefront Data");
+                System.out.println("Trying noisy wavefront...");
+                tryWavefront(true);
 
-            // Then, try our planner
-            System.out.println("Trying Monte Carlo...");
-            tryMonteCarlo();
+                // Reset the robot pose
+                System.out.println("Resetting...");
+                robot.setPose(initialPose);
 
-            System.out.println("DONE!");
+                // Then, try a perfect follower
+                fout.writeComment("Perfect Wavefront Data");
+                System.out.println("Trying perfect wavefront...");
+                tryWavefront(false);
+
+                // Reset the robot pose
+                System.out.println("Resetting...");
+                robot.setPose(initialPose);
+
+                // Then, try our planner
+                fout.writeComment("Monte Carlo Data");
+                System.out.println("Trying Monte Carlo...");
+                tryMonteCarlo();
+
+                System.out.println("DONE!");
+                fout.close();
+                foutPlan.close();
+            } catch (IOException ex) {
+                System.err.println("ERR: something bad in I/O happened.");
+                ex.printStackTrace();
+            }
         }
 
         private void initGoals(Random r)
@@ -493,7 +558,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
         double[] lastPose = null;
         int samePoseCount = 0;
-        private void tryWavefront()
+        private void tryWavefront(boolean noisy) throws IOException
         {
             for (Integer id: goalIDs) {
                 samePoseCount = 0;
@@ -504,8 +569,16 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 SimAprilTag tag = getTag(id);
                 assert (tag != null);
 
-                double[] startXY = LinAlg.matrixToXYT(robot.getNoisyPose(L2G));
+                double[][] xform = null;
+                if (noisy)
+                    xform = robot.getNoisyPose(L2G);
+                else
+                    xform = robot.getPose();
+                double[] startXY = LinAlg.matrixToXYT(xform);
                 double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
+
+                // File output
+                fout.writeDoubles(goalXY);
 
                 float[] costMap = wfp.getWavefront(startXY, goalXY);
                 // Render the wavefront
@@ -539,9 +612,6 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 // Get the path
                 ArrayList<double[]> path = wfp.getPath();
 
-                if (path.size() < 2)
-                    TimeUtil.sleep(5);
-
                 if (DEBUG) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-wavefront-path");
                     vb.setDrawOrder(-1000);
@@ -550,6 +620,9 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                                            new VzLines.Style(Color.yellow, 2)));
                     vb.swap();
                 }
+                synchronized (poseLock) {
+                    collecting = true;
+                }
 
                 // Try following the path
                 Tic tic = new Tic();
@@ -557,8 +630,13 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 diff_drive_t dd = new diff_drive_t();
                 while (followingPath(robot, dd)) {
                     double dt = stepTic.toctic();
-                    double[] pos = LinAlg.resize(LinAlg.matrixToXYT(robot.getNoisyPose(L2G)), 2);
-                    double[] orientation = LinAlg.matrixToQuat(robot.getNoisyPose(L2G));
+                    if (noisy)
+                        xform = robot.getNoisyPose(L2G);
+                    else
+                        xform = robot.getPose();
+
+                    double[] pos = LinAlg.resize(LinAlg.matrixToXYT(xform), 2);
+                    double[] orientation = LinAlg.matrixToQuat(xform);
                     dd = PathControl.getDiffDrive(pos, orientation, path, Params.makeParams(), 0.8, dt);
                     dd.utime = TimeUtil.utime();
                     LCM.getSingleton().publish("DIFF_DRIVE", dd);
@@ -568,6 +646,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 dd.left_enabled = dd.right_enabled = true;
                 dd.left = dd.right = 0;
                 LCM.getSingleton().publish("DIFF_DRIVE", dd);
+
+                recordTrajectory();
             }
 
             if (DEBUG) {
@@ -611,8 +691,22 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             return true;
         }
 
-        private void tryMonteCarlo()
+        private void tryMonteCarlo() throws IOException
         {
+            foutPlan.writeComment("The number of planning trials");
+            foutPlan.writeInt(NUM_TRIALS);
+
+            foutPlan.writeComment("Trial data is recorded as follows:");
+            foutPlan.writeComment("\tgoal XY");
+            foutPlan.writeComment("\tplanning time");
+            foutPlan.writeComment("\tnumber of plan steps m");
+            foutPlan.writeComment("\t\tnumber of xyts n for step 0");
+            foutPlan.writeComment("\t\txyt 0");
+            foutPlan.writeComment("\t\txyt 1");
+            foutPlan.writeComment("\t\t...");
+            foutPlan.writeComment("\t\txyt n-1");
+
+
             MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
             ArrayList<double[]> starts = null;
             for (Integer id: goalIDs) {
@@ -630,6 +724,10 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
                 double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
 
+                // File output
+                fout.writeDoubles(goalXY);
+                foutPlan.writeDoubles(goalXY);
+
                 if (DEBUG) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-mc-goal");
                     vb.addBack(new VisChain(LinAlg.translate(goalXY[0], goalXY[1], 1.0),
@@ -637,7 +735,20 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     vb.swap();
                 }
 
+                // We would also probably like to record this data.
+                Tic planTic = new Tic();
                 ArrayList<Behavior> behaviors = mcp.plan(starts, goalXY, tag);
+                double planTime = planTic.toc();
+                foutPlan.writeDouble(planTime); // In seconds
+                foutPlan.writeInt(behaviors.size());
+                for (int i = 0; i < behaviors.size(); i++) {
+                    Behavior b = behaviors.get(i);
+                    foutPlan.writeInt(b.xyts.size());
+                    for (int j = 0; j < b.xyts.size(); j++) {
+                        foutPlan.writeDoubles(b.xyts.get(j));
+                    }
+                }
+                fout.flush();
 
                 // Here's where things get fun. We'd like to use our
                 // end distribution of points represent our NEW set
@@ -648,7 +759,11 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     starts = behaviors.get(behaviors.size()-1).xyts;
                 } else {
                     System.out.println("ERR: Could not find a valid plan");
-                    continue;
+                    continue;    // XXX breaks file output
+                }
+
+                synchronized (poseLock) {
+                    collecting = true;
                 }
 
                 for (Behavior b: behaviors) {
@@ -677,6 +792,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                         }
                     }
                 }
+
+                recordTrajectory();
             }
 
             if (DEBUG) {
@@ -716,6 +833,27 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             lcm.publish("SOAR_COMMAND", cl);
             lcm.publish("SOAR_COMMAND", cl);
             lcm.publish("SOAR_COMMAND", cl);
+        }
+
+        private void recordTrajectory() throws IOException
+        {
+            // Write out results to file
+            synchronized (poseLock) {
+                collecting = false;
+                ArrayList<double[]> xys = new ArrayList<double[]>();
+                for (pose_t pose: poseHistory) {
+                    double[][] M = LinAlg.quatPosToMatrix(pose.orientation,
+                                                          pose.pos);
+                    xys.add(LinAlg.resize(LinAlg.matrixToXYT(M), 2));
+                }
+                xys.add(LinAlg.resize(LinAlg.matrixToXYT(getRobot().getPose()), 2));
+                fout.writeInt(xys.size());
+                for (double[] xy: xys)
+                    fout.writeDoubles(xy);
+                fout.flush();
+
+                poseHistory.clear();
+            }
         }
 
 
