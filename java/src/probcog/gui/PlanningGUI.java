@@ -411,7 +411,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         control_law_status_list_t lastStatus = null;
 
         // Trial parameters
-        int NUM_TRIALS = 2;
+        int NUM_TRIALS = 100;
         ArrayList<Integer> goalIDs = new ArrayList<Integer>();
 
         double[][] initialPose;
