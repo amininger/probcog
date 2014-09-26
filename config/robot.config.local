@@ -479,8 +479,8 @@ monte_carlo {
     // Search parameters
     iterative_deepening = false;
     max_search_depth = 8;
-    num_exploration_samples = 10;
-    num_evaluation_samples = 50;
+    num_exploration_samples = 1;
+    num_evaluation_samples = 25;
 
     start_search_depth = 3; // XXX Currently unused
 

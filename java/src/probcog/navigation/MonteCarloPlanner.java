@@ -328,11 +328,9 @@ public class MonteCarloPlanner
                         vb.addBack(mcb.getVisObject());
                         vb.swap();
                     }
-                    if (mcb.success()) {
-                        // Find where we are and how much we've driven to get there
-                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-                        distances.add(mcb.getTrajectoryLength());
-                    }
+                    // Find where we are and how much we've driven to get there
+                    xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                    distances.add(mcb.getTrajectoryLength());
                 }
 
                 Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, dtt, new NearTag(params)));

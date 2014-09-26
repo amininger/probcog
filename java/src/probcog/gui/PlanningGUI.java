@@ -544,7 +544,13 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             ArrayList<Integer> hallways = new ArrayList(tc.getIDsForClass("hallway"));
             assert (hallways.size() > 1);
 
-            int idx = r.nextInt(hallways.size());
+            // XXX Assumes robot is already on or near tag 0
+            //int idx = r.nextInt(hallways.size());
+            int idx;
+            for (idx = 0; idx < hallways.size(); idx++) {
+                if (hallways.get(idx) != 0)
+                    break;
+            }
             while (goalIDs.size() < NUM_TRIALS) {
                 goalIDs.add(hallways.get(idx));
 
@@ -759,7 +765,6 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     starts = behaviors.get(behaviors.size()-1).xyts;
                 } else {
                     System.out.println("ERR: Could not find a valid plan");
-                    continue;    // XXX breaks file output
                 }
 
                 synchronized (poseLock) {
