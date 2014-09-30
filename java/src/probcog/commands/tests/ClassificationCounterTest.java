@@ -97,8 +97,10 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         // XXX - Here we need to spin up a classifier and tell it what to look for
 
         startUtime = TimeUtil.utime();
-        if (!parameters.containsKey("no-lcm"))
+        if (!parameters.containsKey("no-lcm")) {
+            System.out.println("SUBSCRIBING");
             lcm.subscribe("CLASSIFICATIONS", this);
+        }
     }
 
     //public ClassificationCounterTest clone()
@@ -113,7 +115,6 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
             test.ignore.add(i);
 
         test.startUtime = TimeUtil.utime();
-        test.lcm.subscribe("CLASSIFICATIONS", test);
 
         return test;
     }

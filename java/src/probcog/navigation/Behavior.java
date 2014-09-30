@@ -212,6 +212,32 @@ public class Behavior
         return mean /= xyts.size();
     }
 
+    public double getMeanDirectionalBonus(GridMap gm, float[] wavefront)
+    {
+        if (xyts.size() < 1)
+            return 0;
+
+        double mean = 0;
+        for (int i = 0; i < xyts.size(); i++) {
+            double[] xyt = xyts.get(i);
+            int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
+            int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
+            double wfdist = (double)wavefront[iy*gm.width + ix];
+
+            // Project forward 1 unit along theta to get bonus
+            int dx = (int)(Math.round(Math.cos(xyt[2])));
+            int dy = (int)(Math.round(Math.sin(xyt[2])));
+            ix += dx;
+            iy += dy;
+            double ddist = wfdist;
+            if (ix >= 0 && ix < gm.width && iy >= 0 && iy < gm.height)
+                ddist = (double)wavefront[iy*gm.width + ix];
+            mean += (ddist - wfdist); // Negative is better
+        }
+
+        return mean / xyts.size();
+    }
+
     public void addObservation(double[] xyt, double dist)
     {
         xyts.add(xyt);

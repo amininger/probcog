@@ -449,7 +449,7 @@ public class SimRobot implements SimObject, LCMSubscriber
                 if (!(so instanceof SimAprilTag))
                     continue;
                 SimAprilTag tag = (SimAprilTag)so;
-                double sensingThreshold = 2.0;
+                double sensingThreshold = 2;
 
                 double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
                 double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);

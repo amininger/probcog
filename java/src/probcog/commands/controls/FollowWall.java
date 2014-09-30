@@ -213,7 +213,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         // Special case turn-in-place when near a dead end in front
         //System.out.printf("%f\n", rFront);
-        if (rFront < goalDistance + 0.5) {
+        if (rFront < goalDistance + 0.25) {
             nearSpeed = MIN_V;
             farSpeed = -MIN_V;
         }

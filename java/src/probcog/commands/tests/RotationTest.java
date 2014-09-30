@@ -104,6 +104,11 @@ public class RotationTest implements ConditionTest, LCMSubscriber
         }
     }
 
+    public String toString()
+    {
+        return String.format("%2.2f rads", goalYaw);
+    }
+
     /** Get the parameters that can be set for this condition test.
      *
      *  @return An iterable collection of all possible parameters.

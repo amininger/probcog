@@ -67,11 +67,15 @@ public class MonteCarloPlanner
             float awf = (float)a.getMeanDistToGoal(gm, wf);
             float bwf = (float)b.getMeanDistToGoal(gm, wf);
 
+            // Prefer facing towards the wavefront
+            float abonus = (float)a.getMeanDirectionalBonus(gm, wf);
+            float bbonus = (float)b.getMeanDirectionalBonus(gm, wf);
+
             // assert validity of these indices? They *should* always be inbounds
             //float da = (wf[iya*gm.width + ixa] + adist);// - 30.0f*wa;
             //float db = (wf[iyb*gm.width + ixb] + bdist);// - 30.0f*wb;
-            float da = awf;
-            float db = bwf;
+            float da = awf + 5*abonus;
+            float db = bwf + 5*bbonus;
             if (da < db)
                 return -1;
             else if (da > db)
@@ -372,28 +376,34 @@ public class MonteCarloPlanner
         // Special case: If we are at the first step of our plan, we also consider
         // turning in place.
         if (depth == 0) {
-            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-            params.put("direction", new TypedValue((byte)1));  // Left turn in place
-            params.put("yaw", new TypedValue(Math.toRadians(180)));
-            params.put("no-lcm", new TypedValue(0));
-            HashMap<String, TypedValue> params2 = new HashMap<String, TypedValue>();
-            params2.put("yaw", new TypedValue(Math.toRadians(180)));
-            params2.put("no-lcm", new TypedValue(0));
+            double[] yaws = new double[] {Math.PI/2, Math.PI, 3*Math.PI/2};
+            for (double yaw: yaws) {
+                HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                params.put("direction", new TypedValue((byte)1));  // Left turn in place
+                params.put("yaw", new TypedValue(yaw));
+                params.put("no-lcm", new TypedValue(0));
+                HashMap<String, TypedValue> params2 = new HashMap<String, TypedValue>();
+                params2.put("yaw", new TypedValue(yaw));
+                params2.put("no-lcm", new TypedValue(0));
 
-            ArrayList<double[]> xyts = new ArrayList<double[]>();
-            ArrayList<Double> dists = new ArrayList<Double>();
-            mcb = new MonteCarloBot(sw);
-            for (int i = 0; i < numExploreSamples; i++) {
-                Turn turn = new Turn(params);
-                RotationTest rt = new RotationTest(params2);
-                Behavior.XYTPair pair = node.data.randomXYT();
-                mcb.init(turn, rt, pair.xyt, pair.dist);
-                mcb.simulate();
-                xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-                dists.add(mcb.getTrajectoryLength());
+                ArrayList<double[]> xyts = new ArrayList<double[]>();
+                ArrayList<Double> dists = new ArrayList<Double>();
+                mcb = new MonteCarloBot(sw);
+                for (int i = 0; i < numExploreSamples; i++) {
+                    Turn turn = new Turn(params);
+                    RotationTest rt = new RotationTest(params2);
+                    Behavior.XYTPair pair = node.data.randomXYT();
+                    mcb.init(turn, rt, pair.xyt, pair.dist);
+                    mcb.simulate();
+                    // Only consider plans that actually "work"
+                    if (mcb.success()) {
+                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                        dists.add(mcb.getTrajectoryLength());
+                    }
+                }
+
+                recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
             }
-
-            recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
         }
 
         // Test our record/law pairs based on tag distance to goal
@@ -412,20 +422,20 @@ public class MonteCarloPlanner
                 continue;
             }
 
-
             // Try multiple simulations to evaluate the step
             ArrayList<double[]> xyts = new ArrayList<double[]>();
             ArrayList<Double> distances = new ArrayList<Double>();
             for (int i = 0; i < numSamples; i++) {
                 Behavior.XYTPair pair = node.data.randomXYT();
                 mcb.init(rec.law, (ConditionTest)rec.test.copyCondition(), pair.xyt, pair.dist);
-                mcb.simulate();
+                mcb.simulate(120.0);
                 if (vw != null) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
                     vb.setDrawOrder(-500);
                     vb.addBack(mcb.getVisObject());
                     vb.swap();
                 }
+                // Why do we only count success? Because
                 if (mcb.success()) {
                     // Find where we are and how much we've driven to get there
                     xyts.add(LinAlg.matrixToXYT(mcb.getPose()));

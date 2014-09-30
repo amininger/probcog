@@ -120,7 +120,7 @@ public class TagClassifier
             return false;
 
         TagClass tc = tcs.get(0);
-        return classifierRandom.nextDouble() < tc.pctdet;
+        return classifierRandom.nextDouble() <= tc.pctdet;
     }
 
     /** Return a list of classifications for a tag of a given ID and xyzrpy

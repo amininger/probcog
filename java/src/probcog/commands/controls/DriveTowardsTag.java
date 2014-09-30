@@ -20,7 +20,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
     static final double TURN_THRESH = Math.toRadians(90);
     static final double DIST_THRESH = 2.0;
-    static final double MIN_SPEED = 0.2;    // Avoid deadband
+    static final double MIN_SPEED = 0.35;    // Avoid deadband
     static final double MAX_SPEED = 0.5;
     static final double MAX_TURN = 0.3;
 

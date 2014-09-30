@@ -248,6 +248,7 @@ public class MonteCarloBot implements SimObject
                         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                         params.put("count", new TypedValue(Integer.MAX_VALUE));
                         params.put("class", new TypedValue(name));
+                        params.put("no-lcm", new TypedValue(0));
                         for (SimAprilTag sat: initiallySeenTags) {
                             params.put("ignore_"+sat.getID(), new TypedValue(sat.getID()));
                         }
@@ -266,6 +267,7 @@ public class MonteCarloBot implements SimObject
                     HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                     params.put("count", new TypedValue(count));
                     params.put("class", new TypedValue(name));
+                    params.put("no-lcm", new TypedValue(0));
                     for (SimAprilTag sat: initiallySeenTags) {
                         params.put("ignore_"+sat.getID(), new TypedValue(sat.getID()));
                     }
@@ -282,8 +284,9 @@ public class MonteCarloBot implements SimObject
                     }
                 } else if (test instanceof ClassificationCounterTest) {
                     ClassificationCounterTest cct = (ClassificationCounterTest)test;
-                    for (classification_t classy: classies)
+                    for (classification_t classy: classies) {
                         cct.addSample(classy);
+                    }
                 }
             }
 
@@ -308,7 +311,7 @@ public class MonteCarloBot implements SimObject
     {
         HashSet<SimAprilTag> seenTags = new HashSet<SimAprilTag>();
 
-        double classificationRange = 2.0;  // XXX Config
+        double classificationRange = 2;  // XXX Config
         for (SimObject so: sw.objects) {
             if (!(so instanceof SimAprilTag))
                 continue;
@@ -399,9 +402,14 @@ public class MonteCarloBot implements SimObject
     static Model4 model4 = new Model4(null, Color.blue, 0.5);
     public VisObject getVisObject()
     {
+        VzLines.Style style;
+        if (success())
+            style = new VzLines.Style(vcd, 2);
+        else
+            style = new VzLines.Style(Color.red, 2);
         VisChain vc = new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
                                                VzLines.LINE_STRIP,
-                                               new VzLines.Style(vcd, 2)),
+                                               style),
                                    //new VzLines(new VisVertexData(trajectoryOdom),
                                    //            VzLines.LINE_STRIP,
                                    //            new VzLines.Style(Color.red, 2)),

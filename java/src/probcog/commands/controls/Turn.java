@@ -146,6 +146,11 @@ public class Turn implements ControlLaw, LCMSubscriber
         return "TURN";
     }
 
+    public String toString()
+    {
+        return String.format("Turn %s", dir == Direction.LEFT ? "LEFT" : "RIGHT");
+    }
+
     /** Get the parameters that can be set for this control law.
      *
      *  @return An iterable collection of all possible parameters
