@@ -35,6 +35,11 @@ public class NearTag implements ConditionTest, LCMSubscriber
         lcm.subscribe("CLASSIFICATIONS", this);
     }
 
+    public ConditionTest copyCondition()
+    {
+        return null;
+    }
+
     public void processTag(classification_t c)
     {
         if (c == null || c.id != tagID)

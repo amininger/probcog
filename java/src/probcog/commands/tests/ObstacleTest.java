@@ -35,6 +35,11 @@ public class ObstacleTest implements ConditionTest, LCMSubscriber
         lcm.subscribe("LASER", this);
     }
 
+    public ConditionTest copyCondition()
+    {
+        return null;
+    }
+
     /** Query whether or not the condition being tested for is currently true.
      *
      *  @return True if condition test is currently satisfied, else false

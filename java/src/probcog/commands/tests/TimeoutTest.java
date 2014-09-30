@@ -45,4 +45,9 @@ public class TimeoutTest implements ConditionTest
 
         return params;
     }
+
+    public ConditionTest copyCondition()
+    {
+        return null;    // Not implemented
+    }
 }

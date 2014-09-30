@@ -185,7 +185,9 @@ public class MonteCarloBot implements SimObject
                         dd = dtt.drive(tc.classifyTag(tag.getID(), relXyzrpy).get(0), FastDrive.DT);
                     }
                 }
-
+            } else if (law instanceof Turn) {
+                Turn turn = (Turn)law;
+                dd = turn.drive(FastDrive.DT);
             } else {
                 System.out.println("ERR: This type of control law is not supported");
                 assert (false);
@@ -194,6 +196,18 @@ public class MonteCarloBot implements SimObject
             drive.motorCommands[1] = dd.right;
             drive.update();
             laser.utime += FastDrive.DT*1000000;
+
+            // Update condition test, if necessary
+            if (test instanceof RotationTest) {
+                RotationTest rt = (RotationTest)test;
+                rt.update(drive.poseOdom);
+            }
+
+            // Update law if necessary
+            if (law instanceof Turn) {
+                Turn turn = (Turn)law;
+                turn.update(drive.poseOdom);
+            }
 
             // CHECK CLASSIFICATIONS
             HashSet<SimAprilTag> seenTags = getSeenTags();

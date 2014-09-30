@@ -19,4 +19,6 @@ public interface ConditionTest
     public Collection<TypedParameter> getParameters();
 
     public String toString();
+
+    public ConditionTest copyCondition();    // Like clone
 }

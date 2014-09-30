@@ -7,14 +7,24 @@ import lcm.lcm.*;
 
 import april.lcmtypes.*;
 import april.util.*;
+import april.jmat.*;
 
 import probcog.lcmtypes.*;
 import probcog.commands.*;
 
-public class Turn implements ControlLaw
+public class Turn implements ControlLaw, LCMSubscriber
 {
-    static final int DD_HZ = 100;
+    LCM lcm = LCM.getSingleton();
 
+    static final int DD_HZ = 100;
+    static final double SPEED = 0.25;
+
+    Object poseLock = new Object();
+    pose_t currPose = null;
+    pose_t lastPose = null;
+
+    private double yaw = 0;
+    private double goalYaw = Double.MAX_VALUE;
 	enum Direction { LEFT, RIGHT };
 	Direction dir;
 
@@ -24,31 +34,74 @@ public class Turn implements ControlLaw
     {
         public TurnTask()
         {
-            System.out.println("Turn ready to execute");
+            //System.out.println("Turn ready to execute");
         }
 
         public void run(double dt)
         {
-            // Initialize diff drive with no movement
-            diff_drive_t dd = new diff_drive_t();
-            dd.left_enabled = dd.right_enabled = true;
-            dd.left = 0;
-            dd.right = 0;
-
-            double speed = .1;
-
-            // Change left and right wheels depending on turn direction
-            if (dir.equals(Direction.RIGHT)) {
-                dd.left = speed;
-                dd.right = -speed;
-            }
-            else if (dir.equals(Direction.LEFT)) {
-                dd.left = -speed;
-                dd.right = speed;
-            }
+            diff_drive_t dd = drive(dt);
 
             publishDiff(dd);
         }
+    }
+
+    public void update(pose_t pose)
+    {
+        synchronized (poseLock) {
+            lastPose = currPose;
+            currPose = pose.copy();
+
+            if (lastPose == null) {
+                return;
+            }
+            assert (lastPose != null);
+
+            double[] rpyLast = LinAlg.quatToRollPitchYaw(lastPose.orientation);
+            double[] rpyNow = LinAlg.quatToRollPitchYaw(currPose.orientation);
+
+            // Deal with wraparound.
+            if (rpyLast[2]<-Math.PI/4 && rpyNow[2]>Math.PI/4) {
+                rpyLast[2] += 2*Math.PI;
+            } else if(rpyLast[2]>Math.PI/4 && rpyNow[2]<-Math.PI/4) {
+                rpyNow[2] += 2*Math.PI;
+            }
+
+            yaw += Math.abs(rpyNow[2]-rpyLast[2]);
+        }
+    }
+
+    public diff_drive_t drive(double dt)
+    {
+        // Initialize diff drive with no movement
+        diff_drive_t dd = new diff_drive_t();
+        dd.left_enabled = dd.right_enabled = true;
+        dd.left = 0;
+        dd.right = 0;
+
+        //double delta = goalYaw - yaw;
+        //double speed = MathUtil.clamp(SPEED*delta/Math.PI, 0.1, SPEED);
+        double speed = SPEED;
+
+        // Change left and right wheels depending on turn direction
+        if (dir.equals(Direction.RIGHT)) {
+            dd.left = speed;
+            dd.right = -speed;
+        }
+        else if (dir.equals(Direction.LEFT)) {
+            dd.left = -speed;
+            dd.right = speed;
+        }
+
+        //System.out.printf("[%f  |  %f]\n", dd.left, dd.right);
+        //System.out.printf("[%f < %f]\n", yaw, goalYaw);
+        return dd;
+    }
+
+    public void reset()
+    {
+        currPose = null;
+        lastPose = null;
+        yaw = 0;
     }
 
     /** Strictly for use for parameter checking */
@@ -58,8 +111,6 @@ public class Turn implements ControlLaw
 
     public Turn(Map<String, TypedValue> parameters)
     {
-        System.out.println("TURN");
-
         // Needs a direction to turn, currently
         assert (parameters.containsKey("direction"));
         byte direction = parameters.get("direction").getByte();
@@ -67,6 +118,13 @@ public class Turn implements ControlLaw
             dir = Direction.LEFT;
         else // CCW
             dir = Direction.RIGHT;
+
+        if (parameters.containsKey("yaw"))
+            goalYaw = Math.abs(parameters.get("yaw").getDouble());
+
+        if (!parameters.containsKey("no-lcm"))
+            lcm.subscribe("POSE", this);
+
         tasks.addFixedDelay(new TurnTask(), 1.0/DD_HZ);
     }
 
@@ -102,7 +160,43 @@ public class Turn implements ControlLaw
                                       TypedValue.TYPE_BYTE,
                                       options,
                                       true));
+        params.add(new TypedParameter("yaw",
+                                      TypedValue.TYPE_DOUBLE,
+                                      false));
         return params;
+    }
+
+    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+    {
+        try {
+            messageReceivedEx(lcm, channel, ins);
+        } catch (IOException ex) {
+            System.err.println("WRN: Error reading channel "+channel+": "+ex);
+        }
+    }
+
+    synchronized void messageReceivedEx(LCM lcm, String channel,
+            LCMDataInputStream ins) throws IOException
+    {
+        if (channel.equals("POSE")) {
+            pose_t msg = new pose_t(ins);
+            update(msg);
+        }
+    }
+
+    public control_law_t getLCM()
+    {
+        control_law_t cl = new control_law_t();
+        cl.name = "turn";
+        cl.num_params = 2;
+        cl.param_names = new String[cl.num_params];
+        cl.param_values = new typed_value_t[cl.num_params];
+        cl.param_names[0] = "direction";
+        cl.param_values[0] = new TypedValue(dir == Direction.LEFT ? (byte)1 : (byte)-1).toLCM();
+        cl.param_names[1] = "yaw";
+        cl.param_values[1] = new TypedValue(goalYaw).toLCM();
+
+        return cl;
     }
 
     // XXX publishDiff is in two classes - can we consolidate?

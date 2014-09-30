@@ -369,6 +369,33 @@ public class MonteCarloPlanner
                 recs.add(rec);
         }
 
+        // Special case: If we are at the first step of our plan, we also consider
+        // turning in place.
+        if (depth == 0) {
+            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+            params.put("direction", new TypedValue((byte)1));  // Left turn in place
+            params.put("yaw", new TypedValue(Math.toRadians(180)));
+            params.put("no-lcm", new TypedValue(0));
+            HashMap<String, TypedValue> params2 = new HashMap<String, TypedValue>();
+            params2.put("yaw", new TypedValue(Math.toRadians(180)));
+            params2.put("no-lcm", new TypedValue(0));
+
+            ArrayList<double[]> xyts = new ArrayList<double[]>();
+            ArrayList<Double> dists = new ArrayList<Double>();
+            mcb = new MonteCarloBot(sw);
+            for (int i = 0; i < numExploreSamples; i++) {
+                Turn turn = new Turn(params);
+                RotationTest rt = new RotationTest(params2);
+                Behavior.XYTPair pair = node.data.randomXYT();
+                mcb.init(turn, rt, pair.xyt, pair.dist);
+                mcb.simulate();
+                xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                dists.add(mcb.getTrajectoryLength());
+            }
+
+            recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
+        }
+
         // Test our record/law pairs based on tag distance to goal
         // and (heuristic warning!) estimated distance traveled.
         Collections.sort(recs, new BehaviorSearchComparator());
@@ -391,7 +418,7 @@ public class MonteCarloPlanner
             ArrayList<Double> distances = new ArrayList<Double>();
             for (int i = 0; i < numSamples; i++) {
                 Behavior.XYTPair pair = node.data.randomXYT();
-                mcb.init(rec.law, ((ClassificationCounterTest)rec.test).clone(), pair.xyt, pair.dist);
+                mcb.init(rec.law, (ConditionTest)rec.test.copyCondition(), pair.xyt, pair.dist);
                 mcb.simulate();
                 if (vw != null) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
@@ -407,7 +434,7 @@ public class MonteCarloPlanner
             }
             if (xyts.size() < 1)
                 continue;
-            Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, ((ClassificationCounterTest)rec.test).clone()));
+            Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
 
             dfsHelper(newNode, goal, depth+1, maxDepth);
         }

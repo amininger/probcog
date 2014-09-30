@@ -68,6 +68,11 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
         (new UpdateTask()).start();
     }
 
+    public ConditionTest copyCondition()
+    {
+        return null;
+    }
+
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
