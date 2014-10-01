@@ -818,6 +818,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 cl = ((FollowWall)b.law).getLCM();
             } else if (b.law instanceof DriveTowardsTag) {
                 cl = ((DriveTowardsTag)b.law).getLCM();
+            } else if (b.law instanceof Turn) {
+                cl = ((Turn)b.law).getLCM();
             } else {
                 assert (false);
             }
@@ -829,6 +831,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 ct = ((ClassificationCounterTest)b.test).getLCM();
             } else if (b.test instanceof NearTag) {
                 ct = ((NearTag)b.test).getLCM();
+            } else if (b.test instanceof RotationTest) {
+                ct = ((RotationTest)b.test).getLCM();
             } else {
                 assert (false);
             }
