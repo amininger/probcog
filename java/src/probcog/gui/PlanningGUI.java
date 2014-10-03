@@ -31,6 +31,7 @@ import probcog.robot.control.*;
 
 public class PlanningGUI extends JFrame implements LCMSubscriber
 {
+    int NUM_TRIALS = 25;
     boolean DEBUG = true;
     LCM lcm = LCM.getSingleton();
 
@@ -63,6 +64,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         //simulator.getWorld().setRunning(false); // Stop the world here, by default
 
         init(); // This does things like compute a full grid map for wavefront based on the sim world
+
+        NUM_TRIALS = opts.getInt("num-trials");
 
         // Render some bonus information about tags types, etc.
         vl.backgroundColor = new Color(0x55, 0x55, 0x55, 0xff);
@@ -411,7 +414,6 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         control_law_status_list_t lastStatus = null;
 
         // Trial parameters
-        int NUM_TRIALS = 100;
         ArrayList<Integer> goalIDs = new ArrayList<Integer>();
 
         double[][] initialPose;
@@ -874,6 +876,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
+        opts.addInt('n', "num-trials", 100, "Number of trials");
         //opts.addString('g', "graph", null, "Graph file");
         //opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
 

@@ -115,6 +115,10 @@ public class MonteCarloBot implements SimObject
 
         // Precalculated paramters
         HashSet<SimObject> ignore = new HashSet<SimObject>();
+        for (SimObject so: sw.objects) {
+            if (so instanceof SimRobot)
+                ignore.add(so);
+        }
         ignore.add(this);
         double radstep = Math.toRadians(Util.getConfig().requireDouble("monte_carlo.step_degrees"));
         double minDeg = Util.getConfig().requireDouble("monte_carlo.min_degrees");
