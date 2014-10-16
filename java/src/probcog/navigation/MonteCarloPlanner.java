@@ -74,8 +74,8 @@ public class MonteCarloPlanner
             // assert validity of these indices? They *should* always be inbounds
             //float da = (wf[iya*gm.width + ixa] + adist);// - 30.0f*wa;
             //float db = (wf[iyb*gm.width + ixb] + bdist);// - 30.0f*wb;
-            float da = awf + 5*abonus;
-            float db = bwf + 5*bbonus;
+            double da = (awf + 5*abonus);
+            double db = (bwf + 5*bbonus);
             if (da < db)
                 return -1;
             else if (da > db)
@@ -413,7 +413,7 @@ public class MonteCarloPlanner
             // simulating many branches.
             // This is probably NOT a great thing to do, since we don't have
             // all that many samples.
-            double recScore = rec.getBestScore(gm, wf, numExploreSamples, depth+1);
+            double recScore = rec.getBestScore(gm, wf, rec.prob, depth+1);
             if (solnScore < recScore) {
                 System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
                 continue;
@@ -425,7 +425,7 @@ public class MonteCarloPlanner
             for (int i = 0; i < numSamples; i++) {
                 Behavior.XYTPair pair = node.data.randomXYT();
                 mcb.init(rec.law, (ConditionTest)rec.test.copyCondition(), pair.xyt, pair.dist);
-                mcb.simulate(120.0);
+                mcb.simulate(70.0); // XXX How to choose?
                 System.out.printf(".");
                 if (vw != null) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-DFS");

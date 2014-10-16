@@ -366,6 +366,8 @@ public class MonteCarloBot implements SimObject
             params.put("no-lcm", new TypedValue(0));
             ClassificationCounterTest cct = new ClassificationCounterTest(params);
 
+            //System.out.println("Tag "+tag.getID()+": "+label+" = "+lcr.count);
+
             double[] xyt = LinAlg.matrixToXYT(getPose());
             Behavior rec = new Behavior(xyt, getTrajectoryLength(), law, cct);
             rec.prob = lcr.prob;
