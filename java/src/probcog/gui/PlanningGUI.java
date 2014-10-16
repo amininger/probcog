@@ -502,22 +502,22 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 fout.writeComment("\ttrajectory point n-1");
 
                 // First, try the wavefront follower
-                fout.writeComment("Noisy Wavefront Data");
-                System.out.println("Trying noisy wavefront...");
-                tryWavefront(true);
+                //fout.writeComment("Noisy Wavefront Data");
+                //System.out.println("Trying noisy wavefront...");
+                //tryWavefront(true);
 
-                // Reset the robot pose
-                System.out.println("Resetting...");
-                robot.setPose(initialPose);
+                //// Reset the robot pose
+                //System.out.println("Resetting...");
+                //robot.setPose(initialPose);
 
-                // Then, try a perfect follower
-                fout.writeComment("Perfect Wavefront Data");
-                System.out.println("Trying perfect wavefront...");
-                tryWavefront(false);
+                //// Then, try a perfect follower
+                //fout.writeComment("Perfect Wavefront Data");
+                //System.out.println("Trying perfect wavefront...");
+                //tryWavefront(false);
 
-                // Reset the robot pose
-                System.out.println("Resetting...");
-                robot.setPose(initialPose);
+                //// Reset the robot pose
+                //System.out.println("Resetting...");
+                //robot.setPose(initialPose);
 
                 // Then, try our planner
                 fout.writeComment("Monte Carlo Data");

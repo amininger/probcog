@@ -37,6 +37,7 @@ public class MonteCarloBot implements SimObject
     VisColorData vcd = new VisColorData();
 
     TagClassifier tc;
+    TagHistory th;
 
     // Control law/condition test. Need to be cast appropriately for use...
     ControlLaw law;
@@ -53,6 +54,7 @@ public class MonteCarloBot implements SimObject
         this.sw = sw;
         try {
             this.tc = new TagClassifier(false);
+            this.th = new TagHistory();
         } catch (IOException ioex) {
             ioex.printStackTrace();
         }
@@ -213,6 +215,9 @@ public class MonteCarloBot implements SimObject
                 turn.update(drive.poseOdom);
             }
 
+            // HANDLE TAG CLASSIFICATIONS
+            HashSet<SimAprilTag> seenTags = getSeenTags();
+
             // CHECK CLASSIFICATIONS
             HashSet<SimAprilTag> seenTags = getSeenTags();
             for (SimAprilTag tag: seenTags) {
@@ -232,7 +237,8 @@ public class MonteCarloBot implements SimObject
 
                 // Check to see if we saw a given tag this time. Note that this
                 // does not support the possibility that counting higher is harder
-                if (!observedTags.contains(tag) && tc.tagIsVisible(tag.getID())) {
+                //if (!observedTags.contains(tag) && tc.tagIsVisible(tag.getID())) {
+                if (!observedTags.contains(tag)) {
                     observedTags.add(tag);
                 } else {
                     invisibleTags.add(tag);

@@ -53,10 +53,11 @@ public class TagClassifier
         for (int i = 0;; i++) {
 
             String label = config.getString("classes.c"+i+".label", "");
+            String badlabel = config.getString("classes.c"+i+".badlabel", "");
             int[] ids = config.getInts("classes.c"+i+".ids", null);
             double mean = config.getDouble("classes.c"+i+".mean", 0);
             double stddev = config.getDouble("classes.c"+i+".stddev", 0);
-            double pctdet = config.getDouble("classes.c"+i+".pct_detect", 1.0);
+            double plabel = config.getDouble("classes.c"+i+".plabel", 1.0);
 
             if(label.equals("") || (ids == null))
                 break;
@@ -66,7 +67,7 @@ public class TagClassifier
 
             tagClasses.add(label);
 
-            TagClass tag = new TagClass(label, mean, stddev, pctdet);
+            TagClass tag = new TagClass(label, badlabel, mean, stddev, plabel);
             for(int id : ids) {
                 ArrayList<TagClass> allTags;
                 if(idToTag.containsKey(id))
@@ -113,14 +114,24 @@ public class TagClassifier
         return classes;
     }
 
+    // XXX Phase out in favor of different visibility check. Should be a check
+    // for if the tag appears in the database at all. The random sampling should
+    // be done when classifying a tag.
     public boolean tagIsVisible(int id)
     {
         ArrayList<TagClass> tcs = idToTag.get(id);
         if (tcs == null)
             return false;
+        return true;
 
-        TagClass tc = tcs.get(0);
-        return classifierRandom.nextDouble() <= tc.pctdet;
+        //TagClass tc = tcs.get(0);
+        //double v = classifierRandom.nextDouble();
+        //String label = "";
+        //if (v <= tc.plabel)
+        //    label = tc.label;
+        //else
+        //    label = tc.badlabel;
+        //return !label.equals("");   // Empty strings signify invisible tags
     }
 
     /** Return a list of classifications for a tag of a given ID and xyzrpy
@@ -133,9 +144,14 @@ public class TagClassifier
         if (tcs == null)
             return classies;    // No config entries
 
+        double v = classifierRandom.nextDouble();
+
         for (TagClass tc: tcs) {
             classification_t classy = new classification_t();
-            classy.name = tc.label;
+            if (v <= tc.plabel)
+                classy.name = tc.label;
+            else
+                classy.name = tc.badlabel;  // What if this is empty?
             classy.id = id;
             classy.xyzrpy = xyzrpy;
             classy.confidence = sampleConfidence(tc.mean, tc.stddev);
@@ -226,16 +242,18 @@ public class TagClassifier
     class TagClass
     {
         String label;
+        String badlabel;
         double mean;
         double stddev;
-        double pctdet;
+        double plabel;
 
-        public TagClass(String label, double mean, double stddev, double pctdet)
+        public TagClass(String label, String badlabel, double mean, double stddev, double plabel)
         {
             this.label = label;
+            this.badlabel = badlabel;
             this.mean = mean;
             this.stddev = stddev;
-            this.pctdet = pctdet;
+            this.plabel = plabel;
         }
     }
 
