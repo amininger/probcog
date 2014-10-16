@@ -30,18 +30,23 @@ public class TagHistory
         history = new HashMap<Integer, Record>();
     }
 
+    public boolean addObservation(classification_t classy)
+    {
+        return addObservation(classy, classy.utime);
+    }
+
     /** Insert a classification into the history. Returns TRUE if this is
      *  the first observation ever/since expiry, else false. Either way, updates
      *  timestamp of last observation from classy.
      */
-    public boolean addObservation(classification_t classy)
+    public boolean addObservation(classification_t classy, long utime)
     {
         if (!history.containsKey(classy.id))
             history.put(classy.id, new Record());
 
         Record r = history.get(classy.id);
-        long diff = classy.utime - r.utime;
-        r.utime = classy.utime;
+        long diff = utime - r.utime;
+        r.utime = utime;
         if (diff > MAX_AGE_MS*1000) {
             r.label = classy.name;
             return true;

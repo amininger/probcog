@@ -10,6 +10,7 @@ import april.lcmtypes.*;
 import april.util.*;
 
 import probcog.commands.*;
+import probcog.classify.TagHistory;
 import probcog.lcmtypes.*;
 
 public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
@@ -28,9 +29,6 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     private String classType = "";
     private HashMap<Integer, DetectionRecord> observed;
     private HashSet<Integer> ignore = new HashSet<Integer>();
-
-    // XXX HACK
-    long startUtime;
 
     class DetectionRecord
     {
@@ -96,7 +94,6 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         // Initialize
         // XXX - Here we need to spin up a classifier and tell it what to look for
 
-        startUtime = TimeUtil.utime();
         if (!parameters.containsKey("no-lcm")) {
             System.out.println("SUBSCRIBING");
             lcm.subscribe("CLASSIFICATIONS", this);
@@ -113,8 +110,6 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         test.observed = new HashMap<Integer, DetectionRecord>();
         for (Integer i: ignore)
             test.ignore.add(i);
-
-        test.startUtime = TimeUtil.utime();
 
         return test;
     }

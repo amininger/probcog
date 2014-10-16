@@ -20,7 +20,7 @@ import april.util.*;
 import april.sim.*;
 import april.lcmtypes.*;
 
-import probcog.classify.TagClassifier;
+import probcog.classify.*;
 import probcog.commands.CommandInterpreter;
 import probcog.lcmtypes.*;
 import probcog.util.*;
@@ -42,6 +42,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     boolean drawSensor;
     int robotID;
 
+    TagHistory tagHistory = new TagHistory();
     LCM lcm = LCM.getSingleton();
 
     CompoundShape shape;
@@ -443,8 +444,14 @@ public class SimRobot implements SimObject, LCMSubscriber
         private void detectApriltags(Collection<SimObject> sos, double[] xyzrpyBot)
         {
             ArrayList<classification_t> classies = new ArrayList<classification_t>();
+            classification_t empty_classy = new classification_t();
+            empty_classy.utime = TimeUtil.utime();
+            empty_classy.name = "";
+            empty_classy.confidence = 1.0;
+
             classification_list_t classy_list = new classification_list_t();
             classy_list.utime = TimeUtil.utime();
+
             for (SimObject so: sos) {
                 if (!(so instanceof SimAprilTag))
                     continue;
@@ -459,9 +466,20 @@ public class SimRobot implements SimObject, LCMSubscriber
                 // Position relative to robot. For now, tossing away orientation data,
                 // but may be relevant later.
                 double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
+                empty_classy.xyzrpy = relXyzrpy;
+                empty_classy.id = tag.getID();
 
                 ArrayList<classification_t> temp = tc.classifyTag(tag.getID(), relXyzrpy);
-                classies.addAll(temp);
+                if (temp.size() < 1)
+                    continue;
+
+                // XXX This means that the first observations can be lost to UDP. :(
+                classification_t classy = temp.get(0);
+                if (tagHistory.addObservation(classy, TimeUtil.utime()))
+                    classies.addAll(temp);
+                else
+                    classies.add(empty_classy.copy());
+
             }
             classy_list.num_classifications = classies.size();
             classy_list.classifications = classies.toArray(new classification_t[0]);

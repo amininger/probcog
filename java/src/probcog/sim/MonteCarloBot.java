@@ -37,14 +37,12 @@ public class MonteCarloBot implements SimObject
     VisColorData vcd = new VisColorData();
 
     TagClassifier tc;
-    TagHistory th;
 
     // Control law/condition test. Need to be cast appropriately for use...
     ControlLaw law;
     ConditionTest test;
-    //FollowWall law;
-    //ClassificationCounterTest test;
 
+    // Internal Simulation State
     int simSinceReset = 0;
     int iteration = 0;
     boolean success = false;
@@ -54,11 +52,18 @@ public class MonteCarloBot implements SimObject
         this.sw = sw;
         try {
             this.tc = new TagClassifier(false);
-            this.th = new TagHistory();
         } catch (IOException ioex) {
             ioex.printStackTrace();
         }
 
+    }
+
+    private HashMap<String, LabelCountRecord> counts =
+        new HashMap<String, LabelCountRecord>();
+    private class LabelCountRecord
+    {
+        public int count = 0;
+        public double prob = 1.0;
     }
 
     private HashMap<String, ClassificationCounterTest> testMap =
@@ -104,7 +109,10 @@ public class MonteCarloBot implements SimObject
         }
     }
 
-    // Simulate all steps, keeping track of trajectory, etc.
+    /** Simulate all steps, keeping track of trajectory, etc. Maintains
+     *  some information from the past, in particular w.r.t. robot
+     *  position and which tags the robot is already likely to know about.
+     **/
     public void simulate()
     {
         simulate(Util.getConfig().requireDouble("monte_carlo.default_forward_search_time"));
@@ -112,6 +120,7 @@ public class MonteCarloBot implements SimObject
 
     public void simulate(double seconds)
     {
+        long currentUtime = TimeUtil.utime();
         simSinceReset++;
         iteration++;
 
@@ -129,14 +138,22 @@ public class MonteCarloBot implements SimObject
         double rad0 = Math.toRadians(minDeg);
         double rad1 = Math.toRadians(maxDeg);
         laser_t laser = new laser_t();
-        laser.utime = TimeUtil.utime();
+        laser.utime = currentUtime;
 
-        // Initialize a list of things we saw to start with. These tags are
-        // ignored during the simulation of this control law.
-        HashSet<SimAprilTag> initiallySeenTags = getSeenTags();
-        HashSet<SimAprilTag> invisibleTags = getSeenTags();
-        //HashSet<SimAprilTag> invisibleTags = new HashSet<SimAprilTag>();
-        HashSet<SimAprilTag> observedTags = new HashSet<SimAprilTag>();
+        // Populate our knowledge of tags based on what we can see already.
+        // In the future, we may actually want to work on knowing exactly what
+        // tags were labeled as in recent history, but for now, it is sufficient
+        // to know that they were seen.
+        TagHistory tagHistory = new TagHistory();
+        for (SimAprilTag tag: getSeenTags()) {
+            double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
+            double[] relXyzrpy = relativePose(getPose(), xyzrpy);
+            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+            if (classies.size() < 1)
+                continue;
+            classification_t classy = classies.get(0);
+            tagHistory.addObservation(classy, currentUtime);
+        }
 
         // While control law has not finished OR timeout, try updating
         int timeout = (int)(seconds/FastDrive.DT);
@@ -198,10 +215,12 @@ public class MonteCarloBot implements SimObject
                 System.out.println("ERR: This type of control law is not supported");
                 assert (false);
             }
+
+            currentUtime += FastDrive.DT*1000000;
             drive.motorCommands[0] = dd.left;
             drive.motorCommands[1] = dd.right;
             drive.update();
-            laser.utime += FastDrive.DT*1000000;
+            laser.utime = currentUtime;
 
             // Update condition test, if necessary
             if (test instanceof RotationTest) {
@@ -215,88 +234,65 @@ public class MonteCarloBot implements SimObject
                 turn.update(drive.poseOdom);
             }
 
+            // Rough outline:
+            //  Keep a global timestamp for simulated time. This will be
+            //  potentially important for timeout-related activities like tag
+            //  persistence. We have TWO modes of operation. The first is the
+            //  normal tag observation. We see a tag and go: Ah! Why hello tag.
+            //  Have I seen you before? Do you have a label? I suppose either
+            //  way, it just works its way into the counting test.
+            //
+            //  Second is more interesting. This is where we do forward simulation.
+            //  Currently, we detect this case by having no condition test. This
+            //  is probably fine, for now. In this case, we just simulate forward
+            //  until we timeout, making sure to record observations along the way
+            //  THIS IS WHERE WE MAY CHANGE THINGS. Right now, we just make
+            //  branches based on the sets of possible counts we witness along
+            //  the way. This surely misses things if you sample insufficiently.
+            //  Can we just sample large numbers of tag observations to build
+            //  distributions of what might have happened that way? This DOES
+            //  assume independent observations, but that could be fine. (Though
+            //  it does lead to the question: why not just use our obviously known
+            //  distributions that we have already? Mehh.....) We then will use
+            //  this to generate potential behaviors to try executing.
+            //
             // HANDLE TAG CLASSIFICATIONS
-            HashSet<SimAprilTag> seenTags = getSeenTags();
-
-            // CHECK CLASSIFICATIONS
             HashSet<SimAprilTag> seenTags = getSeenTags();
             for (SimAprilTag tag: seenTags) {
                 double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
                 double[] relXyzrpy = relativePose(getPose(), xyzrpy);
                 ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
 
+                if (classies.size() < 1)
+                    continue;
+
                 // Update the condition test, if necessary
                 if (test instanceof NearTag) {
                     NearTag nt = (NearTag)test;
-                    if (classies.size() > 0)
-                        nt.processTag(classies.get(0));
+                    nt.processTag(classies.get(0));
                 }
 
-                if (invisibleTags.contains(tag))
-                    continue;   // XXX This is currently NOT supported in the real world
-
-                // Check to see if we saw a given tag this time. Note that this
-                // does not support the possibility that counting higher is harder
-                //if (!observedTags.contains(tag) && tc.tagIsVisible(tag.getID())) {
-                if (!observedTags.contains(tag)) {
-                    observedTags.add(tag);
-                } else {
-                    invisibleTags.add(tag);
-                }
-
-                if (!observedTags.contains(tag))
+                // If we've seen this tag recently, don't worry about it.
+                // Note that this means we're doing work for the counter test
+                // here. It will only ever get a new classification added for
+                // a given tag ONCE, unless we reobserve it. XXX
+                if (!tagHistory.addObservation(classies.get(0), currentUtime)) {
+                    //System.out.println("skipped tag "+tag.getID());
                     continue;
+                }
+                //System.out.println("observed tag "+tag.getID());
 
-                // If the test object exists, add classification samples.
-                // Otherwise, store relevant information about the tag. Only use
-                // the FIRST tag class
-                if (test == null) {
-                    if (classies.size() < 1)
-                        continue;
-                    String name = classies.get(0).name;
-                    if (!testMap.containsKey(name)) {
-                        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-                        params.put("count", new TypedValue(Integer.MAX_VALUE));
-                        params.put("class", new TypedValue(name));
-                        params.put("no-lcm", new TypedValue(0));
-                        for (SimAprilTag sat: initiallySeenTags) {
-                            params.put("ignore_"+sat.getID(), new TypedValue(sat.getID()));
+                // Handle one of the two cases. Case 1) We're just navigating
+                // normally! Pass off the information to the condition test.
+                if (test != null) {
+                    if (test instanceof ClassificationCounterTest) {
+                        ClassificationCounterTest cct = (ClassificationCounterTest)test;
+                        for (classification_t classy: classies) {
+                            cct.addSample(classy);
                         }
-                        testMap.put(name, new ClassificationCounterTest(params));
                     }
-
-                    ClassificationCounterTest cTest = testMap.get(name);
-                    cTest.addSample(classies.get(0));
-                    int count = cTest.getCurrentCount();
-                    if (count < 1) {
-                        continue;
-                    }
-
-                    // XXX Is there a bug in how we do this, here? One that could cause
-                    // later planning iterations to goof?
-                    HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-                    params.put("count", new TypedValue(count));
-                    params.put("class", new TypedValue(name));
-                    params.put("no-lcm", new TypedValue(0));
-                    for (SimAprilTag sat: initiallySeenTags) {
-                        params.put("ignore_"+sat.getID(), new TypedValue(sat.getID()));
-                    }
-                    double[] xyt = LinAlg.matrixToXYT(getPose());
-                    Behavior rec = new Behavior(iteration, xyt, getTrajectoryLength(), law, new ClassificationCounterTest(params));
-
-                    if (!tagRecords.containsKey(rec)) {
-                        tagRecords.put(rec, rec);
-                    }
-                    Behavior temp = tagRecords.get(rec);
-                    if (temp.ageOfLastObservation != iteration) {
-                        temp.addObservation(xyt, getTrajectoryLength());
-                        temp.ageOfLastObservation = iteration;
-                    }
-                } else if (test instanceof ClassificationCounterTest) {
-                    ClassificationCounterTest cct = (ClassificationCounterTest)test;
-                    for (classification_t classy: classies) {
-                        cct.addSample(classy);
-                    }
+                } else {
+                    buildBehaviors(tag);
                 }
             }
 
@@ -315,6 +311,70 @@ public class MonteCarloBot implements SimObject
         }
         success = timeout > 0;
         //System.out.printf("%f [s]\n", time);
+    }
+
+    /** Take a list of classifications and our tag history to update our
+     *  behavior list. Doesn't actually need any tag history, since that
+     *  aspect of filtering is handled before this point.
+     **/
+    private void buildBehaviors(SimAprilTag tag)
+    {
+        int NUM_TAG_SAMPLES = 100000;
+        double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
+        double[] relXyzrpy = relativePose(getPose(), xyzrpy);
+        HashMap<String, Integer> labelCount = new HashMap<String, Integer>();
+        for (int i = 0; i < NUM_TAG_SAMPLES; i++) {
+            // As done elsewhere, only use the first classy if it exists
+            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(),
+                                                                  relXyzrpy);
+            if (classies.size() < 1)
+                return;
+            String label = classies.get(0).name;
+            if (!labelCount.containsKey(label))
+                labelCount.put(label, 0);
+            labelCount.put(label, labelCount.get(label)+1);
+        }
+
+        for (String label: labelCount.keySet()) {
+            if (label.equals(""))
+                continue;
+            double pct = labelCount.get(label)/(double)NUM_TAG_SAMPLES;
+            // We are balancing several things here.
+            // 1) Likelihood of this particular outcome (a composition of
+            // different sensing likelihoods)
+            // 2) Likelihood of actually executing this plan well enough that
+            // these outcomes will hold.
+            //
+            // We can only really determine 1) here. The fact that we simulated
+            // this is trusted to be a close proxy, aka, we expect all of our
+            // control laws to act fairly consistently, so we may be able to
+            // ignore two, in which case we just start exploring 1). Downside:
+            // branching factor! This was already a risk before, but continues
+            // to be here, as well. Do we dare use log likelihood, or are we OK
+            // basically treating low probability outcomes as the same? Can we
+            // get away with inserting an arbitrary threshold in here? How do we
+            // limit the number of possible outcomes?
+            if (!counts.containsKey(label))
+                counts.put(label, new LabelCountRecord());
+            LabelCountRecord lcr = counts.get(label);
+            lcr.count++;
+            lcr.prob *= pct;
+
+            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+            params.put("count", new TypedValue(lcr.count));
+            params.put("class", new TypedValue(label));
+            params.put("no-lcm", new TypedValue(0));
+            ClassificationCounterTest cct = new ClassificationCounterTest(params);
+
+            double[] xyt = LinAlg.matrixToXYT(getPose());
+            Behavior rec = new Behavior(xyt, getTrajectoryLength(), law, cct);
+            rec.prob = lcr.prob;
+
+            // Before this, we had this set up so we could represent a distribution
+            // of XYTS in the outcomes. Is losing that more harmful than good?
+            assert (!tagRecords.containsKey(rec));
+            tagRecords.put(rec, rec);
+        }
     }
 
     public HashSet<SimAprilTag> getSeenTags()

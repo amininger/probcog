@@ -16,7 +16,7 @@ classes {
         ids = [3,6,7,8,9,10,11,12];
         mean = 1.0;
         stddev = 0.0;
-        plabel = 0.90;
+        plabel = 0.99;
     }
 
     c# {

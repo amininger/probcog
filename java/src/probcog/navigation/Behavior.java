@@ -20,12 +20,14 @@ public class Behavior
     // Control state
     public ControlLaw law;
     public ConditionTest test;
-    //public FollowWall law;                  // Law to follow
-    //public ClassificationCounterTest test;  // Test to check against
+
+    // The probability that this behavior will actually be executed correctly.
+    // For counting-based behaviors, one would expect this to be our estimate of
+    // the probability that we correctly identify every critical tag along the way
+    public double prob = 1.0;
 
     // Bookkeeping for evaluating search.
     private double behaviorScore = Double.MAX_VALUE;
-    public int ageOfLastObservation;
     public ArrayList<double[]> xyts = new ArrayList<double[]>();
     public ArrayList<Double> distances = new ArrayList<Double>();
     public class XYTPair
@@ -100,28 +102,18 @@ public class Behavior
         }
     }
 
-    //public Behavior(double[] xyt, double distance, FollowWall law, ClassificationCounterTest test)
     public Behavior(double[] xyt, double distance, ControlLaw law, ConditionTest test)
-    {
-        this(0, xyt, distance, law, test);
-    }
-
-    //public Behavior(int age, double[] xyt, double distance, FollowWall law, ClassificationCounterTest test)
-    public Behavior(int age, double[] xyt, double distance, ControlLaw law, ConditionTest test)
     {
         xyts.add(xyt);
         distances.add(distance);
-        ageOfLastObservation = age;
         this.law = law;
         this.test = test;
     }
 
-    //public Behavior(ArrayList<double[]> xyts, ArrayList<Double> distances, FollowWall law, ClassificationCounterTest test)
     public Behavior(ArrayList<double[]> xyts, ArrayList<Double> distances, ControlLaw law, ConditionTest test)
     {
         assert (xyts.size() == distances.size());
 
-        ageOfLastObservation = 0;
         this.xyts = xyts;
         this.law = law;
         this.test = test;

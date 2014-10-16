@@ -286,17 +286,6 @@ public class MonteCarloPlanner
     private void dfsHelper(Node<Behavior> node, double[] goal, int depth, int maxDepth)
     {
         MonteCarloBot mcb;
-        if (debug) {
-            System.out.printf("|");
-            for (int i = 0; i < depth; i++) {
-                System.out.printf("==");
-            }
-            if (node != null && node.data != null && node.data.law != null && node.data.test != null)
-                System.out.printf("%s", node.data.toString());
-            else
-                System.out.printf("\n");
-        }
-
         // Prune out solutions that are worse than our best so far.
         double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
         if (nodeScore > solnScore) {
@@ -411,6 +400,14 @@ public class MonteCarloPlanner
         Collections.sort(recs, new BehaviorSearchComparator());
         mcb = new MonteCarloBot(sw);
         for (Behavior rec: recs) {
+            if (debug) {
+                System.out.printf("|");
+                for (int i = 0; i < depth+1; i++) {
+                    System.out.printf("==");
+                }
+                System.out.printf("%s", rec.toString());
+            }
+
             // Prune out solutions that are worse than our best so far.
             // This is an early attempt at pruning to avoid spending more time
             // simulating many branches.
@@ -429,6 +426,7 @@ public class MonteCarloPlanner
                 Behavior.XYTPair pair = node.data.randomXYT();
                 mcb.init(rec.law, (ConditionTest)rec.test.copyCondition(), pair.xyt, pair.dist);
                 mcb.simulate(120.0);
+                System.out.printf(".");
                 if (vw != null) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
                     vb.setDrawOrder(-500);
@@ -442,6 +440,7 @@ public class MonteCarloPlanner
                     distances.add(mcb.getTrajectoryLength());
                 }
             }
+            System.out.printf("\n");
             if (xyts.size() < 1)
                 continue;
             Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
