@@ -287,7 +287,8 @@ public class MonteCarloPlanner
     {
         MonteCarloBot mcb;
         // Prune out solutions that are worse than our best so far.
-        double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
+        //double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
+        double nodeScore = node.data.getBestScore(gm, wf, node.data.prob, depth);
         if (nodeScore > solnScore) {
             System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
             return;
@@ -331,7 +332,8 @@ public class MonteCarloPlanner
             }
 
             soln = node;
-            solnScore = soln.data.getBestScore(gm, wf, numSamples, depth);
+            //solnScore = soln.data.getBestScore(gm, wf, numSamples, depth);
+            solnScore = soln.data.getBestScore(gm, wf, soln.data.prob, depth);
             return;
         }
 
@@ -443,7 +445,15 @@ public class MonteCarloPlanner
             System.out.printf("\n");
             if (xyts.size() < 1)
                 continue;
-            Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
+            Behavior behavior = new Behavior(xyts,
+                                             distances,
+                                             rec.law,
+                                             rec.test.copyCondition());
+            if (node.data != null)
+                behavior.prob = node.data.prob;
+            behavior.prob *= rec.prob;
+            //Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
+            Node<Behavior> newNode = node.addChild(behavior);
 
             dfsHelper(newNode, goal, depth+1, maxDepth);
         }

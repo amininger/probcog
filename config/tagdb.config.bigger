@@ -25,6 +25,6 @@ classes {
         ids = [4];
         mean = 1.0;
         stddev = 0.0;
-        plabel = 0.50;
+        plabel = 0.98;
     }
 }

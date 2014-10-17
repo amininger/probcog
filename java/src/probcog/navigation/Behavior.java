@@ -151,7 +151,8 @@ public class Behavior
             int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
             double wfdist = (double)wavefront[iy*gm.width + ix];
 
-            meanDistance += .95*dist + wfdist;
+            //meanDistance += .95*dist + wfdist;
+            meanDistance += dist + wfdist;
         }
 
         meanDistance /= xyts.size();
