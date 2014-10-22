@@ -34,6 +34,9 @@ public class OfflineSLAM
 
     // Log state
     Log log;
+    ArrayList<pose_t> poses = new ArrayList<pose_t>();      // History of POSE
+    // XXX SYNCHRONIZATION IS AN ISSUE HERE...must examine LASER publishing code
+    ArrayList<laser_t> lasers = new ArrayList<laser_t>();   // History of LASER?
     pose_t lastPose = null;
 
     // Graph state
@@ -100,6 +103,7 @@ public class OfflineSLAM
         n.state = new double[3];
         n.init = new double[3];
         n.truth = new double[3];    // We define our initial XYT to be 0.
+        n.setAttribute("type", "robot");
         g.nodes.add(n);
 
         GXYTPosEdge e = new GXYTPosEdge();
@@ -109,6 +113,7 @@ public class OfflineSLAM
                               {0, 1e-6, 0},
                               {0, 0, 1e-6}};
         e.nodes = new int[] {0};
+        e.setAttribute("type", "odom");
         g.edges.add(e);
 
         // Solver...probably Cholesky? XXX
@@ -125,60 +130,80 @@ public class OfflineSLAM
                 // associated edges.
                 lcm.logging.Log.Event event = null;
                 while (true) {
+                    boolean done = false;
                     event = log.readNext();
-                    if (!event.channel.equals("POSE"))
+                    if (event.channel.equals("POSE"))
+                        done |= handlePose(event);
+                    else if (event.channel.equals("TAG_DETECTION_TX"))
+                        handleTags(event);
+
+                    if (!done) {
                         continue;
-                    pose_t pose = new pose_t(event.data);
-                    if (lastPose == null)
-                        lastPose = pose;
-                    if (pose.utime - lastPose.utime < STEP_TIME_US)
-                        continue;
-
-                    // Calculate RBT between last pose and now
-                    double[] dq = LinAlg.quatMultiply(pose.orientation,
-                                                      LinAlg.quatInverse(lastPose.orientation));
-                    // XYZ in local world coordinates. Need to transform to robot's
-                    // local coords.
-                    double[] dxyz = LinAlg.subtract(pose.pos,
-                                                    lastPose.pos);
-                    dxyz = LinAlg.quatRotate(LinAlg.quatInverse(lastPose.orientation),
-                                             dxyz);
-                    double[][] T = LinAlg.quatPosToMatrix(dq, dxyz);
-
-                    // Create new node and edge.
-                    GXYTNode prevNode = (GXYTNode) g.nodes.get(g.nodes.size()-1);
-                    double[][] pT = LinAlg.xytToMatrix(prevNode.state);
-                    double[][] nT = LinAlg.matrixAB(pT, T);
-
-                    GXYTNode n = new GXYTNode();
-                    n.state = LinAlg.matrixToXYT(nT);
-                    n.init = LinAlg.matrixToXYT(nT);
-                    n.truth = null; // We don't know the truth
-
-                    GXYTEdge e = new GXYTEdge();
-                    e.z = new double[] {dxyz[0],
-                                        dxyz[1],
-                                        LinAlg.quatToRollPitchYaw(dq)[2]};
-                    e.truth = null; // We don't know the truth
-
-                    // XXX Make this proportional eventually
-                    double var = ODOM_NOISE*ODOM_NOISE;
-                    e.P = new double[][] {{var, 0, 0},
-                                          {0, var, 0},
-                                          {0, 0, var}};
-                    e.nodes = new int[] {g.nodes.size()-1, g.nodes.size()};
-
-                    g.nodes.add(n);
-                    g.edges.add(e);
-
-                    redraw();
-                    lastPose = pose;
-                    break;
+                    } else {
+                        redraw();
+                        break;
+                    }
                 }
             } while (all);
         } catch (IOException ex) {
             System.out.println("End of log reached.");
         }
+    }
+
+    private boolean handlePose(lcm.logging.Log.Event event) throws IOException
+    {
+        pose_t pose = new pose_t(event.data);
+        if (lastPose == null)
+            lastPose = pose;
+        poses.add(pose);
+        if (pose.utime - lastPose.utime < STEP_TIME_US)
+            return false;
+
+        // Calculate RBT between last pose and now
+        double[] dq = LinAlg.quatMultiply(pose.orientation,
+                                          LinAlg.quatInverse(lastPose.orientation));
+        // XYZ in local world coordinates. Need to transform to robot's
+        // local coords.
+        double[] dxyz = LinAlg.subtract(pose.pos,
+                                        lastPose.pos);
+        dxyz = LinAlg.quatRotate(LinAlg.quatInverse(lastPose.orientation),
+                                 dxyz);
+        double[][] T = LinAlg.quatPosToMatrix(dq, dxyz);
+
+        // Create new node and edge.
+        GXYTNode prevNode = (GXYTNode) g.nodes.get(g.nodes.size()-1);
+        double[][] pT = LinAlg.xytToMatrix(prevNode.state);
+        double[][] nT = LinAlg.matrixAB(pT, T);
+
+        GXYTNode n = new GXYTNode();
+        n.state = LinAlg.matrixToXYT(nT);
+        n.init = LinAlg.matrixToXYT(nT);
+        n.truth = null; // We don't know the truth
+        n.setAttribute("type", "robot");
+
+        GXYTEdge e = new GXYTEdge();
+        e.z = new double[] {dxyz[0],
+            dxyz[1],
+            LinAlg.quatToRollPitchYaw(dq)[2]};
+        e.truth = null; // We don't know the truth
+        e.setAttribute("type", "odom");
+
+        // XXX Make this proportional eventually
+        double var = ODOM_NOISE*ODOM_NOISE;
+        e.P = new double[][] {{var, 0, 0},
+            {0, var, 0},
+            {0, 0, var}};
+        e.nodes = new int[] {g.nodes.size()-1, g.nodes.size()};
+
+        g.nodes.add(n);
+        g.edges.add(e);
+        lastPose = pose;
+        return true;
+    }
+
+    private void handleTags(lcm.logging.Log.Event event)
+    {
+        // XXX TODO
     }
 
     private void redraw()
@@ -196,10 +221,17 @@ public class OfflineSLAM
 
                 if (e.nodes.length < 2)
                     continue;
+
+                String type = (String)e.getAttribute("type");
                 GXYTNode a = (GXYTNode) g.nodes.get(e.nodes[0]);
                 GXYTNode b = (GXYTNode) g.nodes.get(e.nodes[1]);
-                lines.add(LinAlg.resize(a.state, 2));
-                lines.add(LinAlg.resize(b.state, 2));
+
+                if (type == null)
+                    continue;
+                else if (type.equals("odom")) {
+                    lines.add(LinAlg.resize(a.state, 2));
+                    lines.add(LinAlg.resize(b.state, 2));
+                }
             }
         }
         vbTraj.addBack(new VzLines(new VisVertexData(lines),
@@ -209,8 +241,13 @@ public class OfflineSLAM
         for (GNode o: g.nodes) {
             if (o instanceof GXYTNode) {
                 GXYTNode n = (GXYTNode)o;
-                vbRobots.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
-                                              new VzRobot(Color.green)));
+                String type = (String)n.getAttribute("type");
+                if (type == null)
+                    continue;
+                else if (type.equals("robot")) {
+                    vbRobots.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
+                                                  new VzRobot(Color.green)));
+                }
             }
         }
 
