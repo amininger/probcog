@@ -41,7 +41,7 @@ public class OfflineSLAM
     ArrayList<pose_t> poses = new ArrayList<pose_t>();
     // XXX SYNCHRONIZATION IS AN ISSUE HERE...must examine LASER publishing code
     ArrayList<laser_t> lasers = new ArrayList<laser_t>();   // History of LASER?
-    HashMap<Integer, Integer> tagIdxs = new ArrayList<Integer>(); // In graph nodes
+    HashMap<Integer, Integer> tagIdxs = new HashMap<Integer, Integer>(); // In graph nodes
     ArrayList<tag_detection_list_t> tags = new ArrayList<tag_detection_list_t>();
 
     // Graph state
@@ -256,6 +256,11 @@ public class OfflineSLAM
         // Now, convert to a RBT that relates robot to tag
 
         return M;   // XXX Not quite
+    }
+
+    private void handleLaser(lcm.logging.Log.Event event)
+    {
+        // XXX TODO
     }
 
     private void redraw()
