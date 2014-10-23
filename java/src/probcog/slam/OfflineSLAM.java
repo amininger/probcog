@@ -11,6 +11,7 @@ import lcm.logging.*;
 
 import april.graph.*;
 import april.jmat.*;
+import april.tag.*;
 import april.util.*;
 import april.vis.*;
 
@@ -18,7 +19,8 @@ import april.vis.*;
 // for this iteration with stuff that is just in APRIL. Later, we probably want
 // to switch over to MAGIC2 officially, but for now, avoid dependency. (Types
 // unchanged for this application)
-import april.lcmtypes.*;    // laser_t, pose_t, tag_detection*
+//import april.lcmtypes.*;    // laser_t, pose_t, tag_detection*
+import magic2.lcmtypes.*;   // Must be magic2 for new tag_detections...
 
 /** Take as input a robot log and create a maximum likelihood map. */
 public class OfflineSLAM
@@ -34,10 +36,13 @@ public class OfflineSLAM
 
     // Log state
     Log log;
-    ArrayList<pose_t> poses = new ArrayList<pose_t>();      // History of POSE
+    pose_t lastPose = null;
+    ArrayList<Integer> poseIdxs = new ArrayList<Integer>(); // In graph nodes
+    ArrayList<pose_t> poses = new ArrayList<pose_t>();
     // XXX SYNCHRONIZATION IS AN ISSUE HERE...must examine LASER publishing code
     ArrayList<laser_t> lasers = new ArrayList<laser_t>();   // History of LASER?
-    pose_t lastPose = null;
+    HashMap<Integer, Integer> tagIdxs = new ArrayList<Integer>(); // In graph nodes
+    ArrayList<tag_detection_list_t> tags = new ArrayList<tag_detection_list_t>();
 
     // Graph state
     Graph g;
@@ -105,6 +110,7 @@ public class OfflineSLAM
         n.truth = new double[3];    // We define our initial XYT to be 0.
         n.setAttribute("type", "robot");
         g.nodes.add(n);
+        poseIdxs.add(g.nodes.size()-1);
 
         GXYTPosEdge e = new GXYTPosEdge();
         e.z = new double[3];
@@ -136,6 +142,8 @@ public class OfflineSLAM
                         done |= handlePose(event);
                     else if (event.channel.equals("TAG_DETECTION_TX"))
                         handleTags(event);
+                    else if (event.channel.equals("LASER"))
+                        handleLaser(event);
 
                     if (!done) {
                         continue;
@@ -153,9 +161,9 @@ public class OfflineSLAM
     private boolean handlePose(lcm.logging.Log.Event event) throws IOException
     {
         pose_t pose = new pose_t(event.data);
+        poses.add(pose);
         if (lastPose == null)
             lastPose = pose;
-        poses.add(pose);
         if (pose.utime - lastPose.utime < STEP_TIME_US)
             return false;
 
@@ -193,7 +201,8 @@ public class OfflineSLAM
         e.P = new double[][] {{var, 0, 0},
             {0, var, 0},
             {0, 0, var}};
-        e.nodes = new int[] {g.nodes.size()-1, g.nodes.size()};
+        e.nodes = new int[] {poseIdxs.get(poseIdxs.size()-1), g.nodes.size()};
+        poseIdxs.add(g.nodes.size());
 
         g.nodes.add(n);
         g.edges.add(e);
@@ -201,9 +210,52 @@ public class OfflineSLAM
         return true;
     }
 
-    private void handleTags(lcm.logging.Log.Event event)
+    private void handleTags(lcm.logging.Log.Event event) throws IOException
     {
-        // XXX TODO
+        tag_detection_list_t tl = new tag_detection_list_t(event.data);
+        tags.add(tl);
+
+        for (tag_detection_t td: tl.detections) {
+            // Find tag pose relative to the camera, and then the robot.
+            double[][] T = homographyToRBT(td);
+
+            // If this is the first time we've seen a particular tag, add a new
+            // XY state node for it. Note: We may strand this node w/o edge!
+            // We'll come back for edges later.
+            if (!tagIdxs.containsKey(td.id)) {
+                GXYNode n = new GXYNode();
+                n.state = null;
+                n.init = null;
+                n.truth = null; // We don't know the truth
+                n.setAttribute("type", "tag");
+
+                tagIdxs.put(td.id, g.nodes.size());
+                g.nodes.add(n);
+            }
+         }
+    }
+
+    private double[][] homographyToRBT(tag_detection_t td)
+    {
+        // Grab from config in future
+        double fx = 478;        // XXX Made up
+        double fy = 478;        // XXX Made up
+        double cx = 376;        // XXX
+        double cy = 240;        // XXX
+        double tagSize = 0.15;
+        double[][] H = new double[3][3];
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                H[i][j] = td.H[i][j];
+            }
+        }
+
+        double[][] M = CameraUtil.homographyToPose(fx, fy, cx, cy, H);
+        M = CameraUtil.scalePose(M, 2.0, tagSize);
+
+        // Now, convert to a RBT that relates robot to tag
+
+        return M;   // XXX Not quite
     }
 
     private void redraw()
