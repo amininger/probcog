@@ -51,7 +51,7 @@ public class OfflineSLAM
     ArrayList<tag_detection_list_t> tags = new ArrayList<tag_detection_list_t>();
 
     // Graph state
-    boolean firstTime = true;
+    boolean firstTime = false;
     GraphSolver solver;
     GraphSolver gssolver;
     Graph g;
@@ -166,6 +166,7 @@ public class OfflineSLAM
                         continue;
                     } else {
                         redraw();
+                        solver.iterate();
                         break;
                     }
                 }
