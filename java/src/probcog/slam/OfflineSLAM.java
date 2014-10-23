@@ -213,6 +213,10 @@ public class OfflineSLAM
         n.truth = null; // We don't know the truth
         n.setAttribute("type", "robot");
 
+        // Associate the most recent laser_t with this node
+        laser_t laser = lasers.get(lasers.size()-1);
+        n.setAttribute("laser", laser);
+
         GXYTEdge e = new GXYTEdge();
         e.z = new double[] {dxyz[0],
                             dxyz[1],
@@ -333,9 +337,11 @@ public class OfflineSLAM
         return M;
     }
 
-    private void handleLaser(lcm.logging.Log.Event event)
+    private void handleLaser(lcm.logging.Log.Event event) throws IOException
     {
         // XXX TODO
+        laser_t laser = new laser_t(event.data);
+        lasers.add(laser);
     }
 
     private void redraw()
@@ -348,6 +354,8 @@ public class OfflineSLAM
         vbTagObs.setDrawOrder(-5);
         VisWorld.Buffer vbTraj = vw.getBuffer("trajectory");
         vbTraj.setDrawOrder(-10);
+        VisWorld.Buffer vbLaser = vw.getBuffer("lasers");
+        vbTraj.setDrawOrder(-15);
 
         ArrayList<double[]> lines = new ArrayList<double[]>();
         ArrayList<double[]> taglines = new ArrayList<double[]>();
@@ -391,6 +399,20 @@ public class OfflineSLAM
                 } else if (type.equals("robot")) {
                     vbRobots.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
                                                   new VzRobot(Color.green)));
+
+                    laser_t laser = (laser_t)n.getAttribute("laser");
+                    if(laser != null) {
+                        ArrayList<double[]> lpts = new ArrayList<double[]>();
+                        for(int i=0; i<laser.nranges; i++) {
+                            double theta = laser.rad0 + (i * laser.radstep);
+                            double x = laser.ranges[i] * Math.cos(theta);
+                            double y = laser.ranges[i] * Math.sin(theta);
+                            lpts.add(new double[]{x, y, 0});
+                        }
+                        vbLaser.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
+                                                     new VzPoints(new VisVertexData(lpts),
+                                                                  new VzPoints.Style(Color.cyan, 1))));
+                    }
                 } else if (type.equals("tag")) {
                     Integer id = (Integer)n.getAttribute("id");
                     String f = String.format("%d", id);
@@ -407,6 +429,7 @@ public class OfflineSLAM
         vbRobots.swap();
         vbTagObs.swap();
         vbTraj.swap();
+        vbLaser.swap();
     }
 
     static public void main(String[] args)
