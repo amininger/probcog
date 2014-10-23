@@ -140,7 +140,7 @@ public class OfflineSLAM
                     event = log.readNext();
                     if (event.channel.equals("POSE"))
                         done |= handlePose(event);
-                    else if (event.channel.equals("TAG_DETECTION_TX"))
+                    else if (event.channel.equals("TAG_DETECTIONS_TX"))
                         handleTags(event);
                     else if (event.channel.equals("LASER"))
                         handleLaser(event);
@@ -179,7 +179,7 @@ public class OfflineSLAM
         double[][] T = LinAlg.quatPosToMatrix(dq, dxyz);
 
         // Create new node and edge.
-        GXYTNode prevNode = (GXYTNode) g.nodes.get(g.nodes.size()-1);
+        GXYTNode prevNode = (GXYTNode) g.nodes.get(poseIdxs.get(poseIdxs.size()-1));
         double[][] pT = LinAlg.xytToMatrix(prevNode.state);
         double[][] nT = LinAlg.matrixAB(pT, T);
 
@@ -191,16 +191,16 @@ public class OfflineSLAM
 
         GXYTEdge e = new GXYTEdge();
         e.z = new double[] {dxyz[0],
-            dxyz[1],
-            LinAlg.quatToRollPitchYaw(dq)[2]};
+                            dxyz[1],
+                            LinAlg.quatToRollPitchYaw(dq)[2]};
         e.truth = null; // We don't know the truth
         e.setAttribute("type", "odom");
 
         // XXX Make this proportional eventually
         double var = ODOM_NOISE*ODOM_NOISE;
         e.P = new double[][] {{var, 0, 0},
-            {0, var, 0},
-            {0, 0, var}};
+                              {0, var, 0},
+                              {0, 0, var}};
         e.nodes = new int[] {poseIdxs.get(poseIdxs.size()-1), g.nodes.size()};
         poseIdxs.add(g.nodes.size());
 
@@ -216,22 +216,47 @@ public class OfflineSLAM
         tags.add(tl);
 
         for (tag_detection_t td: tl.detections) {
-            // Find tag pose relative to the camera, and then the robot.
-            double[][] T = homographyToRBT(td);
+            // Find tag pose relative to the camera
+            double[][] T_h = homographyToRBT(td);
+
+            // Grab most recent pose. If not exists, ignore this tag.
+            if (poses.size() < 1)
+                continue;
+            pose_t pose = poses.get(poses.size()-1);
+
+            // Calculate RBT between last pose and now
+            double[] dq = LinAlg.quatMultiply(pose.orientation,
+                                              LinAlg.quatInverse(lastPose.orientation));
+            // XYZ in local world coordinates. Need to transform to robot's
+            // local coords.
+            double[] dxyz = LinAlg.subtract(pose.pos,
+                                            lastPose.pos);
+            dxyz = LinAlg.quatRotate(LinAlg.quatInverse(lastPose.orientation),
+                                     dxyz);
+            double[][] T_p = LinAlg.quatPosToMatrix(dq, dxyz);
+
+            GXYTNode prevNode = (GXYTNode) g.nodes.get(poseIdxs.get(poseIdxs.size()-1));
+            double[][] pT = LinAlg.xytToMatrix(prevNode.state);
+            double[][] nT = LinAlg.matrixAB(pT, T_p);
+            nT = LinAlg.matrixAB(nT, T_h);
 
             // If this is the first time we've seen a particular tag, add a new
             // XY state node for it. Note: We may strand this node w/o edge!
             // We'll come back for edges later.
             if (!tagIdxs.containsKey(td.id)) {
-                GXYNode n = new GXYNode();
-                n.state = null;
-                n.init = null;
+                GXYTNode n = new GXYTNode();
+                n.state = LinAlg.matrixToXYT(nT);
+                n.init = LinAlg.matrixToXYT(nT);
                 n.truth = null; // We don't know the truth
                 n.setAttribute("type", "tag");
+                n.setAttribute("id", new Integer(td.id));
 
                 tagIdxs.put(td.id, g.nodes.size());
                 g.nodes.add(n);
             }
+
+            // Associate this tag with a robot pose node, if appropriate by
+            // creating an edge between them
          }
     }
 
@@ -251,11 +276,14 @@ public class OfflineSLAM
         }
 
         double[][] M = CameraUtil.homographyToPose(fx, fy, cx, cy, H);
-        M = CameraUtil.scalePose(M, 2.0, tagSize);
+        M = CameraUtil.scalePose(M, 2.0, -tagSize);
+        M = LinAlg.matrixAB(LinAlg.rotateZ(-Math.PI/2), M);
 
         // Now, convert to a RBT that relates robot to tag
+        //double[] xyt = LinAlg.matrixToXYT(M);
+        //LinAlg.print(xyt);
 
-        return M;   // XXX Not quite
+        return M;
     }
 
     private void handleLaser(lcm.logging.Log.Event event)
@@ -265,6 +293,8 @@ public class OfflineSLAM
 
     private void redraw()
     {
+        VisWorld.Buffer vbTags = vw.getBuffer("tags");
+        vbTags.setDrawOrder(10);
         VisWorld.Buffer vbRobots = vw.getBuffer("poses");
         vbRobots.setDrawOrder(0);
         VisWorld.Buffer vbTraj = vw.getBuffer("trajectory");
@@ -299,15 +329,24 @@ public class OfflineSLAM
             if (o instanceof GXYTNode) {
                 GXYTNode n = (GXYTNode)o;
                 String type = (String)n.getAttribute("type");
-                if (type == null)
+                if (type == null) {
                     continue;
-                else if (type.equals("robot")) {
+                } else if (type.equals("robot")) {
                     vbRobots.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
                                                   new VzRobot(Color.green)));
+                } else if (type.equals("tag")) {
+                    Integer id = (Integer)n.getAttribute("id");
+                    String f = String.format("%d", id);
+                    vbTags.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
+                                                new VzCircle(0.075,
+                                                             new VzMesh.Style(Color.red)),
+                                                LinAlg.scale(0.005),
+                                                new VzText(VzText.ANCHOR.CENTER, f)));
                 }
             }
         }
 
+        vbTags.swap();
         vbRobots.swap();
         vbTraj.swap();
     }
