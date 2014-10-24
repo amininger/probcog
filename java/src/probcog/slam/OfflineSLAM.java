@@ -28,9 +28,10 @@ public class OfflineSLAM
     static final long STEP_TIME_US = 1*1000000;
     static final double ODOM_ERR_DIST = 0.15;   // STDDEV of err/m traveled
     static final double ODOM_ERR_DIST_FIXED = 0.010;
-    static final double ODOM_ERR_ROT = 0.100;   // STDDEV of err/rad
-    static final double ODOM_ERR_ROT_FIXED = 0.017;
-    static final double TAG_ERR_TRANS = 0.1;
+    static final double ODOM_ERR_ROT = 0.010;   // STDDEV of err/rad
+    //static final double ODOM_ERR_ROT_FIXED = 0.017;
+    static final double ODOM_ERR_ROT_FIXED = 0.001;
+    static final double TAG_ERR_TRANS = 0.25;
     static final double TAG_ERR_ROT = 0.5;
 
     // GUI Misc.
@@ -314,9 +315,9 @@ public class OfflineSLAM
 
                 // XXX This will need to change
                 e.P = new double[3][3];
-                e.P[0][0] = TAG_ERR_TRANS;
-                e.P[1][1] = TAG_ERR_TRANS;
-                e.P[2][2] = TAG_ERR_ROT;
+                e.P[0][0] = 1.0 / LinAlg.sq(TAG_ERR_TRANS);
+                e.P[1][1] = 1.0 / LinAlg.sq(TAG_ERR_TRANS);
+                e.P[2][2] = 1.0 / LinAlg.sq(TAG_ERR_ROT);
                 e.nodes = new int[] {poseIdxs.get(poseIdxs.size()-1),
                                      tagIdxs.get(td.id)};
                 e.setAttribute("type", "tag");
