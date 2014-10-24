@@ -12,7 +12,7 @@ public class Odometry
     static final double D_BIAS = 0.998; // [0,1]
     static final double TICKS_2_METERS = 3.99072e-4;
     //static final double GYROS_2_RADS = 9.14323799542e-11;
-    static final double GYROS_2_RADS = 2.6e-10;
+    static final double GYROS_2_RADS = 2.6631588e-10;   // 1/2^16/1000*(2Pi/360)
 
     odom_imu_t lastOdom = null;
     double yawBias = 0.0;
