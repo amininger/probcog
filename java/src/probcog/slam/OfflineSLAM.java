@@ -28,10 +28,11 @@ public class OfflineSLAM
     static final long STEP_TIME_US = 1*1000000;
     static final double ODOM_ERR_DIST = 0.15;   // STDDEV of err/m traveled
     static final double ODOM_ERR_DIST_FIXED = 0.010;
-    static final double ODOM_ERR_ROT = 0.200;   // STDDEV of err/rad
-    static final double ODOM_ERR_ROT_FIXED = 0.017;
-    static final double TAG_ERR_TRANS = 0.1;
-    static final double TAG_ERR_ROT = 100.0;
+    static final double ODOM_ERR_ROT = 0.010;   // STDDEV of err/rad
+    //static final double ODOM_ERR_ROT_FIXED = 0.017;
+    static final double ODOM_ERR_ROT_FIXED = 0.001;
+    static final double TAG_ERR_TRANS = 0.25;
+    static final double TAG_ERR_ROT = 0.5;
 
     static final boolean DRAW_GRIDMAP = false;
 
@@ -43,6 +44,7 @@ public class OfflineSLAM
 
     // Log state
     Log log;
+    Odometry odometry = new Odometry();
     pose_t lastPose = null;
     ArrayList<Integer> poseIdxs = new ArrayList<Integer>(); // In graph nodes
     ArrayList<pose_t> poses = new ArrayList<pose_t>();
@@ -156,8 +158,10 @@ public class OfflineSLAM
                 while (true) {
                     boolean done = false;
                     event = log.readNext();
-                    if (event.channel.equals("POSE"))
-                        done |= handlePose(event);
+                    //if (event.channel.equals("POSE"))
+                        // done |= handlePose(event);
+                    if (event.channel.equals("ODOM_IMU"))
+                        done |= handleIMU(event);
                     else if (event.channel.equals("TAG_DETECTIONS_TX"))
                         handleTags(event);
                     else if (event.channel.equals("LASER"))
@@ -167,7 +171,7 @@ public class OfflineSLAM
                         continue;
                     } else {
                         redraw();
-                        solver.iterate();
+                        //solver.iterate();
                         break;
                     }
                 }
@@ -183,9 +187,21 @@ public class OfflineSLAM
         // XXX
     }
 
+    private boolean handleIMU(lcm.logging.Log.Event event) throws IOException
+    {
+        odom_imu_t odom = new odom_imu_t(event.data);
+        pose_t pose = odometry.getPose(odom);
+        return handlePose(pose);
+    }
+
     private boolean handlePose(lcm.logging.Log.Event event) throws IOException
     {
         pose_t pose = new pose_t(event.data);
+        return handlePose(pose);
+    }
+
+    private boolean handlePose(pose_t pose) throws IOException
+    {
         poses.add(pose);
         if (lastPose == null)
             lastPose = pose;
@@ -307,9 +323,9 @@ public class OfflineSLAM
 
                 // XXX This will need to change
                 e.P = new double[3][3];
-                e.P[0][0] = TAG_ERR_TRANS;
-                e.P[1][1] = TAG_ERR_TRANS;
-                e.P[2][2] = TAG_ERR_ROT;
+                e.P[0][0] = 1.0 / LinAlg.sq(TAG_ERR_TRANS);
+                e.P[1][1] = 1.0 / LinAlg.sq(TAG_ERR_TRANS);
+                e.P[2][2] = 1.0 / LinAlg.sq(TAG_ERR_ROT);
                 e.nodes = new int[] {poseIdxs.get(poseIdxs.size()-1),
                                      tagIdxs.get(td.id)};
                 e.setAttribute("type", "tag");
