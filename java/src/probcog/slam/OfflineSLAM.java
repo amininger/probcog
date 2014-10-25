@@ -28,10 +28,12 @@ public class OfflineSLAM
     static final long STEP_TIME_US = 1*1000000;
     static final double ODOM_ERR_DIST = 0.15;   // STDDEV of err/m traveled
     static final double ODOM_ERR_DIST_FIXED = 0.010;
-    static final double ODOM_ERR_ROT = 0.100;   // STDDEV of err/rad
+    static final double ODOM_ERR_ROT = 0.200;   // STDDEV of err/rad
     static final double ODOM_ERR_ROT_FIXED = 0.017;
     static final double TAG_ERR_TRANS = 0.1;
     static final double TAG_ERR_ROT = 100.0;
+
+    static final boolean DRAW_GRIDMAP = false;
 
     // GUI Misc.
     VisWorld vw;
@@ -79,16 +81,15 @@ public class OfflineSLAM
         }
     }
 
-    public OfflineSLAM(GetOpt opts)
+    public OfflineSLAM(String logLocation)
     {
         initGUI();
         initGraph();
 
-        ArrayList<String> extraArgs = opts.getExtraArgs();
         try {
-            log = new Log(extraArgs.get(0), "r");
+            log = new Log(logLocation, "r");
         } catch (IOException ex) {
-            System.err.println("ERR: Could not open LCM log "+extraArgs.get(0));
+            System.err.println("ERR: Could not open LCM log "+logLocation);
             System.exit(-2);
         }
     }
@@ -215,7 +216,14 @@ public class OfflineSLAM
 
         // Associate the most recent laser_t with this node
         laser_t laser = lasers.get(lasers.size()-1);
-        n.setAttribute("laser", laser);
+        ArrayList<double[]> lpts = new ArrayList<double[]>();
+        for(int i=0; i<laser.nranges; i++) {
+            double theta = laser.rad0 + (i * laser.radstep);
+            double x = laser.ranges[i] * Math.cos(theta);
+            double y = laser.ranges[i] * Math.sin(theta);
+            lpts.add(new double[]{x, y, (byte)0});
+        }
+        n.setAttribute("laser", lpts);
 
         GXYTEdge e = new GXYTEdge();
         e.z = new double[] {dxyz[0],
@@ -356,6 +364,8 @@ public class OfflineSLAM
         vbTraj.setDrawOrder(-10);
         VisWorld.Buffer vbLaser = vw.getBuffer("lasers");
         vbTraj.setDrawOrder(-15);
+        VisWorld.Buffer vbRaster = vw.getBuffer("raster");
+        vbTraj.setDrawOrder(10);
 
         ArrayList<double[]> lines = new ArrayList<double[]>();
         ArrayList<double[]> taglines = new ArrayList<double[]>();
@@ -389,6 +399,14 @@ public class OfflineSLAM
                                      VzLines.LINES,
                                      new VzLines.Style(Color.magenta, 2)));
 
+        // Draw a gridmap?
+        double gridmap_size = 50;
+        double metersPerPixel = .1;
+        double rangeCovariance = 0.1;
+
+        GridMap gm = GridMap.makeMeters(-20, -5,
+                                        gridmap_size, 0.6 * gridmap_size,
+                                        metersPerPixel, 255);
 
         for (GNode o: g.nodes) {
             if (o instanceof GXYTNode) {
@@ -400,18 +418,20 @@ public class OfflineSLAM
                     vbRobots.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
                                                   new VzRobot(Color.green)));
 
-                    laser_t laser = (laser_t)n.getAttribute("laser");
-                    if(laser != null) {
-                        ArrayList<double[]> lpts = new ArrayList<double[]>();
-                        for(int i=0; i<laser.nranges; i++) {
-                            double theta = laser.rad0 + (i * laser.radstep);
-                            double x = laser.ranges[i] * Math.cos(theta);
-                            double y = laser.ranges[i] * Math.sin(theta);
-                            lpts.add(new double[]{x, y, 0});
-                        }
+                    ArrayList<double[]> laserPts = (ArrayList<double[]>)n.getAttribute("laser");
+                    if(laserPts != null) {
                         vbLaser.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
-                                                     new VzPoints(new VisVertexData(lpts),
+                                                     new VzPoints(new VisVertexData(laserPts),
                                                                   new VzPoints.Style(Color.cyan, 1))));
+
+                        // Add points into gridmap
+                        if(DRAW_GRIDMAP) {
+                            ArrayList<double[]> gpoints = LinAlg.transform(n.state, laserPts);
+                            for(double[] p : gpoints) {
+                                gm.setValue(p[0], p[1], (byte)0);
+                                // System.out.println(p[0]+" "+p[1]);
+                            }
+                        }
                     }
                 } else if (type.equals("tag")) {
                     Integer id = (Integer)n.getAttribute("id");
@@ -425,11 +445,61 @@ public class OfflineSLAM
             }
         }
 
+        if(DRAW_GRIDMAP) {
+            if (gm != null) {
+                BufferedImage im = gm.makeBufferedImage();
+                double vertices [][] = {gm.getXY0(), {gm.getXY1()[0],gm.getXY0()[1]},
+                                        gm.getXY1(), {gm.getXY0()[0],gm.getXY1()[1]}};
+                double texcoords [][] = {{0,0}, {0,im.getHeight()*gm.metersPerPixel},
+                                         {im.getWidth()*gm.metersPerPixel,im.getHeight()},
+                                         {im.getWidth(),0}};
+
+                System.out.println("xy0: ("+gm.getXY0()[0]+", "+gm.getXY0()[1]+")");
+                System.out.println("xy1: ("+gm.getXY1()[0]+", "+gm.getXY1()[1]+")");
+                System.out.println("height: "+im.getHeight()+", width: "+im.getWidth());
+
+                vbRaster.addBack(new VzImage(new VisTexture(im), vertices, vertices, Color.WHITE));
+                // vbRaster.addBack(new VzImage(new VisTexture(im), vertices, texcoords, Color.WHITE));
+                // vbRaster.addBack(new VzImage(im));
+            }
+        }
+
         vbTags.swap();
         vbRobots.swap();
         vbTagObs.swap();
         vbTraj.swap();
         vbLaser.swap();
+        vbRaster.swap();
+    }
+
+    public GridMap getGridMap()
+    {
+        double gridmap_size = 50;
+        double metersPerPixel = .1;
+        double rangeCovariance = 0.1;
+
+        GridMap gm = GridMap.makeMeters(-20, -5,
+                                        gridmap_size, 0.6 * gridmap_size,
+                                        metersPerPixel, 255);
+        for (GNode o: g.nodes) {
+            if (o instanceof GXYTNode) {
+                GXYTNode n = (GXYTNode)o;
+                String type = (String)n.getAttribute("type");
+                if (type == null) {
+                    continue;
+                }
+                else if (type.equals("robot")) {
+                    ArrayList<double[]> lpts = (ArrayList<double[]>)n.getAttribute("laser");
+                    if(lpts != null) {
+                        ArrayList<double[]> gpoints = LinAlg.transform(n.state, lpts);
+                        for(double[] p : gpoints)
+                            gm.setValue(p[0], p[1], (byte)0);
+                    }
+                }
+            }
+        }
+
+        return gm;
     }
 
     static public void main(String[] args)
@@ -454,6 +524,7 @@ public class OfflineSLAM
             System.exit(1);
         }
 
-        new OfflineSLAM(opts);
+        if(extraArgs.size() > 0)
+            new OfflineSLAM(extraArgs.get(0));
     }
 }
