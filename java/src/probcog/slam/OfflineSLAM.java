@@ -34,7 +34,10 @@ public class OfflineSLAM
     static final double TAG_ERR_TRANS = 0.25;
     static final double TAG_ERR_ROT = 0.5;
 
-    static final boolean DRAW_GRIDMAP = false;
+    static final boolean DRAW_GRIDMAP = false; // XXX -- Currently not drawing correctly
+    double gridmap_size = 50;
+    double metersPerPixel = .05;
+    double rangeCovariance = 0.1;
 
     // GUI Misc.
     VisWorld vw;
@@ -379,9 +382,8 @@ public class OfflineSLAM
         VisWorld.Buffer vbTraj = vw.getBuffer("trajectory");
         vbTraj.setDrawOrder(-10);
         VisWorld.Buffer vbLaser = vw.getBuffer("lasers");
-        vbTraj.setDrawOrder(-15);
-        VisWorld.Buffer vbRaster = vw.getBuffer("raster");
-        vbTraj.setDrawOrder(10);
+        vbLaser.setDrawOrder(-15);
+        VisWorld.Buffer vbGridMap = vw.getBuffer("grid-map");
 
         ArrayList<double[]> lines = new ArrayList<double[]>();
         ArrayList<double[]> taglines = new ArrayList<double[]>();
@@ -416,12 +418,8 @@ public class OfflineSLAM
                                      new VzLines.Style(Color.magenta, 2)));
 
         // Draw a gridmap?
-        double gridmap_size = 50;
-        double metersPerPixel = .1;
-        double rangeCovariance = 0.1;
-
         GridMap gm = GridMap.makeMeters(-20, -5,
-                                        gridmap_size, 0.6 * gridmap_size,
+                                        gridmap_size, gridmap_size,
                                         metersPerPixel, 255);
 
         for (GNode o: g.nodes) {
@@ -474,9 +472,9 @@ public class OfflineSLAM
                 System.out.println("xy1: ("+gm.getXY1()[0]+", "+gm.getXY1()[1]+")");
                 System.out.println("height: "+im.getHeight()+", width: "+im.getWidth());
 
-                vbRaster.addBack(new VzImage(new VisTexture(im), vertices, vertices, Color.WHITE));
-                // vbRaster.addBack(new VzImage(new VisTexture(im), vertices, texcoords, Color.WHITE));
-                // vbRaster.addBack(new VzImage(im));
+                vbGridMap.addBack(new VzImage(new VisTexture(im), vertices, texcoords, Color.WHITE));
+                // vbGridMap.addBack(new VzImage(im));
+                vbGridMap.swap();
             }
         }
 
@@ -485,17 +483,12 @@ public class OfflineSLAM
         vbTagObs.swap();
         vbTraj.swap();
         vbLaser.swap();
-        vbRaster.swap();
     }
 
     public GridMap getGridMap()
     {
-        double gridmap_size = 50;
-        double metersPerPixel = .1;
-        double rangeCovariance = 0.1;
-
         GridMap gm = GridMap.makeMeters(-20, -5,
-                                        gridmap_size, 0.6 * gridmap_size,
+                                        gridmap_size, gridmap_size,
                                         metersPerPixel, 255);
         for (GNode o: g.nodes) {
             if (o instanceof GXYTNode) {
