@@ -248,6 +248,8 @@ public class OfflineSLAM
         laser_t laser = laserFix.getFixedLaserT(pose);  //lasers.get(lasers.size()-1);
         ArrayList<double[]> lpts = new ArrayList<double[]>();
         for(int i=0; i<laser.nranges; i++) {
+            if(laser.ranges[i] == 0)
+                continue;
             double theta = laser.rad0 + (i * laser.radstep);
             double x = laser.ranges[i] * Math.cos(theta);
             double y = laser.ranges[i] * Math.sin(theta);
@@ -482,12 +484,12 @@ public class OfflineSLAM
                                          {im.getWidth()*gm.metersPerPixel,im.getHeight()},
                                          {im.getWidth(),0}};
 
-                System.out.println("xy0: ("+gm.getXY0()[0]+", "+gm.getXY0()[1]+")");
-                System.out.println("xy1: ("+gm.getXY1()[0]+", "+gm.getXY1()[1]+")");
-                System.out.println("height: "+im.getHeight()+", width: "+im.getWidth());
+                // System.out.println("xy0: ("+gm.getXY0()[0]+", "+gm.getXY0()[1]+")");
+                // System.out.println("xy1: ("+gm.getXY1()[0]+", "+gm.getXY1()[1]+")");
+                // System.out.println("height: "+im.getHeight()+", width: "+im.getWidth());
 
-                vbGridMap.addBack(new VzImage(new VisTexture(im), vertices, texcoords, Color.WHITE));
-                // vbGridMap.addBack(new VzImage(im));
+                // vbGridMap.addBack(new VzImage(new VisTexture(im), vertices, texcoords, Color.WHITE));
+                vbGridMap.addBack(new VzImage(im));
                 vbGridMap.swap();
             }
         }
