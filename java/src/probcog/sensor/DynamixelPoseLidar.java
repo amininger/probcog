@@ -205,7 +205,7 @@ public class DynamixelPoseLidar implements LCMSubscriber
         }
     }
 
-    static final int sign(double v)
+    static final public int sign(double v)
     {
         if (v >= 0)
             return 1;

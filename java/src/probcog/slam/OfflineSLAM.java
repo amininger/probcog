@@ -48,7 +48,9 @@ public class OfflineSLAM
     // Log state
     Log log;
     Odometry odometry = new Odometry();
+    LaserFix laserFix = new LaserFix();
     pose_t lastPose = null;
+    dynamixel_status_t lastDynamixel = null;
     ArrayList<Integer> poseIdxs = new ArrayList<Integer>(); // In graph nodes
     ArrayList<pose_t> poses = new ArrayList<pose_t>();
     // XXX SYNCHRONIZATION IS AN ISSUE HERE...must examine LASER publishing code
@@ -167,7 +169,9 @@ public class OfflineSLAM
                         done |= handleIMU(event);
                     else if (event.channel.equals("TAG_DETECTIONS_TX"))
                         handleTags(event);
-                    else if (event.channel.equals("LASER"))
+                    else if (event.channel.equals("DYNAMIXEL_STATUS_1"))
+                        handleDynamixel(event);
+                    else if (event.channel.equals("HOKUYO_LIDAR"))
                         handleLaser(event);
 
                     if (!done) {
@@ -188,6 +192,13 @@ public class OfflineSLAM
     private void postprocess()
     {
         // XXX
+    }
+
+    private void handleDynamixel(lcm.logging.Log.Event event) throws IOException
+    {
+        dynamixel_status_t status = new dynamixel_status_t(event.data);
+        lastDynamixel = status;
+        // dynamixelStatus.add(status);
     }
 
     private boolean handleIMU(lcm.logging.Log.Event event) throws IOException
@@ -234,7 +245,7 @@ public class OfflineSLAM
         n.setAttribute("type", "robot");
 
         // Associate the most recent laser_t with this node
-        laser_t laser = lasers.get(lasers.size()-1);
+        laser_t laser = laserFix.getFixedLaserT(pose);  //lasers.get(lasers.size()-1);
         ArrayList<double[]> lpts = new ArrayList<double[]>();
         for(int i=0; i<laser.nranges; i++) {
             double theta = laser.rad0 + (i * laser.radstep);
@@ -367,8 +378,11 @@ public class OfflineSLAM
     private void handleLaser(lcm.logging.Log.Event event) throws IOException
     {
         // XXX TODO
-        laser_t laser = new laser_t(event.data);
-        lasers.add(laser);
+        if(lastPose == null || lastDynamixel == null)
+            return;
+
+        laser_t hokuyo_laser = new laser_t(event.data);
+        laserFix.addData(poses.get(poses.size()-1), hokuyo_laser, lastDynamixel);
     }
 
     private void redraw()
