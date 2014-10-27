@@ -248,7 +248,7 @@ public class OfflineSLAM
         laser_t laser = laserFix.getFixedLaserT(pose);  //lasers.get(lasers.size()-1);
         ArrayList<double[]> lpts = new ArrayList<double[]>();
         for(int i=0; i<laser.nranges; i++) {
-            if(laser.ranges[i] == 0)
+            if(laser.ranges[i] < 0)
                 continue;
             double theta = laser.rad0 + (i * laser.radstep);
             double x = laser.ranges[i] * Math.cos(theta);

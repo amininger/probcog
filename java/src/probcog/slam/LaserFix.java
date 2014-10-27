@@ -58,7 +58,7 @@ public class LaserFix
         // Expensive grid map processing
         float step = (float)gm.metersPerPixel/2;
         for (int i = 0; i < laser.nranges; i++) {
-            laser.ranges[i] = -0.00001f;
+            laser.ranges[i] = -1;
             float theta = (float)(xyt[2]+laser.rad0+laser.radstep*i);
             double x = 0, y = 0;
             for (float r = 0.0f; r < 5.0f; r+=step) {
@@ -101,7 +101,7 @@ public class LaserFix
                 double r = data.laser.ranges[i];
 
                 // Skip error codes
-                if (r < 0)
+                if (r <= 0)
                     continue;
 
                 double t = data.laser.rad0 + data.laser.radstep*i;
