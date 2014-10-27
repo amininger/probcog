@@ -86,53 +86,60 @@ public class ProbcogTagDetector implements LCMSubscriber
                     im = debayerRGGB(lastIm.width, lastIm.height, lastIm.data);
                 }
 
-                // Process the image
-                ArrayList<TagDetection> detections = detector.process(im, new double[] {im.getWidth()/2.0, im.getHeight()/2.0});
-
-                // Publish detections
-                tag_detection_list_t tagList = new tag_detection_list_t();
-                tagList.utime = TimeUtil.utime();
-                tagList.ndetections = detections.size();
-                tagList.detections = new tag_detection_t[tagList.ndetections];
-                for (int i = 0; i < tagList.ndetections; i++) {
-                    TagDetection det = detections.get(i);
-
-                    tag_detection_t td = new tag_detection_t();
-                    td.tag_family_bit_width = 6;
-                    td.tag_family_min_hamming_dist = 11;
-
-                    td.id = det.id;
-                    td.hamming_dist = (byte)det.hammingDistance;
-                    td.goodness = 0.0f; // XXX
-
-                    td.H[0][0] = (float) det.homography[0][0];
-                    td.H[0][1] = (float) det.homography[0][1];
-                    td.H[0][2] = (float) det.homography[0][2];
-                    td.H[1][0] = (float) det.homography[1][0];
-                    td.H[1][1] = (float) det.homography[1][1];
-                    td.H[1][2] = (float) det.homography[1][2];
-                    td.H[2][0] = (float) det.homography[2][0];
-                    td.H[2][1] = (float) det.homography[2][1];
-                    td.H[2][2] = (float) det.homography[2][2];
-
-                    td.cxy[0] = (float) det.cxy[0];
-                    td.cxy[1] = (float) det.cxy[1];
-
-                    td.pxy[0][0] = (float) det.p[0][0];
-                    td.pxy[0][1] = (float) det.p[0][1];
-                    td.pxy[1][0] = (float) det.p[1][0];
-                    td.pxy[1][1] = (float) det.p[1][1];
-                    td.pxy[2][0] = (float) det.p[2][0];
-                    td.pxy[2][1] = (float) det.p[2][1];
-                    td.pxy[3][0] = (float) det.p[3][0];
-                    td.pxy[3][1] = (float) det.p[3][1];
-
-                    tagList.detections[i] = td;
-                }
+                tag_detection_list_t tagList = getDetections(im, detector);
 
                 lcm.publish("TAG_DETECTIONS_TX", tagList);
             }
         }
+    }
+
+    public static tag_detection_list_t getDetections(BufferedImage im, TagDetector detector)
+    {
+        // Process the image
+        ArrayList<TagDetection> detections = detector.process(im, new double[] {im.getWidth()/2.0, im.getHeight()/2.0});
+
+        // Publish detections
+        tag_detection_list_t tagList = new tag_detection_list_t();
+        tagList.utime = TimeUtil.utime();
+        tagList.ndetections = detections.size();
+        tagList.detections = new tag_detection_t[tagList.ndetections];
+        for (int i = 0; i < tagList.ndetections; i++) {
+            TagDetection det = detections.get(i);
+
+            tag_detection_t td = new tag_detection_t();
+            td.tag_family_bit_width = 6;
+            td.tag_family_min_hamming_dist = 11;
+
+            td.id = det.id;
+            td.hamming_dist = (byte)det.hammingDistance;
+            td.goodness = 0.0f; // XXX
+
+            td.H[0][0] = (float) det.homography[0][0];
+            td.H[0][1] = (float) det.homography[0][1];
+            td.H[0][2] = (float) det.homography[0][2];
+            td.H[1][0] = (float) det.homography[1][0];
+            td.H[1][1] = (float) det.homography[1][1];
+            td.H[1][2] = (float) det.homography[1][2];
+            td.H[2][0] = (float) det.homography[2][0];
+            td.H[2][1] = (float) det.homography[2][1];
+            td.H[2][2] = (float) det.homography[2][2];
+
+            td.cxy[0] = (float) det.cxy[0];
+            td.cxy[1] = (float) det.cxy[1];
+
+            td.pxy[0][0] = (float) det.p[0][0];
+            td.pxy[0][1] = (float) det.p[0][1];
+            td.pxy[1][0] = (float) det.p[1][0];
+            td.pxy[1][1] = (float) det.p[1][1];
+            td.pxy[2][0] = (float) det.p[2][0];
+            td.pxy[2][1] = (float) det.p[2][1];
+            td.pxy[3][0] = (float) det.p[3][0];
+            td.pxy[3][1] = (float) det.p[3][1];
+
+            tagList.detections[i] = td;
+        }
+
+        return tagList;
     }
 
     /** Returns an image of the same resolution as the input. **/
