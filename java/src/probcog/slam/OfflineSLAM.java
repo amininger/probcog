@@ -9,6 +9,7 @@ import javax.swing.*;
 import lcm.lcm.*;
 import lcm.logging.*;
 
+import april.config.*;
 import april.graph.*;
 import april.jmat.*;
 import april.tag.*;
@@ -39,6 +40,9 @@ public class OfflineSLAM
     double metersPerPixel = .05;
     double rangeCovariance = 0.1;
 
+    Config config;
+    Config cal;
+
     // GUI Misc.
     VisWorld vw;
     VisLayer vl;
@@ -49,6 +53,8 @@ public class OfflineSLAM
     Log log;
     Odometry odometry = new Odometry();
     LaserFix laserFix = new LaserFix();
+    TagFix tagFix;
+    TagDetector detector;
     pose_t lastPose = null;
     dynamixel_status_t lastDynamixel = null;
     ArrayList<Integer> poseIdxs = new ArrayList<Integer>(); // In graph nodes
@@ -88,13 +94,17 @@ public class OfflineSLAM
         }
     }
 
-    public OfflineSLAM(String logLocation)
+    public OfflineSLAM(GetOpt opts, String logLocation)
     {
         initGUI();
         initGraph();
 
         try {
             log = new Log(logLocation, "r");
+            config = new ConfigFile(opts.getString("config"));
+            cal = new ConfigFile(opts.getString("cal"));
+            tagFix = new TagFix(cal);
+            initDetector();
         } catch (IOException ex) {
             System.err.println("ERR: Could not open LCM log "+logLocation);
             System.exit(-2);
@@ -150,6 +160,23 @@ public class OfflineSLAM
         gssolver = new GaussSeidelSolver(g);
     }
 
+    private void initDetector()
+    {
+        TagFamily tf = new Tag36h11();
+        tf.setErrorRecoveryBits(config.requireInt("tag_detection.tag.errorBits"));
+        detector = new TagDetector(tf);
+
+        detector.debug = false;
+        detector.sigma = config.requireDouble("tag_detection.tag.sigma");
+        detector.segSigma = config.requireDouble("tag_detection.tag.segSigma");
+        detector.segDecimate = config.requireBoolean("tag_detection.tag.decimate");
+        detector.minMag = config.requireDouble("tag_detection.tag.minMag");
+        detector.maxEdgeCost = Math.toRadians(config.requireDouble("tag_detection.tag.maxEdgeCost_deg"));
+        detector.magThresh = config.requireDouble("tag_detection.tag.magThresh");
+        detector.thetaThresh = config.requireDouble("tag_detection.tag.thetaThresh");
+        detector.WEIGHT_SCALE = config.requireInt("tag_detection.tag.weightScale");
+    }
+
     /** Process the log. If all == true, read in the entire log immediately.
      *  Otherwise, just read until it's time to add the next odometry node.
      */
@@ -167,8 +194,10 @@ public class OfflineSLAM
                         // done |= handlePose(event);
                     if (event.channel.equals("ODOM_IMU"))
                         done |= handleIMU(event);
-                    else if (event.channel.equals("TAG_DETECTIONS_TX"))
-                        handleTags(event);
+                    //else if (event.channel.equals("TAG_DETECTIONS_TX"))
+                    //    handleTags(event);
+                    else if (event.channel.equals("IMAGE"))
+                        handleIm(event);
                     else if (event.channel.equals("DYNAMIXEL_STATUS_1"))
                         handleDynamixel(event);
                     else if (event.channel.equals("HOKUYO_LIDAR"))
@@ -278,9 +307,21 @@ public class OfflineSLAM
         return true;
     }
 
+    private void handleIm(lcm.logging.Log.Event event) throws IOException
+    {
+        image_t im = new image_t(event.data);
+        tag_detection_list_t tl = tagFix.getTags(im, detector);
+        handleTags(tl);
+    }
+
     private void handleTags(lcm.logging.Log.Event event) throws IOException
     {
         tag_detection_list_t tl = new tag_detection_list_t(event.data);
+        handleTags(tl);
+    }
+
+    private void handleTags(tag_detection_list_t tl)
+    {
         tags.add(tl);
 
         for (tag_detection_t td: tl.detections) {
@@ -529,7 +570,8 @@ public class OfflineSLAM
     {
         GetOpt opts = new GetOpt();
         opts.addBoolean('h', "help", false, "Show this help screen");
-        opts.addString('c', "config", null, "Optional configuration file");
+        opts.addString('c', "config", null, "Configuration file for detector");
+        opts.addString('\0', "cal", null, "Configuration file for calibration");
 
         if (!opts.parse(args)) {
             System.err.println("Options error: "+opts.getReason());
@@ -548,6 +590,6 @@ public class OfflineSLAM
         }
 
         if(extraArgs.size() > 0)
-            new OfflineSLAM(extraArgs.get(0));
+            new OfflineSLAM(opts, extraArgs.get(0));
     }
 }
