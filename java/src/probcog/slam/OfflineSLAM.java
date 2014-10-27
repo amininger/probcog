@@ -459,7 +459,6 @@ public class OfflineSLAM
                             ArrayList<double[]> gpoints = LinAlg.transform(n.state, laserPts);
                             for(double[] p : gpoints) {
                                 gm.setValue(p[0], p[1], (byte)0);
-                                // System.out.println(p[0]+" "+p[1]);
                             }
                         }
                     }
@@ -484,12 +483,11 @@ public class OfflineSLAM
                                          {im.getWidth()*gm.metersPerPixel,im.getHeight()},
                                          {im.getWidth(),0}};
 
-                // System.out.println("xy0: ("+gm.getXY0()[0]+", "+gm.getXY0()[1]+")");
-                // System.out.println("xy1: ("+gm.getXY1()[0]+", "+gm.getXY1()[1]+")");
-                // System.out.println("height: "+im.getHeight()+", width: "+im.getWidth());
-
-                // vbGridMap.addBack(new VzImage(new VisTexture(im), vertices, texcoords, Color.WHITE));
-                vbGridMap.addBack(new VzImage(im));
+                vbGridMap.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
+                                               LinAlg.scale(gm.metersPerPixel),
+                                               new VzImage(new VisTexture(gm.makeBufferedImage(),
+                                                                          VisTexture.NO_MIN_FILTER |
+                                                                          VisTexture.NO_MAG_FILTER))));
                 vbGridMap.swap();
             }
         }
