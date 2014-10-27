@@ -34,7 +34,7 @@ public class OfflineSLAM
     static final double TAG_ERR_TRANS = 0.25;
     static final double TAG_ERR_ROT = 0.5;
 
-    static final boolean DRAW_GRIDMAP = false; // XXX -- Currently not drawing correctly
+    static final boolean DRAW_GRIDMAP = false;
     double gridmap_size = 50;
     double metersPerPixel = .05;
     double rangeCovariance = 0.1;
