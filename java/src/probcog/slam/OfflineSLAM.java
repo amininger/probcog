@@ -71,17 +71,42 @@ public class OfflineSLAM
     GraphSolver gssolver;
     Graph g;
 
+    boolean drawing = false;
+    private class DrawThread extends Thread
+    {
+        public void run()
+        {
+            redraw();
+            drawing = false;
+        }
+    }
+
+    private class ProcessThread extends Thread
+    {
+        boolean all = false;
+        public ProcessThread(boolean all)
+        {
+            this.all = all;
+        }
+
+        public void run()
+        {
+            processLog(all);
+        }
+    }
+
     private class ButtonHandler implements ParameterListener
     {
         public void parameterChanged(ParameterGUI pg, String name)
         {
             if (name.equals("step")) {
                 // Read up until the next node is added to the graph
-                processLog(false);
+                //processLog(false);
+                new ProcessThread(false).start();
             } else if (name.equals("run")) {
                 // Slurp up all of the log file
-                processLog(true);
-                postprocess();
+                //processLog(true);
+                new ProcessThread(true).start();
             } else if (name.equals("opt")) {
                 // Optimize the graph
                 if (firstTime)
@@ -206,8 +231,12 @@ public class OfflineSLAM
                     if (!done) {
                         continue;
                     } else {
-                        redraw();
                         //solver.iterate();
+                        //redraw();
+                        if (!drawing) {
+                            drawing = true;
+                            new DrawThread().start();
+                        }
                         break;
                     }
                 }
@@ -309,8 +338,29 @@ public class OfflineSLAM
 
     private void handleIm(lcm.logging.Log.Event event) throws IOException
     {
-        image_t im = new image_t(event.data);
+        image_t it = new image_t(event.data);
+        BufferedImage im = tagFix.getImage(it);
         tag_detection_list_t tl = tagFix.getTags(im, detector);
+        if (true) {
+            double scale = 0.25;
+            VisWorld.Buffer vb = vw.getBuffer("im");
+            vb.setDrawOrder(-100);
+            vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
+                                        LinAlg.scale(scale),
+                                        new VzImage(im, VzImage.FLIP)));
+            for (tag_detection_t td: tl.detections) {
+                ArrayList<double[]> points = new ArrayList<double[]>();
+                for (int i = 0; i < 4; i++) {
+                    points.add(new double[] {td.pxy[i][0], im.getHeight()-1-td.pxy[i][1]});
+                }
+                vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
+                                            LinAlg.scale(scale),
+                                            new VzLines(new VisVertexData(points),
+                                                        VzLines.LINE_LOOP,
+                                                        new VzLines.Style(Color.red, 2))));
+            }
+            vb.swap();
+        }
         handleTags(tl);
     }
 
