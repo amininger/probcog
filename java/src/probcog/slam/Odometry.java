@@ -40,7 +40,8 @@ public class Odometry
             // Handle bias updates. If our wheels weren't moving, assume we
             // were stationary and try to calibrate bias.
             if (dl == 0 && dr == 0) {
-                yawBias = (yawBias*biasSamples + yawDiff)/(biasSamples+1);
+                //yawBias = (yawBias*biasSamples + yawDiff)/(biasSamples+1);
+                yawBias = D_BIAS*yawBias + (1-D_BIAS)*yawDiff;
                 biasSamples++;
             }
 

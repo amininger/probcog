@@ -28,12 +28,11 @@ public class OfflineSLAM
 {
     static final long STEP_TIME_US = 1*1000000;
     static final double ODOM_ERR_DIST = 0.15;   // STDDEV of err/m traveled
-    static final double ODOM_ERR_DIST_FIXED = 0.010;
+    static final double ODOM_ERR_DIST_FIXED = 0.100;
     static final double ODOM_ERR_ROT = 0.010;   // STDDEV of err/rad
-    //static final double ODOM_ERR_ROT_FIXED = 0.017;
-    static final double ODOM_ERR_ROT_FIXED = 0.001;
-    static final double TAG_ERR_TRANS = 0.1;
-    static final double TAG_ERR_ROT = 1.0;
+    static final double ODOM_ERR_ROT_FIXED = 0.025;
+    static final double TAG_ERR_TRANS = 0.25;
+    static final double TAG_ERR_ROT = Math.PI/8;  // In radians
 
     static final boolean DRAW_GRIDMAP = false;
     double gridmap_size = 50;
@@ -209,6 +208,7 @@ public class OfflineSLAM
         detector.WEIGHT_SCALE = config.requireInt("tag_detection.tag.weightScale");
     }
 
+    int counter = 0;
     /** Process the log. If all == true, read in the entire log immediately.
      *  Otherwise, just read until it's time to add the next odometry node.
      */
@@ -238,7 +238,11 @@ public class OfflineSLAM
                     if (!done) {
                         continue;
                     } else {
-                        //solver.iterate();
+                        counter++;
+                        if (counter >= 30 && true) {
+                            solver.iterate();
+                            counter = 0;
+                        }
                         //redraw();
                         if (!drawing) {
                             drawing = true;
@@ -364,7 +368,6 @@ public class OfflineSLAM
             points.add(new double[] {0,im.getHeight()});
             points.add(new double[] {im.getWidth(), 0});
             points.add(new double[] {im.getWidth(), im.getHeight()});
-            System.out.printf("%d, %d\n", im.getWidth(), im.getHeight());
             vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
                                         LinAlg.scale(scale),
                                         new VzPoints(new VisVertexData(points),
@@ -415,6 +418,15 @@ public class OfflineSLAM
         for (tag_detection_t td: tl.detections) {
             // Find tag pose relative to the camera
             double[][] T_h = homographyToRBT(td);
+
+            // Filter out bad tags. Roll should be near Pi. Pitch near 0.
+            double[] xyzrpy = LinAlg.matrixToXyzrpy(T_h);
+            //LinAlg.print(xyzrpy);
+            double thresh = Math.toRadians(15);
+            double dr = Math.abs(MathUtil.mod2pi(xyzrpy[3]-Math.PI));
+            double dp = Math.abs(MathUtil.mod2pi(xyzrpy[4]));
+            if (dr > thresh || dp > thresh)
+                continue;
 
             // Grab most recent pose. If not exists, ignore this tag.
             if (poses.size() < 1)
@@ -499,16 +511,25 @@ public class OfflineSLAM
         //double[][] M = CameraUtil.homographyToPose(-fx, fy, cx, cy, H);
         double[][] M = CameraUtil.homographyToPose(-K[0], K[1], K[2], K[3], H);
         M = CameraUtil.scalePose(M, 2.0, tagSize);
-        double[][] xform = LinAlg.matrixAB(LinAlg.rotateY(Math.toRadians(170)),
-                                           LinAlg.rotateZ(Math.PI/2));
+        //double[][] xform = LinAlg.matrixAB(LinAlg.rotateX(-Math.toRadians(170)),
+        //                                   LinAlg.rotateZ(Math.PI/2));
+        //M = LinAlg.matrixAB(xform, M);
+        double[][] xform = new double[][] {{0, -1, 0, 0},
+                                           {-1, 0, 0, 0},
+                                           {0, 0, -1, 0},
+                                           {0, 0,  0, 1}};
         M = LinAlg.matrixAB(xform, M);
+        M = LinAlg.matrixAB(M, LinAlg.rotateZ(Math.PI));
 
-        System.out.println("\nTag "+td.id);
-        LinAlg.print(LinAlg.matrixToXyzrpy(M));
+        //System.out.println("\nTag "+td.id);
+        //LinAlg.print(LinAlg.matrixToXyzrpy(M));
 
-        vw.getBuffer("debug").addBack(new VisChain(M,
-                                                   new VzSphere(0.25, new VzMesh.Style(Color.white))));
-        vw.getBuffer("debug").swap();
+        if (false) {
+            vw.getBuffer("debug").addBack(new VisChain(M,
+                                                       LinAlg.scale(0.25),
+                                                       new VzRectangle(new VzMesh.Style(Color.white))));
+            vw.getBuffer("debug").swap();
+        }
 
         return M;
     }
