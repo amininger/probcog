@@ -32,13 +32,20 @@ public class OfflineSLAM
     static final double ODOM_ERR_ROT = 0.010;   // STDDEV of err/rad
     //static final double ODOM_ERR_ROT_FIXED = 0.017;
     static final double ODOM_ERR_ROT_FIXED = 0.001;
-    static final double TAG_ERR_TRANS = 0.25;
-    static final double TAG_ERR_ROT = 0.5;
+    static final double TAG_ERR_TRANS = 0.1;
+    static final double TAG_ERR_ROT = 1.0;
 
     static final boolean DRAW_GRIDMAP = false;
     double gridmap_size = 50;
     double metersPerPixel = .05;
     double rangeCovariance = 0.1;
+
+    // Grab from config in future XXX
+    double fx = 481.70;
+    double fy = 482.65;
+    double cx = 384.47;
+    double cy = 213.876;
+    double tagSize = 0.15;
 
     Config config;
     Config cal;
@@ -341,6 +348,7 @@ public class OfflineSLAM
         image_t it = new image_t(event.data);
         BufferedImage im = tagFix.getImage(it);
         tag_detection_list_t tl = tagFix.getTags(im, detector);
+        tl.utime = it.utime;
         if (true) {
             double scale = 0.25;
             VisWorld.Buffer vb = vw.getBuffer("im");
@@ -348,16 +356,46 @@ public class OfflineSLAM
             vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
                                         LinAlg.scale(scale),
                                         new VzImage(im, VzImage.FLIP)));
+
+            double[] K = tagFix.getCameraParams();
+            ArrayList<double[]> points = new ArrayList<double[]>();
+            points.add(new double[] {K[2], im.getHeight()-1-K[3]});
+            points.add(new double[] {0,0});
+            points.add(new double[] {0,im.getHeight()});
+            points.add(new double[] {im.getWidth(), 0});
+            points.add(new double[] {im.getWidth(), im.getHeight()});
+            System.out.printf("%d, %d\n", im.getWidth(), im.getHeight());
+            vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
+                                        LinAlg.scale(scale),
+                                        new VzPoints(new VisVertexData(points),
+                                                     new VzPoints.Style(Color.yellow, 5))));
             for (tag_detection_t td: tl.detections) {
-                ArrayList<double[]> points = new ArrayList<double[]>();
-                for (int i = 0; i < 4; i++) {
-                    points.add(new double[] {td.pxy[i][0], im.getHeight()-1-td.pxy[i][1]});
-                }
+                ArrayList<double[]> red = new ArrayList<double[]>();
+                ArrayList<double[]> green = new ArrayList<double[]>();
+                ArrayList<double[]> blue = new ArrayList<double[]>();
+                red.add(new double[] {td.pxy[0][0], im.getHeight()-1-td.pxy[0][1]});
+                red.add(new double[] {td.pxy[1][0], im.getHeight()-1-td.pxy[1][1]});
+                blue.add(new double[] {td.pxy[1][0], im.getHeight()-1-td.pxy[1][1]});
+                blue.add(new double[] {td.pxy[2][0], im.getHeight()-1-td.pxy[2][1]});
+                blue.add(new double[] {td.pxy[2][0], im.getHeight()-1-td.pxy[2][1]});
+                blue.add(new double[] {td.pxy[3][0], im.getHeight()-1-td.pxy[3][1]});
+                green.add(new double[] {td.pxy[3][0], im.getHeight()-1-td.pxy[3][1]});
+                green.add(new double[] {td.pxy[0][0], im.getHeight()-1-td.pxy[0][1]});
                 vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
                                             LinAlg.scale(scale),
-                                            new VzLines(new VisVertexData(points),
-                                                        VzLines.LINE_LOOP,
+                                            new VzLines(new VisVertexData(red),
+                                                        VzLines.LINES,
                                                         new VzLines.Style(Color.red, 2))));
+                vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
+                                            LinAlg.scale(scale),
+                                            new VzLines(new VisVertexData(green),
+                                                        VzLines.LINES,
+                                                        new VzLines.Style(Color.green, 2))));
+                vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
+                                            LinAlg.scale(scale),
+                                            new VzLines(new VisVertexData(blue),
+                                                        VzLines.LINES,
+                                                        new VzLines.Style(Color.blue, 2))));
             }
             vb.swap();
         }
@@ -448,12 +486,7 @@ public class OfflineSLAM
 
     private double[][] homographyToRBT(tag_detection_t td)
     {
-        // Grab from config in future
-        double fx = 478;        // XXX Made up
-        double fy = 478;        // XXX Made up
-        double cx = 376;        // XXX
-        double cy = 240;        // XXX
-        double tagSize = 0.15;
+        double[] K = tagFix.getCameraParams();
         double[][] H = new double[3][3];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -461,9 +494,21 @@ public class OfflineSLAM
             }
         }
 
-        double[][] M = CameraUtil.homographyToPose(fx, fy, cx, cy, H);
-        M = CameraUtil.scalePose(M, 2.0, -tagSize);
-        M = LinAlg.matrixAB(LinAlg.rotateZ(-Math.PI/2), M);
+        // Correct for 80 degree tilt XXX
+
+        //double[][] M = CameraUtil.homographyToPose(-fx, fy, cx, cy, H);
+        double[][] M = CameraUtil.homographyToPose(-K[0], K[1], K[2], K[3], H);
+        M = CameraUtil.scalePose(M, 2.0, tagSize);
+        double[][] xform = LinAlg.matrixAB(LinAlg.rotateY(Math.toRadians(170)),
+                                           LinAlg.rotateZ(Math.PI/2));
+        M = LinAlg.matrixAB(xform, M);
+
+        System.out.println("\nTag "+td.id);
+        LinAlg.print(LinAlg.matrixToXyzrpy(M));
+
+        vw.getBuffer("debug").addBack(new VisChain(M,
+                                                   new VzSphere(0.25, new VzMesh.Style(Color.white))));
+        vw.getBuffer("debug").swap();
 
         return M;
     }

@@ -59,4 +59,10 @@ public class TagFix
 
         return tdl;
     }
+
+    public double[] getCameraParams()
+    {
+        double[][] K = output.copyIntrinsics();
+        return new double[] {K[0][0], K[1][1], K[0][2], K[1][2]};
+    }
 }
