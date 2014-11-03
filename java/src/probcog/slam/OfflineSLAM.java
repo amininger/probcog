@@ -11,6 +11,8 @@ import lcm.logging.*;
 
 import april.config.*;
 import april.graph.*;
+import april.image.*;
+import april.laser.scanmatcher.*;
 import april.jmat.*;
 import april.tag.*;
 import april.util.*;
@@ -26,12 +28,13 @@ import magic2.lcmtypes.*;   // Must be magic2 for new tag_detections...
 /** Take as input a robot log and create a maximum likelihood map. */
 public class OfflineSLAM
 {
+    // 1.0 / sq(stuff?) XXX
     static final long STEP_TIME_US = 1*1000000;
     static final double ODOM_ERR_DIST = 0.15;   // STDDEV of err/m traveled
-    static final double ODOM_ERR_DIST_FIXED = 0.100;
+    static final double ODOM_ERR_DIST_FIXED = 0.500;    // XXX 0.100
     static final double ODOM_ERR_ROT = 0.010;   // STDDEV of err/rad
-    static final double ODOM_ERR_ROT_FIXED = 0.025;
-    static final double TAG_ERR_TRANS = 0.25;
+    static final double ODOM_ERR_ROT_FIXED = Math.toRadians(30);
+    static final double TAG_ERR_TRANS = 0.500;          // XXX 0.25
     static final double TAG_ERR_ROT = Math.PI/8;  // In radians
 
     static final boolean DRAW_GRIDMAP = false;
@@ -208,6 +211,7 @@ public class OfflineSLAM
         detector.WEIGHT_SCALE = config.requireInt("tag_detection.tag.weightScale");
     }
 
+    static final int MAX_COUNT = 1;
     int counter = 0;
     /** Process the log. If all == true, read in the entire log immediately.
      *  Otherwise, just read until it's time to add the next odometry node.
@@ -228,8 +232,8 @@ public class OfflineSLAM
                         done |= handleIMU(event);
                     //else if (event.channel.equals("TAG_DETECTIONS_TX"))
                     //    handleTags(event);
-                    else if (event.channel.equals("IMAGE"))
-                        handleIm(event);
+                    //else if (event.channel.equals("IMAGE"))
+                    //    handleIm(event);
                     else if (event.channel.equals("DYNAMIXEL_STATUS_1"))
                         handleDynamixel(event);
                     else if (event.channel.equals("HOKUYO_LIDAR"))
@@ -239,7 +243,7 @@ public class OfflineSLAM
                         continue;
                     } else {
                         counter++;
-                        if (counter >= 30 && true) {
+                        if (counter >= MAX_COUNT && true) {
                             solver.iterate();
                             counter = 0;
                         }
@@ -315,6 +319,7 @@ public class OfflineSLAM
 
         // Associate the most recent laser_t with this node
         laser_t laser = laserFix.getFixedLaserT(pose);  //lasers.get(lasers.size()-1);
+
         ArrayList<double[]> lpts = new ArrayList<double[]>();
         for(int i=0; i<laser.nranges; i++) {
             if(laser.ranges[i] < 0)
@@ -326,6 +331,113 @@ public class OfflineSLAM
         }
         n.setAttribute("laser", lpts);
 
+        // Scan matching. When we create a pose, we associate a laser_t with that
+        // pose, too. Currently, we don't do ANY synchronization. This may need to
+        // change in the future.
+        //
+        // Match the scan with previous pose scans. Is it reasonable to match to
+        // all previous scans, or just scans from reasonably close poses? What is
+        // reasonable? Worst case, do fixed distance matching for the last N poses.
+        //
+        // Step 0) Create a blurred grid map from the laser_t
+        // Step 1) Feed the match into the MultiResolutionMatcher and try to
+        // extract our best match.
+        // Step 2) (Optionally?) use hill climbing to get the last bit of the way
+
+        // Create a blurred grid map for our intial pose estimate/laser data
+        // Store this as a node attribute
+        double range = 35.0;
+        GridMap slamgm = GridMap.makeMeters(n.state[0]-range, n.state[1]-range,
+                                            2*range, 2*range, 0.05, 0);
+        ArrayList<double[]> transformedPoints = new ArrayList<double[]>();
+        for (double[] xy: lpts) {
+            xy = LinAlg.transform(nT, xy);
+            transformedPoints.add(xy);
+
+            slamgm.setValue(xy[0], xy[1], (byte)255);
+        }
+        slamgm = slamgm.crop(true);
+        GridMap blurgm = slamgm.copy();
+        float[] f = SigProc.makeGaussianFilter(1.5, 5);
+        f = LinAlg.scale(f, 1.0 / LinAlg.max(f));
+        blurgm.filterFactoredCenteredMax(f, f);
+        n.setAttribute("blurgm", blurgm);
+
+        // Match against the last N points. Some issues with N > 1 right now
+        double npoints = 1;
+        for (int i = 0; i < Math.min(npoints, poseIdxs.size()); i++) {
+            if (poseIdxs.size() < i+1)
+                continue;
+            GXYTNode matchNode = (GXYTNode)g.nodes.get(poseIdxs.get(poseIdxs.size()-1-i));
+            double[] xyta = matchNode.init; // Where were the points when we made our map
+            double[] xytb = LinAlg.matrixToXYT(nT);
+
+            GridMap gma = (GridMap)(matchNode.getAttribute("blurgm"));
+            if (gma == null)
+                continue;
+            MultiResolutionMatcher matcher = new MultiResolutionMatcher();
+            matcher.setModel(gma);
+
+            // XXX Parameters
+            double xyrange = 10.0;
+            double trange = Math.toRadians(90);
+            double dxyt_prior[] = LinAlg.xytInvMul31(xyta, xytb);
+            double[][] P = LinAlg.diag(new double[] {LinAlg.sq(0.15+0.1*Math.abs(dxyt_prior[0])),
+                                                     LinAlg.sq(0.15+0.1*Math.abs(dxyt_prior[1])),
+                                                     LinAlg.sq(Math.toRadians(15) + 0.1*Math.abs(MathUtil.mod2pi(dxyt_prior[2])))});
+            double priorScale = 1.0 / (transformedPoints.size()*30);
+            double[][] priorScaled = LinAlg.scale(P, priorScale);
+
+            double res[] = matcher.match(transformedPoints,             // points
+                                         xytb,                          // prior XXX
+                                         LinAlg.inverse(priorScaled),   // inv prior
+                                         xytb,                          // xyt0
+                                         xyrange,
+                                         xyrange,
+                                         trange,
+                                         Math.toRadians(1));
+
+            if (true) {
+                HillClimbing hc = new HillClimbing(new Config());
+                hc.setModel(gma);
+                res = hc.match(transformedPoints,
+                               xytb,
+                               LinAlg.inverse(priorScaled),
+                               LinAlg.copy(res, 3));
+            }
+
+            // Scanmatching Edge(s)
+            double[] xytb_posterior = LinAlg.copy(res, 3);
+            double[] dxyt_posterior = LinAlg.xytInvMul31(xyta, xytb_posterior);
+            System.out.println("====== i = "+i+" ======");
+            LinAlg.print(dxyt_prior);
+            LinAlg.print(dxyt_posterior);
+
+
+            double[] err = LinAlg.subtract(xytb_posterior, xytb);
+            err[2] = MathUtil.mod2pi(err[2]);
+
+            double err_dist = Math.sqrt(LinAlg.sq(err[0]) + LinAlg.sq(err[1]));
+            double err_t = Math.abs(err[2]);
+
+            if (err_dist > 0.5 || err_t > Math.toRadians(15)) {
+                System.out.println("Rejecting scan match");
+            } else {
+                GXYTEdge e = new GXYTEdge();
+                e.z = LinAlg.copy(dxyt_posterior);
+                e.truth = null; // We don't know the truth
+                e.setAttribute("type", "scanmatch");
+                e.P = new double[3][3];
+                e.P[0][0] = LinAlg.sq(0.10);
+                e.P[1][1] = LinAlg.sq(0.10);
+                e.P[2][2] = LinAlg.sq(Math.toRadians(3));
+                e.nodes = new int[] {poseIdxs.get(poseIdxs.size()-1-i), g.nodes.size()};
+                g.edges.add(e);
+            }
+        }
+
+
+        // Odometry Edge
         GXYTEdge e = new GXYTEdge();
         e.z = new double[] {dxyz[0],
                             dxyz[1],
@@ -333,16 +445,16 @@ public class OfflineSLAM
         e.truth = null; // We don't know the truth
         e.setAttribute("type", "odom");
 
-        // XXX Make this proportional eventually
         e.P = new double[3][3];
-        e.P[0][0] = 1.0 / LinAlg.sq(Math.abs(e.z[0]) * ODOM_ERR_DIST + ODOM_ERR_DIST_FIXED);
-        e.P[1][1] = 1.0 / LinAlg.sq(Math.abs(e.z[1]) * ODOM_ERR_DIST + ODOM_ERR_DIST_FIXED);
-        e.P[2][2] = 1.0 / LinAlg.sq(Math.abs(e.z[2]) * ODOM_ERR_ROT + ODOM_ERR_ROT_FIXED);
+        e.P[0][0] = LinAlg.sq(Math.abs(e.z[0]) * ODOM_ERR_DIST + ODOM_ERR_DIST_FIXED);
+        e.P[1][1] = LinAlg.sq(Math.abs(e.z[1]) * ODOM_ERR_DIST + ODOM_ERR_DIST_FIXED);
+        e.P[2][2] = LinAlg.sq(Math.abs(e.z[2]) * ODOM_ERR_ROT + ODOM_ERR_ROT_FIXED);
         e.nodes = new int[] {poseIdxs.get(poseIdxs.size()-1), g.nodes.size()};
-        poseIdxs.add(g.nodes.size());
 
+        poseIdxs.add(g.nodes.size());
         g.nodes.add(n);
         g.edges.add(e);
+
         lastPose = pose;
         return true;
     }
@@ -480,9 +592,9 @@ public class OfflineSLAM
 
                 // XXX This will need to change
                 e.P = new double[3][3];
-                e.P[0][0] = 1.0 / LinAlg.sq(TAG_ERR_TRANS);
-                e.P[1][1] = 1.0 / LinAlg.sq(TAG_ERR_TRANS);
-                e.P[2][2] = 1.0 / LinAlg.sq(TAG_ERR_ROT);
+                e.P[0][0] = LinAlg.sq(TAG_ERR_TRANS);
+                e.P[1][1] = LinAlg.sq(TAG_ERR_TRANS);
+                e.P[2][2] = LinAlg.sq(TAG_ERR_ROT);
                 e.nodes = new int[] {poseIdxs.get(poseIdxs.size()-1),
                                      tagIdxs.get(td.id)};
                 e.setAttribute("type", "tag");
@@ -550,6 +662,8 @@ public class OfflineSLAM
         vbTags.setDrawOrder(10);
         VisWorld.Buffer vbRobots = vw.getBuffer("poses");
         vbRobots.setDrawOrder(0);
+        VisWorld.Buffer vbScanObs = vw.getBuffer("scans");
+        vbScanObs.setDrawOrder(-2);
         VisWorld.Buffer vbTagObs= vw.getBuffer("tag-obs");
         vbTagObs.setDrawOrder(-5);
         VisWorld.Buffer vbTraj = vw.getBuffer("trajectory");
@@ -560,6 +674,7 @@ public class OfflineSLAM
 
         ArrayList<double[]> lines = new ArrayList<double[]>();
         ArrayList<double[]> taglines = new ArrayList<double[]>();
+        ArrayList<double[]> scanlines = new ArrayList<double[]>();
 
         for (GEdge o: g.edges) {
             if (o instanceof GXYTEdge) {
@@ -580,6 +695,9 @@ public class OfflineSLAM
                 } else if (type.equals("tag")) {
                     taglines.add(LinAlg.resize(a.state, 2));
                     taglines.add(LinAlg.resize(b.state, 2));
+                } else if (type.equals("scanmatch")) {
+                    scanlines.add(LinAlg.resize(a.state, 2));
+                    scanlines.add(LinAlg.resize(b.state, 2));
                 }
             }
         }
@@ -589,6 +707,9 @@ public class OfflineSLAM
         vbTagObs.addBack(new VzLines(new VisVertexData(taglines),
                                      VzLines.LINES,
                                      new VzLines.Style(Color.magenta, 2)));
+        vbScanObs.addBack(new VzLines(new VisVertexData(scanlines),
+                                      VzLines.LINES,
+                                      new VzLines.Style(Color.orange, 1)));
 
         // Draw a gridmap?
         GridMap gm = GridMap.makeMeters(-20, -5,
@@ -602,7 +723,14 @@ public class OfflineSLAM
                 if (type == null) {
                     continue;
                 } else if (type.equals("robot")) {
-                    vbRobots.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
+                    GridMap gmb = (GridMap)n.getAttribute("blurgm");
+                    if (gmb != null && false) {
+                        BufferedImage im = gmb.makeBufferedImage();
+                        vbRobots.addBack(new VisChain(LinAlg.translate(gmb.x0, gmb.y0, -0.01),
+                                                      LinAlg.scale(gmb.metersPerPixel),
+                                                      new VzImage(im)));
+                    }
+                    vbGridMap.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
                                                   new VzRobot(Color.green)));
 
                     ArrayList<double[]> laserPts = (ArrayList<double[]>)n.getAttribute("laser");
@@ -651,6 +779,7 @@ public class OfflineSLAM
 
         vbTags.swap();
         vbRobots.swap();
+        vbScanObs.swap();
         vbTagObs.swap();
         vbTraj.swap();
         vbLaser.swap();
