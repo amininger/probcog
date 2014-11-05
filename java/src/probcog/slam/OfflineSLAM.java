@@ -124,6 +124,17 @@ public class OfflineSLAM
                 solver.iterate();
                 firstTime = false;
                 redraw();
+            } else if (name.equals("save")) {
+                // Save the final product
+                try {
+                    StructureWriter fout = new BinaryStructureWriter(new BufferedOutputStream(new FileOutputStream("/tmp/offline_slam.map")));
+                    // Save the grid map the graph can generate along with tag ID+pose
+                    saveMap(fout);
+                    fout.close();
+                } catch (IOException ex) {
+                    System.err.println("ERR: Could not write graph to file");
+                    ex.printStackTrace();
+                }
             }
         }
     }
@@ -139,6 +150,7 @@ public class OfflineSLAM
             cal = new ConfigFile(opts.getString("cal"));
             tagFix = new TagFix(cal);
             initDetector();
+
         } catch (IOException ex) {
             System.err.println("ERR: Could not open LCM log "+logLocation);
             System.exit(-2);
@@ -161,7 +173,8 @@ public class OfflineSLAM
         pg = new ParameterGUI();
         pg.addButtons("opt", "Optimize",
                       "step", "Step",
-                      "run", "Run");
+                      "run", "Run",
+                      "save", "Save");
         pg.addListener(new ButtonHandler());
         jf.add(pg, BorderLayout.SOUTH);
 
@@ -232,8 +245,8 @@ public class OfflineSLAM
                         done |= handleIMU(event);
                     //else if (event.channel.equals("TAG_DETECTIONS_TX"))
                     //    handleTags(event);
-                    //else if (event.channel.equals("IMAGE"))
-                    //    handleIm(event);
+                    else if (event.channel.equals("IMAGE"))
+                        handleIm(event);
                     else if (event.channel.equals("DYNAMIXEL_STATUS_1"))
                         handleDynamixel(event);
                     else if (event.channel.equals("HOKUYO_LIDAR"))
@@ -243,7 +256,7 @@ public class OfflineSLAM
                         continue;
                     } else {
                         counter++;
-                        if (counter >= MAX_COUNT && true) {
+                        if (counter >= MAX_COUNT && false) {
                             solver.iterate();
                             counter = 0;
                         }
@@ -363,6 +376,7 @@ public class OfflineSLAM
         blurgm.filterFactoredCenteredMax(f, f);
         n.setAttribute("blurgm", blurgm);
 
+        // XXX
         // Match against the last N points. Some issues with N > 1 right now
         double npoints = 1;
         for (int i = 0; i < Math.min(npoints, poseIdxs.size()); i++) {
@@ -371,6 +385,9 @@ public class OfflineSLAM
             GXYTNode matchNode = (GXYTNode)g.nodes.get(poseIdxs.get(poseIdxs.size()-1-i));
             double[] xyta = matchNode.init; // Where were the points when we made our map
             double[] xytb = LinAlg.matrixToXYT(nT);
+            double[] xyt0 = new double[] {xyta[0],
+                                          xyta[1],
+                                          xytb[2]}; // XXX Why this?
 
             GridMap gma = (GridMap)(matchNode.getAttribute("blurgm"));
             if (gma == null)
@@ -379,23 +396,34 @@ public class OfflineSLAM
             matcher.setModel(gma);
 
             // XXX Parameters
-            double xyrange = 10.0;
+            double xyrange = 30.0;
             double trange = Math.toRadians(90);
             double dxyt_prior[] = LinAlg.xytInvMul31(xyta, xytb);
             double[][] P = LinAlg.diag(new double[] {LinAlg.sq(0.15+0.1*Math.abs(dxyt_prior[0])),
                                                      LinAlg.sq(0.15+0.1*Math.abs(dxyt_prior[1])),
-                                                     LinAlg.sq(Math.toRadians(15) + 0.1*Math.abs(MathUtil.mod2pi(dxyt_prior[2])))});
+                                                     LinAlg.sq(Math.toRadians(90) + 0.1*Math.abs(MathUtil.mod2pi(dxyt_prior[2])))});
             double priorScale = 1.0 / (transformedPoints.size()*30);
             double[][] priorScaled = LinAlg.scale(P, priorScale);
 
             double res[] = matcher.match(transformedPoints,             // points
                                          xytb,                          // prior XXX
                                          LinAlg.inverse(priorScaled),   // inv prior
-                                         xytb,                          // xyt0
+                                         xyta,                          // xyt0
                                          xyrange,
                                          xyrange,
                                          trange,
                                          Math.toRadians(1));
+
+            if (false) {
+                VisWorld.Buffer vb = vw.getBuffer("debug-sm");
+                vb.addBack(new VisChain(LinAlg.translate(gma.x0, gma.y0),
+                                        LinAlg.scale(gma.metersPerPixel),
+                                        new VzImage(gma.makeBufferedImage())));
+                vb.addBack(new VzPoints(new VisVertexData(transformedPoints),
+                                        new VzPoints.Style(Color.red, 1)));
+
+                vb.swap();
+            }
 
             if (true) {
                 HillClimbing hc = new HillClimbing(new Config());
@@ -532,9 +560,10 @@ public class OfflineSLAM
             double[][] T_h = homographyToRBT(td);
 
             // Filter out bad tags. Roll should be near Pi. Pitch near 0.
+            // XXX This is decidedly hack-y
             double[] xyzrpy = LinAlg.matrixToXyzrpy(T_h);
             //LinAlg.print(xyzrpy);
-            double thresh = Math.toRadians(15);
+            double thresh = Math.toRadians(30);
             double dr = Math.abs(MathUtil.mod2pi(xyzrpy[3]-Math.PI));
             double dp = Math.abs(MathUtil.mod2pi(xyzrpy[4]));
             if (dr > thresh || dp > thresh)
@@ -652,6 +681,9 @@ public class OfflineSLAM
         if(lastPose == null || lastDynamixel == null)
             return;
 
+        // XXX Synchronization? Probably causing some issues processing this
+        // "live". We had to shift dynamixel timings before to deal with this
+        // issue.
         laser_t hokuyo_laser = new laser_t(event.data);
         laserFix.addData(poses.get(poses.size()-1), hokuyo_laser, lastDynamixel);
     }
@@ -671,6 +703,7 @@ public class OfflineSLAM
         VisWorld.Buffer vbLaser = vw.getBuffer("lasers");
         vbLaser.setDrawOrder(-15);
         VisWorld.Buffer vbGridMap = vw.getBuffer("grid-map");
+        vbGridMap.setDrawOrder(-20);
 
         ArrayList<double[]> lines = new ArrayList<double[]>();
         ArrayList<double[]> taglines = new ArrayList<double[]>();
@@ -726,11 +759,11 @@ public class OfflineSLAM
                     GridMap gmb = (GridMap)n.getAttribute("blurgm");
                     if (gmb != null && false) {
                         BufferedImage im = gmb.makeBufferedImage();
-                        vbRobots.addBack(new VisChain(LinAlg.translate(gmb.x0, gmb.y0, -0.01),
+                        vbGridMap.addBack(new VisChain(LinAlg.translate(gmb.x0, gmb.y0, -0.01),
                                                       LinAlg.scale(gmb.metersPerPixel),
                                                       new VzImage(im)));
                     }
-                    vbGridMap.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
+                    vbRobots.addBack(new VisChain(LinAlg.xytToMatrix(n.state),
                                                   new VzRobot(Color.green)));
 
                     ArrayList<double[]> laserPts = (ArrayList<double[]>)n.getAttribute("laser");
@@ -787,9 +820,9 @@ public class OfflineSLAM
 
     public GridMap getGridMap()
     {
-        GridMap gm = GridMap.makeMeters(-20, -5,
-                                        gridmap_size, gridmap_size,
-                                        metersPerPixel, 255);
+        GridMap gm = GridMap.makeMeters(-200, -200,
+                                        400, 400,
+                                        metersPerPixel, 0);
         for (GNode o: g.nodes) {
             if (o instanceof GXYTNode) {
                 GXYTNode n = (GXYTNode)o;
@@ -802,13 +835,60 @@ public class OfflineSLAM
                     if(lpts != null) {
                         ArrayList<double[]> gpoints = LinAlg.transform(n.state, lpts);
                         for(double[] p : gpoints)
-                            gm.setValue(p[0], p[1], (byte)0);
+                            gm.setValue(p[0], p[1], (byte)255);
                     }
                 }
             }
         }
 
-        return gm;
+        return gm.crop(true);
+    }
+
+    private void saveMap(StructureWriter fout) throws IOException
+    {
+        GridMap gm = getGridMap();
+
+        // Save origin and scale.
+        fout.writeComment("x0, y0, width, height, mpp");
+        fout.writeDouble(gm.x0);
+        fout.writeDouble(gm.y0);
+        fout.writeInt(gm.width);
+        fout.writeInt(gm.height);
+        fout.writeDouble(gm.metersPerPixel);
+
+        // Map data
+        fout.writeComment("pixeldata");
+        fout.writeBytes(gm.data);
+
+        // Save tags
+        ArrayList<Integer> ids = new ArrayList<Integer>();
+        ArrayList<double[]> xyts = new ArrayList<double[]>();
+        for (GNode o: g.nodes) {
+            if (o instanceof GXYTNode) {
+                GXYTNode n = (GXYTNode)o;
+                String type = (String)n.getAttribute("type");
+                if (type == null)
+                    continue;
+                else if (type.equals("tag")) {
+                    Integer id = (Integer)n.getAttribute("id");
+                    ids.add(id);
+                    xyts.add(n.state);
+                }
+            }
+        }
+
+        fout.writeComment("numTags");
+        fout.writeComment("{");
+        fout.writeComment("    tagid");
+        fout.writeComment("    [x, y, t]");
+        fout.writeComment("}");
+        fout.writeInt(ids.size());
+        for (int i = 0; i < ids.size(); i++) {
+            fout.blockBegin();
+            fout.writeInt(ids.get(i));
+            fout.writeDoubles(xyts.get(i));
+            fout.blockEnd();
+        }
     }
 
     static public void main(String[] args)

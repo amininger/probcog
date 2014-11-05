@@ -23,9 +23,9 @@ public class LaserFix
 
     // GridMap constants
     static final double MPP = 0.05;      // [meters/px]
-    static final double SIZE_X = 20.0;  // [meters]
-    static final double SIZE_Y = 20.0;  // [meters]
-    double minHeight = .2; // XXX Should be smaller, but then we see the floor, probably wrong dynamixel association
+    static final double SIZE_X = 40.0;  // [meters]
+    static final double SIZE_Y = 40.0;  // [meters]
+    double minHeight = .3; // XXX Should be smaller, but then we see the floor, probably wrong dynamixel association
                            //Util.getConfig().requireDouble("obstacle.min_height");
     double maxHeight = 1.0;//Util.getConfig().requireDouble("obstacle.max_height");
 
@@ -61,6 +61,8 @@ public class LaserFix
             laser.ranges[i] = -1;
             float theta = (float)(xyt[2]+laser.rad0+laser.radstep*i);
             double x = 0, y = 0;
+            // XXX Would like to look farther in future, but need to clean up
+            // laser data more.
             for (float r = 0.0f; r < 5.0f; r+=step) {
                 x = xyt[0] + r*Math.cos(theta);
                 y = xyt[1] + r*Math.sin(theta);
@@ -132,6 +134,7 @@ public class LaserFix
     }
 
 
+    // XXX Some error checking for bad sweeps would be nice
     public void addData(pose_t pose, laser_t laser_hokuyo, dynamixel_status_t status)
     {
         Data d = new Data();
