@@ -71,6 +71,7 @@ public class TagMap
     }
 
     /** Get a laser scan for the given position.
+     *  @param xyt          Robot XYT
      *  @param thetaRange   The range out from 0 (+/-) that we will scan
      *  @param radstep      The step size between range measurements in rads
      *  @param maxRange     The maximum range measurement we'll take.
@@ -105,5 +106,32 @@ public class TagMap
         }
 
         return laser;
+    }
+
+    public ArrayList<TagXYT> getTags(double[] xyt)
+    {
+        return getTags(xyt, 2.0);
+    }
+
+    /** Get the tags visible from a particular location and orientation.
+     *  @param xyt              Robot XYT
+     *  @param detectionRange   Maximum range tags are visible from
+     *
+     *  @return A list of tags w/relative locations and orientations to robot
+     **/
+    public ArrayList<TagXYT> getTags(double[] xyt, double detectionRange)
+    {
+        ArrayList<TagXYT> seen = new ArrayList<TagXYT>();
+        for (int i = 0; i < tags.size(); i++) {
+            double dist = LinAlg.distance(xyt, tags.get(i).xyt, 2);
+            if (dist > detectionRange)
+                continue;
+
+            int id = tags.get(i).id;
+            double[] txyt = tags.get(i).xyt;
+            seen.add(new TagXYT(id, LinAlg.xytInvMul31(xyt, txyt)));
+        }
+
+        return seen;
     }
 }
