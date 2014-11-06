@@ -29,7 +29,7 @@ import magic2.lcmtypes.*;   // Must be magic2 for new tag_detections...
 public class OfflineSLAM
 {
     // 1.0 / sq(stuff?) XXX
-    static final long STEP_TIME_US = 1*1000000;
+    static final long STEP_TIME_US = (long)(1.0*1000000);
     static final double ODOM_ERR_DIST = 0.15;   // STDDEV of err/m traveled
     static final double ODOM_ERR_DIST_FIXED = 0.500;    // XXX 0.100
     static final double ODOM_ERR_ROT = 0.010;   // STDDEV of err/rad
