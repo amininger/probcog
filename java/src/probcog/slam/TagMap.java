@@ -3,8 +3,16 @@ package probcog.slam;
 import java.io.*;
 import java.util.*;
 
+import april.jmat.*;
 import april.util.*;
 
+import magic2.lcmtypes.*;   // XXX
+
+/** Loads a map with registered tag positions/orientations from file. Lets
+ *  the user do convenient things like query for a 2D laser scan for a given
+ *  XYT or query about tag poses in the world relative to a particular
+ *  XYT.
+ **/
 public class TagMap
 {
     public GridMap gm = GridMap.makeMeters(0,0,1,1,0.05,0);
@@ -22,7 +30,7 @@ public class TagMap
         }
     }
 
-    public TagMap(GridMap gm, ArrayList<TagXYT> tags)
+    private TagMap(GridMap gm, ArrayList<TagXYT> tags)
     {
         this.gm = gm;
         this.tags = tags;
@@ -54,5 +62,48 @@ public class TagMap
                           x0, y0, w, h, mpp, tags.size());
 
         return new TagMap(gm, tags);
+    }
+
+    // === Map queries for simulation =====================================
+    public laser_t getLaser(double[] xyt)
+    {
+        return getLaser(xyt, 135.0, Math.toRadians(3), 5.0);
+    }
+
+    /** Get a laser scan for the given position.
+     *  @param thetaRange   The range out from 0 (+/-) that we will scan
+     *  @param radstep      The step size between range measurements in rads
+     *  @param maxRange     The maximum range measurement we'll take.
+     *
+     *  @return A laser_t with -1 indicating bad measurements. No utime
+     **/
+    public laser_t getLaser(double[] xyt, double thetaRange, double radstep, double maxRange)
+    {
+        double minTheta = -Math.abs(thetaRange);
+        double maxTheta = Math.abs(thetaRange);
+        double rs = Math.abs(radstep);
+
+        laser_t laser = new laser_t();
+        laser.rad0 = (float)minTheta;
+        laser.radstep = (float)rs;
+        laser.nranges = (int)((maxTheta-minTheta)/rs);
+        laser.ranges = new float[laser.nranges];
+
+        double[] xy = new double[2];
+        for (int i = 0; i < laser.nranges; i++)
+        {
+            double theta = MathUtil.mod2pi(minTheta+xyt[2]+i*rs);
+            laser.ranges[i] = -1;
+            for (double r = 0; r <= maxRange; r+= gm.metersPerPixel/2) {
+                double x = xy[0] + r*Math.cos(theta);
+                double y = xy[1] + r*Math.sin(theta);
+                if (gm.getValue(x, y) != 0) {
+                    laser.ranges[i] = (float)r;
+                    break;
+                }
+            }
+        }
+
+        return laser;
     }
 }
