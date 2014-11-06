@@ -31,6 +31,9 @@ public class MapViewer
         double[] xyt = null;
         laser_t laser = null;
 
+        boolean newTags = false;
+        ArrayList<TagMap.TagXYT> seenTags = null;
+
         public boolean mousePressed(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
         {
             int mods = e.getModifiersEx();
@@ -76,6 +79,10 @@ public class MapViewer
                 laser = map.getLaser(xyt);
                 newLaser = true;
 
+                // Also, get a list of relative tag positions
+                seenTags = map.getTags(xyt);
+                newTags = true;
+
                 clickXY = null;
                 endXY = null;
                 drawHandler();
@@ -87,7 +94,7 @@ public class MapViewer
 
         private void drawHandler()
         {
-            VisWorld.Buffer vb = vw.getBuffer("laser");
+            VisWorld.Buffer vb = vw.getBuffer("debug-tagmap");
             vb.setDrawOrder(100);
             if (clickXY != null) {
                 VisVertexData vvd = new VisVertexData();
@@ -114,6 +121,15 @@ public class MapViewer
                                         new VzPoints(new VisVertexData(points),
                                                      new VzPoints.Style(Color.red, 2))));
                 newLaser = false;
+            }
+
+            if (seenTags != null && newTags) {
+                for (TagMap.TagXYT tag: seenTags) {
+                    vb.addBack(new VisChain(LinAlg.xytToMatrix(LinAlg.xytMultiply(xyt, tag.xyt)),
+                                            new VzAxes()));
+                }
+
+                newTags = false;
             }
 
             vb.swap();
