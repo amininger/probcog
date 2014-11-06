@@ -79,8 +79,8 @@ public class TagMap
      **/
     public laser_t getLaser(double[] xyt, double thetaRange, double radstep, double maxRange)
     {
-        double minTheta = -Math.abs(thetaRange);
-        double maxTheta = Math.abs(thetaRange);
+        double minTheta = -Math.toRadians(Math.abs(thetaRange));
+        double maxTheta = Math.toRadians(Math.abs(thetaRange));
         double rs = Math.abs(radstep);
 
         laser_t laser = new laser_t();
@@ -95,8 +95,8 @@ public class TagMap
             double theta = MathUtil.mod2pi(minTheta+xyt[2]+i*rs);
             laser.ranges[i] = -1;
             for (double r = 0; r <= maxRange; r+= gm.metersPerPixel/2) {
-                double x = xy[0] + r*Math.cos(theta);
-                double y = xy[1] + r*Math.sin(theta);
+                double x = xyt[0] + r*Math.cos(theta);
+                double y = xyt[1] + r*Math.sin(theta);
                 if (gm.getValue(x, y) != 0) {
                     laser.ranges[i] = (float)r;
                     break;

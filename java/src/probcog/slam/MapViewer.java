@@ -12,6 +12,8 @@ import april.jmat.geom.*;
 import april.util.*;
 import april.vis.*;
 
+import magic2.lcmtypes.*; // XXX
+
 public class MapViewer
 {
     VisWorld vw;
@@ -24,6 +26,10 @@ public class MapViewer
     {
         double[] clickXY = null;
         double[] endXY = null;
+
+        boolean newLaser = false;
+        double[] xyt = null;
+        laser_t laser = null;
 
         public boolean mousePressed(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
         {
@@ -63,7 +69,13 @@ public class MapViewer
             boolean m1 = (mods & InputEvent.BUTTON1_DOWN_MASK) != 0;
 
             if (clickXY != null) {
-                // XXX Call laser render here
+                // Create an XYT and get a laser_t to render
+                xyt = LinAlg.resize(clickXY, 3);
+                xyt[2] = MathUtil.mod2pi(Math.atan2(endXY[1]-clickXY[1],
+                                                    endXY[0]-clickXY[0]));
+                laser = map.getLaser(xyt);
+                newLaser = true;
+
                 clickXY = null;
                 endXY = null;
                 drawHandler();
@@ -76,6 +88,7 @@ public class MapViewer
         private void drawHandler()
         {
             VisWorld.Buffer vb = vw.getBuffer("laser");
+            vb.setDrawOrder(100);
             if (clickXY != null) {
                 VisVertexData vvd = new VisVertexData();
                 vvd.add(clickXY);
@@ -83,6 +96,24 @@ public class MapViewer
                 vb.addBack(new VzLines(vvd,
                                        VzLines.LINES,
                                        new VzLines.Style(Color.yellow, 2)));
+            }
+
+            if (laser != null && newLaser) {
+                ArrayList<double[]> points = new ArrayList<double[]>();
+                for (int i = 0; i < laser.nranges; i++) {
+                    double t = laser.rad0 + i*laser.radstep;
+                    double r = laser.ranges[i];
+                    if (r < 0)
+                        continue;
+                    double[] xy = new double[] {r*Math.cos(t),
+                                                r*Math.sin(t)};
+                    points.add(xy);
+                }
+
+                vb.addBack(new VisChain(LinAlg.xytToMatrix(xyt),
+                                        new VzPoints(new VisVertexData(points),
+                                                     new VzPoints.Style(Color.red, 2))));
+                newLaser = false;
             }
 
             vb.swap();
