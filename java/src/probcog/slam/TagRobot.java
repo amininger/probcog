@@ -27,10 +27,10 @@ public class TagRobot
     static final double DEFAULT_DT = 0.2;
 
     // True pose of the robot
-    pose_t poseTruth = new pose_t();
+    public pose_t poseTruth = new pose_t();
 
     // A noise-corrupted version of the above
-    pose_t poseOdom = new pose_t();
+    public pose_t poseOdom = new pose_t();
 
     // Robot params
     public double wheelDiameter = 0.25; // diamter of the wheels [m]

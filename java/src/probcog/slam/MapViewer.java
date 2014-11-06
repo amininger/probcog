@@ -12,6 +12,11 @@ import april.jmat.geom.*;
 import april.util.*;
 import april.vis.*;
 
+import probcog.commands.*;
+import probcog.commands.controls.*;
+
+import april.lcmtypes.*;
+import probcog.lcmtypes.*;
 import magic2.lcmtypes.*; // XXX
 
 public class MapViewer
@@ -20,7 +25,55 @@ public class MapViewer
     VisLayer vl;
     VisCanvas vc;
 
+    // Follow testing
+    TagRobot robot;
+    FollowWall followWall;
+
     TagMap map;
+    GridMap congfigurationSpace;
+
+    private class RobotThread extends Thread
+    {
+        double dt = 0.2;
+
+        public void run()
+        {
+            while (true) {
+                double[] xyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(robot.poseTruth.orientation, robot.poseTruth.pos));
+                magic2.lcmtypes.laser_t mlaser = map.getLaser(xyt);
+                april.lcmtypes.laser_t laser = new april.lcmtypes.laser_t();
+                laser.radstep = mlaser.radstep;
+                laser.rad0 = mlaser.rad0;
+                laser.nranges = mlaser.nranges;
+                laser.ranges = LinAlg.copy(mlaser.ranges);
+                //System.out.println(laser.rad0 + " " + laser.radstep);
+                //System.out.println(laser.nranges);
+                //LinAlg.print(laser.ranges);
+                followWall.init(laser);
+                probcog.lcmtypes.diff_drive_t pdd = followWall.drive(laser, dt);
+                magic2.lcmtypes.diff_drive_t dd = new magic2.lcmtypes.diff_drive_t();
+                dd.left_enabled = pdd.left_enabled;
+                dd.left = pdd.left;
+                dd.right_enabled = pdd.right_enabled;
+                dd.right = pdd.right;
+                robot.update(dd, congfigurationSpace, dt);
+
+                render();
+
+                TimeUtil.sleep(100);
+            }
+        }
+
+        private void render()
+        {
+            VisWorld.Buffer vb = vw.getBuffer("robot");
+            vb.addBack(new VisChain(LinAlg.quatPosToMatrix(robot.poseTruth.orientation,
+                                                           robot.poseTruth.pos),
+                                    new VzRobot(new VzMesh.Style(Color.green))));
+
+            vb.swap();
+        }
+    }
 
     private class LaserClickHandler extends VisEventAdapter
     {
@@ -29,7 +82,7 @@ public class MapViewer
 
         boolean newLaser = false;
         double[] xyt = null;
-        laser_t laser = null;
+        magic2.lcmtypes.laser_t laser = null;
 
         boolean newTags = false;
         ArrayList<TagMap.TagXYT> seenTags = null;
@@ -142,10 +195,19 @@ public class MapViewer
         try {
             StructureReader fin = new BinaryStructureReader(new BufferedInputStream(new FileInputStream(filename)));
             map = TagMap.load(fin);
+            congfigurationSpace = map.gm.dilate((byte)255, (int)Math.ceil(0.25/map.gm.metersPerPixel));
             render();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+
+        robot = new TagRobot(new double[3]);
+        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+        params.put("distance", new TypedValue(0.65));
+        params.put("side", new TypedValue((byte)1));
+        followWall = new FollowWall(params);
+
+        new RobotThread().start();
     }
 
     private void initGui()
