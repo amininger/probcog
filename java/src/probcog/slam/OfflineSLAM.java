@@ -367,6 +367,7 @@ public class OfflineSLAM
             xy = LinAlg.transform(nT, xy);
             transformedPoints.add(xy);
 
+            // Draw lines between close points?
             slamgm.setValue(xy[0], xy[1], (byte)255);
         }
         slamgm = slamgm.crop(true);
@@ -378,7 +379,7 @@ public class OfflineSLAM
 
         // XXX
         // Match against the last N points. Some issues with N > 1 right now
-        double npoints = 1;
+        double npoints = 2;
         for (int i = 0; i < Math.min(npoints, poseIdxs.size()); i++) {
             if (poseIdxs.size() < i+1)
                 continue;
@@ -396,16 +397,19 @@ public class OfflineSLAM
             matcher.setModel(gma);
 
             // XXX Parameters
-            double xyrange = 30.0;
+            double xyrange = 5.0;
             double trange = Math.toRadians(90);
             double dxyt_prior[] = LinAlg.xytInvMul31(xyta, xytb);
             double[][] P = LinAlg.diag(new double[] {LinAlg.sq(0.15+0.1*Math.abs(dxyt_prior[0])),
                                                      LinAlg.sq(0.15+0.1*Math.abs(dxyt_prior[1])),
-                                                     LinAlg.sq(Math.toRadians(90) + 0.1*Math.abs(MathUtil.mod2pi(dxyt_prior[2])))});
-            double priorScale = 1.0 / (transformedPoints.size()*30);
+                                                     LinAlg.sq(Math.toRadians(30) + 0.1*Math.abs(MathUtil.mod2pi(dxyt_prior[2])))});
+            //double priorScale = 1.0 / (transformedPoints.size()*30);
+            double priorScale = 1.0 / (lpts.size()*30);
             double[][] priorScaled = LinAlg.scale(P, priorScale);
 
-            double res[] = matcher.match(transformedPoints,             // points
+            // XXX XXX XXX
+            double res[] = matcher.match(//transformedPoints,             // points
+                                         lpts,
                                          xytb,                          // prior XXX
                                          LinAlg.inverse(priorScaled),   // inv prior
                                          xyta,                          // xyt0
@@ -428,7 +432,7 @@ public class OfflineSLAM
             if (true) {
                 HillClimbing hc = new HillClimbing(new Config());
                 hc.setModel(gma);
-                res = hc.match(transformedPoints,
+                res = hc.match(lpts,
                                xytb,
                                LinAlg.inverse(priorScaled),
                                LinAlg.copy(res, 3));
@@ -437,9 +441,9 @@ public class OfflineSLAM
             // Scanmatching Edge(s)
             double[] xytb_posterior = LinAlg.copy(res, 3);
             double[] dxyt_posterior = LinAlg.xytInvMul31(xyta, xytb_posterior);
-            System.out.println("====== i = "+i+" ======");
-            LinAlg.print(dxyt_prior);
-            LinAlg.print(dxyt_posterior);
+            //System.out.println("====== i = "+i+" ======");
+            //LinAlg.print(dxyt_prior);
+            //LinAlg.print(dxyt_posterior);
 
 
             double[] err = LinAlg.subtract(xytb_posterior, xytb);
@@ -654,13 +658,13 @@ public class OfflineSLAM
         M = CameraUtil.scalePose(M, 2.0, tagSize);
         //double[][] xform = LinAlg.matrixAB(LinAlg.rotateX(-Math.toRadians(170)),
         //                                   LinAlg.rotateZ(Math.PI/2));
-        //M = LinAlg.matrixAB(xform, M);
         double[][] xform = new double[][] {{0, -1, 0, 0},
                                            {-1, 0, 0, 0},
                                            {0, 0, -1, 0},
                                            {0, 0,  0, 1}};
         M = LinAlg.matrixAB(xform, M);
         M = LinAlg.matrixAB(M, LinAlg.rotateZ(Math.PI));
+        M = LinAlg.matrixAB(LinAlg.rotateY(Math.toRadians(10)), M);
 
         //System.out.println("\nTag "+td.id);
         //LinAlg.print(LinAlg.matrixToXyzrpy(M));
@@ -757,7 +761,7 @@ public class OfflineSLAM
                     continue;
                 } else if (type.equals("robot")) {
                     GridMap gmb = (GridMap)n.getAttribute("blurgm");
-                    if (gmb != null && false) {
+                    if (gmb != null && true) {
                         BufferedImage im = gmb.makeBufferedImage();
                         vbGridMap.addBack(new VisChain(LinAlg.translate(gmb.x0, gmb.y0, -0.01),
                                                       LinAlg.scale(gmb.metersPerPixel),
@@ -792,24 +796,7 @@ public class OfflineSLAM
             }
         }
 
-        if(DRAW_GRIDMAP) {
-            if (gm != null) {
-                BufferedImage im = gm.makeBufferedImage();
-                double vertices [][] = {gm.getXY0(), {gm.getXY1()[0],gm.getXY0()[1]},
-                                        gm.getXY1(), {gm.getXY0()[0],gm.getXY1()[1]}};
-                double texcoords [][] = {{0,0}, {0,im.getHeight()*gm.metersPerPixel},
-                                         {im.getWidth()*gm.metersPerPixel,im.getHeight()},
-                                         {im.getWidth(),0}};
-
-                vbGridMap.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
-                                               LinAlg.scale(gm.metersPerPixel),
-                                               new VzImage(new VisTexture(gm.makeBufferedImage(),
-                                                                          VisTexture.NO_MIN_FILTER |
-                                                                          VisTexture.NO_MAG_FILTER))));
-                vbGridMap.swap();
-            }
-        }
-
+        vbGridMap.swap();
         vbTags.swap();
         vbRobots.swap();
         vbScanObs.swap();

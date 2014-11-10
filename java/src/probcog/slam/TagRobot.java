@@ -6,6 +6,11 @@ import april.jmat.*;
 import april.sim.*; // Motor
 import april.util.*;
 
+import probcog.commands.*;
+import probcog.commands.controls.*;
+import probcog.commands.tests.*;
+import probcog.navigation.*;
+
 import magic2.lcmtypes.*; // XXX
 
 /** A simulated robot designed to drive around a TagMap.
@@ -64,6 +69,9 @@ public class TagRobot
         rightMotor.drag_constant = K_drag;
     }
 
+    /** Update the robot position based on a drive command and a configuration
+     *  space map.
+     **/
     public void update(diff_drive_t dd, GridMap gm)
     {
         update(dd, gm, DEFAULT_DT);
@@ -131,5 +139,18 @@ public class TagRobot
         poseOdom.orientation = neworient_odom;
     }
 
+    /** Simulate a control law up to a fixed period of time into the future. */
+    public void simulate(ControlLaw law, ConditionTest test, double seconds)
+    {
+
+    }
+
+    /** Generate potential behaviors based on a fixed-size forward search window */
+    public Set<Behavior> simulate(ControlLaw law, double seconds)
+    {
+        HashSet<Behavior> behaviors = new HashSet<Behavior>();
+
+        return behaviors;
+    }
 
 }
