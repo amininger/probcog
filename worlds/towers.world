@@ -2,35 +2,34 @@
 {
     -1
 	vec 6
-	0.2 0.2 -0.08 0.0 0.0 0.0
-	0.075
+	0.2 0.2 -0.055 0.0 0.0 0.0
+	0.12
 	vec 4
 	1.0 1.0 0.0 1.0
-	1
-	door=closed,open
-	yellow-grid
+	0
+	grid-blue
 }
 
 "probcog.sim.SimLocation"
 {
     -1
 	vec 6
-	0.2 0.0 -0.08 0.0 0.0 0.0
-	0.075
+	0.2 0.0 -0.055 0.0 0.0 0.0
+	0.12
 	vec 4
 	0.0 1.0 0.0 1.0
 	0
-	green-grid
+	grid-green
 }
 
 "probcog.sim.SimLocation"
 {
     -1
 	vec 6
-	0.2 -0.2 -0.08 0.0 0.0 0.0
-	0.075
+	0.2 -0.2 -0.055 0.0 0.0 0.0
+	0.12
 	vec 4
 	0.0 0.0 1.0 1.0
 	0
-	blue-grid
+	grid-red
 }

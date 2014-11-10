@@ -201,13 +201,12 @@ public class Tracker
     {
         Tic tic = new Tic();
     	long time = TimeUtil.utime();
-
+    	
 
     	// Get Soar Objects
         HashMap<Integer, Obj> soarObjects = getSoarObjects();
         if(SHOW_TIMERS){
-        	System.out.println("  GET SOAR OBJECTS: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
+        	time = Util.ticktock("  GET SOAR OBJECTS", time);
         	System.out.println("  GET VISIBLE OBJECTS");
         }
 
@@ -217,10 +216,12 @@ public class Tracker
         	visibleObjects = getVisibleObjects();
         	imagined = createImaginedObjects(world, false);
         }
+        if(visibleObjects == null){
+        	return;
+        }
         // Get Visible Objects
         if(SHOW_TIMERS){
-        	System.out.println("  GET VISIBLE OBJECTS: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
+        	time = Util.ticktock("  GET VISIBLE OBJECTS: ", time);
         }
 
         HashMap<Integer, Obj> previousFrame = new HashMap<Integer, Obj>();
@@ -305,104 +306,6 @@ public class Tracker
             	worldState.put(newObj.getID(), newObj);
             }
             
-
-            
-            
-//            double thresh = 0.02;
-//            double overlapThresh = .04;
-//            for (Obj newObj: visibleObjects) {
-//            	double newObjVol = newObj.getBoundingBox().volume();
-//                boolean matched = false;
-//                double maxOverlapped = -1;   // How much the object is overlapped by a soar object
-//                int maxID = -1;
-//                
-//               // double minDist = Double.MAX_VALUE;
-//                for (Obj soarObj: soarObjects) {
-//                    if (idSet.contains(soarObj.getID()))
-//                        continue;
-//                    
-//                    double soarObjVol = soarObj.getBoundingBox().volume();
-//                    double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), soarObj.getBoundingBox(), 8);
-//                    if(iVol == 0){
-//                    	continue;
-//                    }
-//
-//                    double overlapped = iVol/newObjVol * iVol/soarObjVol;
-//                    if(overlapped > overlapThresh && overlapped >= maxOverlapped){
-//                    	System.out.println("== NEW BEST ==");
-//                    	System.out.println("  NEW VOL:   " + newObjVol);
-//                    	System.out.println("  SOAR VOL:  " + soarObjVol);
-//                    	System.out.println("  INTERSXN:  " + iVol);
-//                    	System.out.println("  OVERLAP:   " + overlapped);
-//                    	matched = true;
-//                    	maxOverlapped = overlapped;
-//                    	maxID = soarObj.getID();
-//                    }
-//
-////                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid());
-////                    if(dist < thresh && dist < minDist){
-////                        matched = true;
-////                        minID = soarObj.getID();
-////                        minDist = dist;
-////                    }
-//                }
-//
-//                if (matched) {
-//                    newObj.setID(maxID);
-//                    newObj.setConfirmed(true);
-//                }
-//                else {
-//                    if(previousFrame.size() > 0){
-//                    	matched = false;
-//                    	maxOverlapped = -1;
-//                    	maxID = -1;
-////
-////                        double threshOld = .01;
-////                        boolean matchedOld = false;
-////                        double minDistOld = Double.MAX_VALUE;
-////                        int minIDOld = -1;
-//
-//                        for (Obj oldObj: previousFrame) {
-//                            if (idSet.contains(oldObj.getID()))
-//                                continue;
-//                            
-//                            double oldObjVol = oldObj.getBoundingBox().volume();
-//                            double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), oldObj.getBoundingBox(), 8);
-//                            if(iVol == 0){
-//                            	continue;
-//                            }
-//
-//                            double overlapped = newObjVol/iVol * oldObjVol/iVol;
-//                            index            if(overlapped > overlapThresh && overlapped >= maxOverlapped){
-//                            	matched = true;
-//                            	maxOverlapped = overlapped;
-//                            	maxID = oldObj.getID();
-//                            }
-//
-////                            double dist = LinAlg.distance(newObj.getCentroid(), oldObj.getCentroid());
-////                            if(dist < threshOld && dist < minDistOld){
-////                                matchedOld = true;
-////                                minIDOld = oldObj.getID();
-////                                minDistOld = dist;
-////                            }
-//                        }
-//                        if(matched) {
-//                            newObj.setID(maxID);
-//                        }
-//                        else {
-//                            newObj.setID(Obj.nextID());
-//                        }
-//                    }
-//
-//                    else {
-//                        newObj.setID(Obj.nextID());
-//                    }
-//                }
-//                idSet.add(newObj.getID());
-//
-//                worldState.put(newObj.getID(), newObj);
-//            }
-
             adjustBoundingBoxes(new ArrayList<Obj>(worldState.values()));
             
             
@@ -410,8 +313,7 @@ public class Tracker
                 worldState.put(o.getID(), o);
             }
             if(SHOW_TIMERS){
-            	System.out.println("  TRACKING: " + (TimeUtil.utime() - time));
-            	time = TimeUtil.utime();
+            	time = Util.ticktock("  TRACKING" , time);
             }
         }
         
@@ -438,7 +340,7 @@ public class Tracker
     }
 
 
-    /** Returns a list of objects : " + (TimeUtil.utime() - time))that the kinect sees on the table. The objects
+    /** Returns a list of objects that the kinect sees on the table. The objects
      *  are returned as Obj's from the segmenter, and are passed to the
      *  classifiers. The resulting point clouds, their locations, and the
      *  classifications are returned.
@@ -452,9 +354,12 @@ public class Tracker
          	System.out.println("    POINT EXTRACTION + SEG");
         }
         ArrayList<Obj> visibleObjects = segmenter.getSegmentedObjects();
+        if(visibleObjects == null){
+        	return null;
+        }
+
         if(SHOW_TIMERS){
-        	System.out.println("    POINT EXTRACTION + SEG: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
+        	time = Util.ticktock("    POINT EXTRACTION + SEG", time);
         }
 
         for(SimObject so : world.objects){
@@ -472,7 +377,7 @@ public class Tracker
         	obj.addAllClassifications(classyManager.classifyAll(obj));
         }
         if(SHOW_TIMERS){
-        	System.out.println("    CLASSIFICATION: " + (TimeUtil.utime() - time));
+        	time = Util.ticktock("    CLASSIFICATION", time);
         }
 
         return visibleObjects;
@@ -994,6 +899,8 @@ public class Tracker
         public void run()
         {
             while (true) {
+            	
+            	
             	long startTime = TimeUtil.utime();
             	if(SHOW_TIMERS){
             		System.out.println("------------------------------");
