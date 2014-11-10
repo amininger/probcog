@@ -11,6 +11,7 @@ import java.util.List;
 
 import javax.swing.JFrame;
 
+import probcog.sim.SimFlatSurface;
 import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
 import april.jmat.LinAlg;
@@ -286,6 +287,9 @@ public class SimKinectSensor implements Sensor
     	if(pixels[i].target == null){
     		// Ray didn't hit anything
     		//pixels[i].point = new double[4];
+    		return false;
+    	} else if(pixels[i].target instanceof SimFlatSurface){
+    		pixels[i].target = null;
     		return false;
     	}
 
