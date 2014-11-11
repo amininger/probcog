@@ -2,6 +2,7 @@ package probcog.slam;
 
 import java.awt.image.*;
 import java.io.*;
+import javax.imageio.*;
 import java.util.*;
 
 import april.camera.*;
@@ -41,6 +42,7 @@ public class TagFix
         rasterizer = new NearestNeighborRasterizer(input, output);
     }
 
+    boolean flip = false;
     public BufferedImage getImage(image_t it)
     {
         // 1) convert image to BufferedImage
@@ -48,6 +50,25 @@ public class TagFix
 
         // 2) Undistort the image
         BufferedImage r_im = rasterizer.rectifyImage(im);
+
+        // XXX For debugging: save to file
+        /*if (true) {
+            String name0 = "/tmp/tag-image-0.png";
+            String name1 = "/tmp/tag-image-1.png";
+            try {
+                File f;
+                if (flip) {
+                    f = new File(name1);
+                } else {
+                    f = new File(name0);
+                }
+                flip = !flip;
+
+                ImageIO.write(r_im, "PNG", f);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }*/
 
         return r_im;
     }
