@@ -22,6 +22,7 @@ public class DriveForward implements ControlLaw, LCMSubscriber
     static final int DB_HZ = 100;
     static final double VERY_FAR = 3671000;     // Earth's radius [m]
 
+    Params storedParams = Params.makeParams();
     //GLineSegment2D path;
     ArrayList<double[]> path = null;
 
@@ -35,7 +36,6 @@ public class DriveForward implements ControlLaw, LCMSubscriber
 
     private class DriveTask implements PeriodicTasks.Task
     {
-        Params storedParams = Params.makeParams();
 
         public DriveTask()
         {
@@ -82,7 +82,7 @@ public class DriveForward implements ControlLaw, LCMSubscriber
         double dt = params.dt;
 
         if (path == null)
-            init();
+            init(pose);
 
         diff_drive_t dd = new diff_drive_t();
         dd.left_enabled = true;
@@ -91,7 +91,6 @@ public class DriveForward implements ControlLaw, LCMSubscriber
         dd.right = 0;
 
         // Get the most recent position
-        pose_t pose = poseCache.get();
         if(pose == null)
             return dd;
         double offset[] = LinAlg.matrixAB(LinAlg.quatToMatrix(pose.orientation),

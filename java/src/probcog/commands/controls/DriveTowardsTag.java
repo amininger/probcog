@@ -50,7 +50,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     }
 
     //public diff_drive_t drive(classification_t classy, double dt)
-    public diff_drive_t drive(DriveParams params);
+    public diff_drive_t drive(DriveParams params)
     {
         classification_t classy = params.classy;
         double dt = params.dt;

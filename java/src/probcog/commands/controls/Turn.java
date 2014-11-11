@@ -39,7 +39,9 @@ public class Turn implements ControlLaw, LCMSubscriber
 
         public void run(double dt)
         {
-            diff_drive_t dd = drive(dt);
+            DriveParams params = new DriveParams();
+            params.dt = dt;
+            diff_drive_t dd = drive(params);
 
             publishDiff(dd);
         }
@@ -70,8 +72,11 @@ public class Turn implements ControlLaw, LCMSubscriber
         }
     }
 
-    public diff_drive_t drive(double dt)
+    //public diff_drive_t drive(double dt)
+    public diff_drive_t drive(DriveParams params)
     {
+        double dt = params.dt;
+
         // Initialize diff drive with no movement
         diff_drive_t dd = new diff_drive_t();
         dd.left_enabled = dd.right_enabled = true;

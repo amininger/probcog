@@ -1,5 +1,6 @@
 package probcog.commands.controls;
 
+import april.lcmtypes.*;
 import probcog.lcmtypes.*;
 
 /** A container class holding possible inputs to a control law.
@@ -13,6 +14,7 @@ public class DriveParams
     public laser_t laser;
     public pose_t pose;
     public double dt;
+    public double heading;          // XXX
 
     public DriveParams()
     {
