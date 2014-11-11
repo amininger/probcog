@@ -49,8 +49,13 @@ public class MapViewer
                 //System.out.println(laser.rad0 + " " + laser.radstep);
                 //System.out.println(laser.nranges);
                 //LinAlg.print(laser.ranges);
-                followWall.init(laser);
-                probcog.lcmtypes.diff_drive_t pdd = followWall.drive(laser, dt);
+
+                //followWall.init(laser);
+                //probcog.lcmtypes.diff_drive_t pdd = followWall.drive(laser, dt);
+                DriveParams params = new DriveParams();
+                params.dt = dt;
+                params.laser = laser;
+                probcog.lcmtypes.diff_drive_t pdd = followWall.drive(params);
                 magic2.lcmtypes.diff_drive_t dd = new magic2.lcmtypes.diff_drive_t();
                 dd.left_enabled = pdd.left_enabled;
                 dd.left = pdd.left;

@@ -185,12 +185,17 @@ public class MonteCarloBot implements SimObject
             laser.rad0 = (float) rad0;
             laser.radstep = (float) radstep;
 
+            DriveParams params = new DriveParams();
+            params.dt = FastDrive.DT;
+            params.laser = laser;
+            params.pose = drive.poseOdom; // XXX
+
             diff_drive_t dd = new diff_drive_t();
             dd.utime = TimeUtil.utime();
             dd.left_enabled = dd.right_enabled = false;
             dd.left = dd.right = 0;
             // DRIVE UPDATE
-            if (law instanceof FollowWall) {
+            /*if (law instanceof FollowWall) {
                 FollowWall fw = (FollowWall)law;
                 fw.init(laser);
                 dd = fw.drive(laser, FastDrive.DT);
@@ -214,6 +219,25 @@ public class MonteCarloBot implements SimObject
             } else {
                 System.out.println("ERR: This type of control law is not supported");
                 assert (false);
+            }*/
+            if (law instanceof DriveTowardsTag) {
+                DriveTowardsTag dtt = (DriveTowardsTag)law;
+                HashSet<SimAprilTag> currentTags = getSeenTags();
+                for (SimAprilTag tag: currentTags) {
+                    if (dtt.getID() == tag.getID()) {
+                        double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
+                        double[] relXyzrpy = relativePose(getPose(), xyzrpy);
+                        ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+                        if (classies.size() < 1)
+                            continue;
+
+                        // XXX Handle non-existence of tag?
+                        params.classy = tc.classifyTag(tag.getID(), relXyzrpy).get(0);
+                        dd = dtt.drive(params);
+                    }
+                }
+            } else {
+                dd = law.drive(params);
             }
 
             currentUtime += FastDrive.DT*1000000;

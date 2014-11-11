@@ -39,16 +39,22 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         public void run(double dt)
         {
             synchronized (classyLock) {
-                classification_t classy = lastClassification.get();
+                DriveParams params = new DriveParams();
+                params.classy = lastClassification.get();
+                params.dt = dt;
 
-                diff_drive_t dd = drive(classy, dt);
+                diff_drive_t dd = drive(params);
                 lcm.publish("DIFF_DRIVE", dd);
             }
         }
     }
 
-    public diff_drive_t drive(classification_t classy, double dt)
+    //public diff_drive_t drive(classification_t classy, double dt)
+    public diff_drive_t drive(DriveParams params)
     {
+        classification_t classy = params.classy;
+        double dt = params.dt;
+
         diff_drive_t dd = new diff_drive_t();
         dd.utime = TimeUtil.utime();
         dd.left_enabled = dd.right_enabled = true;

@@ -104,7 +104,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (!oriented) {
             dd = orient(pose, targetHeading);
         } else {
-            dd = drive(laser, dt);
+            DriveParams params = new DriveParams();
+            params.dt = dt;
+            params.laser = laser;
+            dd = drive(params);
         }
 
         LCM.getSingleton().publish("DIFF_DRIVE", dd);
@@ -143,8 +146,15 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     // Publicly exposed diff drive fn (can be used repeatedly as if static obj)
     // after initialized once
-    public diff_drive_t drive(laser_t laser, double dt)
+    //public diff_drive_t drive(laser_t laser, double dt)
+    public diff_drive_t drive(DriveParams params)
     {
+        laser_t laser = params.laser;
+        double dt = params.dt;
+
+        if (startIdx < 0)
+            init(laser);
+
         double[] xAxis = new double[] {1.0, 0};
         double[] yAxis = new double[] {0, 1.0};
 

@@ -44,13 +44,13 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
     ExpiringMessageCache<laser_t> laserCache = new ExpiringMessageCache<laser_t>(0.2);
 
+    int startIdx = -1;
+    int midIdx = -1;
+    int finIdx = -1;
+    double meanOrientation = Double.MAX_VALUE;
+
     class UpdateTask implements PeriodicTasks.Task
     {
-        int startIdx = -1;
-        int midIdx = -1;
-        int finIdx = -1;
-        double meanOrientation = Double.MAX_VALUE;
-
         // XXX Debugging
         VisWorld vw;
         VisLayer vl;
@@ -70,133 +70,135 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             if (pose == null)
                 return;
 
-            if (meanOrientation == Double.MAX_VALUE)
-                init(laser, pose);
-
-            update(laser, pose, dt);
-        }
-
-        private void init(laser_t laser, pose_t pose)
-        {
-            meanOrientation = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
-
-            startIdx = MathUtil.clamp((int)((MIN_R_THETA-laser.rad0)/laser.radstep), 0, laser.nranges-1);
-            midIdx = MathUtil.clamp((int)((0-laser.rad0)/laser.radstep), 0, laser.nranges-1);
-            finIdx = MathUtil.clamp((int)((MAX_R_THETA-laser.rad0)/laser.radstep), 0, laser.nranges-1);
-        }
-
-        private void update(laser_t laser, pose_t pose, double dt)
-        {
-            diff_drive_t dd = new diff_drive_t();
-
-            dd = drive(laser, pose);
-
+            DriveParams params = new DriveParams();
+            params.laser = laser;
+            params.pose = pose;
+            params.dt = dt;
+            diff_drive_t dd = drive(params);
             LCM.getSingleton().publish("DIFF_DRIVE", dd);
         }
 
-        private diff_drive_t drive(laser_t laser, pose_t pose)
-        {
-            double currentOrientation = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
-            double w0 = (ORIENTATION_SAMPLES-1.0)/ORIENTATION_SAMPLES;
-            double w1 = 1.0 - w0;
-            meanOrientation = w0*meanOrientation + w1*MathUtil.mod2pi(meanOrientation, currentOrientation);
-            meanOrientation = MathUtil.mod2pi(meanOrientation);
+    }
 
-            // Find left and right ranges. This should help push us into the hall
-            // center
-            double rLeft = Double.MAX_VALUE;
-            double rRight = Double.MAX_VALUE;
-            for (int i = startIdx; i < finIdx; i++) {
-                // Handle error state
-                if (laser.ranges[i] < 0)
-                    continue;
+    private void init(laser_t laser, pose_t pose)
+    {
+        meanOrientation = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
 
-                // XXX This is a magical hand-calibration
-                if (laser.ranges[i] > 6.0)
-                    continue;
-                double t = laser.rad0+laser.radstep*i;
-                double w = Math.max(Math.abs(Math.sin(t)), 0.1); // XXX as is this
-                if (i < midIdx) {
-                    rRight = Math.min(w*laser.ranges[i], rRight);
-                } else {
-                    rLeft = Math.min(w*laser.ranges[i], rLeft);
-                }
-            }
+        startIdx = MathUtil.clamp((int)((MIN_R_THETA-laser.rad0)/laser.radstep), 0, laser.nranges-1);
+        midIdx = MathUtil.clamp((int)((0-laser.rad0)/laser.radstep), 0, laser.nranges-1);
+        finIdx = MathUtil.clamp((int)((MAX_R_THETA-laser.rad0)/laser.radstep), 0, laser.nranges-1);
+    }
 
-            // Locate the direction closest to being in front of us (without
-            // being behind us) that is free.
-            // (Later, we'll add some slight push back by walls to try to recenter)
-            int SAMPLES = (int)Math.ceil(THETA_SWEEP*2/laser.radstep);
-            LinkedList<Double> slidingRanges = new LinkedList<Double>();
-            int unsafe = 0;
-            double bestTheta = Double.MAX_VALUE;
-            double bestDiff = Double.MAX_VALUE;
-            for (int i = 0; i < laser.nranges; i++) {
-                // Handle error states
-                if (laser.ranges[i] < 0)
-                    continue;
+    //private diff_drive_t drive(laser_t laser, pose_t pose)
+    public diff_drive_t drive(DriveParams params)
+    {
+        laser_t laser = params.laser;
+        pose_t pose = params.pose;
+        double dt = params.dt;
 
-                double t = laser.rad0 + i*laser.radstep;
-                if (t < MIN_THETA || t > MAX_THETA)
-                    continue;
+        if (meanOrientation == Double.MAX_VALUE)
+            init(laser, pose);
 
-                // Measure how many points in our current window are
-                // unsafe. If there are any, this prevents us from
-                // forcing the robot in this direction
-                if (laser.ranges[i] < MIN_RANGE)
-                    unsafe++;
+        double currentOrientation = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
+        double w0 = (ORIENTATION_SAMPLES-1.0)/ORIENTATION_SAMPLES;
+        double w1 = 1.0 - w0;
+        meanOrientation = w0*meanOrientation + w1*MathUtil.mod2pi(meanOrientation, currentOrientation);
+        meanOrientation = MathUtil.mod2pi(meanOrientation);
 
-                slidingRanges.addLast((double)laser.ranges[i]);
-                if (slidingRanges.size() > SAMPLES) {
-                    double r = slidingRanges.removeFirst();
-                    if (r < MIN_RANGE)
-                        unsafe--;
-                }
-                if (slidingRanges.size() != SAMPLES)
-                    continue;
+        // Find left and right ranges. This should help push us into the hall
+        // center
+        double rLeft = Double.MAX_VALUE;
+        double rRight = Double.MAX_VALUE;
+        for (int i = startIdx; i < finIdx; i++) {
+            // Handle error state
+            if (laser.ranges[i] < 0)
+                continue;
 
-                // Map middle theta to global orientation
-                double middleTheta = laser.rad0 + (i-SAMPLES/2)*laser.radstep;
-                double actualTheta = MathUtil.mod2pi(middleTheta + currentOrientation);
-                double diff = Math.abs(MathUtil.mod2pi(meanOrientation, actualTheta) - meanOrientation);
-                if (unsafe == 0 && diff < bestDiff) {
-                    bestDiff = diff;
-                    bestTheta = middleTheta;
-                }
-            }
-
-            // Drive in that direction
-            diff_drive_t dd = new diff_drive_t();
-            dd.utime = TimeUtil.utime();
-            dd.left_enabled = dd.right_enabled = true;
-            dd.left = dd.right = 0;
-
-            if (bestTheta != Double.MAX_VALUE) {
-                if (bestTheta > 0) {
-                    dd.right = 1.0;
-                    dd.left = Math.cos(bestTheta);
-                } else {
-                    dd.left = 1.0;
-                    dd.right = Math.cos(bestTheta);
-                }
+            // XXX This is a magical hand-calibration
+            if (laser.ranges[i] > 6.0)
+                continue;
+            double t = laser.rad0+laser.radstep*i;
+            double w = Math.max(Math.abs(Math.sin(t)), 0.1); // XXX as is this
+            if (i < midIdx) {
+                rRight = Math.min(w*laser.ranges[i], rRight);
             } else {
-                return dd;
+                rLeft = Math.min(w*laser.ranges[i], rLeft);
             }
+        }
 
-            // Add in bias to drive down center (or just right of center) of hall
-            double rightPush = (WALL_RIGHT_CEIL - Math.min(WALL_RIGHT_CEIL, rRight))/WALL_RIGHT_CEIL;
-            double leftPush = (WALL_LEFT_CEIL - Math.min(WALL_LEFT_CEIL, rLeft))/WALL_LEFT_CEIL;
-            dd.right += WALL_WEIGHT*rightPush;
-            dd.left += WALL_WEIGHT*leftPush;
+        // Locate the direction closest to being in front of us (without
+        // being behind us) that is free.
+        // (Later, we'll add some slight push back by walls to try to recenter)
+        int SAMPLES = (int)Math.ceil(THETA_SWEEP*2/laser.radstep);
+        LinkedList<Double> slidingRanges = new LinkedList<Double>();
+        int unsafe = 0;
+        double bestTheta = Double.MAX_VALUE;
+        double bestDiff = Double.MAX_VALUE;
+        for (int i = 0; i < laser.nranges; i++) {
+            // Handle error states
+            if (laser.ranges[i] < 0)
+                continue;
 
-            // Normalize
-            double max = Math.max(Math.abs(dd.right), Math.abs(dd.left));
-            assert (max != 0);
-            dd.right /= max;
-            dd.left /= max;
+            double t = laser.rad0 + i*laser.radstep;
+            if (t < MIN_THETA || t > MAX_THETA)
+                continue;
 
+            // Measure how many points in our current window are
+            // unsafe. If there are any, this prevents us from
+            // forcing the robot in this direction
+            if (laser.ranges[i] < MIN_RANGE)
+                unsafe++;
+
+            slidingRanges.addLast((double)laser.ranges[i]);
+            if (slidingRanges.size() > SAMPLES) {
+                double r = slidingRanges.removeFirst();
+                if (r < MIN_RANGE)
+                    unsafe--;
+            }
+            if (slidingRanges.size() != SAMPLES)
+                continue;
+
+            // Map middle theta to global orientation
+            double middleTheta = laser.rad0 + (i-SAMPLES/2)*laser.radstep;
+            double actualTheta = MathUtil.mod2pi(middleTheta + currentOrientation);
+            double diff = Math.abs(MathUtil.mod2pi(meanOrientation, actualTheta) - meanOrientation);
+            if (unsafe == 0 && diff < bestDiff) {
+                bestDiff = diff;
+                bestTheta = middleTheta;
+            }
+        }
+
+        // Drive in that direction
+        diff_drive_t dd = new diff_drive_t();
+        dd.utime = TimeUtil.utime();
+        dd.left_enabled = dd.right_enabled = true;
+        dd.left = dd.right = 0;
+
+        if (bestTheta != Double.MAX_VALUE) {
+            if (bestTheta > 0) {
+                dd.right = 1.0;
+                dd.left = Math.cos(bestTheta);
+            } else {
+                dd.left = 1.0;
+                dd.right = Math.cos(bestTheta);
+            }
+        } else {
             return dd;
         }
+
+        // Add in bias to drive down center (or just right of center) of hall
+        double rightPush = (WALL_RIGHT_CEIL - Math.min(WALL_RIGHT_CEIL, rRight))/WALL_RIGHT_CEIL;
+        double leftPush = (WALL_LEFT_CEIL - Math.min(WALL_LEFT_CEIL, rLeft))/WALL_LEFT_CEIL;
+        dd.right += WALL_WEIGHT*rightPush;
+        dd.left += WALL_WEIGHT*leftPush;
+
+        // Normalize
+        double max = Math.max(Math.abs(dd.right), Math.abs(dd.left));
+        assert (max != 0);
+        dd.right /= max;
+        dd.left /= max;
+
+        return dd;
     }
 
     /** Strictly for use in parameter checking */
