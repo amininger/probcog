@@ -543,7 +543,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 ex.printStackTrace();
                 System.exit(1);
             }
-            ArrayList<Integer> hallways = new ArrayList(tc.getIDsForClass("hallway"));
+            ArrayList<Integer> hallways = new ArrayList(tc.getIDsForClass("goal"));
             assert (hallways.size() > 1);
 
             // XXX Assumes robot is already on or near tag 0
@@ -718,7 +718,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
             ArrayList<double[]> starts = null;
             for (Integer id: goalIDs) {
-                System.out.println("NFO: Wavefront pursuing tag "+id);
+                System.out.println("NFO: MonteCarlo pursuing tag "+id);
                 SimRobot robot = getRobot();
                 assert (robot != null);
 

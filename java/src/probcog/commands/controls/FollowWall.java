@@ -20,7 +20,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
     private static final double BACK_THETA = 16*Math.PI/36;
     private static final double FRONT_THETA = 6*Math.PI/36;
-    private static final double MAX_V = 0.5;
+    private static final double MAX_V = 0.6;
     private static final double MIN_V = 0.4;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);

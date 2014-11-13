@@ -29,7 +29,7 @@ import probcog.vis.*;
  **/
 public class MonteCarloPlanner
 {
-    private boolean debug = true;
+    private boolean debug = false;
     VisWorld vw;
     Stopwatch watch = new Stopwatch();
 
@@ -290,7 +290,7 @@ public class MonteCarloPlanner
         //double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
         double nodeScore = node.data.getBestScore(gm, wf, node.data.prob, depth);
         if (nodeScore > solnScore) {
-            System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
+            //System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
             return;
         }
 
@@ -299,7 +299,7 @@ public class MonteCarloPlanner
         double pct = node.data.getPctNearGoal(gm, wf, numSamples);
         double ARRIVAL_RATE_THRESH = 0.1;
         if (pct >= ARRIVAL_RATE_THRESH) {
-            System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+            //System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
 
             // Time to try out hard-coded last step of attacking the goal tag
             if (goalTag != null) {
@@ -339,7 +339,7 @@ public class MonteCarloPlanner
 
         // Don't search beyond our max depth.
         if (depth >= maxDepth) {
-            System.out.printf("--TOO DEEP--\n");
+            //System.out.printf("--TOO DEEP--\n");
             return;
         }
 
@@ -417,7 +417,7 @@ public class MonteCarloPlanner
             // all that many samples.
             double recScore = rec.getBestScore(gm, wf, rec.prob, depth+1);
             if (solnScore < recScore) {
-                System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
+                //System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
                 continue;
             }
 
@@ -427,8 +427,9 @@ public class MonteCarloPlanner
             for (int i = 0; i < numSamples; i++) {
                 Behavior.XYTPair pair = node.data.randomXYT();
                 mcb.init(rec.law, (ConditionTest)rec.test.copyCondition(), pair.xyt, pair.dist);
-                mcb.simulate(70.0); // XXX How to choose?
-                System.out.printf(".");
+                //mcb.simulate(70.0); // XXX How to choose?
+                mcb.simulate(300.0); // XXX
+                //System.out.printf(".");
                 if (vw != null) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
                     vb.setDrawOrder(-500);
@@ -442,7 +443,7 @@ public class MonteCarloPlanner
                     distances.add(mcb.getTrajectoryLength());
                 }
             }
-            System.out.printf("\n");
+            //System.out.printf("\n");
             if (xyts.size() < 1)
                 continue;
             Behavior behavior = new Behavior(xyts,

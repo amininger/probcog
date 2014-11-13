@@ -15,6 +15,9 @@ import probcog.commands.tests.*;
 // of states associated with executing this pair.
 public class Behavior
 {
+    // LAMBA should be selected such that you are willing to travel an extra
+    // LAMBA/100 meters to gain a 1% improvement in arrival rate.
+    static final double LAMBDA = 200.0;
     Random r = new Random();
 
     // Control state
@@ -151,12 +154,12 @@ public class Behavior
             int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
             double wfdist = (double)wavefront[iy*gm.width + ix];
 
-            //meanDistance += .95*dist + wfdist;
+            //meanDistance += 0.95*dist + wfdist;
             meanDistance += dist + wfdist;
         }
 
         meanDistance /= xyts.size();
-        behaviorScore = meanDistance - 50.0*(pct); // Not perfect, but interesting
+        behaviorScore = meanDistance - LAMBDA*(pct); // Not perfect, but interesting
         return behaviorScore;
     }
 
