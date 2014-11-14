@@ -31,9 +31,10 @@ import probcog.robot.control.*;
 
 public class PlanningGUI extends JFrame implements LCMSubscriber
 {
-    int NUM_TRIALS = 25;
+    int NUM_TRIALS = 100;
     boolean DEBUG = true;
     LCM lcm = LCM.getSingleton();
+    GetOpt opts;
 
     VisWorld vw;
     VisLayer vl;
@@ -52,6 +53,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         this.setSize(800, 600);
         this.setLayout(new BorderLayout());
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.opts = opts;
 
         vw = new VisWorld();
         vl = new VisLayer(vw);
@@ -412,6 +414,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
         Object statusLock = new Object();
         control_law_status_list_t lastStatus = null;
+        boolean statusMessageReceived = false;
 
         // Trial parameters
         ArrayList<Integer> goalIDs = new ArrayList<Integer>();
@@ -454,6 +457,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     control_law_status_list_t status = new control_law_status_list_t(ins);
                     synchronized (statusLock) {
                         lastStatus = status;
+                        statusMessageReceived = true;
                         statusLock.notifyAll();
                     }
                 } else if (channel.equals("POSE_TRUTH")) {
@@ -715,10 +719,14 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             foutPlan.writeComment("\t\txyt n-1");
 
 
-            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
+            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, opts.getBoolean("vis") ? vw : null);
             ArrayList<double[]> starts = null;
+            int count = 0;
             for (Integer id: goalIDs) {
                 System.out.println("NFO: MonteCarlo pursuing tag "+id);
+                System.out.println("NFO: This is run "+count);
+                count++;
+
                 SimRobot robot = getRobot();
                 assert (robot != null);
 
@@ -774,7 +782,16 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 }
 
                 for (Behavior b: behaviors) {
-                    issueCommand(b);
+                    synchronized (statusLock) {
+                        statusMessageReceived = false;
+                        do {
+                            issueCommand(b);
+                            try {
+                                statusLock.wait(100);
+                            } catch (InterruptedException ex) {}
+                        } while (!statusMessageReceived);
+                        commandID++;
+                    }
 
                     while (true) {
                         synchronized (statusLock) {
@@ -826,7 +843,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 assert (false);
             }
             cl.utime = TimeUtil.utime();
-            cl.id = commandID++;
+            cl.id = commandID;
 
             condition_test_t ct = null;
             if (b.test instanceof ClassificationCounterTest) {
@@ -877,6 +894,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
         opts.addInt('n', "num-trials", 100, "Number of trials");
+        opts.addBoolean('\0', "vis", false, "Use vis");
         //opts.addString('g', "graph", null, "Graph file");
         //opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
 

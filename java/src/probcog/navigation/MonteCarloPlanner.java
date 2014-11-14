@@ -209,14 +209,16 @@ public class MonteCarloPlanner
                 buf[i] = v;
             }
 
-            VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
-            vb.setDrawOrder(-1001);
-            vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
-                                    LinAlg.scale(gm.metersPerPixel),
-                                    new VzImage(new VisTexture(im,
-                                                               VisTexture.NO_MIN_FILTER |
-                                                               VisTexture.NO_MAG_FILTER))));
-            vb.swap();
+            if (vw != null) {
+                VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
+                vb.setDrawOrder(-1001);
+                vb.addBack(new VisChain(LinAlg.translate(gm.x0, gm.y0),
+                                        LinAlg.scale(gm.metersPerPixel),
+                                        new VzImage(new VisTexture(im,
+                                                                   VisTexture.NO_MIN_FILTER |
+                                                                   VisTexture.NO_MAG_FILTER))));
+                vb.swap();
+            }
         }
         Collections.sort(tags, new TagDistanceComparator(wf));
         watch.stop();
@@ -235,8 +237,10 @@ public class MonteCarloPlanner
 
         if (debug) {
             watch.print();
-            VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
-            vb.swap();
+            if (vw != null) {
+                VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
+                vb.swap();
+            }
         }
         return behaviors;
     }
