@@ -224,7 +224,8 @@ public class MonteCarloPlanner
         watch.stop();
 
         watch.start("DFS");
-        Node<Behavior> soln = dfsSearch(starts, goal);
+        //Node<Behavior> soln = dfsSearch(starts, goal);
+        Node<Behavior> soln = heapSearch(starts, goal);
         watch.stop();
 
         // Trace back behaviors to reach said node
@@ -243,6 +244,200 @@ public class MonteCarloPlanner
             }
         }
         return behaviors;
+    }
+
+    // XXX We want to minimize score, so return proper values
+    private class BNComparator implements Comparator<Node<Behavior> >
+    {
+        public int compare(Node<Behavior> a, Node<Behavior> b) {
+            // XXX Depth unused
+            double ascore = a.data.getBestScore(gm, wf, a.data.prob, 0);
+            double bscore = b.data.getBestScore(gm, wf, b.data.prob, 0);
+
+            if (ascore < bscore)
+                return -1;
+            else if (ascore > bscore)
+                return 1;
+            return 0;
+        }
+
+        public boolean equals(Object o)
+        {
+            return (o == this);
+        }
+    }
+
+    /** Perform a heap-based search of the space. Always pursue the most
+     *  promising candidate node.
+     **/
+    private PriorityQueue<Node<Behavior> > heap =
+        new PriorityQueue<Node<Behavior> >(10, new BNComparator());
+    public Node<Behavior> heapSearch(ArrayList<double[]> starts,
+                                     double goal[])
+    {
+        // Initialize search
+        ArrayList<Double> dists = new ArrayList<Double>();
+        for (double[] s: starts)
+            dists.add(0.0);
+
+        Node<Behavior> node = new Node<Behavior>(new Behavior(starts,
+                                                              dists,
+                                                              null,
+                                                              null));
+        heap.add(node);
+
+        // Reset state from last search
+        soln = null;
+        solnScore = Double.MAX_VALUE;
+
+        MonteCarloBot mcb;
+
+        // Keep expanding the top node until we pluck a node off the tree that
+        // ends at the goal. This is as good as we can expect to do, provided
+        // that our scoring heuristic is admissible and consistent
+        while (heap.size() > 0) {
+            node = heap.poll();
+
+            // If this is close to our goal, return it!
+            if (node.data.law instanceof DriveTowardsTag)
+                return node;
+
+
+            // Don't search TOO deep...
+            if (node.depth >= searchDepth)
+                continue;
+
+
+            // Minimum threshold for closeness to goal. Trigger "last instruction"
+            double pct = node.data.getPctNearGoal(gm, wf, numSamples);
+            double ARRIVAL_RATE_THRESH = 0.1;
+            if (pct >= ARRIVAL_RATE_THRESH) {
+                //System.out.printf("XXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+
+                // Time to try out hard-coded last step of attacking the goal tag
+                if (goalTag != null) {
+                    HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                    params.put("id", new TypedValue(goalTag.getID()));
+                    DriveTowardsTag dtt = new DriveTowardsTag(params);
+                    params.put("distance", new TypedValue(0.5));
+
+                    ArrayList<double[]> xyts = new ArrayList<double[]>();
+                    ArrayList<Double> distances = new ArrayList<Double>();
+
+                    mcb = new MonteCarloBot(sw);
+                    for (int i = 0; i < numSamples; i++) {
+                        Behavior.XYTPair pair = node.data.randomXYT();
+                        mcb.init(dtt, new NearTag(params), pair.xyt, pair.dist);
+                        mcb.simulate(10.0);
+                        if (vw != null) {
+                            VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
+                            vb.setDrawOrder(-500);
+                            vb.addBack(mcb.getVisObject());
+                            vb.swap();
+                        }
+                        // Find where we are and how much we've driven to get there
+                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                        distances.add(mcb.getTrajectoryLength());
+                    }
+
+                    Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, dtt, new NearTag(params)));
+                    heap.add(newNode);
+                }
+
+                //soln = node;
+                //solnScore = soln.data.getBestScore(gm, wf, numSamples, depth);
+                //solnScore = soln.data.getBestScore(gm, wf, soln.data.prob, depth);
+                continue;
+            }
+
+            // XXX How would we incorporate more laws?
+            // Expansion! Forward simulate to see what our possible control
+            // might do.
+            ArrayList<Behavior> recs = new ArrayList<Behavior>();
+            for (FollowWall law: controls) {
+                mcb = new MonteCarloBot(sw);
+                for (int i = 0; i < numExploreSamples; i++) {
+                    Behavior.XYTPair pair = node.data.randomXYT();
+                    mcb.init(law, null, pair.xyt, pair.dist);
+                    mcb.simulate(); // This will always timeout
+                }
+                for (Behavior rec: mcb.tagRecords.values())
+                    recs.add(rec);
+            }
+            // Special case: If we are at the first step of our plan, we also consider
+            // turning in place.
+            /*if (node.depth == 0) {
+                double[] yaws = new double[] {Math.PI/2, Math.PI, 3*Math.PI/2};
+                for (double yaw: yaws) {
+                    HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                    params.put("direction", new TypedValue((byte)1));  // Left turn in place
+                    params.put("yaw", new TypedValue(yaw));
+                    params.put("no-lcm", new TypedValue(0));
+                    HashMap<String, TypedValue> params2 = new HashMap<String, TypedValue>();
+                    params2.put("yaw", new TypedValue(yaw));
+                    params2.put("no-lcm", new TypedValue(0));
+
+                    ArrayList<double[]> xyts = new ArrayList<double[]>();
+                    dists = new ArrayList<Double>();
+                    mcb = new MonteCarloBot(sw);
+                    for (int i = 0; i < numExploreSamples; i++) {
+                        Turn turn = new Turn(params);
+                        RotationTest rt = new RotationTest(params2);
+                        Behavior.XYTPair pair = node.data.randomXYT();
+                        mcb.init(turn, rt, pair.xyt, pair.dist);
+                        mcb.simulate();
+                        // Only consider plans that actually "work"
+                        if (mcb.success()) {
+                            xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                            dists.add(mcb.getTrajectoryLength());
+                        }
+                    }
+
+                    recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
+                }
+            }*/
+
+            for (Behavior rec: recs) {
+                mcb = new MonteCarloBot(sw);
+                // Try multiple simulations to evaluate each possible step
+                ArrayList<double[]> xyts = new ArrayList<double[]>();
+                ArrayList<Double> distances = new ArrayList<Double>();
+                for (int i = 0; i < numSamples; i++) {
+                    Behavior.XYTPair pair = node.data.randomXYT();
+                    mcb.init(rec.law, (ConditionTest)rec.test.copyCondition(), pair.xyt, pair.dist);
+                    //mcb.simulate(70.0); // XXX How to choose?
+                    mcb.simulate(300.0); // XXX
+                    //System.out.printf(".");
+                    if (vw != null) {
+                        VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
+                        vb.setDrawOrder(-500);
+                        vb.addBack(mcb.getVisObject());
+                        vb.swap();
+                    }
+                    // Why do we only count success? Because
+                    if (mcb.success()) {
+                        // Find where we are and how much we've driven to get there
+                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                        distances.add(mcb.getTrajectoryLength());
+                    }
+                }
+                //System.out.printf("\n");
+                if (xyts.size() < 1)
+                    continue;
+                Behavior behavior = new Behavior(xyts,
+                                                 distances,
+                                                 rec.law,
+                                                 rec.test.copyCondition());
+                if (node.data != null)
+                    behavior.prob = node.data.prob;
+                behavior.prob *= rec.prob;
+                //Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
+                Node<Behavior> newNode = node.addChild(behavior);
+                heap.add(newNode);
+            }
+        }
+
+        return null;
     }
 
     /** Do a depth first search for the best set of laws to follow */

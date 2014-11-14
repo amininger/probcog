@@ -121,8 +121,8 @@ public class RenderData
             extractTrajectoryData(fin);
 
             ArrayList<TrajectoryType> types = new ArrayList<TrajectoryType>();
-            types.add(TrajectoryType.WAVEFRONT);
-            types.add(TrajectoryType.PERFECT);
+            //types.add(TrajectoryType.WAVEFRONT);
+            //types.add(TrajectoryType.PERFECT);
             types.add(TrajectoryType.MONTE_CARLO);
             for (TrajectoryType t: types) {
                 TrajectoryData data = tmap.get(t);
@@ -149,8 +149,8 @@ public class RenderData
         System.out.println("Parsing "+numTrials+" trials");
 
         ArrayList<TrajectoryType> types = new ArrayList<TrajectoryType>();
-        types.add(TrajectoryType.WAVEFRONT);
-        types.add(TrajectoryType.PERFECT);
+        //types.add(TrajectoryType.WAVEFRONT);
+        //types.add(TrajectoryType.PERFECT);
         types.add(TrajectoryType.MONTE_CARLO);
         // Outer loop: handle algorithms
         for (TrajectoryType type: types) {
@@ -180,7 +180,7 @@ public class RenderData
         VisCanvas vc = new VisCanvas(vl);
         jf.add(vc, BorderLayout.CENTER);
 
-        double mpp = 0.1;
+        double mpp = 0.5;
         int width = (int)(Math.ceil((data.range[1]-data.range[0])/mpp))+1;
         int height = (int)(Math.ceil((data.range[3]-data.range[2])/mpp))+1;
 

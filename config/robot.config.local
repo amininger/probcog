@@ -480,7 +480,7 @@ espeak {
 monte_carlo {
     // Search parameters
     iterative_deepening = false;
-    max_search_depth = 8;   // How should this be selected? This seems sufficient for CSE
+    max_search_depth = 10;   // How should this be selected? This seems sufficient for CSE
     num_exploration_samples = 1;
     num_evaluation_samples = 25;
 

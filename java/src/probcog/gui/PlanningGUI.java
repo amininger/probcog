@@ -283,13 +283,24 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             }
 
             SimRobot robot = getRobot();
+            double dist = Double.MAX_VALUE;
+            SimAprilTag tag = null;
+            for (SimObject so: simulator.getWorld().objects) {
+                if (!(so instanceof SimAprilTag))
+                    continue;
+                double d = LinAlg.distance(goal, LinAlg.matrixToXYT(so.getPose()), 2);
+                if (d < dist) {
+                    dist = d;
+                    tag = (SimAprilTag)so;
+                }
+            }
 
             System.out.println("TESTING MONTE CARLO METHOD");
             ArrayList<double[]> starts = new ArrayList<double[]>();
             starts.add(LinAlg.matrixToXYT(robot.getPose()));
 
             MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
-            ArrayList<Behavior> behaviors = mcp.plan(starts, goal);
+            ArrayList<Behavior> behaviors = mcp.plan(starts, goal, tag);
             if (behaviors.size() < 1) {
                 System.err.println("ERR: Did not find a valid set of behaviors");
                 return;
@@ -486,7 +497,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
             // Create a set of goals for our test.
             System.out.println("Initializing goals...");
-            Random r = new Random();
+            Random r = new Random(58972341);
             initGoals(r);
 
             // Find the sim robot and save pose for test reset
@@ -632,6 +643,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                                            new VzLines.Style(Color.yellow, 2)));
                     vb.swap();
                 }
+
                 synchronized (poseLock) {
                     collecting = true;
                 }
@@ -660,6 +672,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 LCM.getSingleton().publish("DIFF_DRIVE", dd);
 
                 recordTrajectory();
+
             }
 
             if (DEBUG) {
@@ -777,7 +790,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     System.out.println("ERR: Could not find a valid plan");
                 }
 
-                synchronized (poseLock) {
+                /*synchronized (poseLock) {
                     collecting = true;
                 }
 
@@ -817,7 +830,35 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     }
                 }
 
-                recordTrajectory();
+                recordTrajectory();*/
+
+                // Fast simulation hack XXX
+                MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+                //double[] xyt = LinAlg.matrixToXYT(robot.getPose());
+                bot.setPose(robot.getPose());
+                for (int i = 0; i < behaviors.size(); i++) {
+                    System.out.println(behaviors.get(i));
+                    bot.init(behaviors.get(i).law, behaviors.get(i).test);
+                    bot.simulate();
+                }
+                if (true) {
+                    VisWorld.Buffer vb = vw.getBuffer("debug-failure");
+                    vb.addBack(bot.getVisObject());
+                    vb.swap();
+                }
+
+                ArrayList<double[]> xys = bot.getTrajectoryTruth();
+                if (!bot.success()) {
+                    System.out.println("FAILURE");
+                }
+
+                fout.writeInt(xys.size());
+                for (double[] xy: xys)
+                    fout.writeDoubles(xy);
+                fout.flush();
+
+                robot.setPose(bot.getPose());
+
             }
 
             if (DEBUG) {

@@ -17,7 +17,8 @@ public class Behavior
 {
     // LAMBA should be selected such that you are willing to travel an extra
     // LAMBA/100 meters to gain a 1% improvement in arrival rate.
-    static final double LAMBDA = 200.0;
+    //static final double LAMBDA = 200.0;
+    static final double LAMBDA = 1000.0;
     Random r = new Random();
 
     // Control state
@@ -160,6 +161,7 @@ public class Behavior
 
         meanDistance /= xyts.size();
         behaviorScore = meanDistance - LAMBDA*(pct); // Not perfect, but interesting
+        //behaviorScore = -pct/(meanDistance+1.0);
         return behaviorScore;
     }
 
@@ -360,7 +362,7 @@ public class Behavior
 
     public String toString()
     {
-        return String.format("%s until %s\n", law.toString(), test.toString());
+        return String.format("(%f) %s until %s\n", prob, law.toString(), test.toString());
     }
 
     // XXX These only exist to support MonteCarloBot's hash table for class counting.

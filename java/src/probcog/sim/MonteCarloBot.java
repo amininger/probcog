@@ -222,7 +222,7 @@ public class MonteCarloBot implements SimObject
             }*/
             if (law instanceof DriveTowardsTag) {
                 DriveTowardsTag dtt = (DriveTowardsTag)law;
-                HashSet<SimAprilTag> currentTags = getSeenTags();
+                HashSet<SimAprilTag> currentTags = getSeenTags(2.5);
                 for (SimAprilTag tag: currentTags) {
                     if (dtt.getID() == tag.getID()) {
                         double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
@@ -405,9 +405,13 @@ public class MonteCarloBot implements SimObject
 
     public HashSet<SimAprilTag> getSeenTags()
     {
+        return getSeenTags(2.0);    // XXX
+    }
+
+    public HashSet<SimAprilTag> getSeenTags(double classificationRange)
+    {
         HashSet<SimAprilTag> seenTags = new HashSet<SimAprilTag>();
 
-        double classificationRange = 2;  // XXX Config
         for (SimObject so: sw.objects) {
             if (!(so instanceof SimAprilTag))
                 continue;
@@ -454,6 +458,11 @@ public class MonteCarloBot implements SimObject
         }
 
         return initialDistanceTraveled + length;
+    }
+
+    public ArrayList<double[]> getTrajectoryTruth()
+    {
+        return trajectoryTruth;
     }
 
     public double getOdomLength()
