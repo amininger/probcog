@@ -749,6 +749,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 if (starts == null) {
                     starts = new ArrayList<double[]>();
                     starts.add(LinAlg.matrixToXYT(robot.getPose()));
+                    System.out.println("NFO: Init starts");
                 }
 
                 double[] goalXY = LinAlg.matrixToXYT(tag.getPose());
@@ -785,7 +786,12 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 // we're trusting our simulation to keep us localized
                 // enough to navigate.
                 if (behaviors.size() > 0) {
-                    starts = behaviors.get(behaviors.size()-1).xyts;
+                    //starts = behaviors.get(behaviors.size()-1).xyts;
+                    starts = new ArrayList<double[]>();
+                    Behavior last = behaviors.get(behaviors.size()-1);
+                    for (double[] xyt: last.xyts) {
+                        starts.add(LinAlg.copy(xyt));
+                    }
                 } else {
                     System.out.println("ERR: Could not find a valid plan");
                 }
@@ -839,7 +845,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 for (int i = 0; i < behaviors.size(); i++) {
                     System.out.println(behaviors.get(i));
                     bot.init(behaviors.get(i).law, behaviors.get(i).test);
-                    bot.simulate();
+                    bot.simulate(300.0);
                 }
                 if (true) {
                     VisWorld.Buffer vb = vw.getBuffer("debug-failure");

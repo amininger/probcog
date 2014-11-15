@@ -1,5 +1,6 @@
 package probcog.navigation;
 
+import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
 import java.util.*;
@@ -224,8 +225,8 @@ public class MonteCarloPlanner
         watch.stop();
 
         watch.start("DFS");
-        //Node<Behavior> soln = dfsSearch(starts, goal);
-        Node<Behavior> soln = heapSearch(starts, goal);
+        Node<Behavior> soln = dfsSearch(starts, goal);
+        //Node<Behavior> soln = heapSearch(starts, goal);
         watch.stop();
 
         // Trace back behaviors to reach said node
@@ -280,6 +281,7 @@ public class MonteCarloPlanner
         for (double[] s: starts)
             dists.add(0.0);
 
+        heap.clear();
         Node<Behavior> node = new Node<Behavior>(new Behavior(starts,
                                                               dists,
                                                               null,
@@ -302,11 +304,9 @@ public class MonteCarloPlanner
             if (node.data.law instanceof DriveTowardsTag)
                 return node;
 
-
             // Don't search TOO deep...
             if (node.depth >= searchDepth)
                 continue;
-
 
             // Minimum threshold for closeness to goal. Trigger "last instruction"
             double pct = node.data.getPctNearGoal(gm, wf, numSamples);
@@ -340,7 +340,11 @@ public class MonteCarloPlanner
                         distances.add(mcb.getTrajectoryLength());
                     }
 
-                    Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, dtt, new NearTag(params)));
+                    //Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, dtt, new NearTag(params)));
+                    Behavior b = new Behavior(xyts, distances, dtt, new NearTag(params));
+                    if (node.data != null)
+                        b.prob = node.data.prob;
+                    Node<Behavior> newNode = node.addChild(b);
                     heap.add(newNode);
                 }
 
@@ -366,7 +370,7 @@ public class MonteCarloPlanner
             }
             // Special case: If we are at the first step of our plan, we also consider
             // turning in place.
-            /*if (node.depth == 0) {
+            if (node.depth == 0) {
                 double[] yaws = new double[] {Math.PI/2, Math.PI, 3*Math.PI/2};
                 for (double yaw: yaws) {
                     HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
@@ -395,7 +399,7 @@ public class MonteCarloPlanner
 
                     recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
                 }
-            }*/
+            }
 
             for (Behavior rec: recs) {
                 mcb = new MonteCarloBot(sw);
@@ -451,7 +455,6 @@ public class MonteCarloPlanner
         ArrayList<Double> dists = new ArrayList<Double>();
         for (double[] s: starts)
             dists.add(0.0);
-
         Tree<Behavior> tree = new Tree<Behavior>(new Behavior(starts,
                                                               dists,
                                                               null,
@@ -526,7 +529,10 @@ public class MonteCarloPlanner
                     distances.add(mcb.getTrajectoryLength());
                 }
 
-                Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, dtt, new NearTag(params)));
+                Behavior b = new Behavior(xyts, distances, dtt, new NearTag(params));
+                if (node.data != null)
+                    b.prob = node.data.prob;
+                Node<Behavior> newNode = node.addChild(b);
                 node = newNode;
             }
 
