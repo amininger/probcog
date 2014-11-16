@@ -225,8 +225,8 @@ public class MonteCarloPlanner
         watch.stop();
 
         watch.start("DFS");
-        Node<Behavior> soln = dfsSearch(starts, goal);
-        //Node<Behavior> soln = heapSearch(starts, goal);
+        //Node<Behavior> soln = dfsSearch(starts, goal);
+        Node<Behavior> soln = heapSearch(starts, goal);
         watch.stop();
 
         // Trace back behaviors to reach said node

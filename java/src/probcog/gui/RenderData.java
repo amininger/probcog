@@ -6,13 +6,19 @@ import javax.swing.*;
 import java.util.*;
 import java.io.*;
 
+import april.config.*;
 import april.jmat.*;
+import april.sim.*;
 import april.util.*;
 import april.vis.*;
 
 /** Used to process our data files */
 public class RenderData
 {
+    VisWorld vw;
+    VisLayer vl;
+    VisCanvas vc;
+
     int numTrials;
     HashMap<TrajectoryType, TrajectoryData> tmap = new HashMap<TrajectoryType, TrajectoryData>();
 
@@ -97,10 +103,26 @@ public class RenderData
 
     public RenderData(GetOpt opts)
     {
+        vw = new VisWorld();
+        vl = new VisLayer(vw);
+        vc = new VisCanvas(vl);
+
+        // Render the world view by loading in the sim
+        if (opts.getString("world") != null) {
+            try {
+                Config config = new Config();
+                SimWorld world = new SimWorld(opts.getString("world"), config);
+                Simulator sim = new Simulator(vw, vl, new VisConsole(vw, vl, vc), world);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+
         // Option 1: We are rending a trajectory
         if (opts.getString("trajectory") != null) {
             renderTrajectory(opts);
         }
+
     }
 
     private void renderTrajectory(GetOpt opts)
@@ -174,17 +196,13 @@ public class RenderData
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         jf.setLayout(new BorderLayout());
         jf.setSize(800, 600);
-
-        VisWorld vw = new VisWorld();
-        VisLayer vl = new VisLayer(vw);
-        VisCanvas vc = new VisCanvas(vl);
         jf.add(vc, BorderLayout.CENTER);
 
-        double mpp = 0.5;
+        double mpp = 1.0;
         int width = (int)(Math.ceil((data.range[1]-data.range[0])/mpp))+1;
         int height = (int)(Math.ceil((data.range[3]-data.range[2])/mpp))+1;
 
-        BufferedImage im = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        BufferedImage im = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         int[] buf = ((DataBufferInt)(im.getRaster().getDataBuffer())).getData();
 
         // Stats for rendering
@@ -256,16 +274,42 @@ public class RenderData
         ColorMapper cm = new ColorMapper(map, 0, maxHits);
         cm = cm.swapRedBlue();
         for (int i = 0; i < buf.length; i++) {
-            buf[i] = (cm.mapColor(buf[i])).getRGB();
+            int argb = (cm.mapColor(buf[i])).getRGB();
+            if ((argb & 0xffffff) > 0)
+                argb = 0x77000000 | (0xffffff & argb);
+            else
+                argb = 0xffffff & argb;
+            buf[i] = argb;
         }
 
         // XXX Texture to handle blurring
-        vw.getBuffer("image").addBack(new VisChain(LinAlg.scale(mpp),
+        vw.getBuffer("image").addBack(new VisChain(LinAlg.translate(data.range[0], data.range[2]-mpp/2),
+                                                   LinAlg.scale(mpp),
                                                    new VzImage(new VisTexture(im,
                                                                               VisTexture.NO_MIN_FILTER |
                                                                               VisTexture.NO_MAG_FILTER))));
 
         vw.getBuffer("image").swap();
+
+        cm = cm.swapRedBlue();
+        ArrayList<double[]> keylines = new ArrayList<double[]>();
+        VisColorData vcd = new VisColorData();
+        for (int i = 0; i < 1000; i++) {
+            int argb = (cm.mapColor(i/1000.0*maxHits)).getRGB();
+            if ((argb & 0xffffff) > 0)
+                argb = 0x77000000 | (0xffffff & argb);
+            else
+                argb = 0xffffff & argb;
+            vcd.add(argb);
+            vcd.add(argb);
+
+            keylines.add(new double[] {100, i/100.0});
+            keylines.add(new double[] {100+1, i/100.0});
+        }
+        vw.getBuffer("key").addBack(new VzLines(new VisVertexData(keylines),
+                                                VzLines.LINES,
+                                                new VzLines.Style(vcd,2)));
+        vw.getBuffer("key").swap();
 
         jf.setVisible(true);
     }
