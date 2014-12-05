@@ -288,6 +288,9 @@ public class SimKinectSensor implements Sensor
     		// Ray didn't hit anything
     		//pixels[i].point = new double[4];
     		return false;
+    	} else if(pixels[i].target instanceof SimFlatSurface){
+    		pixels[i].target = null;
+    		return false;
     	}
 
 		return true;
