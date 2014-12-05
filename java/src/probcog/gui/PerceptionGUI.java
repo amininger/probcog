@@ -4,13 +4,14 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+
 import javax.swing.*;
+
 import java.text.*;
 import java.util.*;
 import java.util.Timer;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
@@ -18,12 +19,12 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 import april.vis.VisCameraManager.CameraPosition;
-
 import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
+import probcog.perception.Tracker.TrackerSettings;
 import probcog.sensor.*;
 import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
@@ -123,15 +124,21 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         simulator = new ProbCogSimulator(opts, vw, vl, vc);
 
         // Initialize object tracker
-        tracker = new Tracker(config, opts.getBoolean("kinect"), opts.getBoolean("perfectseg"), simulator.getWorld());
-
-        // XXX Is this how we always want to do this?
-        // Spin up a virtual arm in sim world
-        if (opts.getBoolean("kinect")) {
-            // Raw kinect data view
-            // kinectView = new KinectView(config);
+        Tracker.TrackerSettings trackerSettings;
+        if(opts.getBoolean("kinect")){
+        	// Use a real kinect and full perception pipeline
+        	trackerSettings = new Tracker.TrackerSettings(true, true, true);
+        } else if(opts.getInt("simquality") == 0){
+        	// Poor sim quality, no simulated kinect, point clouds, or segmentation
+        	trackerSettings = new Tracker.TrackerSettings(false, false, false);
+        } else if(opts.getInt("simquality") == 1){
+        	// Ok sim quality, simulate kinect and point clouds, but no segmentation
+        	trackerSettings = new Tracker.TrackerSettings(false, false, true);
         } else {
+        	// Best sim quality, simulate kinect, point clouds, and full segmentation
+        	trackerSettings = new Tracker.TrackerSettings(false, true, true);
         }
+        tracker = new Tracker(config, trackerSettings, simulator.getWorld());
 
         if (opts.getBoolean("arm")) {
             ArmDriver driver = new ArmDriver(config);
@@ -300,12 +307,17 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         obs.nobs = obs.observations.length;
 
         ArrayList<Sensor> sensors = tracker.getSensors();
-        assert (sensors.size() > 0);
-        Sensor s = sensors.get(0);
-        CameraPosition camera = Util.getSensorPos(s);
-        obs.eye = camera.eye;
-        obs.lookat = camera.lookat;
-        obs.up = camera.up;
+        if(sensors.size() == 0){
+        	obs.eye = new double[]{ 0.6, 0.0, 1.0};
+        	obs.lookat = new double[]{ 0.0, 0.0, 0.0 };
+        	obs.up = new double[]{ -1.0, 0.0, 1.0 };
+        } else {
+        	Sensor s = sensors.get(0);
+        	CameraPosition camera = Util.getSensorPos(s);
+        	obs.eye = camera.eye;
+        	obs.lookat = camera.lookat;
+        	obs.up = camera.up;
+        }
 
         try{
         	lcm.publish("OBSERVATIONS",obs);
@@ -870,7 +882,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         opts.addBoolean('k', "kinect", false, "Use a physical kinect");
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
         opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
-        opts.addBoolean('p', "perfectseg", false, "If true, perfect segmentation is done in simulation");
+        opts.addInt('s', "simquality", 2, "2 = full simulation, 1 = no segmentation, 0 = no sim kinect");
         opts.addString('\0', "backup", null, "Load from backup file");
 
         if (!opts.parse(args)) {

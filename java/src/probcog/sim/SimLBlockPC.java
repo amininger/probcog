@@ -16,6 +16,7 @@ public class SimLBlockPC extends SimObjectPC{
 
 	public SimLBlockPC(SimWorld sw) {
 		super(sw);
+		this.lenxyz = new double[]{2, 3, 1};
 	}
 
 	@Override

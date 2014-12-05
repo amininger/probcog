@@ -78,7 +78,7 @@ public class KinectSegment implements Segmenter
      ** where the arm is expected to be.
      ** @return list of point clouds for each object segmented in the scene.
      **/
-    public ArrayList<Obj> getSegmentedObjects()
+    public synchronized ArrayList<Obj> getSegmentedObjects()
     {
         if (!kinect.stashFrame())
             return new ArrayList<Obj>();
@@ -89,28 +89,16 @@ public class KinectSegment implements Segmenter
         // Get points from camera
         long time = TimeUtil.utime();
         points = kinect.getAllXYZRGB(true);
-        if(Tracker.SHOW_TIMERS){
-        	System.out.println("      TRACING: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        }
         
         // Remove floor and arm points
         removeFloorAndArmPoints();
-        if(Tracker.SHOW_TIMERS){
-        	System.out.println("      REMOVE POINTS: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        }
         
         // Do a union find to do segmentation
         ArrayList<PointCloud> pointClouds = unionFind();
-        if(Tracker.SHOW_TIMERS){
-        	System.out.println("      SEGMENTATION: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        }
         
         ArrayList<Obj> segmentedObjects = new ArrayList<Obj>();
         for(PointCloud pc : pointClouds){
-        	segmentedObjects.add(new Obj(false, pc.removeTopPoints(0.05)));
+        	segmentedObjects.add(new Obj(pc.removeTopPoints(0.05)));
         }
         return segmentedObjects;
     }
@@ -151,7 +139,7 @@ public class KinectSegment implements Segmenter
 
     /** union find- for each pixel, compare with pixels around it and merge if
      ** they are close enough. **/
-    public ArrayList<PointCloud> unionFind()
+    private ArrayList<PointCloud> unionFind()
     {
         ArrayList<PointCloud> objects = new ArrayList<PointCloud>();
 

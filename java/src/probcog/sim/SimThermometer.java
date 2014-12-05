@@ -15,10 +15,10 @@ public class SimThermometer extends SimLocation implements ISimEffector{
 
 	@Override
 	public void checkObject(Obj obj) {
-		double[] diff = LinAlg.subtract(LinAlg.matrixToXyzrpy(T), obj.getPose());
-		double dx = Math.abs(diff[0]);
-		double dy = Math.abs(diff[1]);
-		if(dx < lwh[0]/2*scale && dy < lwh[1]/2*scale ){
+		double[] diff = LinAlg.subtract(obj.getPose(), xyzrpy);
+		double[] dims = getScaledDims();
+		if(Math.abs(diff[0]) < dims[0]/2 && Math.abs(diff[1]) < dims[1]/2 && diff[2] > dims[2]/2){
+			// Object is over center of thermometer, report its temperature
 			obj.addFeatures(FeatureCategory.TEMPERATURE, 
 					TemperatureFeatureExtractor.getFeatures(obj.getPointCloud()));
 		}

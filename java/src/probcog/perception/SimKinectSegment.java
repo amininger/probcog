@@ -40,7 +40,7 @@ public class SimKinectSegment implements Segmenter
     }
 
     
-    public ArrayList<Obj> getSegmentedObjects(){
+    public synchronized ArrayList<Obj> getSegmentedObjects(){
     	SimPixel[] pixels = kinect.getPixels(true);
 
     	HashMap<SimObject, PointCloud> pointClouds = new HashMap<SimObject, PointCloud>();  
@@ -62,7 +62,7 @@ public class SimKinectSegment implements Segmenter
     		if(entry.getValue().getPoints().size() == 0){
     			continue;
     		} 
-    		Obj obj = new Obj(false, entry.getValue());
+    		Obj obj = new Obj(entry.getValue());
     		obj.setSourceSimObject(entry.getKey());
     		segmentedObjs.add(obj);
     	}
