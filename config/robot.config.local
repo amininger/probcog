@@ -2,7 +2,7 @@
 
 //tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.config.real-cse";
 //tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.config.bigger";
-tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.hallworld";
+tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.hallworld3";
 
 proc_config = "procman/proc.config";
 
@@ -480,9 +480,9 @@ espeak {
 monte_carlo {
     // Search parameters
     iterative_deepening = false;
-    max_search_depth = 10;   // How should this be selected? This seems sufficient for CSE
+    max_search_depth = 6;   // How should this be selected? This seems sufficient for CSE
     num_exploration_samples = 1;
-    num_evaluation_samples = 25;
+    num_evaluation_samples = 100;
 
     start_search_depth = 3; // XXX Currently unused
 

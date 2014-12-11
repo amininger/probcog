@@ -316,12 +316,14 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             if (DEBUG) {
                 MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
                 //double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-                bot.setPose(robot.getPose());
-                for (int i = 0; i < behaviors.size(); i++) {
-                    System.out.println(behaviors.get(i));
-                    bot.init(behaviors.get(i).law, behaviors.get(i).test);
-                    bot.simulate();
-                }
+                do {
+                    bot.setPose(robot.getPose());
+                    for (int i = 0; i < behaviors.size(); i++) {
+                        System.out.println(behaviors.get(i));
+                        bot.init(behaviors.get(i).law, behaviors.get(i).test);
+                        bot.simulate();
+                    }
+                } while (!bot.success());
 
                 VisWorld.Buffer vb = vw.getBuffer("test-simulation");
                 vb.setDrawOrder(-900);
@@ -524,20 +526,20 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 //// Reset the robot pose
                 //System.out.println("Resetting...");
                 //robot.setPose(initialPose);
-
-                //// Then, try a perfect follower
-                //fout.writeComment("Perfect Wavefront Data");
-                //System.out.println("Trying perfect wavefront...");
-                //tryWavefront(false);
-
-                //// Reset the robot pose
-                //System.out.println("Resetting...");
-                //robot.setPose(initialPose);
-
+                //
                 // Then, try our planner
                 fout.writeComment("Monte Carlo Data");
                 System.out.println("Trying Monte Carlo...");
                 tryMonteCarlo();
+
+                //// Reset the robot pose
+                System.out.println("Resetting...");
+                robot.setPose(initialPose);
+
+                // Then, try a perfect follower
+                fout.writeComment("Perfect Wavefront Data");
+                System.out.println("Trying perfect wavefront...");
+                tryWavefront(false);
 
                 System.out.println("DONE!");
                 fout.close();
@@ -796,7 +798,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     System.out.println("ERR: Could not find a valid plan");
                 }
 
-                /*synchronized (poseLock) {
+                synchronized (poseLock) {
                     collecting = true;
                 }
 
@@ -836,10 +838,10 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     }
                 }
 
-                recordTrajectory();*/
+                recordTrajectory();
 
                 // Fast simulation hack XXX
-                MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+                /*MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
                 //double[] xyt = LinAlg.matrixToXYT(robot.getPose());
                 bot.setPose(robot.getPose());
                 for (int i = 0; i < behaviors.size(); i++) {
@@ -863,7 +865,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     fout.writeDoubles(xy);
                 fout.flush();
 
-                robot.setPose(bot.getPose());
+                robot.setPose(bot.getPose());*/
 
             }
 

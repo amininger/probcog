@@ -186,6 +186,7 @@ public class MonteCarloPlanner
                                     double[] goal,
                                     SimAprilTag optionalTargetTag)
     {
+        watch = new Stopwatch();
         goalTag = optionalTargetTag;
 
         watch.start("plan");
@@ -224,10 +225,12 @@ public class MonteCarloPlanner
         Collections.sort(tags, new TagDistanceComparator(wf));
         watch.stop();
 
-        watch.start("DFS");
+        watch.start("search");
         //Node<Behavior> soln = dfsSearch(starts, goal);
         Node<Behavior> soln = heapSearch(starts, goal);
         watch.stop();
+
+        System.out.println("NODES EXPANDED: "+nodesExpanded);
 
         // Trace back behaviors to reach said node
         while (soln != null && soln.parent != null) {
@@ -236,9 +239,12 @@ public class MonteCarloPlanner
         }
 
         Collections.reverse(behaviors);
+        Behavior last = behaviors.get(behaviors.size()-1);
+        System.out.printf("FINAL SCORE: %f\n", last.getBestScore(gm, wf, last.prob, 0));
 
+        watch.stop();
+        watch.print();
         if (debug) {
-            watch.print();
             if (vw != null) {
                 VisWorld.Buffer vb = vw.getBuffer("debug-wavefront");
                 vb.swap();
@@ -271,21 +277,25 @@ public class MonteCarloPlanner
     /** Perform a heap-based search of the space. Always pursue the most
      *  promising candidate node.
      **/
+    int nodesExpanded;
+    double penalty;
     private PriorityQueue<Node<Behavior> > heap =
         new PriorityQueue<Node<Behavior> >(10, new BNComparator());
     public Node<Behavior> heapSearch(ArrayList<double[]> starts,
                                      double goal[])
     {
+        nodesExpanded = 0;
+        penalty = 1.0;
+
+
         // Initialize search
         ArrayList<Double> dists = new ArrayList<Double>();
         for (double[] s: starts)
             dists.add(0.0);
 
         heap.clear();
-        Node<Behavior> node = new Node<Behavior>(new Behavior(starts,
-                                                              dists,
-                                                              null,
-                                                              null));
+        Behavior tb = new Behavior(starts, dists, null, null);
+        Node<Behavior> node = new Node<Behavior>(tb);
         heap.add(node);
 
         // Reset state from last search
@@ -299,6 +309,7 @@ public class MonteCarloPlanner
         // that our scoring heuristic is admissible and consistent
         while (heap.size() > 0) {
             node = heap.poll();
+            System.out.printf("SCORE: %f\n", node.data.getBestScore(gm, wf, node.data.prob, 0));
 
             // If this is close to our goal, return it!
             if (node.data.law instanceof DriveTowardsTag)
@@ -307,6 +318,7 @@ public class MonteCarloPlanner
             // Don't search TOO deep...
             if (node.depth >= searchDepth)
                 continue;
+
 
             // Minimum threshold for closeness to goal. Trigger "last instruction"
             double pct = node.data.getPctNearGoal(gm, wf, numSamples);
@@ -343,8 +355,10 @@ public class MonteCarloPlanner
                     //Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, dtt, new NearTag(params)));
                     Behavior b = new Behavior(xyts, distances, dtt, new NearTag(params));
                     if (node.data != null)
-                        b.prob = node.data.prob;
+                        b.prob = Math.min(pct, node.data.prob);
+                        //b.prob = node.data.prob;
                     Node<Behavior> newNode = node.addChild(b);
+                    System.out.printf("\tSCORE: %f\n", b.getBestScore(gm, wf, b.prob, 0));
                     heap.add(newNode);
                 }
 
@@ -354,6 +368,7 @@ public class MonteCarloPlanner
                 continue;
             }
 
+            watch.start("expansion");
             // XXX How would we incorporate more laws?
             // Expansion! Forward simulate to see what our possible control
             // might do.
@@ -397,10 +412,13 @@ public class MonteCarloPlanner
                         }
                     }
 
-                    recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
+                    // XXX TURN
+                    //recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
                 }
             }
+            watch.stop();
 
+            watch.start("simulation");
             for (Behavior rec: recs) {
                 mcb = new MonteCarloBot(sw);
                 // Try multiple simulations to evaluate each possible step
@@ -435,10 +453,13 @@ public class MonteCarloPlanner
                 if (node.data != null)
                     behavior.prob = node.data.prob;
                 behavior.prob *= rec.prob;
+                System.out.printf("\tSCORE: %f\n", behavior.getBestScore(gm, wf, behavior.prob, 0));
                 //Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
                 Node<Behavior> newNode = node.addChild(behavior);
                 heap.add(newNode);
+                nodesExpanded++;
             }
+            watch.stop();
         }
 
         return null;
@@ -450,6 +471,8 @@ public class MonteCarloPlanner
     private double solnScore;
     private Node<Behavior> dfsSearch(ArrayList<double[]> starts, double[] goal)
     {
+        nodesExpanded = 0;
+        penalty = 1.0;
         //double[] xyt = LinAlg.matrixToXYT(robot.getPose());
         //Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt, 0.0, null, null));
         ArrayList<Double> dists = new ArrayList<Double>();
@@ -490,9 +513,9 @@ public class MonteCarloPlanner
         MonteCarloBot mcb;
         // Prune out solutions that are worse than our best so far.
         //double nodeScore = node.data.getBestScore(gm, wf, numSamples, depth);
-        double nodeScore = node.data.getBestScore(gm, wf, node.data.prob, depth);
+        double nodeScore = node.data.getBestScore(gm, wf, node.data.prob, depth, penalty);
         if (nodeScore > solnScore) {
-            //System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
+            System.out.printf("--PRUNED: [%f < %f] --\n", solnScore, nodeScore);
             return;
         }
 
@@ -530,14 +553,17 @@ public class MonteCarloPlanner
                 }
 
                 Behavior b = new Behavior(xyts, distances, dtt, new NearTag(params));
-                if (node.data != null)
-                    b.prob = node.data.prob;
+                if (node.data != null) {
+                    b.prob = Math.min(pct, node.data.prob);
+                    //b.prob = node.data.prob;
+                }
                 Node<Behavior> newNode = node.addChild(b);
                 node = newNode;
             }
 
             soln = node;
             //solnScore = soln.data.getBestScore(gm, wf, numSamples, depth);
+            System.out.println(soln.data.prob);
             solnScore = soln.data.getBestScore(gm, wf, soln.data.prob, depth);
             return;
         }
@@ -557,6 +583,7 @@ public class MonteCarloPlanner
         // same obstacle! We want to keep track of all such possibilities, and
         // we'd like to be able to iterate through them later in order of which
         // ones are closest to our goal.
+        watch.start("expansion");
         ArrayList<Behavior> recs = new ArrayList<Behavior>();
         for (FollowWall law: controls) {
             mcb = new MonteCarloBot(sw);
@@ -598,9 +625,11 @@ public class MonteCarloPlanner
                     }
                 }
 
-                recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
+                // XXX
+                //recs.add(new Behavior(xyts, dists, new Turn(params), new RotationTest(params2)));
             }
         }
+        watch.stop();
 
         // Test our record/law pairs based on tag distance to goal
         // and (heuristic warning!) estimated distance traveled.
@@ -620,11 +649,12 @@ public class MonteCarloPlanner
             // simulating many branches.
             // This is probably NOT a great thing to do, since we don't have
             // all that many samples.
-            double recScore = rec.getBestScore(gm, wf, rec.prob, depth+1);
+            double recScore = rec.getBestScore(gm, wf, rec.prob, depth+1, penalty);
             if (solnScore < recScore) {
-                //System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
+                System.out.printf("--EARLY PRUNED: [%f < %f]--\n", solnScore, recScore);
                 continue;
             }
+            watch.start("simulation");
 
             // Try multiple simulations to evaluate the step
             ArrayList<double[]> xyts = new ArrayList<double[]>();
@@ -660,7 +690,9 @@ public class MonteCarloPlanner
             behavior.prob *= rec.prob;
             //Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
             Node<Behavior> newNode = node.addChild(behavior);
+            watch.stop();
 
+            nodesExpanded++;
             dfsHelper(newNode, goal, depth+1, maxDepth);
         }
 

@@ -64,6 +64,7 @@ public class MonteCarloBot implements SimObject
     {
         public int count = 0;
         public double prob = 1.0;
+        public double myprob = 1.0;
     }
 
     private HashMap<String, ClassificationCounterTest> testMap =
@@ -383,6 +384,8 @@ public class MonteCarloBot implements SimObject
             LabelCountRecord lcr = counts.get(label);
             lcr.count++;
             lcr.prob *= pct;
+            lcr.myprob = pct;
+            //System.out.printf("%s %d (%d): %f, %f\n", label, lcr.count, tag.getID(), lcr.prob, lcr.myprob);
 
             HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
             params.put("count", new TypedValue(lcr.count));
@@ -395,6 +398,7 @@ public class MonteCarloBot implements SimObject
             double[] xyt = LinAlg.matrixToXYT(getPose());
             Behavior rec = new Behavior(xyt, getTrajectoryLength(), law, cct);
             rec.prob = lcr.prob;
+            rec.myprob = lcr.myprob;
 
             // Before this, we had this set up so we could represent a distribution
             // of XYTS in the outcomes. Is losing that more harmful than good?

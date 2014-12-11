@@ -17,18 +17,19 @@ public class Behavior
 {
     // LAMBA should be selected such that you are willing to travel an extra
     // LAMBA/100 meters to gain a 1% improvement in arrival rate.
-    //static final double LAMBDA = 200.0;
-    static final double LAMBDA = 1000.0;
+    static final double LAMBDA = 100.0;
     Random r = new Random();
 
     // Control state
     public ControlLaw law;
     public ConditionTest test;
+    public HashSet<Integer> tagSet = new HashSet<Integer>();
 
     // The probability that this behavior will actually be executed correctly.
     // For counting-based behaviors, one would expect this to be our estimate of
     // the probability that we correctly identify every critical tag along the way
     public double prob = 1.0;
+    public double myprob = 1.0;
 
     // Bookkeeping for evaluating search.
     private double behaviorScore = Double.MAX_VALUE;
@@ -133,6 +134,11 @@ public class Behavior
         return getBestScore(gm, wavefront, maxClusterPct, depth);
     }
 
+    public double getBestScore(GridMap gm, float[] wavefront, double pct, int depth)
+    {
+        return getBestScore(gm, wavefront, pct, depth, 1.0);
+    }
+
     // Get the best possible score we could still achieve with this chain of
     // behaviors. This is some combination of our distribution of XYTS along with
     // the distance we likely traveled to arrive at that distribution. We prefer
@@ -142,7 +148,7 @@ public class Behavior
     //
     // The grid map and corresponding wavefront are used to evaluate best-case
     // distance to the goal from our current location.
-    public double getBestScore(GridMap gm, float[] wavefront, double pct, int depth)
+    public double getBestScore(GridMap gm, float[] wavefront, double pct, int depth, double penalty)
     {
         if (behaviorScore < Double.MAX_VALUE)
             return behaviorScore;
@@ -160,7 +166,7 @@ public class Behavior
         }
 
         meanDistance /= xyts.size();
-        behaviorScore = meanDistance - LAMBDA*(pct); // Not perfect, but interesting
+        behaviorScore = meanDistance - LAMBDA*(pct*penalty); // Not perfect, but interesting
         //behaviorScore = -pct/(meanDistance+1.0);
         return behaviorScore;
     }

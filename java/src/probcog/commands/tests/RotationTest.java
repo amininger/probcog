@@ -99,7 +99,6 @@ public class RotationTest implements ConditionTest, LCMSubscriber
     public boolean conditionMet()
     {
         synchronized (poseLock) {
-            //System.out.printf("%f >> %f\n", yaw, goalYaw);
             return yaw >= goalYaw;
         }
     }
