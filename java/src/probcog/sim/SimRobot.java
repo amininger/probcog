@@ -442,7 +442,12 @@ public class SimRobot implements SimObject, LCMSubscriber
 
     class ControlTask implements PeriodicTasks.Task
     {
-        Params params = Params.makeParams();
+        Params params;
+
+        public ControlTask()
+        {
+            params = Params.makeParams();
+        }
 
         public void run(double dt) {
             double[] mcmd = new double[2];
