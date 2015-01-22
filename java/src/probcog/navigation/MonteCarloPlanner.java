@@ -226,8 +226,8 @@ public class MonteCarloPlanner
         watch.stop();
 
         watch.start("search");
-        //Node<Behavior> soln = dfsSearch(starts, goal);
-        Node<Behavior> soln = heapSearch(starts, goal);
+        Node<Behavior> soln = dfsSearch(starts, goal);
+        //Node<Behavior> soln = heapSearch(starts, goal);
         watch.stop();
 
         System.out.println("NODES EXPANDED: "+nodesExpanded);
@@ -274,13 +274,114 @@ public class MonteCarloPlanner
         }
     }
 
-    /** Perform a heap-based search of the space. Always pursue the most
-     *  promising candidate node.
+    /** Add a DriveTowardsTag step when appropriate */
+    private void finishPlan(Node<Behavior> node,
+                            PriorityQueue<Node<Behavior> > heap,
+                            double pct)
+    {
+        if (goalTag != null) {
+            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+            params.put("id", new TypedValue(goalTag.getID()));
+            DriveTowardsTag dtt = new DriveTowardsTag(params);
+            params.put("distance", new TypedValue(0.5));
+
+            ArrayList<double[]> xyts = new ArrayList<double[]>();
+            ArrayList<Double> distances = new ArrayList<Double>();
+
+            MonteCarloBot mcb = new MonteCarloBot(sw);
+            for (int i = 0; i < numSamples; i++) {
+                Behavior.XYTPair pair = node.data.randomXYT();
+                mcb.init(dtt, new NearTag(params), pair.xyt, pair.dist);
+                mcb.simulate(10.0); // XXX Another magic number
+                if (vw != null) {
+                    VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
+                    vb.setDrawOrder(-500);
+                    vb.addBack(mcb.getVisObject());
+                    vb.swap();
+                }
+                // Find where we are and how much we've driven to get there
+                xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                distances.add(mcb.getTrajectoryLength());
+            }
+
+            Behavior b = new Behavior(xyts, distances, dtt, new NearTag(params));
+            // XXX Is this only possible because of our model?
+            if (node.data != null)
+                b.prob = Math.min(pct, node.data.prob);
+            Node<Behavior> newNode = node.addChild(b);
+            System.out.printf("\tSCORE: %f\n", b.getBestScore(gm, wf, b.prob, 0));
+            heap.add(newNode);
+        }
+    }
+
+
+    /** Perform a hybrid search combining both DFS and best-first search
+     *  strategies. Use DFS strategy to choose next node to expand, but BFS
+     *  to evaluate when it's time to backtrack instead of mindlessly pursuing
+     *  a bad avenue of search.
      **/
     int nodesExpanded;
     double penalty;
     private PriorityQueue<Node<Behavior> > heap =
         new PriorityQueue<Node<Behavior> >(10, new BNComparator());
+
+    public Node<Behavior> hybridSearch(ArrayList<double[]> starts,
+                                       double goal[])
+    {
+        // Initialize search
+        ArrayList<Double> dists = new ArrayList<Double>();
+        for (double[] s: starts)
+            dists.add(0.0);
+
+        heap.clear();
+        Node<Behavior> node = new Node<Behavior>(new Behavior(starts,
+                                                              dists,
+                                                              null,
+                                                              null));
+        heap.add(node);
+
+        // Reset state from last search
+        soln = null;
+        solnScore = Double.MAX_VALUE;
+
+        // Keep expanding the top node until we choose a node ending at the
+        // goal. This is as good as we can expect to do, provided that our
+        // scoring heuristic is admissible and consistent.
+        while (heap.size() > 0) {
+            node = heap.poll();
+
+            // If this is close to our goal, return it!
+            if (node.data.law instanceof DriveTowardsTag)
+                return node;
+
+            // Don't search TOO deep
+            if (node.depth >= searchDepth)
+                continue;
+
+            // Trigger DriveTowardsTag finishing step if we are
+            // sufficiently close to the goal.
+            // XXX We need to visit this condition step. How do we set this
+            // threshold? Why?
+            double pct = node.data.getPctNearGoal(gm, wf, numSamples);
+            double ARRIVAL_RATE_THRESH = 0.5; // XXX
+            if (pct >= ARRIVAL_RATE_THRESH) {
+                finishPlan(node, heap, pct);
+                continue;
+            }
+
+            // We're not done yet! Greedily pursue the next child in the
+            // pecking order of possible choices.
+            // XXX Bookkeeping gets weird here
+
+
+        }
+
+        return null;
+    }
+
+    /** Perform a heap-based search of the space. Always pursue the most
+     *  promising candidate node.
+     **/
     public Node<Behavior> heapSearch(ArrayList<double[]> starts,
                                      double goal[])
     {
