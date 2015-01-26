@@ -78,7 +78,7 @@ public class MonteCarloPlanner
         public boolean hasNextChild()
         {
             assert (futureChildren != null);
-            return nextChildIdx <= futureChildren.size();
+            return nextChildIdx < futureChildren.size();
         }
 
         public Behavior getNextChild()
@@ -337,8 +337,9 @@ public class MonteCarloPlanner
         watch.stop();
 
         watch.start("search");
-        Node<Behavior> soln = dfsSearch(starts, goal);
+        //Node<Behavior> soln = dfsSearch(starts, goal);
         //Node<Behavior> soln = heapSearch(starts, goal);
+        Node<Behavior> soln = hybridSearch(starts, goal);
         watch.stop();
 
         System.out.println("NODES EXPANDED: "+nodesExpanded);
@@ -597,7 +598,7 @@ public class MonteCarloPlanner
 
                 // Add to heap if non-null
                 if (b != null) {
-                    GreedySearchNode nextNode = new GreedySearchNode(new Node(b));
+                    GreedySearchNode nextNode = new GreedySearchNode(node.node.addChild(b));
                     gsnHeap.add(nextNode);
                 }
             }

@@ -262,9 +262,9 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     goal = LinAlg.resize(ray.intersectPlaneXY(), 2);
                     VisWorld.Buffer vb = world.getBuffer("goal");
                     vb.addBack(new VisChain(LinAlg.translate(goal),
-                                            new VzSphere(0.1, new VzMesh.Style(Color.yellow))));
+                                            LinAlg.scale(0.5),
+                                            new VzStar(new VzMesh.Style(Color.yellow))));
                     vb.swap();
-
                     return true;
                 }
             }
