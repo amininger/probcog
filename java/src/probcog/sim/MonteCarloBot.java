@@ -385,15 +385,16 @@ public class MonteCarloBot implements SimObject
             lcr.count++;
             lcr.prob *= pct;
             lcr.myprob = pct;
-            //System.out.printf("%s %d (%d): %f, %f\n", label, lcr.count, tag.getID(), lcr.prob, lcr.myprob);
+            // XXX This pct storage system is dependent on the underlying model,
+            // which breaks some of our black-box assumptions. We should remove
+            // it if we can, or at least determine whether or not we are
+            // comfortable treating all observations as IID.
 
             HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
             params.put("count", new TypedValue(lcr.count));
             params.put("class", new TypedValue(label));
             params.put("no-lcm", new TypedValue(0));
             ClassificationCounterTest cct = new ClassificationCounterTest(params);
-
-            //System.out.println("Tag "+tag.getID()+": "+label+" = "+lcr.count);
 
             double[] xyt = LinAlg.matrixToXYT(getPose());
             Behavior rec = new Behavior(xyt, getTrajectoryLength(), law, cct);

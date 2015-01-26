@@ -220,6 +220,7 @@ public class Behavior
         return mean /= xyts.size();
     }
 
+    // Returns a number in the range of [-sqrt(2), sqrt(2)]
     public double getMeanDirectionalBonus(GridMap gm, float[] wavefront)
     {
         if (xyts.size() < 1)
