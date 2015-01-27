@@ -142,6 +142,14 @@ public class MonteCarloPlanner
         }
     }
 
+    private class SpanningTreeChildComparator implements Comparator<Behavior>
+    {
+        public int compare(Behavior a, Behavior b)
+        {
+            return 0;   // Order does not matter, since we make them all
+        }
+    }
+
     // Used to order children for expansion in best-first search.
     private class GreedyChildComparator implements Comparator<Behavior>
     {
@@ -573,27 +581,12 @@ public class MonteCarloPlanner
         return null;
     }
 
-    private ArrayList<SimAprilTag> getOtherTags(int tagID)
-    {
-        ArrayList<SimAprilTag> otherTags = new ArrayList<SimAprilTag>();
-        for (SimObject so: sw.objects) {
-            if (!(so instanceof SimAprilTag))
-                continue;
-            SimAprilTag tag = (SimAprilTag)so;
-            if (tag.getID() != tagID)
-                otherTags.add(tag);
-        }
-
-        return otherTags;
-    }
-
     /** Build a spanning tree describing trajectories from the given to all
      *  others.
      **/
     public Tree<Behavior> buildSpanningTree(int tagID)
     {
         SimAprilTag tag = getTag(tagID);
-        ArrayList<SimAprilTag> otherTags = getOtherTags(tagID);
         assert (tag != null);
 
         double[] xyt_0 = LinAlg.matrixToXYT(tag.getPose());
@@ -612,20 +605,59 @@ public class MonteCarloPlanner
             new PriorityQueue<GreedySearchNode>(10, new SpanningTreeComparator());
         heap.add(new GreedySearchNode(tree.root));
 
-        Set<SimAprilTag> visitedTags = new HashSet<SimAprilTag>();
-        visitedTags.add(tag);
+        Set<Integer> visitedTags = new HashSet<Integer>();
+        visitedTags.add(tag.getID());
 
         while (heap.size() > 0) {
             GreedySearchNode gsn = heap.poll();
 
             // If node visits some tag on our visited list, continue. Otherwise,
-            // if it visits a tag we have NOT yet visited, add that to the list.
-            // NOTE: We need to be able to add finishing steps. I don't like our
-            // old "detect when near the goal" method, so now would be a good
-            // time to build something better. Like, I don't know, a notice
-            // that we should be stopping "at" our goal?
+            // if it visits a tag we have NOT yet visited, add it to the list
+            // and add the node to our tree. (Given the tight integration
+            // of Tree nodes with GSNs, tree management could be weird)
+            int currTagID = gsn.node.data.tagID;
+
+            // XXX Can we maintain such a visited list, after all? Maybe not,
+            // since visiting a tag from a new angle might be useful...try
+            // it for now and see.
+            if (visitedTags.contains(currTagID))
+                continue;
+            if (tagID >= 0) {
+                visitedTags.add(currTagID);
+            }
+
+            // Make sure this node makes it onto the tree. I suppose it's
+            // also possible that we can go around and clean up the leaves
+            // later...
+
+
+            // Next, generate the children for this node and toss them onto
+            // the heap. Only generate children that don't end at the closed
+            // list.
+            ArrayList<Behavior> behaviors = generateChildren(gsn.node);
+            gsn.addSortedChildren(behaviors, new SpanningTreeChildComparator());
+
+            while (gsn.hasNextChild()) {
+                Behavior next = gsn.getNextChild();
+                // XXX Is this a valid assumption? I bet coming back to an
+                // intersection makes it NOT so, since orientation matters.
+                // Trying it for now.
+                if (visitedTags.contains(next.tagID))
+                    continue;
+
+                // Simulation
+                Behavior b = simulateBehavior(next, gsn.node);
+                b.tagID = next.tagID;
+
+                if (b != null) {
+                    Node<Behavior> node = gsn.node.addChild(b); // XXX
+                    GreedySearchNode nextGSN = new GreedySearchNode(node);
+                    heap.add(nextGSN);
+                }
+            }
         }
 
+        // XXX NEED DEBUGGING VISUALIZATION
         return tree;
     }
     // ========================================================================
