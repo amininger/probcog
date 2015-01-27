@@ -423,6 +423,7 @@ public class MonteCarloBot implements SimObject
             Behavior rec = new Behavior(xyt, getTrajectoryLength(), law, cct);
             rec.prob = lcr.prob;
             rec.myprob = lcr.myprob;
+            rec.tagID = tag.getID();
 
             // Before this, we had this set up so we could represent a distribution
             // of XYTS in the outcomes. Is losing that more harmful than good?

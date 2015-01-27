@@ -24,6 +24,7 @@ public class Behavior
     public ControlLaw law;
     public ConditionTest test;
     public HashSet<Integer> tagSet = new HashSet<Integer>();
+    public int tagID = -1;  // Relevant tagID, if we're stopping at a landmark
 
     // The probability that this behavior will actually be executed correctly.
     // For counting-based behaviors, one would expect this to be our estimate of

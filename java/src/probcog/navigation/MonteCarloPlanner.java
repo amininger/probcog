@@ -88,6 +88,23 @@ public class MonteCarloPlanner
         }
     }
 
+    private class SpanningTreeComparator implements Comparator<GreedySearchNode>
+    {
+        public int compare(GreedySearchNode a, GreedySearchNode b)
+        {
+            // XXX Use of "prob" limits us, like DART, to only picking
+            // trajectories where things will happen as expected...
+            double ascore = a.node.data.getScoreSoFar(a.node.data.prob);
+            double bscore = b.node.data.getScoreSoFar(b.node.data.prob);
+
+            if (ascore < bscore)
+                return -1;
+            else if (ascore > bscore)
+                return 1;
+            return 0;
+        }
+    }
+
     private class GSNComparator implements Comparator<GreedySearchNode>
     {
         double EPSILON = 0.2;
@@ -219,49 +236,6 @@ public class MonteCarloPlanner
         }
     }
 
-    // XXX Someday, we won't need to use the sim world, perhaps
-    public MonteCarloPlanner(SimWorld sw, GridMap gm)
-    {
-        this(sw, gm, null);
-    }
-
-    /** Initialize the planner based on a simulated world.
-     *  It's assumed that there will only be one robot in this world.
-     **/
-    public MonteCarloPlanner(SimWorld sw, GridMap gm, VisWorld vw)
-    {
-        this.sw = sw;
-        this.gm = gm;
-        this.vw = vw;
-        for (SimObject so: sw.objects) {
-            if (so instanceof SimRobot)
-                robot = (SimRobot)so;
-            else if (so instanceof SimAprilTag)
-                tags.add((SimAprilTag)so);
-        }
-
-        assert (robot != null);
-
-        // Tag initialization. XXX Know what type each tag is, here?
-        try {
-            tagdb = new TagClassifier(false);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            System.exit(1);
-        }
-
-        // Initialize planning components
-        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-        params.put("side", new TypedValue((byte)-1));
-        params.put("distance", new TypedValue((double)0.85));
-        controls.add(new FollowWall(params));
-        params.put("side", new TypedValue((byte)1));
-        controls.add(new FollowWall(params));
-
-        // Initialize wavefront planner used for rough distance
-        this.wfp = new WavefrontPlanner(gm, 0.5);   // XXX
-    }
-
     private class TagDistanceComparator implements Comparator<SimAprilTag>
     {
         //double[] goal;
@@ -305,6 +279,51 @@ public class MonteCarloPlanner
             return (this == tdc);
         }
     }
+
+    // ========================================================================
+    // XXX Someday, we won't need to use the sim world, perhaps
+    public MonteCarloPlanner(SimWorld sw, GridMap gm)
+    {
+        this(sw, gm, null);
+    }
+
+    /** Initialize the planner based on a simulated world.
+     *  It's assumed that there will only be one robot in this world.
+     **/
+    public MonteCarloPlanner(SimWorld sw, GridMap gm, VisWorld vw)
+    {
+        this.sw = sw;
+        this.gm = gm;
+        this.vw = vw;
+        for (SimObject so: sw.objects) {
+            if (so instanceof SimRobot)
+                robot = (SimRobot)so;
+            else if (so instanceof SimAprilTag)
+                tags.add((SimAprilTag)so);
+        }
+
+        assert (robot != null);
+
+        // Tag initialization. XXX Know what type each tag is, here?
+        try {
+            tagdb = new TagClassifier(false);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            System.exit(1);
+        }
+
+        // Initialize planning components
+        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+        params.put("side", new TypedValue((byte)-1));
+        params.put("distance", new TypedValue((double)0.85));
+        controls.add(new FollowWall(params));
+        params.put("side", new TypedValue((byte)1));
+        controls.add(new FollowWall(params));
+
+        // Initialize wavefront planner used for rough distance
+        this.wfp = new WavefrontPlanner(gm, 0.5);   // XXX
+    }
+    // ========================================================================
 
     public ArrayList<Behavior> plan(ArrayList<double[]> starts,
                                     double[] goal)
@@ -388,43 +407,42 @@ public class MonteCarloPlanner
     }
 
     /** Add a DriveTowardsTag step when appropriate */
-    private void finishPlan(Node<Behavior> node,
-                            PriorityQueue<GreedySearchNode> heap,
-                            double pct)
+    private Node<Behavior> finishPlan(Node<Behavior> node,
+                                      SimAprilTag goalTag,
+                                      double pct)
     {
-        if (goalTag != null) {
-            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-            params.put("id", new TypedValue(goalTag.getID()));
-            DriveTowardsTag dtt = new DriveTowardsTag(params);
-            params.put("distance", new TypedValue(0.5));
+        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+        params.put("id", new TypedValue(goalTag.getID()));
+        DriveTowardsTag dtt = new DriveTowardsTag(params);
+        params.put("distance", new TypedValue(0.5));
 
-            ArrayList<double[]> xyts = new ArrayList<double[]>();
-            ArrayList<Double> distances = new ArrayList<Double>();
+        ArrayList<double[]> xyts = new ArrayList<double[]>();
+        ArrayList<Double> distances = new ArrayList<Double>();
 
-            MonteCarloBot mcb = new MonteCarloBot(sw);
-            for (int i = 0; i < numSamples; i++) {
-                Behavior.XYTPair pair = node.data.randomXYT();
-                mcb.init(dtt, new NearTag(params), pair.xyt, pair.dist);
-                mcb.simulate(10.0); // XXX Another magic number
-                if (vw != null) {
-                    VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
-                    vb.setDrawOrder(-500);
-                    vb.addBack(mcb.getVisObject());
-                    vb.swap();
-                }
-                // Find where we are and how much we've driven to get there
-                xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-                distances.add(mcb.getTrajectoryLength());
+        MonteCarloBot mcb = new MonteCarloBot(sw);
+        for (int i = 0; i < numSamples; i++) {
+            Behavior.XYTPair pair = node.data.randomXYT();
+            mcb.init(dtt, new NearTag(params), pair.xyt, pair.dist);
+            mcb.simulate(10.0); // XXX Another magic number
+            if (vw != null) {
+                VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
+                vb.setDrawOrder(-500);
+                vb.addBack(mcb.getVisObject());
+                vb.swap();
             }
-
-            Behavior b = new Behavior(xyts, distances, dtt, new NearTag(params));
-            // XXX Is this only possible because of our model?
-            if (node.data != null)
-                b.prob = Math.min(pct, node.data.prob);
-            Node<Behavior> newNode = node.addChild(b);
-            System.out.printf("\tSCORE: %f\n", b.getBestScore(gm, wf, b.prob, 0));
-            heap.add(new GreedySearchNode(newNode));
+            // Find where we are and how much we've driven to get there
+            xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+            distances.add(mcb.getTrajectoryLength());
         }
+
+        Behavior b = new Behavior(xyts, distances, dtt, new NearTag(params));
+        // XXX Is this only possible because of our model?
+        if (node.data != null)
+            b.prob = Math.min(pct, node.data.prob);
+        Node<Behavior> newNode = node.addChild(b);
+        System.out.printf("\tSCORE: %f\n", b.getBestScore(gm, wf, b.prob, 0));
+
+        return newNode;
     }
 
     // XXX Notable points of failure could be...
@@ -452,8 +470,9 @@ public class MonteCarloPlanner
                 mcb.init(law, null, pair.xyt, pair.dist);
                 mcb.simulate(); // This will always timeout
             }
-            for (Behavior rec: mcb.tagRecords.values())
+            for (Behavior rec: mcb.tagRecords.values()) {
                 recs.add(rec);
+            }
         }
 
         // Special case: we also consider turning in place at the beggining
@@ -531,13 +550,10 @@ public class MonteCarloPlanner
         if (node.data != null)
             behavior.prob = node.data.prob;
         behavior.prob *= b.prob;
+        behavior.tagID = node.data.tagID;   // COPY OVER TAG ID! Awful bookkeeping
         System.out.printf("\t%s SCORE: %f\n", behavior.law.toString(), behavior.getBestScore(gm, wf, behavior.prob, 0));
 
         return behavior;
-        //Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
-        //Node<Behavior> newNode = node.addChild(behavior);
-        //heap.add(newNode);
-        //nodesExpanded++;
     }
 
     // ========================================================================
@@ -557,6 +573,19 @@ public class MonteCarloPlanner
         return null;
     }
 
+    private ArrayList<SimAprilTag> getOtherTags(int tagID)
+    {
+        ArrayList<SimAprilTag> otherTags = new ArrayList<SimAprilTag>();
+        for (SimObject so: sw.objects) {
+            if (!(so instanceof SimAprilTag))
+                continue;
+            SimAprilTag tag = (SimAprilTag)so;
+            if (tag.getID() != tagID)
+                otherTags.add(tag);
+        }
+
+        return otherTags;
+    }
 
     /** Build a spanning tree describing trajectories from the given to all
      *  others.
@@ -564,6 +593,7 @@ public class MonteCarloPlanner
     public Tree<Behavior> buildSpanningTree(int tagID)
     {
         SimAprilTag tag = getTag(tagID);
+        ArrayList<SimAprilTag> otherTags = getOtherTags(tagID);
         assert (tag != null);
 
         double[] xyt_0 = LinAlg.matrixToXYT(tag.getPose());
@@ -578,7 +608,23 @@ public class MonteCarloPlanner
         // Find the best routes to all other locations simultaneously. Reward
         // a combination of distance traveled and arrival rate. Basically,
         // normal scoring without wavefront predictions
+        PriorityQueue<GreedySearchNode> heap =
+            new PriorityQueue<GreedySearchNode>(10, new SpanningTreeComparator());
+        heap.add(new GreedySearchNode(tree.root));
 
+        Set<SimAprilTag> visitedTags = new HashSet<SimAprilTag>();
+        visitedTags.add(tag);
+
+        while (heap.size() > 0) {
+            GreedySearchNode gsn = heap.poll();
+
+            // If node visits some tag on our visited list, continue. Otherwise,
+            // if it visits a tag we have NOT yet visited, add that to the list.
+            // NOTE: We need to be able to add finishing steps. I don't like our
+            // old "detect when near the goal" method, so now would be a good
+            // time to build something better. Like, I don't know, a notice
+            // that we should be stopping "at" our goal?
+        }
 
         return tree;
     }
@@ -637,8 +683,9 @@ public class MonteCarloPlanner
             // threshold? Why?
             double pct = node.node.data.getPctNearGoal(gm, wf, numSamples);
             double ARRIVAL_RATE_THRESH = 0.5; // XXX
-            if (pct >= ARRIVAL_RATE_THRESH) {
-                finishPlan(node.node, gsnHeap, pct);
+            //if (pct >= ARRIVAL_RATE_THRESH) {
+            if (node.node.data.tagID == goalTag.getID()) {
+                gsnHeap.add(new GreedySearchNode(finishPlan(node.node, goalTag, pct)));
                 continue;
             }
 
@@ -663,6 +710,7 @@ public class MonteCarloPlanner
 
                 // Simulation.
                 Behavior b = simulateBehavior(next, node.node);
+                b.tagID = next.tagID;
 
                 // Add to heap if non-null
                 if (b != null) {
