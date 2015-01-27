@@ -90,15 +90,32 @@ public class MonteCarloPlanner
 
     private class GSNComparator implements Comparator<GreedySearchNode>
     {
+        double EPSILON = 5.0;
+
         public int compare(GreedySearchNode a, GreedySearchNode b)
         {
             double ascore = a.node.data.getBestScore(gm, wf, a.node.data.prob, 0);
             double bscore = b.node.data.getBestScore(gm, wf, b.node.data.prob, 0);
 
-            if (ascore < bscore)
+            double adist = a.node.data.getMeanDistTraveled();
+            double bdist = b.node.data.getMeanDistTraveled();
+
+            double diff = Math.abs(ascore - bscore);
+
+            // If scores are sufficiently close, treat as equivalent and
+            // order in favor of actual distance traveled instead of
+            // estimated
+            if (diff < EPSILON) {
+                if (adist > bdist) {
+                    return -1;
+                } else if (adist < bdist) {
+                    return 1;
+                }
+            } else if (ascore < bscore) {
                 return -1;
-            else if (ascore > bscore)
+            } else if (ascore > bscore) {
                 return 1;
+            }
             return 0;
         }
     }

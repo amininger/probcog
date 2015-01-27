@@ -144,8 +144,6 @@ public class Behavior
     // the distance we likely traveled to arrive at that distribution. We prefer
     // to travel less and arrive more reliably. Note: lower scores are BETTER
     //
-    // XXX TODO: Balancing our needs in an understandable way, here
-    //
     // The grid map and corresponding wavefront are used to evaluate best-case
     // distance to the goal from our current location.
     public double getBestScore(GridMap gm, float[] wavefront, double pct, int depth, double penalty)
@@ -153,18 +151,9 @@ public class Behavior
         if (behaviorScore < Double.MAX_VALUE)
             return behaviorScore;
 
-        double meanDistance = 0;
-        for (int i = 0; i < xyts.size(); i++) {
-            double dist = distances.get(i);
-            double[] xyt = xyts.get(i);
-            int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
-            int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
-            double wfdist = (double)wavefront[iy*gm.width + ix];
+        double meanDistance = getMeanEstimatedDistance(gm, wavefront);
 
-            //meanDistance += 0.95*dist + wfdist;
-            meanDistance += dist + wfdist;
-        }
-
+        // XXX Penalty is always 0 here
         meanDistance /= xyts.size();
         behaviorScore = meanDistance - LAMBDA*(pct*penalty); // Not perfect, but interesting
         //behaviorScore = -pct/(meanDistance+1.0);
@@ -218,6 +207,17 @@ public class Behavior
         }
 
         return mean /= xyts.size();
+    }
+
+    public double getMeanEstimatedDistance(GridMap gm, float[] wavefront)
+    {
+        if (xyts.size() < 1)
+            return Double.MAX_VALUE;
+
+        double meanDist = getMeanDistTraveled();
+        double meanRemaining = getMeanDistToGoal(gm, wavefront);
+
+        return meanDist + meanRemaining;
     }
 
     // Returns a number in the range of [-sqrt(2), sqrt(2)]
