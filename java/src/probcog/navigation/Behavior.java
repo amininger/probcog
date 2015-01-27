@@ -17,7 +17,7 @@ public class Behavior
 {
     // LAMBA should be selected such that you are willing to travel an extra
     // LAMBA/100 meters to gain a 1% improvement in arrival rate.
-    static final double LAMBDA = 100.0;
+    static final double LAMBDA = 1000.0;
     Random r = new Random();
 
     // Control state

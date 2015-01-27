@@ -338,12 +338,30 @@ public class MonteCarloBot implements SimObject
         //System.out.printf("%f [s]\n", time);
     }
 
+    private void buildBehaviors(SimAprilTag tag)
+    {
+        buildBehaviors(tag, false);
+    }
+
     /** Take a list of classifications and our tag history to update our
      *  behavior list. Doesn't actually need any tag history, since that
      *  aspect of filtering is handled before this point.
+     *
+     *  @param tag  The tag observed and being converted to a landmark
+     *  @param repeatLandmarks  If true, allow things like "go until nth door" for n> 1
      **/
-    private void buildBehaviors(SimAprilTag tag)
+    private void buildBehaviors(SimAprilTag tag, boolean repeatLandmarks)
     {
+        // Handle tags that don't have labels OR are repeat landmarks. Note that
+        // in this updated version of the function, we ONLY consider the actual
+        // label of the tag, not the false label.
+        Set<String> tagClasses = tc.getClasses(tag.getID());
+        List<String> tagList = new ArrayList<String>(tagClasses);
+        if (tagClasses.size() < 1)
+            return;
+        if (!repeatLandmarks && counts.containsKey(tagList.get(0)))
+            return;
+
         int NUM_TAG_SAMPLES = 100000;
         double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
         double[] relXyzrpy = relativePose(getPose(), xyzrpy);
@@ -354,7 +372,12 @@ public class MonteCarloBot implements SimObject
                                                                   relXyzrpy);
             if (classies.size() < 1)
                 return;
+
+            // Count the number of times we successfully observe this tag. Only
+            // count observations of the ACTUAL label value
             String label = classies.get(0).name;
+            if (!tagClasses.contains(label))
+                continue;
             if (!labelCount.containsKey(label))
                 labelCount.put(label, 0);
             labelCount.put(label, labelCount.get(label)+1);

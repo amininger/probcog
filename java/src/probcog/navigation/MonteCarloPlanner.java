@@ -90,27 +90,32 @@ public class MonteCarloPlanner
 
     private class GSNComparator implements Comparator<GreedySearchNode>
     {
-        double EPSILON = 5.0;
+        double EPSILON = 0.2;
 
         public int compare(GreedySearchNode a, GreedySearchNode b)
         {
             double ascore = a.node.data.getBestScore(gm, wf, a.node.data.prob, 0);
             double bscore = b.node.data.getBestScore(gm, wf, b.node.data.prob, 0);
 
-            double adist = a.node.data.getMeanDistTraveled();
-            double bdist = b.node.data.getMeanDistTraveled();
+            double adist = a.node.data.getMeanDistToGoal(gm, wf);
+            double bdist = b.node.data.getMeanDistToGoal(gm, wf);
 
             double diff = Math.abs(ascore - bscore);
+            double maxDepth = Math.max(a.node.depth, b.node.depth);
 
             // If scores are sufficiently close, treat as equivalent and
             // order in favor of actual distance traveled instead of
             // estimated
-            if (diff < EPSILON) {
-                if (adist > bdist) {
+            if (diff < EPSILON*maxDepth) {
+                if (adist < bdist) {
                     return -1;
-                } else if (adist < bdist) {
+                } else if (adist > bdist) {
                     return 1;
                 }
+                //if (a.node.depth > b.node.depth)
+                //    return -1;
+                //else if (a.node.depth < b.node.depth)
+                //    return 1;
             } else if (ascore < bscore) {
                 return -1;
             } else if (ascore > bscore) {
@@ -524,7 +529,7 @@ public class MonteCarloPlanner
         if (node.data != null)
             behavior.prob = node.data.prob;
         behavior.prob *= b.prob;
-        System.out.printf("\tSCORE: %f\n", behavior.getBestScore(gm, wf, behavior.prob, 0));
+        System.out.printf("\t%s SCORE: %f\n", behavior.law.toString(), behavior.getBestScore(gm, wf, behavior.prob, 0));
 
         return behavior;
         //Node<Behavior> newNode = node.addChild(new Behavior(xyts, distances, rec.law, (ConditionTest)rec.test.copyCondition()));
