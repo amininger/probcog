@@ -34,7 +34,7 @@ public class MonteCarloPlanner
     VisWorld vw;
     Stopwatch watch = new Stopwatch();
 
-    // Search parameters XXX MOVE TO CONFIG
+    // Search parameters XXX MOVE TO CONFIG. Get rid of ROBOT_CONFIG bit?
     boolean iterativeDeepening = Util.getConfig().requireBoolean("monte_carlo.iterative_deepening");
     int searchDepth = Util.getConfig().requireInt("monte_carlo.max_search_depth");
     int numExploreSamples = Util.getConfig().requireInt("monte_carlo.num_exploration_samples");
@@ -446,6 +446,8 @@ public class MonteCarloPlanner
         for (FollowWall law: controls) {
             MonteCarloBot mcb = new MonteCarloBot(sw);
             for (int i = 0; i < numExploreSamples; i++) {
+                // XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX
+                // XXX This aspect could backfire. Random XYT with 1 sample?!
                 Behavior.XYTPair pair = node.data.randomXYT();
                 mcb.init(law, null, pair.xyt, pair.dist);
                 mcb.simulate(); // This will always timeout
@@ -537,6 +539,50 @@ public class MonteCarloPlanner
         //heap.add(newNode);
         //nodesExpanded++;
     }
+
+    // ========================================================================
+    // === Spanning Tree Building =============================================
+    // ========================================================================
+    /** Get a tag from the world */
+    private SimAprilTag getTag(int tagID)
+    {
+        for (SimObject so: sw.objects) {
+            if (!(so instanceof SimAprilTag))
+                continue;
+            SimAprilTag tag = (SimAprilTag)so;
+            if (tag.getID() == tagID)
+                return tag;
+        }
+
+        return null;
+    }
+
+
+    /** Build a spanning tree describing trajectories from the given to all
+     *  others.
+     **/
+    public Tree<Behavior> buildSpanningTree(int tagID)
+    {
+        SimAprilTag tag = getTag(tagID);
+        assert (tag != null);
+
+        double[] xyt_0 = LinAlg.matrixToXYT(tag.getPose());
+        xyt_0[2] = 0;
+
+        // Initialize the tree as if we were facing down the X-axis at the
+        // tag location. It is up to our search to escape efficiently.
+        // Is there a place for turn-in-place? I expect yes, and that we'll
+        // want that.
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt_0, 0, null, null));
+
+        // Find the best routes to all other locations simultaneously. Reward
+        // a combination of distance traveled and arrival rate. Basically,
+        // normal scoring without wavefront predictions
+
+
+        return tree;
+    }
+    // ========================================================================
 
 
     /** Perform a hybrid search combining both DFS and best-first search

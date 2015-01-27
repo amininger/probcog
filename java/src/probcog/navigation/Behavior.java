@@ -33,6 +33,7 @@ public class Behavior
 
     // Bookkeeping for evaluating search.
     private double behaviorScore = Double.MAX_VALUE;
+    private double scoreSoFar = Double.MAX_VALUE;
     public ArrayList<double[]> xyts = new ArrayList<double[]>();
     public ArrayList<Double> distances = new ArrayList<Double>();
     public class XYTPair
@@ -125,6 +126,24 @@ public class Behavior
         this.distances = distances;
     }
 
+    public double getScoreSoFar(int numSamples)
+    {
+        getClusters();
+        double maxClusterPct = (double)clusters.get(0).size()/(double)numSamples;
+        return getScoreSoFar(maxClusterPct);
+    }
+
+    public double getScoreSoFar(double pct)
+    {
+        if (scoreSoFar < Double.MAX_VALUE)
+            return scoreSoFar;
+
+        double meanDistance = getMeanDistTraveled();
+        scoreSoFar = meanDistance - LAMBDA*pct;
+
+        return scoreSoFar;
+    }
+
     public double getBestScore(GridMap gm, float[] wavefront, int numSamples, int depth)
     {
         // We (incorrectly) assert that we will never recover from being spread
@@ -154,7 +173,6 @@ public class Behavior
         double meanDistance = getMeanEstimatedDistance(gm, wavefront);
 
         // XXX Penalty is always 0 here
-        meanDistance /= xyts.size();
         behaviorScore = meanDistance - LAMBDA*(pct*penalty); // Not perfect, but interesting
         //behaviorScore = -pct/(meanDistance+1.0);
         return behaviorScore;
