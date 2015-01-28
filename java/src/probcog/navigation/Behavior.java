@@ -24,7 +24,13 @@ public class Behavior
     public ControlLaw law;
     public ConditionTest test;
     public HashSet<Integer> tagSet = new HashSet<Integer>();
-    public int tagID = -1;  // Relevant tagID, if we're stopping at a landmark
+
+    // Some internal state for enabling better tree/path generation.
+    // The ID lets us know what landmark we're supposed to be at, and the
+    // theoreticalXYT lets us know where we should have been when we saw it.
+    public int tagID = -1;
+    public double[] theoreticalXYT = new double[3];
+    public double theoreticalDistance = 0;
 
     // The probability that this behavior will actually be executed correctly.
     // For counting-based behaviors, one would expect this to be our estimate of
@@ -115,6 +121,8 @@ public class Behavior
         distances.add(distance);
         this.law = law;
         this.test = test;
+        this.theoreticalXYT = LinAlg.copy(xyt);
+        this.theoreticalDistance = distance;
     }
 
     public Behavior(ArrayList<double[]> xyts, ArrayList<Double> distances, ControlLaw law, ConditionTest test)
@@ -125,6 +133,10 @@ public class Behavior
         this.law = law;
         this.test = test;
         this.distances = distances;
+        if (xyts.size() > 0) {
+            this.theoreticalXYT = LinAlg.copy(xyts.get(0));
+            this.theoreticalDistance = distances.get(0);
+        }
     }
 
     public double getScoreSoFar(int numSamples)

@@ -472,10 +472,11 @@ public class MonteCarloPlanner
         for (FollowWall law: controls) {
             MonteCarloBot mcb = new MonteCarloBot(sw);
             for (int i = 0; i < numExploreSamples; i++) {
-                // XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX
-                // XXX This aspect could backfire. Random XYT with 1 sample?!
                 Behavior.XYTPair pair = node.data.randomXYT();
-                mcb.init(law, null, pair.xyt, pair.dist);
+                mcb.init(law,
+                         null,
+                         node.data.theoreticalXYT,
+                         node.data.theoreticalDistance);
                 mcb.simulate(); // This will always timeout
             }
             for (Behavior rec: mcb.tagRecords.values()) {
@@ -559,6 +560,7 @@ public class MonteCarloPlanner
             behavior.prob = node.data.prob;
         behavior.prob *= b.prob;
         behavior.tagID = node.data.tagID;   // COPY OVER TAG ID! Awful bookkeeping
+        behavior.theoreticalXYT = LinAlg.copy(b.getXYT().xyt);
         //System.out.printf("\t%s SCORE: %f\n", behavior.law.toString(), behavior.getBestScore(gm, wf, behavior.prob, 0));
 
         return behavior;
@@ -656,6 +658,14 @@ public class MonteCarloPlanner
                     heap.add(nextGSN);
                 }
             }
+        }
+
+        // Clean up non-terminal leaves
+        ArrayList<Node<Behavior> > leaves = tree.getLeaves();
+        for (Node<Behavior> leaf: leaves) {
+            if (leaf.data.law instanceof DriveTowardsTag)
+                continue;
+            leaf.parent.removeChild(leaf);
         }
 
         return tree;

@@ -8,6 +8,7 @@ import java.util.Formatter;
  */
 public class Tree<T>
 {
+    static int nodeID = 0;
     public Node<T> root;
 
     public Tree(T rootData)
@@ -22,6 +23,8 @@ public class Tree<T>
         public ArrayList<Node<T> > children = new ArrayList<Node<T> >();
         public int depth;
 
+        private int id;
+
         public Node(T data)
         {
             this(data, null);
@@ -32,6 +35,7 @@ public class Tree<T>
             this.data = data;
             this.parent = parent;
             this.depth = 0;
+            this.id = nodeID++;
         }
 
         public Node<T> addChild(T data)
@@ -40,6 +44,18 @@ public class Tree<T>
             n.depth = depth+1;
             children.add(n);
             return n;
+        }
+
+        public void removeChild(Node<T> child)
+        {
+            for (int i = 0; i < children.size(); i++) {
+                Node<T> n = children.get(i);
+                if (n.id == child.id) {
+                    children.remove(n);
+                    child.parent = null;
+                    return;
+                }
+            }
         }
 
         public String toString()
