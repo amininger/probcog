@@ -17,6 +17,7 @@ public class Behavior
 {
     // LAMBA should be selected such that you are willing to travel an extra
     // LAMBA/100 meters to gain a 1% improvement in arrival rate.
+    // XXX CONFIG
     static final double LAMBDA = 1000.0;
     Random r = new Random();
 
@@ -151,7 +152,7 @@ public class Behavior
         if (scoreSoFar < Double.MAX_VALUE)
             return scoreSoFar;
 
-        double meanDistance = getMeanDistTraveled();
+        double meanDistance = theoreticalDistance; //getMeanDistTraveled();
         scoreSoFar = meanDistance - LAMBDA*pct;
 
         return scoreSoFar;

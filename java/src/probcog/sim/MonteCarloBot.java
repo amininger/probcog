@@ -116,10 +116,20 @@ public class MonteCarloBot implements SimObject
      **/
     public void simulate()
     {
-        simulate(Util.getConfig().requireDouble("monte_carlo.default_forward_search_time"));
+        simulate(Util.getConfig().requireDouble("monte_carlo.default_forward_search_time"), false);
     }
 
     public void simulate(double seconds)
+    {
+        simulate(seconds, false);
+    }
+
+    public void simulate(boolean perfect)
+    {
+        simulate(Util.getConfig().requireDouble("monte_carlo.default_forward_search_time"), perfect);
+    }
+
+    public void simulate(double seconds, boolean perfect)
     {
         long currentUtime = TimeUtil.utime();
         simSinceReset++;
@@ -149,7 +159,7 @@ public class MonteCarloBot implements SimObject
         for (SimAprilTag tag: getSeenTags()) {
             double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
             double[] relXyzrpy = relativePose(getPose(), xyzrpy);
-            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy, perfect);
             if (classies.size() < 1)
                 continue;
             classification_t classy = classies.get(0);
@@ -173,12 +183,14 @@ public class MonteCarloBot implements SimObject
             // XXX This is where most of the low hanging fruit lies
             double ranges[] = Sensors.laser(sw, ignore, T_truth, (int) ((rad1-rad0)/radstep), rad0, radstep, maxRange);
 
-            double mean = 0;
-            double stddev = 0.01;   // Laser noise
-            for (int i = 0; i < ranges.length; i++) {
-                if (ranges[i] >= maxRange || ranges[i] < 0)
-                    continue;
-                ranges[i] = Math.min(maxRange, ranges[i]+r.nextGaussian()*stddev*ranges[i]);
+            if (!perfect) {
+                double mean = 0;
+                double stddev = 0.01;   // Laser noise
+                for (int i = 0; i < ranges.length; i++) {
+                    if (ranges[i] >= maxRange || ranges[i] < 0)
+                        continue;
+                    ranges[i] = Math.min(maxRange, ranges[i]+r.nextGaussian()*stddev*ranges[i]);
+                }
             }
 
             laser.nranges = ranges.length;
@@ -195,32 +207,7 @@ public class MonteCarloBot implements SimObject
             dd.utime = TimeUtil.utime();
             dd.left_enabled = dd.right_enabled = false;
             dd.left = dd.right = 0;
-            // DRIVE UPDATE
-            /*if (law instanceof FollowWall) {
-                FollowWall fw = (FollowWall)law;
-                fw.init(laser);
-                dd = fw.drive(laser, FastDrive.DT);
-            } else if (law instanceof DriveTowardsTag) {
-                DriveTowardsTag dtt = (DriveTowardsTag)law;
-                HashSet<SimAprilTag> currentTags = getSeenTags();
-                for (SimAprilTag tag: currentTags) {
-                    if (dtt.getID() == tag.getID()) {
-                        double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
-                        double[] relXyzrpy = relativePose(getPose(), xyzrpy);
-                        ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
-                        if (classies.size() < 1)
-                            continue;
 
-                        dd = dtt.drive(tc.classifyTag(tag.getID(), relXyzrpy).get(0), FastDrive.DT);
-                    }
-                }
-            } else if (law instanceof Turn) {
-                Turn turn = (Turn)law;
-                dd = turn.drive(FastDrive.DT);
-            } else {
-                System.out.println("ERR: This type of control law is not supported");
-                assert (false);
-            }*/
             if (law instanceof DriveTowardsTag) {
                 DriveTowardsTag dtt = (DriveTowardsTag)law;
                 HashSet<SimAprilTag> currentTags = getSeenTags(2.5);
@@ -286,7 +273,7 @@ public class MonteCarloBot implements SimObject
             for (SimAprilTag tag: seenTags) {
                 double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
                 double[] relXyzrpy = relativePose(getPose(), xyzrpy);
-                ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+                ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy, perfect);
 
                 if (classies.size() < 1)
                     continue;
@@ -317,7 +304,7 @@ public class MonteCarloBot implements SimObject
                         }
                     }
                 } else {
-                    buildBehaviors(tag);
+                    buildBehaviors(tag, perfect);
                 }
             }
 
@@ -338,9 +325,9 @@ public class MonteCarloBot implements SimObject
         //System.out.printf("%f [s]\n", time);
     }
 
-    private void buildBehaviors(SimAprilTag tag)
+    private void buildBehaviors(SimAprilTag tag, boolean perfect)
     {
-        buildBehaviors(tag, false);
+        buildBehaviors(tag, perfect, false);
     }
 
     /** Take a list of classifications and our tag history to update our
@@ -350,7 +337,7 @@ public class MonteCarloBot implements SimObject
      *  @param tag  The tag observed and being converted to a landmark
      *  @param repeatLandmarks  If true, allow things like "go until nth door" for n> 1
      **/
-    private void buildBehaviors(SimAprilTag tag, boolean repeatLandmarks)
+    private void buildBehaviors(SimAprilTag tag, boolean perfect, boolean repeatLandmarks)
     {
         // Handle tags that don't have labels OR are repeat landmarks. Note that
         // in this updated version of the function, we ONLY consider the actual
@@ -369,7 +356,8 @@ public class MonteCarloBot implements SimObject
         for (int i = 0; i < NUM_TAG_SAMPLES; i++) {
             // As done elsewhere, only use the first classy if it exists
             ArrayList<classification_t> classies = tc.classifyTag(tag.getID(),
-                                                                  relXyzrpy);
+                                                                  relXyzrpy,
+                                                                  perfect);
             if (classies.size() < 1)
                 return;
 
@@ -434,7 +422,7 @@ public class MonteCarloBot implements SimObject
 
     public HashSet<SimAprilTag> getSeenTags()
     {
-        return getSeenTags(2.0);    // XXX
+        return getSeenTags(2.0);    // XXX Config, and why this distance?
     }
 
     public HashSet<SimAprilTag> getSeenTags(double classificationRange)

@@ -382,16 +382,23 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     continue;
                 MonteCarloBot mcb = new MonteCarloBot(simulator.getWorld());
                 int retryCount = 100;
-                do {
-                    // XXX Random is no good. Want "perfect" execution
-                    Behavior.XYTPair pair = node.parent.data.randomXYT();
+                //do {
+                    //Behavior.XYTPair pair = node.parent.data.randomXYT();
                     mcb.init(node.data.law,
                              node.data.test,
-                             pair.xyt,
+                             node.parent.data.theoreticalXYT,
                              0);
-                    mcb.simulate();
-                    retryCount--;
-                } while (!mcb.success() && retryCount > 0);
+                    mcb.simulate(true);
+                    if (!mcb.success()) {
+                        System.out.printf("%s %s @ [%f %f %f]\n",
+                                          node.data.law,
+                                          node.data.test,
+                                          node.parent.data.theoreticalXYT[0],
+                                          node.parent.data.theoreticalXYT[1],
+                                          node.parent.data.theoreticalXYT[2]);
+                    }
+                //    retryCount--;
+                //} while (!mcb.success() && retryCount > 0);
                 Color c = colors.get((node.depth-1)%colors.size());
                 vb.addBack(mcb.getVisObject(c));
             }

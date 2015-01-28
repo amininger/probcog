@@ -429,8 +429,11 @@ public class MonteCarloPlanner
 
         MonteCarloBot mcb = new MonteCarloBot(sw);
         for (int i = 0; i < numSamples; i++) {
-            Behavior.XYTPair pair = node.data.randomXYT();
-            mcb.init(dtt, new NearTag(params), pair.xyt, pair.dist);
+            //Behavior.XYTPair pair = node.data.randomXYT();
+            mcb.init(dtt,
+                     new NearTag(params),
+                     node.data.theoreticalXYT,
+                     node.data.theoreticalDistance);
             mcb.simulate(10.0); // XXX Another magic number
             if (vw != null) {
                 VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
@@ -543,7 +546,7 @@ public class MonteCarloPlanner
                 vb.addBack(mcb.getVisObject());
                 vb.swap();
             }
-            // Why do we only count success? Because
+            // We only count success because ...?
             if (mcb.success()) {
                 // Find where we are and how much we've driven to get there
                 xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
@@ -561,6 +564,7 @@ public class MonteCarloPlanner
         behavior.prob *= b.prob;
         behavior.tagID = node.data.tagID;   // COPY OVER TAG ID! Awful bookkeeping
         behavior.theoreticalXYT = LinAlg.copy(b.getXYT().xyt);
+        behavior.theoreticalDistance = b.getXYT().dist;
         //System.out.printf("\t%s SCORE: %f\n", behavior.law.toString(), behavior.getBestScore(gm, wf, behavior.prob, 0));
 
         return behavior;

@@ -134,10 +134,15 @@ public class TagClassifier
         //return !label.equals("");   // Empty strings signify invisible tags
     }
 
+    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy)
+    {
+        return classifyTag(id, xyzrpy, false);
+    }
+
     /** Return a list of classifications for a tag of a given ID and xyzrpy
      *  relative to the robot
      **/
-    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy)
+    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy, boolean perfect)
     {
         ArrayList<classification_t> classies = new ArrayList<classification_t>();
         ArrayList<TagClass> tcs = idToTag.get(id);
@@ -145,6 +150,8 @@ public class TagClassifier
             return classies;    // No config entries
 
         double v = classifierRandom.nextDouble();
+        if (perfect)
+            v = 0.0;
 
         for (TagClass tc: tcs) {
             classification_t classy = new classification_t();
