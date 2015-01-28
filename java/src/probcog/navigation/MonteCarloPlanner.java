@@ -42,7 +42,7 @@ public class MonteCarloPlanner
 
     WavefrontPlanner wfp;
     GridMap gm;
-    float[] wf;
+    float[] wf = null;
 
     SimWorld sw;
     SimRobot robot = null;
@@ -415,9 +415,9 @@ public class MonteCarloPlanner
     }
 
     /** Add a DriveTowardsTag step when appropriate */
-    private Node<Behavior> finishPlan(Node<Behavior> node,
-                                      SimAprilTag goalTag,
-                                      double pct)
+    private Behavior finishPlan(Node<Behavior> node,
+                                SimAprilTag goalTag,
+                                double pct)
     {
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
         params.put("id", new TypedValue(goalTag.getID()));
@@ -447,10 +447,10 @@ public class MonteCarloPlanner
         // XXX Is this only possible because of our model?
         if (node.data != null)
             b.prob = Math.min(pct, node.data.prob);
-        Node<Behavior> newNode = node.addChild(b);
-        System.out.printf("\tSCORE: %f\n", b.getBestScore(gm, wf, b.prob, 0));
-
-        return newNode;
+        return b;
+        //Node<Behavior> newNode = node.addChild(b);
+        //System.out.printf("\tSCORE: %f\n", b.getBestScore(gm, wf, b.prob, 0));
+        //return newNode;
     }
 
     // XXX Notable points of failure could be...
@@ -559,7 +559,7 @@ public class MonteCarloPlanner
             behavior.prob = node.data.prob;
         behavior.prob *= b.prob;
         behavior.tagID = node.data.tagID;   // COPY OVER TAG ID! Awful bookkeeping
-        System.out.printf("\t%s SCORE: %f\n", behavior.law.toString(), behavior.getBestScore(gm, wf, behavior.prob, 0));
+        //System.out.printf("\t%s SCORE: %f\n", behavior.law.toString(), behavior.getBestScore(gm, wf, behavior.prob, 0));
 
         return behavior;
     }
@@ -622,14 +622,15 @@ public class MonteCarloPlanner
             // it for now and see.
             if (visitedTags.contains(currTagID))
                 continue;
-            if (tagID >= 0) {
+            if (currTagID >= 0) {
+                // We are at a new tag! Add a finishing step to the tree.
+                // Don't bother adding this to the heap
                 visitedTags.add(currTagID);
+                Behavior lastStep = finishPlan(gsn.node,
+                                               getTag(currTagID),
+                                               1.0);
+                gsn.node.addChild(lastStep);
             }
-
-            // Make sure this node makes it onto the tree. I suppose it's
-            // also possible that we can go around and clean up the leaves
-            // later...
-
 
             // Next, generate the children for this node and toss them onto
             // the heap. Only generate children that don't end at the closed
@@ -657,7 +658,6 @@ public class MonteCarloPlanner
             }
         }
 
-        // XXX NEED DEBUGGING VISUALIZATION
         return tree;
     }
     // ========================================================================
@@ -717,7 +717,9 @@ public class MonteCarloPlanner
             double ARRIVAL_RATE_THRESH = 0.5; // XXX
             //if (pct >= ARRIVAL_RATE_THRESH) {
             if (node.node.data.tagID == goalTag.getID()) {
-                gsnHeap.add(new GreedySearchNode(finishPlan(node.node, goalTag, pct)));
+                Behavior lastStep = finishPlan(node.node, goalTag, pct);
+                Node<Behavior> lastNode = node.node.addChild(lastStep);
+                gsnHeap.add(new GreedySearchNode(lastNode));
                 continue;
             }
 

@@ -245,6 +245,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 new WavefrontThread().start();
             if (e.getKeyCode() == KeyEvent.VK_Q)
                 new DataThread().start();
+            if (e.getKeyCode() == KeyEvent.VK_S)
+                new SpanningTreeThread().start();
 
             return false;
         }
@@ -338,6 +340,63 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 }
                 vb.swap();
             }
+        }
+    }
+
+    private class SpanningTreeThread extends Thread
+    {
+        public void run()
+        {
+            // Pick the tag
+            double dist = Double.MAX_VALUE;
+            SimAprilTag tag = null;
+            for (SimObject so: simulator.getWorld().objects) {
+                if (!(so instanceof SimAprilTag))
+                    continue;
+                double d = LinAlg.distance(goal, LinAlg.matrixToXYT(so.getPose()), 2);
+                if (d < dist) {
+                    dist = d;
+                    tag = (SimAprilTag)so;
+                }
+            }
+
+            if (tag == null) {
+                System.out.println("No tag selected.");
+                return;
+            }
+
+            System.out.println("Building tree from tag "+tag.getID());
+            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(),
+                                                          gm,
+                                                          vw);
+
+            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID());
+            System.out.println("Done! Built tree size "+tree.size());
+
+            // Render the tree...
+            java.util.List<Color> colors = Palette.diverging_brewer.listAll();
+            ArrayList<Tree.Node<Behavior> > nodes = tree.inOrderTraversal();
+            VisWorld.Buffer vb = vw.getBuffer("spanning-tree");
+            for (Tree.Node<Behavior> node: nodes) {
+                if (node.parent == null)
+                    continue;
+                MonteCarloBot mcb = new MonteCarloBot(simulator.getWorld());
+                int retryCount = 100;
+                do {
+                    // XXX Random is no good. Want "perfect" execution
+                    Behavior.XYTPair pair = node.parent.data.randomXYT();
+                    mcb.init(node.data.law,
+                             node.data.test,
+                             pair.xyt,
+                             0);
+                    mcb.simulate();
+                    retryCount--;
+                } while (!mcb.success() && retryCount > 0);
+                Color c = colors.get((node.depth-1)%colors.size());
+                vb.addBack(mcb.getVisObject(c));
+            }
+            vb.swap();
+
         }
     }
 

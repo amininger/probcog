@@ -2,7 +2,7 @@
 
 //tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.config.real-cse";
 //tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.config.bigger";
-tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.hallworld";
+tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.hallworld3";
 
 proc_config = "procman/proc.config";
 

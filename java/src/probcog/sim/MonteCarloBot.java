@@ -536,20 +536,30 @@ public class MonteCarloBot implements SimObject
     static Model4 model4 = new Model4(null, Color.blue, 0.5);
     public VisObject getVisObject()
     {
+        return getVisObject(null);
+    }
+
+    public VisObject getVisObject(Color c)
+    {
         VzLines.Style style;
-        if (success())
+        if (c != null)
+            style = new VzLines.Style(c, 2);
+        else if (success())
             style = new VzLines.Style(vcd, 2);
         else
             style = new VzLines.Style(Color.red, 2);
-        VisChain vc = new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
-                                               VzLines.LINE_STRIP,
-                                               style),
-                                   //new VzLines(new VisVertexData(trajectoryOdom),
-                                   //            VzLines.LINE_STRIP,
-                                   //            new VzLines.Style(Color.red, 2)),
-                                   getPose(),
-                                   model4);
-        return vc;
+
+        if (c != null) {
+            return new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
+                                            VzLines.LINE_STRIP,
+                                            style));
+        } else {
+            return new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
+                                            VzLines.LINE_STRIP,
+                                            style),
+                                getPose(),
+                                model4);
+        }
     }
 
     public void read(StructureReader ins) throws IOException
