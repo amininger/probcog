@@ -399,7 +399,10 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     }
                 //    retryCount--;
                 //} while (!mcb.success() && retryCount > 0);
-                Color c = colors.get((node.depth-1)%colors.size());
+                int k0 = ((node.depth-1)/colors.size())%2;
+                int k1 = (node.depth-1)%colors.size();
+                int cidx = k0*(colors.size()-1) + (k0 == 0 ? 1:-1)*(k1);
+                Color c = colors.get(cidx);
                 vb.addBack(mcb.getVisObject(c));
             }
             vb.swap();

@@ -480,7 +480,7 @@ public class MonteCarloPlanner
                          null,
                          node.data.theoreticalXYT,
                          node.data.theoreticalDistance);
-                mcb.simulate(); // This will always timeout
+                mcb.simulate(); // This will always timeout.
             }
             for (Behavior rec: mcb.tagRecords.values()) {
                 recs.add(rec);
@@ -559,6 +559,7 @@ public class MonteCarloPlanner
                                          distances,
                                          b.law,
                                          b.test.copyCondition());
+        // XXX So do we even USE our sample points due to this?
         if (node.data != null)
             behavior.prob = node.data.prob;
         behavior.prob *= b.prob;
@@ -603,6 +604,8 @@ public class MonteCarloPlanner
      **/
     public Tree<Behavior> buildSpanningTree(int tagID, long timeout_us)
     {
+        watch = new Stopwatch();
+        watch.start("spanning-tree");
         long start_utime = TimeUtil.utime();
         SimAprilTag tag = getTag(tagID);
         assert (tag != null);
@@ -653,9 +656,12 @@ public class MonteCarloPlanner
             // Next, generate the children for this node and toss them onto
             // the heap. Only generate children that don't end at the closed
             // list.
+            watch.start("generate-children");
             ArrayList<Behavior> behaviors = generateChildren(gsn.node);
             gsn.addSortedChildren(behaviors, new SpanningTreeChildComparator());
+            watch.stop();
 
+            watch.start("simulate-children");
             while (gsn.hasNextChild()) {
                 Behavior next = gsn.getNextChild();
                 // XXX Is this a valid assumption? I bet coming back to an
@@ -674,6 +680,7 @@ public class MonteCarloPlanner
                     heap.add(nextGSN);
                 }
             }
+            watch.stop();
         }
 
         // Clean up non-terminal leaves
@@ -684,6 +691,8 @@ public class MonteCarloPlanner
             leaf.parent.removeChild(leaf);
         }
 
+        watch.stop();
+        watch.print();
         return tree;
     }
     // ========================================================================

@@ -482,7 +482,7 @@ monte_carlo {
     iterative_deepening = false;
     max_search_depth = 20;   // How should this be selected? This seems sufficient for CSE
     num_exploration_samples = 1;
-    num_evaluation_samples = 100;
+    num_evaluation_samples = 1;  // XXX ? ? ? ? ? ?
 
     start_search_depth = 3; // XXX Currently unused
 
