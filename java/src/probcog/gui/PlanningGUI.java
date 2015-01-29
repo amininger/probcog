@@ -368,7 +368,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             System.out.println("Building tree from tag "+tag.getID());
             MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(),
                                                           gm,
-                                                          vw);
+                                                          null);
 
             Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID());
             System.out.println("Done! Built tree size "+tree.size());

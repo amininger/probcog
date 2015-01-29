@@ -587,11 +587,23 @@ public class MonteCarloPlanner
         return null;
     }
 
-    /** Build a spanning tree describing trajectories from the given to all
-     *  others.
-     **/
     public Tree<Behavior> buildSpanningTree(int tagID)
     {
+        // By default, just run forever
+        return buildSpanningTree(tagID, Long.MAX_VALUE);
+    }
+
+    /** Build a spanning tree describing trajectories from the given to all
+     *  others.
+     *
+     *  @param tagID        ID of tag to build from
+     *  @param timeout_us   Amount of time to spend building tree.
+     *
+     *  @return A spanning tree of the best routes to each goal
+     **/
+    public Tree<Behavior> buildSpanningTree(int tagID, long timeout_us)
+    {
+        long start_utime = TimeUtil.utime();
         SimAprilTag tag = getTag(tagID);
         assert (tag != null);
 
@@ -614,7 +626,7 @@ public class MonteCarloPlanner
         Set<Integer> visitedTags = new HashSet<Integer>();
         visitedTags.add(tag.getID());
 
-        while (heap.size() > 0) {
+        while (heap.size() > 0 && (TimeUtil.utime() - start_utime) < timeout_us) {
             GreedySearchNode gsn = heap.poll();
 
             // If node visits some tag on our visited list, continue. Otherwise,
