@@ -429,6 +429,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         {
             HashMap<Integer, Tree<Behavior> > trees =
                 TreeUtil.makeTrees(simulator.getWorld(), gm, vw);
+            TreeUtil.hist(trees);
         }
     }
 
@@ -463,7 +464,6 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             System.out.println("Done! Built tree size "+tree.size());
 
             TreeUtil.renderTree(tree, simulator.getWorld(), vw.getBuffer("spanning-tree"));
-
         }
     }
 

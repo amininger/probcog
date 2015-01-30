@@ -8,7 +8,9 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 
+import probcog.commands.controls.*;
 import probcog.util.*;
+import probcog.util.Tree.Node;
 import probcog.sim.*;
 
 /** Used to interact with behavior trees in general ways.
@@ -74,6 +76,7 @@ public class TreeUtil
         vb.swap();
     }
 
+    /** Build all of the trees for the landmarks in the given world */
     static public HashMap<Integer, Tree<Behavior> > makeTrees(SimWorld sw, GridMap gm, VisWorld vw)
     {
         MonteCarloPlanner mcp = new MonteCarloPlanner(sw, gm, null);
@@ -94,5 +97,42 @@ public class TreeUtil
         }
 
         return trees;
+    }
+
+    /** Give a set of trees (presumably for one world), build a histogram of
+     *  behavioral outcomes referencing the appropriate behaviors.
+     **/
+    static public void hist(HashMap<Integer, Tree<Behavior> > trees)
+    {
+        // Group by ending condition, then by control law. Want to be able to
+        // sort on the number of "same control law" conditions we encounter.
+        // There are two potential ways we'll end up being interested in this.
+        // 1) Trajectories with similar end states, i.e. XYT.
+        //  a) This might just mean basically identical...
+        //  b) ...or it might mean close enough to follow the same result funnels
+        // 2) Trajectories that end at the same location via the same behavior
+        //  a) These seem less useful for a simplifying structure
+
+        // First pass: count hits at each landmark
+        HashMap<Integer, Integer> hits = new HashMap<Integer, Integer>();
+        for (Integer key: trees.keySet()) {
+            Tree<Behavior> tree = trees.get(key);
+            ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
+            for (Node<Behavior> node: nodes) {
+                if (!(node.data.law instanceof FollowWall))
+                    continue;
+                if (node.data.tagID < 0)
+                    continue;
+                if (!hits.containsKey(node.data.tagID))
+                    hits.put(node.data.tagID, 0);
+                hits.put(node.data.tagID, hits.get(node.data.tagID)+node.children.size());
+            }
+        }
+
+        // End Analysis
+        System.out.println();
+        for (Integer key: hits.keySet()) {
+            System.out.printf("Tag %d: %d\n", key, hits.get(key));
+        }
     }
 }
