@@ -36,8 +36,8 @@ public class Behavior
     // The probability that this behavior will actually be executed correctly.
     // For counting-based behaviors, one would expect this to be our estimate of
     // the probability that we correctly identify every critical tag along the way
-    public double prob = 1.0;
-    public double myprob = 1.0;
+    public double prob = 1.0;           // Cumulative probability to date
+    public double myprob = 1.0;         // Probability of executing THIS behavior correctly
 
     // Bookkeeping for evaluating search.
     private double behaviorScore = Double.MAX_VALUE;

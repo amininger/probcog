@@ -349,6 +349,8 @@ public class MonteCarloBot implements SimObject
         if (!repeatLandmarks && counts.containsKey(tagList.get(0)))
             return;
 
+        // XXX Is this the best way to handle observations? At this point,
+        // we might as well just look the damn number up.
         int NUM_TAG_SAMPLES = 100000;
         double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
         double[] relXyzrpy = relativePose(getPose(), xyzrpy);

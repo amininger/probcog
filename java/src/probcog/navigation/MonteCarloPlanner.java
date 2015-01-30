@@ -671,8 +671,10 @@ public class MonteCarloPlanner
                     continue;
 
                 // Simulation
-                Behavior b = simulateBehavior(next, gsn.node);
-                b.tagID = next.tagID;
+                //Behavior b = simulateBehavior(next, gsn.node);
+                //b.tagID = next.tagID;
+                Behavior b = next;
+                b.prob *= gsn.node.data.prob;
 
                 if (b != null) {
                     Node<Behavior> node = gsn.node.addChild(b); // XXX

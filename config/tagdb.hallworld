@@ -44,10 +44,20 @@ classes {
     c# {
         label = "transition";
         badlabel = "";
-        ids = [19,20,25,26,27];
+        //ids = [19,20,25,26,27];
+        ids = [25, 27];
         mean = 1.0;
         stddev = 0.0;
         plabel = 1.0;
+    }
+
+    c# {
+        label = "transition";
+        badlabel = "";
+        ids = [19,20,26];
+        mean = 1.0;
+        stddev = 0.0;
+        plabel = 0.9;
     }
 
     c# {
