@@ -36,12 +36,12 @@ public class TreeUtil
         return null;
     }
 
-    static public void renderTree(Tree<Behavior> tree, SimWorld sw, VisWorld vw)
+    static public void renderTree(Tree<Behavior> tree, SimWorld sw, VisWorld.Buffer vb)
     {
         // Render the tree...
         java.util.List<Color> colors = Palette.diverging_brewer.listAll();
         ArrayList<Tree.Node<Behavior> > nodes = tree.inOrderTraversal();
-        VisWorld.Buffer vb = vw.getBuffer("spanning-tree");
+        //VisWorld.Buffer vb = vw.getBuffer("spanning-tree");
         vb.setDrawOrder(-2000);
         for (Tree.Node<Behavior> node: nodes) {
             if (node.parent == null)
@@ -89,7 +89,7 @@ public class TreeUtil
             trees.put(tag.getID(), tree);
 
             if (vw != null) {
-                renderTree(tree, sw, vw);
+                renderTree(tree, sw, vw.getBuffer("spanning-tree-"+tag.getID()));
             }
         }
 

@@ -690,7 +690,13 @@ public class MonteCarloPlanner
         for (Node<Behavior> leaf: leaves) {
             if (leaf.data.law instanceof DriveTowardsTag)
                 continue;
-            leaf.parent.removeChild(leaf);
+            Node<Behavior> curr = leaf;
+            Node<Behavior> next = curr.parent;
+            while (curr.children.size() == 0 && next != null) {
+                next.removeChild(curr);
+                curr = next;
+                next = curr.parent;
+            }
         }
 
         watch.stop();

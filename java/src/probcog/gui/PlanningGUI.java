@@ -462,7 +462,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID());
             System.out.println("Done! Built tree size "+tree.size());
 
-            TreeUtil.renderTree(tree, simulator.getWorld(), vw);
+            TreeUtil.renderTree(tree, simulator.getWorld(), vw.getBuffer("spanning-tree"));
 
         }
     }
