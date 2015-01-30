@@ -48,7 +48,7 @@ classes {
         ids = [25, 27];
         mean = 1.0;
         stddev = 0.0;
-        plabel = 1.0;
+        plabel = 0.8;
     }
 
     c# {
@@ -57,7 +57,7 @@ classes {
         ids = [19,20,26];
         mean = 1.0;
         stddev = 0.0;
-        plabel = 0.9;
+        plabel = 0.5;
     }
 
     c# {

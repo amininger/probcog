@@ -163,27 +163,105 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         //}
     }
 
+    // XXX Improve tag color rendering stuff...
+    // Want to show a combination of how GOOD the tags are and WHAT they are
     private void draw()
     {
         VisWorld.Buffer vb = vw.getBuffer("tag-classes");
         vb.setDrawOrder(-1000);
         try {
             TagClassifier tc = new TagClassifier(false);
+            java.util.List<Color> colors = Palette.qualitative_brewer0.listPrintFriendly();
+            Set<String> tagClasses = tc.getAllClasses();
+            HashMap<String, Color> classToColor = new HashMap<String, Color>();
+            int idx = 3;
+            for (String c: tagClasses) {
+                classToColor.put(c, colors.get(idx % colors.size()));
+                idx++;
+            }
+
+            //int[] map = {
+            //    0x0000ff,
+            //    0x00ff00};
+            //int[] map = {
+            //    0x777777,
+            //    0x0000ff,
+            //    0x00ff00};
+            //int[] map = {
+            //    0x0000ff,
+            //    0x00ffff,
+            //    0x00ff00};
+            int[] map = {
+                0x0000aa,
+                0x0004ad,
+                0x0009b0,
+                0x000db3,
+                0x0012b7,
+                0x0016ba,
+                0x001bbd,
+                0x0020c0,
+                0x0024c4,
+                0x0029c7,
+                0x002dca,
+                0x0032cd,
+                0x0036d1,
+                0x003bd4,
+                0x0040d7,
+                0x0044db,
+                0x0049de,
+                0x004de1,
+                0x0052e4,
+                0x0056e8,
+                0x005beb,
+                0x0060ee,
+                0x0064f1,
+                0x0069f5,
+                0x006df8,
+                0x0072fb,
+                0x0077ff,
+                0x0088ff,
+                0x0099ff,
+                0x00aaff,
+                0x00c6aa,
+                0x00e255,
+                0x00ff00};
+
+
+
+            ColorMapper cm = new ColorMapper(map, 0, 1.0);
+            cm = cm.swapRedBlue();
+
             for (SimObject so: simulator.getWorld().objects) {
                 if (!(so instanceof SimAprilTag))
                     continue;
                 SimAprilTag tag = (SimAprilTag)so;
-                Set<String> tagClasses = tc.getClasses(tag.getID());
+                tagClasses = tc.getClasses(tag.getID());
                 String name = null;
                 if (tagClasses.size() > 0)
                     name = tagClasses.iterator().next();
                 else
                     continue;
+                double pct = tc.correctProbability(tag.getID());
+                int alpha = ((int)(0xff * pct)) << 24;
 
-                int code = name.hashCode();
-                Color c = ColorUtil.seededColor(code^17132477);
-                vb.addBack(new VisChain(tag.getPose(),
-                                        new VzRectangle(0.7, 0.7, new VzMesh.Style(c))));
+                //Color temp = classToColor.get(name);
+                //int argb = temp.getRGB();
+                //argb = 0xffffff & argb | alpha;
+                //Color c = new Color(argb, true);
+                Color c = classToColor.get(name);
+                vb.addBack(new VisLighting(false,
+                                           tag.getPose(),
+                                           new VzCircle(0.5,
+                                                        new VzMesh.Style(new Color(cm.map(pct))),
+                                                        new VzLines.Style(Color.black, 1)),
+                                           LinAlg.translate(0, 0.25, 0),
+                                           new VzRectangle(1.0, 0.5,
+                                                           new VzMesh.Style(c),
+                                                           new VzLines.Style(Color.black, 1))));
+                                           //LinAlg.translate(0, -0.5, 0),
+                                           //new VzRectangle(1.0, 0.5,
+                                           //                new VzMesh.Style(new Color(cm.map(pct))),
+                                           //                new VzLines.Style(Color.black, 1))));
             }
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -247,6 +325,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 new DataThread().start();
             if (e.getKeyCode() == KeyEvent.VK_S)
                 new SpanningTreeThread().start();
+            if (e.getKeyCode() == KeyEvent.VK_A)
+                new AllTreesThread().start();
 
             return false;
         }
@@ -343,6 +423,15 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         }
     }
 
+    private class AllTreesThread extends Thread
+    {
+        public void run()
+        {
+            HashMap<Integer, Tree<Behavior> > trees =
+                TreeUtil.makeTrees(simulator.getWorld(), gm, vw);
+        }
+    }
+
     private class SpanningTreeThread extends Thread
     {
         public void run()
@@ -373,39 +462,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID());
             System.out.println("Done! Built tree size "+tree.size());
 
-            // Render the tree...
-            java.util.List<Color> colors = Palette.diverging_brewer.listAll();
-            ArrayList<Tree.Node<Behavior> > nodes = tree.inOrderTraversal();
-            VisWorld.Buffer vb = vw.getBuffer("spanning-tree");
-            for (Tree.Node<Behavior> node: nodes) {
-                if (node.parent == null)
-                    continue;
-                MonteCarloBot mcb = new MonteCarloBot(simulator.getWorld());
-                int retryCount = 100;
-                //do {
-                    //Behavior.XYTPair pair = node.parent.data.randomXYT();
-                    mcb.init(node.data.law,
-                             node.data.test,
-                             node.parent.data.theoreticalXYT,
-                             0);
-                    mcb.simulate(true);
-                    if (!mcb.success()) {
-                        System.out.printf("%s %s @ [%f %f %f]\n",
-                                          node.data.law,
-                                          node.data.test,
-                                          node.parent.data.theoreticalXYT[0],
-                                          node.parent.data.theoreticalXYT[1],
-                                          node.parent.data.theoreticalXYT[2]);
-                    }
-                //    retryCount--;
-                //} while (!mcb.success() && retryCount > 0);
-                int k0 = ((node.depth-1)/colors.size())%2;
-                int k1 = (node.depth-1)%colors.size();
-                int cidx = k0*(colors.size()-1) + (k0 == 0 ? 1:-1)*(k1);
-                Color c = colors.get(cidx);
-                vb.addBack(mcb.getVisObject(c));
-            }
-            vb.swap();
+            TreeUtil.renderTree(tree, simulator.getWorld(), vw);
 
         }
     }

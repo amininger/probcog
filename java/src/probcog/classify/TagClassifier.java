@@ -114,6 +114,24 @@ public class TagClassifier
         return classes;
     }
 
+    /** Expose the probability that a tag is CORRECTLY labeled. Assumes you
+     *  only care about the first class (since we only ever have one class
+     *  right now.
+     **/
+    public double correctProbability(int tagID)
+    {
+        if (!idToTag.containsKey(tagID))
+            return 0;
+
+        ArrayList<TagClass> tcs = idToTag.get(tagID);
+        if (tcs.size() < 1)
+            return 0;
+
+        TagClass tc = tcs.get(0);
+        return tc.plabel;
+    }
+
+
     // XXX Phase out in favor of different visibility check. Should be a check
     // for if the tag appears in the database at all. The random sampling should
     // be done when classifying a tag.
@@ -238,7 +256,6 @@ public class TagClassifier
     {
         return MathUtil.clamp(u + classifierRandom.nextGaussian()*s, 0, 1);
     }
-
 
     /**
      * Keep track of the information associated with each tag id. Tags

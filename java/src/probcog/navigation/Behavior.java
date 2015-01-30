@@ -24,7 +24,6 @@ public class Behavior
     // Control state
     public ControlLaw law;
     public ConditionTest test;
-    public HashSet<Integer> tagSet = new HashSet<Integer>();
 
     // Some internal state for enabling better tree/path generation.
     // The ID lets us know what landmark we're supposed to be at, and the
