@@ -16,7 +16,69 @@ import april.jmat.*;
  */
 public class BehaviorGraph
 {
-    // XXX Try to write the algorithm, first, and let this inform the interface
+    class DijkstraComparator implements Comparator<DijkstraNode>
+    {
+        public int compare(DijkstraNode a, DijkstraNode b)
+        {
+            if (a.score > b.score)
+                return -1;
+            else if (b.score > a.score)
+                return 1;
+            return 0;
+        }
+    }
+
+     class DijkstraNode
+    {
+        public int edgeID = -1;
+        public double score = 1.0;
+        public DijkstraNode parent = null;
+
+        /** Add a child to our search graph. The child documents the edgeID
+         *  of the edge that took it to its presesnt location. The edge itself
+         *  contains a behavior noting which node it is currently at.
+         **/
+        public DijkstraNode addChild(int edgeID)
+        {
+            assert (edges.containsKey(edgeID));
+            Edge e = edges.get(edgeID);
+
+            DijkstraNode dn = new DijkstraNode();
+            dn.edgeID = edgeID;
+            dn.score = score*e.b.myprob;
+
+            dn.parent = this;
+
+            return dn;
+        }
+
+        public Edge getEdge()
+        {
+            if (edgeID < 0)
+                return null;
+            return edges.get(edgeID);
+        }
+
+        public Node getNode()
+        {
+            return nodes.get(getEdge().b.tagID);
+        }
+
+        public int hashCode()
+        {
+            return (new Integer(edgeID)).hashCode();
+        }
+
+        public boolean equals(Object o)
+        {
+            if (o == null)
+                return false;
+            if (!(o instanceof DijkstraNode))
+                return false;
+            DijkstraNode dn = (DijkstraNode)o;
+            return dn.edgeID == edgeID;
+        }
+    }
 
     //static int nodeID = 0;
     Map<Integer, Node> nodes = new HashMap<Integer, Node>();    // id -> node
@@ -139,9 +201,63 @@ public class BehaviorGraph
         }
     }
 
-    public boolean isFullyConnected()
+    // XXX Eventually, want to change "startTag" to a specific
+    // goal or orientation to match against graph structure.
+    public ArrayList<Behavior> navigate(int startTag, int endTag)
     {
-        System.err.println("Not yet implemented");
+        Node start = nodes.get(startTag);
+
+        // Perform a Dijkstra search through the graph. MOAR NODES
+        DijkstraNode dn = new DijkstraNode();
+
+        HashSet<DijkstraNode> closedList = new HashSet<DijkstraNode>();
+        PriorityQueue<DijkstraNode> queue =
+            new PriorityQueue<DijkstraNode>(10, new DijkstraComparator());
+        queue.add(dn);
+
+        while (queue.size() > 0) {
+            dn = queue.poll();
+
+            // If this node reaches our goal, return a plan
+            Edge currEdge = dn.getEdge();
+            Node currNode = dn.getNode();
+            if (currNode != null && currNode.id == endTag)
+                return planHelper(dn); // XXX
+
+
+            // Pass over previously visited search nodes
+            if (closedList.contains(dn))
+                continue;
+            closedList.add(dn);
+
+            // Generate children
+            Set<Integer> validEdgesOut = currNode.in2out.get(currEdge.id);
+            for (Integer edgeID: validEdgesOut) {
+                queue.add(dn.addChild(edgeID));
+            }
+        }
+
+        System.err.println("ERR: Could not find path between tags");
+        return null; // Failure
+    }
+
+    private ArrayList<Behavior> planHelper(DijkstraNode dn)
+    {
+        ArrayList<Behavior> plan = new ArrayList<Behavior>();
+        while (dn.parent != null) {
+            Edge edge = dn.getEdge();
+            plan.add(edge.b);
+            dn = dn.parent;
+        }
+
+        Collections.reverse(plan);
+        return plan;
+    }
+
+    /** Determine whether or not the graph is fully reachable. */
+    public boolean isFullyReachable()
+    {
+        // XXX Highly ineffecient implementation to come?
         return false;
     }
 

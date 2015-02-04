@@ -243,8 +243,8 @@ public class TreeUtil
                 }
             }
 
-            // We are done early if the graph is fully connected
-            if (graph.isFullyConnected())
+            // We are done early if the graph is fully reachable
+            if (graph.isFullyReachable())
                 break;
         }
 
