@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
+import april.jmat.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;

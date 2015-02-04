@@ -2,6 +2,8 @@ package probcog.navigation;
 
 import java.util.*;
 
+import april.jmat.*;
+
 /** A graph structure with some wrinkles particular to this application.
  *  Could certainly be done generally given more time, but this is
  *  expedient.
@@ -23,7 +25,7 @@ public class BehaviorGraph
         public int id;
 
         // A mapping of inbound edges to outbound edges they can feed into.
-        Map<Integer, Integer> in2out = new HashMap<Integer, Integer>();
+        Map<Integer, Set<Integer> > in2out = new HashMap<Integer, Set<Integer> >();
 
         // Inbound and outbound edges
         Set<Integer> edgesIn = new HashSet<Integer>();
@@ -59,6 +61,14 @@ public class BehaviorGraph
         }
     }
 
+    private boolean xytEquals(double[] xyt0, double[] xyt1)
+    {
+        double dx = Math.abs(xyt0[0] - xyt1[0]);
+        double dy = Math.abs(xyt0[1] - xyt1[1]);
+        double dt = Math.abs(MathUtil.mod2pi(xyt0[2] - xyt1[2]));
+
+        return dx < 0.2 && dy < 0.2 && dt < Math.toRadians(5);  // XXX
+    }
 
     /** Add a node to the graph */
     public void addNode(int tagID)
@@ -96,6 +106,36 @@ public class BehaviorGraph
         } else {
             out.edgesOut.add(e.id);
             in.edgesIn.add(e.id);
+            if (!in.in2out.containsKey(e.id)) {
+                in.in2out.put(e.id, new HashSet<Integer>());
+            }
+            match = e;
+        }
+
+        // Check to see if this edge chains with others by comparing XYTs. There
+        // is, by necessity, some tolerance here, but make it quite small.
+        // First, look through all incoming edges @ outID and see if they
+        // overlap with and of match.xyts. Then, look at all outgoing edges @
+        // inID and likewise look for overlap. We only need to consider the
+        // most recently proposed xyts in behavior!
+        for (double[] xyt: b.xyts) {
+            for (Integer key: out.edgesIn) {
+                Edge edgeIn = edges.get(key);
+                for (double[] inXYT: edgeIn.b.xyts) {
+                    if (xytEquals(xyt, inXYT)) {
+                        out.in2out.get(edgeIn.id).add(match.id);
+                    }
+                }
+            }
+
+            for (Integer key: in.edgesOut) {
+                Edge edgeOut = edges.get(key);
+                for (double[] outXYT: edgeOut.b.xyts) {
+                    if (xytEquals(xyt, outXYT)) {
+                        in.in2out.get(match.id).add(edgeOut.id);
+                    }
+                }
+            }
         }
     }
 

@@ -30,7 +30,7 @@ public class Behavior
     // control law is finished executing, while
     // theoreticalXYT lets us know where we should have been when we saw it.
     // Likewise, theoreticalDistance tells us how far we think we've traveled
-    // at that point
+    // after executing command.
     public int tagID = -1;
     public double[] theoreticalXYT = new double[3];
     public double theoreticalDistance = 0;
@@ -41,7 +41,8 @@ public class Behavior
     public double prob = 1.0;           // Cumulative probability to date
     public double myprob = 1.0;         // Probability of executing THIS behavior correctly
 
-    // Bookkeeping for evaluating search.
+    // Bookkeeping for evaluating search. XYTs and distances refer to our
+    // distribution AFTER executing this command.
     private double behaviorScore = Double.MAX_VALUE;
     private double scoreSoFar = Double.MAX_VALUE;
     public ArrayList<double[]> xyts = new ArrayList<double[]>();
