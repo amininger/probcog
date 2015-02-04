@@ -28,8 +28,10 @@ public class BehaviorGraph
         }
     }
 
-     class DijkstraNode
+    class DijkstraNode
     {
+
+
         public int edgeID = -1;
         public double score = 1.0;
         public DijkstraNode parent = null;
@@ -105,6 +107,10 @@ public class BehaviorGraph
     {
         public int id;
         public Behavior b;
+
+        // XXX NEED TO KNOW START AND END POINTS ARE FOR LOOKUPS!
+        public ArrayList<double[]> startXYTs = new ArrayList<double[]>();
+        public ArrayList<double[]> endXYTs = new ArrayList<double[]>();
 
         public Edge(Behavior b)
         {

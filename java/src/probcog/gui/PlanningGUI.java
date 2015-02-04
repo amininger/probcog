@@ -429,7 +429,12 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         {
             HashMap<Integer, Tree<Behavior> > trees =
                 TreeUtil.makeTrees(simulator.getWorld(), gm, vw);//, 5*1000000);
-            TreeUtil.hist(trees);
+            //TreeUtil.hist(trees);
+            BehaviorGraph graph = TreeUtil.compress(trees);
+
+            // Test it out
+            ArrayList<Behavior> testPlan = graph.navigate(1, 41);
+            MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
         }
     }
 
