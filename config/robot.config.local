@@ -2,7 +2,7 @@
 
 //tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.config.real-cse";
 //tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.config.bigger";
-tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.hallworld";
+tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.variety";
 
 proc_config = "procman/proc.config";
 
@@ -489,7 +489,7 @@ monte_carlo {
     // Robot parameters
     default_steps_per_second = 5;
     steps_per_second = 20;  // Ignore right now?
-    default_forward_search_time = 30.0; // [s] XXX
+    default_forward_search_time = 60.0; // [s] XXX
     step_degrees = 3;
     min_degrees = -90; //-135;
     max_degrees = 90; //135;

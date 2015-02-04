@@ -15,7 +15,7 @@ import probcog.lcmtypes.*;
  **/
 public class TagHistory
 {
-    static final long MAX_AGE_MS = 1000;
+    static final long MAX_AGE_MS = 500;
 
     HashMap<Integer, Record> history;
     private class Record

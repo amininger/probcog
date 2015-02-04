@@ -41,7 +41,7 @@ public class TreeUtil
     static public void renderTree(Tree<Behavior> tree, SimWorld sw, VisWorld.Buffer vb)
     {
         // Render the tree...
-        java.util.List<Color> colors = Palette.diverging_brewer.listAll();
+        java.util.List<Color> colors = Palette.diverging_brewer1.listAll();
         ArrayList<Tree.Node<Behavior> > nodes = tree.inOrderTraversal();
         //VisWorld.Buffer vb = vw.getBuffer("spanning-tree");
         vb.setDrawOrder(-2000);
@@ -58,20 +58,21 @@ public class TreeUtil
                      0);
             mcb.simulate(true);
             if (!mcb.success()) {
-                System.out.printf("%s %s @ [%f %f %f]\n",
+                System.out.printf("%s %s @ %d [%f %f %f]\n",
                                   node.data.law,
                                   node.data.test,
+                                  node.data.tagID,
                                   node.parent.data.theoreticalXYT[0],
                                   node.parent.data.theoreticalXYT[1],
                                   node.parent.data.theoreticalXYT[2]);
+                vb.addBack(new VisLighting(false, mcb.getVisObject(Color.red)));
             }
-            //    retryCount--;
-            //} while (!mcb.success() && retryCount > 0);
             int k0 = ((node.depth-1)/colors.size())%2;
             int k1 = (node.depth-1)%colors.size();
             int cidx = k0*(colors.size()-1) + (k0 == 0 ? 1:-1)*(k1);
             Color c = colors.get(cidx);
-            vb.addBack(mcb.getVisObject(c));
+            c = colors.get((int)(node.data.prob * (colors.size()-1)));
+            vb.addBack(new VisLighting(false, mcb.getVisObject(c)));
         }
         vb.swap();
     }
