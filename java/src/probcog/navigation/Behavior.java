@@ -26,8 +26,11 @@ public class Behavior
     public ConditionTest test;
 
     // Some internal state for enabling better tree/path generation.
-    // The ID lets us know what landmark we're supposed to be at, and the
+    // The ID lets us know what landmark we're supposed to be at, when the
+    // control law is finished executing, while
     // theoreticalXYT lets us know where we should have been when we saw it.
+    // Likewise, theoreticalDistance tells us how far we think we've traveled
+    // at that point
     public int tagID = -1;
     public double[] theoreticalXYT = new double[3];
     public double theoreticalDistance = 0;
@@ -115,6 +118,10 @@ public class Behavior
         }
     }
 
+    private Behavior()
+    {
+    }
+
     public Behavior(double[] xyt, double distance, ControlLaw law, ConditionTest test)
     {
         xyts.add(xyt);
@@ -137,6 +144,24 @@ public class Behavior
             this.theoreticalXYT = LinAlg.copy(xyts.get(0));
             this.theoreticalDistance = distances.get(0);
         }
+    }
+
+    public Behavior copyBehavior()
+    {
+        Behavior b = new Behavior();
+        for (double[] xyt: xyts)
+            b.xyts.add(LinAlg.copy(xyt));
+        for (Double dist: distances)
+            b.distances.add(dist);
+        b.test = test.copyCondition();
+        b.law = law;
+        b.tagID = tagID;
+        b.theoreticalXYT = LinAlg.copy(theoreticalXYT);
+        b.theoreticalDistance = theoreticalDistance;
+        b.prob = prob;
+        b.myprob = myprob;
+
+        return b; // XXX
     }
 
     public double getScoreSoFar(int numSamples)
@@ -403,7 +428,22 @@ public class Behavior
         return String.format("(%f) %s until %s\n", prob, law.toString(), test.toString());
     }
 
+    // A more useful equals call, this one is actually called when graph building.
+    public boolean behaviorEquals(Behavior behavior)
+    {
+        if (behavior.law == null || law == null)
+            return false;
+        if (behavior.test == null || test == null)
+            return false;
+        boolean a = tagID == behavior.tagID;
+        boolean b = law.equals(behavior.law);
+        boolean c = test.equals(behavior.test);
+
+        return a && b && c;
+    }
+
     // XXX These only exist to support MonteCarloBot's hash table for class counting.
+    // They do NOT generalize beyond this application, and in fact, are actively bad
     public int hashCode()
     {
         assert (test instanceof ClassificationCounterTest);

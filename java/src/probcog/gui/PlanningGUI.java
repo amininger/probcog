@@ -428,7 +428,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         public void run()
         {
             HashMap<Integer, Tree<Behavior> > trees =
-                TreeUtil.makeTrees(simulator.getWorld(), gm, vw);
+                TreeUtil.makeTrees(simulator.getWorld(), gm, vw);//, 5*1000000);
             TreeUtil.hist(trees);
         }
     }

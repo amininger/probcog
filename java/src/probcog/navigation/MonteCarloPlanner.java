@@ -456,6 +456,11 @@ public class MonteCarloPlanner
         //return newNode;
     }
 
+    private ArrayList<Behavior> generateChildren(Node<Behavior> node)
+    {
+        double[] yaws = new double[] {Math.PI/2, Math.PI, 3*Math.PI/2};
+        return generateChildren(node, yaws);
+    }
     // XXX Notable points of failure could be...
     // 1) The fact that the output of this step is HIGHLY dependent on basin
     //    of convergence for our control law. Why should we believe our sim
@@ -469,8 +474,13 @@ public class MonteCarloPlanner
     /** Forward simulate for the maximum allowed time (set in config) to see
      *  what possible actions we might take. Note that this step assumes
      *  perfect sensing of landmarks.
+     *
+     *  @param node     Node the start from
+     *  @param yaws     Additional turn-in-place commands to potentially sim
+     *
+     *  @return A list of behavior/condition tuples
      **/
-    private ArrayList<Behavior> generateChildren(Node<Behavior> node) {
+    private ArrayList<Behavior> generateChildren(Node<Behavior> node, double[] yaws) {
         ArrayList<Behavior> recs = new ArrayList<Behavior>();
         for (FollowWall law: controls) {
             MonteCarloBot mcb = new MonteCarloBot(sw);
@@ -490,7 +500,6 @@ public class MonteCarloPlanner
         // Special case: we also consider turning in place at the beggining
         // phase of planning.
         if (node.depth == 0) {
-            double[] yaws = new double[] {Math.PI/2, Math.PI, 3*Math.PI/2};
             for (double yaw: yaws) {
                 HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                 params.put("direction", new TypedValue((byte)1));  // Left turn in place

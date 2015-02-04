@@ -194,6 +194,21 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         return ct;
     }
 
+    public int hashCode()
+    {
+        return classType.hashCode() ^ (new Integer(goalCount)).hashCode();
+    }
+
+    public boolean equals(Object o)
+    {
+        if (o == null)
+            return false;
+        if (!(o instanceof ClassificationCounterTest))
+            return false;
+        ClassificationCounterTest cct = (ClassificationCounterTest)o;
+        return classType.equals(cct.classType) && (goalCount == cct.goalCount);
+    }
+
     // === Sample adding/tracking ============================================
     synchronized public void addSample(classification_t classy)
     {

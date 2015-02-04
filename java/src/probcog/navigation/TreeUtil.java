@@ -18,6 +18,34 @@ import probcog.sim.*;
  **/
 public class TreeUtil
 {
+    static private class HistogramComparator implements Comparator<Integer>
+    {
+        HashMap<Integer, Integer> hits = null;
+        public HistogramComparator(HashMap<Integer, Integer> hits)
+        {
+            this.hits = hits;
+        }
+
+        public int compare(Integer a, Integer b)
+        {
+            if (hits.get(a) > hits.get(b))
+                return -1;
+            else if (hits.get(b) > hits.get(a))
+                return 1;
+            return 0;
+        }
+
+        public boolean equals(Object o)
+        {
+            if (o == null)
+                return false;
+            if (!(o instanceof HistogramComparator))
+                return false;
+            HistogramComparator hc = (HistogramComparator)o;
+            return hc == this;
+        }
+    }
+
     // Behaviors contain a LOT of data. How much of it do we
     // really need to save? Definitely the behaviors themselves.
     // Probably also theoretical start and end points, since we
@@ -77,8 +105,18 @@ public class TreeUtil
         vb.swap();
     }
 
+    static public HashMap<Integer, Tree<Behavior> > makeTrees(SimWorld sw,
+                                                              GridMap gm,
+                                                              VisWorld vw)
+    {
+        return makeTrees(sw, gm, vw, Long.MAX_VALUE);
+    }
+
     /** Build all of the trees for the landmarks in the given world */
-    static public HashMap<Integer, Tree<Behavior> > makeTrees(SimWorld sw, GridMap gm, VisWorld vw)
+    static public HashMap<Integer, Tree<Behavior> > makeTrees(SimWorld sw,
+                                                              GridMap gm,
+                                                              VisWorld vw,
+                                                              long timeout_ms)
     {
         MonteCarloPlanner mcp = new MonteCarloPlanner(sw, gm, null);
         HashMap<Integer, Tree<Behavior> > trees = new HashMap<Integer, Tree<Behavior> >();
@@ -88,7 +126,7 @@ public class TreeUtil
                 continue;
             SimAprilTag tag = (SimAprilTag)so;
             System.out.println("Building tree for tag "+tag.getID());
-            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID());
+            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), timeout_ms);
             System.out.println("Done! Build tree size "+tree.size());
             trees.put(tag.getID(), tree);
 
@@ -102,8 +140,10 @@ public class TreeUtil
 
     /** Give a set of trees (presumably for one world), build a histogram of
      *  behavioral outcomes referencing the appropriate behaviors.
+     *
+     *  Returns a mapping of tag to hits
      **/
-    static public void hist(HashMap<Integer, Tree<Behavior> > trees)
+    static public HashMap<Integer, Integer> hist(HashMap<Integer, Tree<Behavior> > trees)
     {
         // Group by ending condition, then by control law. Want to be able to
         // sort on the number of "same control law" conditions we encounter.
@@ -135,5 +175,83 @@ public class TreeUtil
         for (Integer key: hits.keySet()) {
             System.out.printf("Tag %d: %d\n", key, hits.get(key));
         }
+
+        return hits;
+    }
+
+    /** Given a set of trees (presumably from one world), build a graph
+     *  which summarizes the structure. Must ensure that every node is
+     *  reachable from all others!
+     *
+     *  Unsure about whether to be completionist or merely minimalist. For
+     *  first pass, try minimalist.
+     **/
+    static public BehaviorGraph compress(HashMap<Integer, Tree<Behavior> > trees)
+    {
+        HashMap<Integer, Integer> hits = hist(trees);
+        ArrayList<Integer> sortedIDs = new ArrayList<Integer>(hits.keySet());
+        Collections.sort(sortedIDs, new HistogramComparator(hits));
+
+        // Initialize graph. Add nodes first, leaving them unconnected.
+        // NOTE: An alternative strategy involves multiple nodes per tag ID.
+        // This seems to be an easier way to build the structure
+        BehaviorGraph graph = new BehaviorGraph();
+        for (Integer id: sortedIDs)
+            graph.addNode(id);
+
+        // XXX TODO: Experiment with adding more yaws to child generation
+        // Greedily add edges to the the graph by pulling them from the trees in
+        // histogram order.
+        // STOP when the graph is fully connected.
+        // NOTE: Must handle both "finishing" steps and actual movement around!
+        // We can handle this by ignoring drive-to-tag steps when constructing
+        // the graph and always adding these to the ends of plans.
+        int idCount = 0;
+        for (Integer id: sortedIDs) {
+            idCount++;
+            for (Integer key: trees.keySet()) {
+                Tree<Behavior> tree = trees.get(key);
+                // XXX Known inefficiencies! Could cache this somehow.
+                ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
+                for (Node<Behavior> node: nodes) {
+                    if (node.data.law instanceof DriveTowardsTag)
+                        continue;
+                    if (node.data.tagID != id)
+                        continue;
+
+                    for (Node<Behavior> child: node.children) {
+                        if (child.data.law instanceof DriveTowardsTag)
+                            continue;
+                        if (child.data.tagID < 0)
+                            continue;
+
+                        // Add the edge. This either means creating the edge
+                        // from scratch if it did not previously exist OR adding
+                        // an XYT to an existing edge of the same type. Hopefully,
+                        // that gives us adequate diversity to match against when
+                        // looking up where to latch on to, later!
+                        //
+                        // XXX Is there any benefit to avoiding adding edges
+                        // to things that are already connected by some other
+                        // route?
+                        graph.addEdge(id, child.data.tagID, child.data);
+                    }
+
+                    // There should only be one such edge. Break!
+                    break;
+                }
+            }
+
+            // We are done early if the graph is fully connected
+            if (graph.isFullyConnected())
+                break;
+        }
+
+        // XXX I would expect to need all of these, since outgoing "bad" edges
+        // may only exist in very particular cases. In other words, we are just
+        // compressing the structure of many trees into one graph, which we
+        // will need to search AGAIN.
+        System.out.printf("Graph constructed using %d of %d landmarks.\n");
+        return graph;
     }
 }
