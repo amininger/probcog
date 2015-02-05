@@ -232,10 +232,6 @@ public class TreeUtil
                         // an XYT to an existing edge of the same type. Hopefully,
                         // that gives us adequate diversity to match against when
                         // looking up where to latch on to, later!
-                        //
-                        // XXX Is there any benefit to avoiding adding edges
-                        // to things that are already connected by some other
-                        // route?
                         graph.addEdge(id, child.data.tagID, child.data, child.parent.data.theoreticalXYT);
                     }
 
@@ -243,13 +239,21 @@ public class TreeUtil
                     break;
                 }
 
-                // Additionally, add edges coming out of appropriate tree root
+                // Additionally, add edges coming out of appropriate tree root. Very hacky
+                // and special-cased. XXX
                 if (key.equals(id)) {
                     for (Node<Behavior> child: tree.root.children) {
                         if (child.data.law instanceof DriveTowardsTag)
                             continue;
-                        if (child.data.tagID < 0)
+                        if (child.data.law instanceof Turn) {
+                            for (Node<Behavior> grandchild: child.children) {
+                                if (grandchild.data.law instanceof DriveTowardsTag)
+                                    continue;
+                                assert (grandchild.data.tagID > -1);
+                                graph.addEdge(id, grandchild.data.tagID, grandchild.data, child.data.theoreticalXYT);
+                            }
                             continue;
+                        }
 
                         // Add the edge. This either means creating the edge
                         // from scratch if it did not previously exist OR adding
