@@ -202,7 +202,8 @@ public class TreeUtil
 
         // XXX TODO: Experiment with adding more yaws to child generation
         // Greedily add edges to the the graph by pulling them from the trees in
-        // histogram order.
+        // histogram order. Note: We should also be adding edges from the
+        // beginning of the tree...children of root for that tree
         // STOP when the graph is fully connected.
         // NOTE: Must handle both "finishing" steps and actual movement around!
         // We can handle this by ignoring drive-to-tag steps when constructing
@@ -240,6 +241,27 @@ public class TreeUtil
 
                     // There should only be one such edge. Break!
                     break;
+                }
+
+                // Additionally, add edges coming out of appropriate tree root
+                if (key.equals(id)) {
+                    for (Node<Behavior> child: tree.root.children) {
+                        if (child.data.law instanceof DriveTowardsTag)
+                            continue;
+                        if (child.data.tagID < 0)
+                            continue;
+
+                        // Add the edge. This either means creating the edge
+                        // from scratch if it did not previously exist OR adding
+                        // an XYT to an existing edge of the same type. Hopefully,
+                        // that gives us adequate diversity to match against when
+                        // looking up where to latch on to, later!
+                        //
+                        // XXX Is there any benefit to avoiding adding edges
+                        // to things that are already connected by some other
+                        // route?
+                        graph.addEdge(id, child.data.tagID, child.data, child.parent.data.theoreticalXYT);
+                    }
                 }
             }
 

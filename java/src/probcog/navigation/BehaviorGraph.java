@@ -1,8 +1,11 @@
 package probcog.navigation;
 
+import java.awt.Color;
 import java.util.*;
 
 import april.jmat.*;
+import april.vis.*;
+import april.util.*;
 
 /** A graph structure with some wrinkles particular to this application.
  *  Could certainly be done generally given more time, but this is
@@ -223,7 +226,7 @@ public class BehaviorGraph
 
     // XXX Eventually, want to change "startTag" to a specific
     // goal or orientation to match against graph structure.
-    public ArrayList<Behavior> navigate(int startTag, int endTag)
+    public ArrayList<Behavior> navigate(int startTag, int endTag, VisWorld vw)
     {
         // Perform a Dijkstra search through the graph. MOAR NODES
         DijkstraNode dn = new DijkstraNode(startTag);
@@ -233,6 +236,7 @@ public class BehaviorGraph
             new PriorityQueue<DijkstraNode>(10, new DijkstraComparator());
         queue.add(dn);
 
+        VisWorld.Buffer vb = vw.getBuffer("debug-graph-nav");
         while (queue.size() > 0) {
             dn = queue.poll();
 
@@ -241,6 +245,7 @@ public class BehaviorGraph
             Node currNode = dn.getNode();
             if (currNode != null && currNode.id == endTag)
                 return planHelper(dn); // XXX
+            System.out.println(dn.nodeID + "  " + dn.edgeID);
 
             // Pass over previously visited search nodes
             if (closedList.contains(dn))
@@ -255,8 +260,15 @@ public class BehaviorGraph
                 validEdgesOut = currNode.in2out.get(currEdge.id);
             for (Integer edgeID: validEdgesOut) {
                 queue.add(dn.addChild(edgeID));
+
+                Edge e = edges.get(edgeID);
+                vb.addBack(new VisChain(LinAlg.xytToMatrix(e.startXYTs.get(0)),
+                                        new VzBox(new VzMesh.Style(Color.red))));
             }
+            vb.swap();
+            TimeUtil.sleep(1000);
         }
+        vb.swap();
 
         System.err.println("ERR: Could not find path between tags");
         return null; // Failure

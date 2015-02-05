@@ -433,7 +433,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             BehaviorGraph graph = TreeUtil.compress(trees);
 
             // Test it out
-            ArrayList<Behavior> testPlan = graph.navigate(1, 8);
+            ArrayList<Behavior> testPlan = graph.navigate(1, 8, vw);
 
             if (testPlan == null) {
                 System.err.println("ERR: No path could be found between these nodes");
