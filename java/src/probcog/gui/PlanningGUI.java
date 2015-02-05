@@ -445,6 +445,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             for (Behavior b: testPlan) {
                 if (b.law == null)
                     continue;
+                System.out.println(b);
                 bot.init(b.law, b.test);
                 bot.simulate(true);
 

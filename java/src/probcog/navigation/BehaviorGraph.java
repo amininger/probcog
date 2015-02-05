@@ -148,6 +148,7 @@ public class BehaviorGraph
         double dx = Math.abs(xyt0[0] - xyt1[0]);
         double dy = Math.abs(xyt0[1] - xyt1[1]);
         double dt = Math.abs(MathUtil.mod2pi(xyt0[2] - xyt1[2]));
+        //System.out.printf("[%f %f %f]\n", dx, dy, dt);
 
         return dx < 0.2 && dy < 0.2 && dt < Math.toRadians(5);  // XXX
     }
@@ -202,22 +203,22 @@ public class BehaviorGraph
         // inID and likewise look for overlap. We only need to consider the
         // most recently proposed xyts in behavior!
         for (double[] xyt: match.b.xyts) {
-            for (Integer key: out.edgesIn) {
-                Edge edgeIn = edges.get(key);
-                for (double[] inXYT: edgeIn.startXYTs) {
-                    if (xytEquals(xyt, inXYT)) {
-                        out.in2out.get(edgeIn.id).add(match.id);
+            for (Integer key: in.edgesOut) {
+                Edge edgeOut = edges.get(key);
+                for (double[] outXYT: edgeOut.startXYTs) {
+                    if (xytEquals(xyt, outXYT)) {
+                        in.in2out.get(match.id).add(edgeOut.id);
                     }
                 }
             }
         }
 
         for (double[] xyt: match.startXYTs) {
-            for (Integer key: in.edgesOut) {
-                Edge edgeOut = edges.get(key);
-                for (double[] outXYT: edgeOut.b.xyts) {
-                    if (xytEquals(xyt, outXYT)) {
-                        in.in2out.get(match.id).add(edgeOut.id);
+            for (Integer key: out.edgesIn) {
+                Edge edgeIn = edges.get(key);
+                for (double[] inXYT: edgeIn.b.xyts) {
+                    if (xytEquals(xyt, inXYT)) {
+                        out.in2out.get(edgeIn.id).add(match.id);
                     }
                 }
             }
@@ -245,7 +246,6 @@ public class BehaviorGraph
             Node currNode = dn.getNode();
             if (currNode != null && currNode.id == endTag)
                 return planHelper(dn); // XXX
-            System.out.println(dn.nodeID + "  " + dn.edgeID);
 
             // Pass over previously visited search nodes
             if (closedList.contains(dn))
@@ -277,7 +277,7 @@ public class BehaviorGraph
     private ArrayList<Behavior> planHelper(DijkstraNode dn)
     {
         ArrayList<Behavior> plan = new ArrayList<Behavior>();
-        while (dn.parent != null) {
+        while (dn.parent.parent != null) {
             Edge edge = dn.getEdge();
             plan.add(edge.b);
             dn = dn.parent;
