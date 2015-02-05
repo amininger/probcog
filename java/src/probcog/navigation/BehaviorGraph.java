@@ -237,7 +237,7 @@ public class BehaviorGraph
             new PriorityQueue<DijkstraNode>(10, new DijkstraComparator());
         queue.add(dn);
 
-        VisWorld.Buffer vb = vw.getBuffer("debug-graph-nav");
+        //VisWorld.Buffer vb = vw.getBuffer("debug-graph-nav");
         while (queue.size() > 0) {
             dn = queue.poll();
 
@@ -260,15 +260,14 @@ public class BehaviorGraph
                 validEdgesOut = currNode.in2out.get(currEdge.id);
             for (Integer edgeID: validEdgesOut) {
                 queue.add(dn.addChild(edgeID));
-
-                Edge e = edges.get(edgeID);
-                vb.addBack(new VisChain(LinAlg.xytToMatrix(e.startXYTs.get(0)),
-                                        new VzBox(new VzMesh.Style(Color.red))));
+                //Edge e = edges.get(edgeID);
+                //System.out.println("\t"+edgeID+"->"+e.b.tagID);
+                //vb.addBack(new VisChain(LinAlg.xytToMatrix(e.startXYTs.get(0)),
+                //                        new VzBox(new VzMesh.Style(Color.red))));
             }
-            vb.swap();
-            TimeUtil.sleep(1000);
+            //vb.swap();
         }
-        vb.swap();
+        //vb.swap();
 
         System.err.println("ERR: Could not find path between tags");
         return null; // Failure
@@ -277,12 +276,14 @@ public class BehaviorGraph
     private ArrayList<Behavior> planHelper(DijkstraNode dn)
     {
         ArrayList<Behavior> plan = new ArrayList<Behavior>();
-        while (dn.parent.parent != null) {
+        DijkstraNode prev = dn;
+        while (dn.parent != null) {
             Edge edge = dn.getEdge();
             plan.add(edge.b);
+            prev = dn;
             dn = dn.parent;
         }
-        plan.add(new Behavior(dn.getEdge().startXYTs.get(0), 0, null, null));
+        plan.add(new Behavior(prev.getEdge().startXYTs.get(0), 0, null, null));
 
         Collections.reverse(plan);
         return plan;
