@@ -30,11 +30,18 @@ public class BehaviorGraph
 
     class DijkstraNode
     {
-
-
+        public int nodeID = -1;
         public int edgeID = -1;
         public double score = 1.0;
         public DijkstraNode parent = null;
+
+        private DijkstraNode() {};
+
+        public DijkstraNode(int nodeID)
+        {
+            // XXX What about non-node based search/lookup? Arbitrary locations!
+            this.nodeID = nodeID;
+        }
 
         /** Add a child to our search graph. The child documents the edgeID
          *  of the edge that took it to its presesnt location. The edge itself
@@ -47,6 +54,7 @@ public class BehaviorGraph
 
             DijkstraNode dn = new DijkstraNode();
             dn.edgeID = edgeID;
+            dn.nodeID = e.b.tagID;   // If -1? We're currently saying this never happens
             dn.score = score*e.b.myprob;
 
             dn.parent = this;
@@ -63,7 +71,9 @@ public class BehaviorGraph
 
         public Node getNode()
         {
-            return nodes.get(getEdge().b.tagID);
+            if (nodeID < 0)
+                return null;
+            return nodes.get(nodeID);
         }
 
         public int hashCode()
@@ -108,14 +118,15 @@ public class BehaviorGraph
         public int id;
         public Behavior b;
 
-        // XXX NEED TO KNOW START AND END POINTS ARE FOR LOOKUPS!
+        // XXX NEED TO KNOW START AND END POINTS ARE FOR LOOKUPS! Ends are
+        // encoded in the behavior...starts need to be maintained separately
         public ArrayList<double[]> startXYTs = new ArrayList<double[]>();
-        public ArrayList<double[]> endXYTs = new ArrayList<double[]>();
 
-        public Edge(Behavior b)
+        public Edge(Behavior b, double[] xyt)
         {
             id = edgeID++;
             this.b = b.copyBehavior();
+            startXYTs.add(xyt);
         }
 
         public boolean equals(Object o)
@@ -145,13 +156,13 @@ public class BehaviorGraph
     }
 
     /** Add an edge to the graph, or modify an existing edge as necessary */
-    public void addEdge(int outID, int inID, Behavior b)
+    public void addEdge(int outID, int inID, Behavior b, double[] startXYT)
     {
         assert (nodes.containsKey(outID));
         assert (nodes.containsKey(inID));
         assert (outID != inID);
 
-        Edge e = new Edge(b);
+        Edge e = new Edge(b, startXYT);
         edges.put(e.id, e);
 
         Node out = nodes.get(outID);
@@ -169,6 +180,7 @@ public class BehaviorGraph
         }
 
         if (match != null) {
+            match.startXYTs.add(startXYT);
             match.b.xyts.addAll(e.b.xyts);
             match.b.distances.addAll(e.b.distances);
         } else {
@@ -186,16 +198,18 @@ public class BehaviorGraph
         // overlap with and of match.xyts. Then, look at all outgoing edges @
         // inID and likewise look for overlap. We only need to consider the
         // most recently proposed xyts in behavior!
-        for (double[] xyt: b.xyts) {
+        for (double[] xyt: match.b.xyts) {
             for (Integer key: out.edgesIn) {
                 Edge edgeIn = edges.get(key);
-                for (double[] inXYT: edgeIn.b.xyts) {
+                for (double[] inXYT: edgeIn.startXYTs) {
                     if (xytEquals(xyt, inXYT)) {
                         out.in2out.get(edgeIn.id).add(match.id);
                     }
                 }
             }
+        }
 
+        for (double[] xyt: match.startXYTs) {
             for (Integer key: in.edgesOut) {
                 Edge edgeOut = edges.get(key);
                 for (double[] outXYT: edgeOut.b.xyts) {
@@ -211,10 +225,8 @@ public class BehaviorGraph
     // goal or orientation to match against graph structure.
     public ArrayList<Behavior> navigate(int startTag, int endTag)
     {
-        Node start = nodes.get(startTag);
-
         // Perform a Dijkstra search through the graph. MOAR NODES
-        DijkstraNode dn = new DijkstraNode();
+        DijkstraNode dn = new DijkstraNode(startTag);
 
         HashSet<DijkstraNode> closedList = new HashSet<DijkstraNode>();
         PriorityQueue<DijkstraNode> queue =
@@ -230,14 +242,17 @@ public class BehaviorGraph
             if (currNode != null && currNode.id == endTag)
                 return planHelper(dn); // XXX
 
-
             // Pass over previously visited search nodes
             if (closedList.contains(dn))
                 continue;
             closedList.add(dn);
 
             // Generate children
-            Set<Integer> validEdgesOut = currNode.in2out.get(currEdge.id);
+            Set<Integer> validEdgesOut;
+            if (currEdge == null)
+                validEdgesOut = currNode.edgesOut;
+            else
+                validEdgesOut = currNode.in2out.get(currEdge.id);
             for (Integer edgeID: validEdgesOut) {
                 queue.add(dn.addChild(edgeID));
             }
@@ -255,6 +270,7 @@ public class BehaviorGraph
             plan.add(edge.b);
             dn = dn.parent;
         }
+        plan.add(new Behavior(dn.getEdge().startXYTs.get(0), 0, null, null));
 
         Collections.reverse(plan);
         return plan;

@@ -251,11 +251,11 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 Color c = classToColor.get(name);
                 vb.addBack(new VisLighting(false,
                                            tag.getPose(),
-                                           new VzCircle(0.5,
+                                           new VzCircle(0.6,
                                                         new VzMesh.Style(new Color(cm.map(pct))),
                                                         new VzLines.Style(Color.black, 1)),
-                                           LinAlg.translate(0, 0.25, 0),
-                                           new VzRectangle(1.0, 0.5,
+                                           LinAlg.translate(0, 0.3, 0),
+                                           new VzRectangle(1.2, 0.6,
                                                            new VzMesh.Style(c),
                                                            new VzLines.Style(Color.black, 1))));
                                            //LinAlg.translate(0, -0.5, 0),
@@ -433,8 +433,28 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             BehaviorGraph graph = TreeUtil.compress(trees);
 
             // Test it out
-            ArrayList<Behavior> testPlan = graph.navigate(1, 41);
+            ArrayList<Behavior> testPlan = graph.navigate(1, 8);
+
+            if (testPlan == null) {
+                System.err.println("ERR: No path could be found between these nodes");
+                return;
+            }
             MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+            Behavior start = testPlan.get(0);
+            bot.setPose(LinAlg.xytToMatrix(start.xyts.get(0))); // XXX
+            for (Behavior b: testPlan) {
+                if (b.law == null)
+                    continue;
+                bot.init(b.law, b.test);
+                bot.simulate(true);
+
+                assert (bot.success()); // XXX
+            }
+
+            VisWorld.Buffer vb = vw.getBuffer("test-navigation");
+            vb.setDrawOrder(-900);
+            vb.addBack(bot.getVisObject());
+            vb.swap();
         }
     }
 

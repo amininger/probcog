@@ -235,7 +235,7 @@ public class TreeUtil
                         // XXX Is there any benefit to avoiding adding edges
                         // to things that are already connected by some other
                         // route?
-                        graph.addEdge(id, child.data.tagID, child.data);
+                        graph.addEdge(id, child.data.tagID, child.data, child.parent.data.theoreticalXYT);
                     }
 
                     // There should only be one such edge. Break!
@@ -252,7 +252,7 @@ public class TreeUtil
         // may only exist in very particular cases. In other words, we are just
         // compressing the structure of many trees into one graph, which we
         // will need to search AGAIN.
-        System.out.printf("Graph constructed using %d of %d landmarks.\n");
+        System.out.printf("Graph constructed using %d of %d landmarks.\n", idCount, sortedIDs.size());
         return graph;
     }
 }
