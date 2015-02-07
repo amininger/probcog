@@ -7,6 +7,10 @@ import april.jmat.*;
 import april.vis.*;
 import april.util.*;
 
+import probcog.commands.*;
+import probcog.commands.controls.*;
+import probcog.commands.tests.*;
+
 /** A graph structure with some wrinkles particular to this application.
  *  Could certainly be done generally given more time, but this is
  *  expedient.
@@ -276,9 +280,25 @@ public class BehaviorGraph
     private ArrayList<Behavior> planHelper(DijkstraNode dn)
     {
         ArrayList<Behavior> plan = new ArrayList<Behavior>();
+
+        Node node = dn.getNode();
+        Edge edge = dn.getEdge();
+        if (node != null && node.id > 0) {
+            HashMap<String, TypedValue> params =
+                new HashMap<String, TypedValue>();
+            params.put("id", new TypedValue(node.id));
+            DriveTowardsTag dtt = new DriveTowardsTag(params);
+            params.put("distance", new TypedValue(0.5));
+            plan.add(new Behavior(edge.b.xyts.get(0),
+                                  edge.b.distances.get(0),
+                                  dtt,
+                                  new NearTag(params)));
+        }
+
+
         DijkstraNode prev = dn;
         while (dn.parent != null) {
-            Edge edge = dn.getEdge();
+            edge = dn.getEdge();
             plan.add(edge.b);
             prev = dn;
             dn = dn.parent;
