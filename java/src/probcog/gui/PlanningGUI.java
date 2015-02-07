@@ -427,13 +427,18 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
     {
         public void run()
         {
+            // Timeout is not terribly useful, as it requires knowing a few
+            // things in advance: 1) How long it takes to compute the tree
+            // normally and 2) How long you need to search to ensure completeness.
+            // 1 can be known, but at that point, why aren't you just paying
+            // the full cost. 2 cannot be known in advance.
             HashMap<Integer, Tree<Behavior> > trees =
-                TreeUtil.makeTrees(simulator.getWorld(), gm, vw);//, 5*1000000);
+                TreeUtil.makeTrees(simulator.getWorld(), gm, vw);//, (long)(1.0*1000000));
             //TreeUtil.hist(trees);
             BehaviorGraph graph = TreeUtil.compress(trees);
 
             // Test it out
-            ArrayList<Behavior> testPlan = graph.navigate(40, 41 , vw);
+            ArrayList<Behavior> testPlan = graph.navigate(3, 6 , vw);
 
             if (testPlan == null) {
                 System.err.println("ERR: No path could be found between these nodes");

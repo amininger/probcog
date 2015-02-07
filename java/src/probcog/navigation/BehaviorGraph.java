@@ -269,7 +269,7 @@ public class BehaviorGraph
         }
         //vb.swap();
 
-        System.err.println("ERR: Could not find path between tags");
+        //System.err.println("ERR: Could not find path between tags");
         return null; // Failure
     }
 
@@ -292,8 +292,16 @@ public class BehaviorGraph
     /** Determine whether or not the graph is fully reachable. */
     public boolean isFullyReachable()
     {
-        // XXX Highly ineffecient implementation to come?
-        return false;
+        // Brute force: try to reach every node from every other one
+        for (Integer startID: nodes.keySet()) {
+            for (Integer endID: nodes.keySet()) {
+                if (startID.equals(endID))
+                    continue;
+                if (navigate(startID, endID, null) == null)
+                    return false;
+            }
+        }
+        return true;
     }
 
 
