@@ -134,4 +134,34 @@ public class TagMap
 
         return seen;
     }
+
+    /** Return a tag position given its ID
+     *  @param id   Tag ID
+     *
+     *  @return The corresponding TagXYT. null if no such tag exists
+     **/
+    public TagXYT getTag(int id)
+    {
+        for (TagXYT tag: tags) {
+            if (tag.id == id)
+                return tag;
+        }
+
+        return null;
+    }
+
+    /** Return an estimated robot pose based on its current
+     *  tag observations.
+     *  @param relativeObservations Relative tag XYT to robot
+     *
+     *  @return A robot XYT based on our observations.
+     **/
+    public double[] getXYTFromTags(ArrayList<TagXYT> relativeObservations)
+    {
+        assert (relativeObservations != null);
+        assert (relativeObservations.size() > 0);
+
+        // Extract pose from tags.
+        return null;
+    }
 }

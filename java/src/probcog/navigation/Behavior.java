@@ -18,7 +18,7 @@ public class Behavior
     // LAMBA should be selected such that you are willing to travel an extra
     // LAMBA/100 meters to gain a 1% improvement in arrival rate.
     // XXX CONFIG
-    static final double LAMBDA = 1000.0;
+    static final double LAMBDA = 1000;
     Random r = new Random();
 
     // Control state
@@ -32,8 +32,9 @@ public class Behavior
     // Likewise, theoreticalDistance tells us how far we think we've traveled
     // after executing command.
     public int tagID = -1;
-    public double[] theoreticalXYT = new double[3];
-    public double theoreticalDistance = 0;
+    XYTPair theoreticalXYT = new XYTPair();
+    //public double[] theoreticalXYT = new double[3];
+    //public double theoreticalDistance = 0;
 
     // The probability that this behavior will actually be executed correctly.
     // For counting-based behaviors, one would expect this to be our estimate of
@@ -45,17 +46,34 @@ public class Behavior
     // distribution AFTER executing this command.
     private double behaviorScore = Double.MAX_VALUE;
     private double scoreSoFar = Double.MAX_VALUE;
-    public ArrayList<double[]> xyts = new ArrayList<double[]>();
-    public ArrayList<Double> distances = new ArrayList<Double>();
+    //public ArrayList<double[]> xyts = new ArrayList<double[]>();
+    //public ArrayList<Double> distances = new ArrayList<Double>()
+    public ArrayList<XYTPair> xyts = new ArrayList<XYTPair>();
     public class XYTPair
     {
-        public double[] xyt;
-        public double dist;
+        public double[] startXYT = new double[3];
+        public double[] endXYT = new double[3];
+        public double dist = 0;
 
-        public XYTPair(double[] xyt, double dist)
+        public XYTPair()
         {
-            this.xyt = xyt;
+        }
+
+        public XYTPair(double[] startXYT, double[] endXYT, double dist)
+        {
+            this.startXYT = startXYT;
+            this.endXYT = endXYT;
             this.dist = dist;
+        }
+
+        public XYTPair copy()
+        {
+            XYTPair copy = new XYTPair();
+            copy.startXYT = LinAlg.copy(startXYT);
+            copy.endXYT = LinAlg.copy(endXYT);
+            copy.dist = dist;
+
+            return copy;
         }
     }
 
@@ -123,46 +141,64 @@ public class Behavior
     {
     }
 
-    public Behavior(double[] xyt, double distance, ControlLaw law, ConditionTest test)
+    public Behavior(double[] startXYT, double[] endXYT, double distance, ControlLaw law, ConditionTest test)
     {
-        xyts.add(xyt);
-        distances.add(distance);
+        xyts.add(new XYTPair(startXYT, endXYT, distance));
         this.law = law;
         this.test = test;
-        this.theoreticalXYT = LinAlg.copy(xyt);
-        this.theoreticalDistance = distance;
+        theoreticalXYT = new XYTPair(startXYT, endXYT, distance);
     }
 
-    public Behavior(ArrayList<double[]> xyts, ArrayList<Double> distances, ControlLaw law, ConditionTest test)
+    public Behavior(ArrayList<double[]> startXYTs,
+                    ArrayList<double[]> endXYTs,
+                    ArrayList<Double> distances,
+                    ControlLaw law,
+                    ConditionTest test)
     {
-        assert (xyts.size() == distances.size());
-
-        this.xyts = xyts;
+        assert (startXYTs.size() == endXYTs.size());
+        assert (startXYTs.size() == distances.size());
+        for (int i = 0; i < startXYTs.size(); i++) {
+            this.xyts.add(new XYTPair(startXYTs.get(i),
+                                      endXYTs.get(i),
+                                      distances.get(i)));
+        }
         this.law = law;
         this.test = test;
-        this.distances = distances;
         if (xyts.size() > 0) {
-            this.theoreticalXYT = LinAlg.copy(xyts.get(0));
-            this.theoreticalDistance = distances.get(0);
+            theoreticalXYT = xyts.get(0);
         }
     }
 
     public Behavior copyBehavior()
     {
         Behavior b = new Behavior();
-        for (double[] xyt: xyts)
-            b.xyts.add(LinAlg.copy(xyt));
-        for (Double dist: distances)
-            b.distances.add(dist);
+        for (XYTPair pair: xyts)
+            b.xyts.add(pair.copy());
         b.test = test.copyCondition();
         b.law = law;
         b.tagID = tagID;
-        b.theoreticalXYT = LinAlg.copy(theoreticalXYT);
-        b.theoreticalDistance = theoreticalDistance;
         b.prob = prob;
         b.myprob = myprob;
+        b.theoreticalXYT = theoreticalXYT.copy();
 
         return b; // XXX
+    }
+
+    public ArrayList<double[]> getEndXYTs()
+    {
+        ArrayList<double[]> endXYTs= new ArrayList<double[]>();
+        for (XYTPair pair: xyts)
+            endXYTs.add(pair.endXYT);
+        return endXYTs;
+    }
+
+    public ArrayList<double[]> getStartXYTs()
+    {
+        ArrayList<double[]> startXYTs = new ArrayList<double[]>();
+        for (XYTPair pair: xyts)
+            startXYTs.add(pair.startXYT);
+        return startXYTs;
+
     }
 
     public double getScoreSoFar(int numSamples)
@@ -177,7 +213,7 @@ public class Behavior
         if (scoreSoFar < Double.MAX_VALUE)
             return scoreSoFar;
 
-        double meanDistance = theoreticalDistance; //getMeanDistTraveled();
+        double meanDistance = theoreticalXYT.dist; //getMeanDistTraveled();
         scoreSoFar = meanDistance - LAMBDA*pct;
 
         return scoreSoFar;
@@ -225,7 +261,7 @@ public class Behavior
         double GOAL_THRESH = 4.0;
         int count = 0;
         for (int i = 0; i < xyts.size(); i++) {
-            double[] xyt = xyts.get(i);
+            double[] xyt = xyts.get(i).endXYT;
             int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
             int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
             double wfdist = (double)wavefront[iy*gm.width + ix];
@@ -238,15 +274,15 @@ public class Behavior
 
     public double getMeanDistTraveled()
     {
-        if (distances.size() < 1)
+        if (xyts.size() < 1)
             return 0;
 
         double mean = 0;
-        for (int i = 0; i < distances.size(); i++) {
-            mean += distances.get(i);
+        for (int i = 0; i < xyts.size(); i++) {
+            mean += xyts.get(i).dist;
         }
 
-        return mean / distances.size();
+        return mean / xyts.size();
     }
 
     public double getMeanDistToGoal(GridMap gm, float[] wavefront)
@@ -256,7 +292,7 @@ public class Behavior
 
         double mean = 0;
         for (int i = 0; i < xyts.size(); i++) {
-            double[] xyt = xyts.get(i);
+            double[] xyt = xyts.get(i).endXYT;
             int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
             int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
             double wfdist = (double)wavefront[iy*gm.width + ix];
@@ -285,7 +321,7 @@ public class Behavior
 
         double mean = 0;
         for (int i = 0; i < xyts.size(); i++) {
-            double[] xyt = xyts.get(i);
+            double[] xyt = xyts.get(i).endXYT;
             int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
             int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
             double wfdist = (double)wavefront[iy*gm.width + ix];
@@ -304,17 +340,10 @@ public class Behavior
         return mean / xyts.size();
     }
 
-    public void addObservation(double[] xyt, double dist)
-    {
-        xyts.add(xyt);
-        distances.add(dist);
-        stats = null;
-    }
-
     public XYTPair getXYT()
     {
         assert (xyts.size() > 0);
-        return new XYTPair(xyts.get(0), distances.get(0));
+        return xyts.get(0).copy();
     }
 
     // Uniformly sample an XYT from the samples
@@ -322,20 +351,21 @@ public class Behavior
     {
         assert (xyts.size() > 0);
         int idx = r.nextInt(xyts.size());
-        return new XYTPair(xyts.get(idx), distances.get(idx));
+        return xyts.get(idx).copy();
     }
 
     private void evaluate()
     {
         if (stats != null)
             return;
-        stats = computeStats(xyts);
+        stats = computeStatsPair(xyts);
 
         assert (xyts.size() > 0);
 
         // Clustering. Quite naive
         clusters.clear();
-        for (double[] xyt: xyts) {
+        for (XYTPair pair: xyts) {
+            double[] xyt = pair.endXYT;
             double bestDist = Double.MAX_VALUE;
             Cluster bestCluster = null;
             for (Cluster c: clusters) {
@@ -388,12 +418,23 @@ public class Behavior
     public VisObject getVisObject()
     {
         VisVertexData vvd = new VisVertexData();
-        for (double[] xyt: xyts)
+        for (XYTPair pair: xyts) {
+            double[] xyt = pair.endXYT;
             vvd.add(xyt, 1, 2); // Not very efficient
+        }
         return new VzPoints(vvd, new VzPoints.Style(Color.red, 5));
     }
 
     // === Utility ===========================================================
+    static private XYTStats computeStatsPair(ArrayList<XYTPair> pairs)
+    {
+        ArrayList<double[]> endXYTs = new ArrayList<double[]>();
+        for (XYTPair pair: pairs)
+            endXYTs.add(pair.endXYT);
+
+        return computeStats(endXYTs);
+    }
+
     static private XYTStats computeStats(ArrayList<double[]> xyts)
     {
         XYTStats stats = new XYTStats();
@@ -426,6 +467,8 @@ public class Behavior
 
     public String toString()
     {
+        if (law == null || test == null)
+            return "NULL";
         return String.format("(%f) %s until %s\n", prob, law.toString(), test.toString());
     }
 

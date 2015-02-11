@@ -170,6 +170,8 @@ public class MonteCarloBot implements SimObject
         int timeout = (int)(seconds/FastDrive.DT);
         Tic tic = new Tic();
         double time = 0;
+
+        double[] startXYT = LinAlg.matrixToXYT(getPose());
         while ((test == null || !test.conditionMet()) && timeout > 0) {
             tic.tic();
             // LASER UPDATE
@@ -304,7 +306,7 @@ public class MonteCarloBot implements SimObject
                         }
                     }
                 } else {
-                    buildBehaviors(tag, perfect);
+                    buildBehaviors(startXYT, tag, perfect);
                 }
             }
 
@@ -325,9 +327,9 @@ public class MonteCarloBot implements SimObject
         //System.out.printf("%f [s]\n", time);
     }
 
-    private void buildBehaviors(SimAprilTag tag, boolean perfect)
+    private void buildBehaviors(double[] startXYT, SimAprilTag tag, boolean perfect)
     {
-        buildBehaviors(tag, perfect, false);
+        buildBehaviors(startXYT, tag, perfect, false);
     }
 
     /** Take a list of classifications and our tag history to update our
@@ -337,7 +339,7 @@ public class MonteCarloBot implements SimObject
      *  @param tag  The tag observed and being converted to a landmark
      *  @param repeatLandmarks  If true, allow things like "go until nth door" for n> 1
      **/
-    private void buildBehaviors(SimAprilTag tag, boolean perfect, boolean repeatLandmarks)
+    private void buildBehaviors(double[] startXYT, SimAprilTag tag, boolean perfect, boolean repeatLandmarks)
     {
         // Handle tags that don't have labels OR are repeat landmarks. Note that
         // in this updated version of the function, we ONLY consider the actual
@@ -410,7 +412,11 @@ public class MonteCarloBot implements SimObject
             ClassificationCounterTest cct = new ClassificationCounterTest(params);
 
             double[] xyt = LinAlg.matrixToXYT(getPose());
-            Behavior rec = new Behavior(xyt, getTrajectoryLength(), law, cct);
+            Behavior rec = new Behavior(startXYT,
+                                        xyt,
+                                        getTrajectoryLength(),
+                                        law,
+                                        cct);
             rec.prob = lcr.prob;
             rec.myprob = lcr.myprob;
             rec.tagID = tag.getID();

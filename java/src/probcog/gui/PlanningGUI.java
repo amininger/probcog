@@ -446,7 +446,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             }
             MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
             Behavior start = testPlan.get(0);
-            bot.setPose(LinAlg.xytToMatrix(start.xyts.get(0))); // XXX
+            bot.setPose(LinAlg.xytToMatrix(start.xyts.get(0).endXYT)); // XXX
             for (Behavior b: testPlan) {
                 if (b.law == null)
                     continue;
@@ -934,7 +934,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     Behavior b = behaviors.get(i);
                     foutPlan.writeInt(b.xyts.size());
                     for (int j = 0; j < b.xyts.size(); j++) {
-                        foutPlan.writeDoubles(b.xyts.get(j));
+                        foutPlan.writeDoubles(b.xyts.get(j).endXYT);
                     }
                 }
                 fout.flush();
@@ -948,8 +948,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     //starts = behaviors.get(behaviors.size()-1).xyts;
                     starts = new ArrayList<double[]>();
                     Behavior last = behaviors.get(behaviors.size()-1);
-                    for (double[] xyt: last.xyts) {
-                        starts.add(LinAlg.copy(xyt));
+                    for (Behavior.XYTPair xyt: last.xyts) {
+                        starts.add(LinAlg.copy(xyt.endXYT));
                     }
                 } else {
                     System.out.println("ERR: Could not find a valid plan");

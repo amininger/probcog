@@ -83,7 +83,7 @@ public class TreeUtil
             //Behavior.XYTPair pair = node.parent.data.randomXYT();
             mcb.init(node.data.law,
                      node.data.test,
-                     node.parent.data.theoreticalXYT,
+                     node.parent.data.theoreticalXYT.endXYT,
                      0);
             mcb.simulate(true);
             if (!mcb.success()) {
@@ -91,9 +91,9 @@ public class TreeUtil
                                   node.data.law,
                                   node.data.test,
                                   node.data.tagID,
-                                  node.parent.data.theoreticalXYT[0],
-                                  node.parent.data.theoreticalXYT[1],
-                                  node.parent.data.theoreticalXYT[2]);
+                                  node.parent.data.theoreticalXYT.endXYT[0],
+                                  node.parent.data.theoreticalXYT.endXYT[1],
+                                  node.parent.data.theoreticalXYT.endXYT[2]);
                 vb.addBack(new VisLighting(false, mcb.getVisObject(Color.red)));
             }
             int k0 = ((node.depth-1)/colors.size())%2;
@@ -232,7 +232,7 @@ public class TreeUtil
                         // an XYT to an existing edge of the same type. Hopefully,
                         // that gives us adequate diversity to match against when
                         // looking up where to latch on to, later!
-                        graph.addEdge(id, child.data.tagID, child.data, child.parent.data.theoreticalXYT);
+                        graph.addEdge(id, child.data.tagID, child.data, child.parent.data.theoreticalXYT.endXYT);
                     }
 
                     // There should only be one such edge. Break!
@@ -250,7 +250,10 @@ public class TreeUtil
                                 if (grandchild.data.law instanceof DriveTowardsTag)
                                     continue;
                                 assert (grandchild.data.tagID > -1);
-                                graph.addEdge(id, grandchild.data.tagID, grandchild.data, child.data.theoreticalXYT);
+                                graph.addEdge(id,
+                                              grandchild.data.tagID,
+                                              grandchild.data,
+                                              child.data.theoreticalXYT.endXYT);
                             }
                             continue;
                         }
@@ -264,7 +267,10 @@ public class TreeUtil
                         // XXX Is there any benefit to avoiding adding edges
                         // to things that are already connected by some other
                         // route?
-                        graph.addEdge(id, child.data.tagID, child.data, child.parent.data.theoreticalXYT);
+                        graph.addEdge(id,
+                                      child.data.tagID,
+                                      child.data,
+                                      child.parent.data.theoreticalXYT.endXYT);
                     }
                 }
             }

@@ -190,7 +190,6 @@ public class BehaviorGraph
         if (match != null) {
             match.startXYTs.add(startXYT);
             match.b.xyts.addAll(e.b.xyts);
-            match.b.distances.addAll(e.b.distances);
         } else {
             out.edgesOut.add(e.id);
             in.edgesIn.add(e.id);
@@ -206,7 +205,8 @@ public class BehaviorGraph
         // overlap with and of match.xyts. Then, look at all outgoing edges @
         // inID and likewise look for overlap. We only need to consider the
         // most recently proposed xyts in behavior!
-        for (double[] xyt: match.b.xyts) {
+        for (Behavior.XYTPair pair: match.b.xyts) {
+            double[] xyt = pair.endXYT;
             for (Integer key: in.edgesOut) {
                 Edge edgeOut = edges.get(key);
                 for (double[] outXYT: edgeOut.startXYTs) {
@@ -220,7 +220,8 @@ public class BehaviorGraph
         for (double[] xyt: match.startXYTs) {
             for (Integer key: out.edgesIn) {
                 Edge edgeIn = edges.get(key);
-                for (double[] inXYT: edgeIn.b.xyts) {
+                for (Behavior.XYTPair pair: edgeIn.b.xyts) {
+                    double[] inXYT = pair.endXYT;
                     if (xytEquals(xyt, inXYT)) {
                         out.in2out.get(edgeIn.id).add(match.id);
                     }
@@ -289,8 +290,9 @@ public class BehaviorGraph
             params.put("id", new TypedValue(node.id));
             DriveTowardsTag dtt = new DriveTowardsTag(params);
             params.put("distance", new TypedValue(0.5));
-            plan.add(new Behavior(edge.b.xyts.get(0),
-                                  edge.b.distances.get(0),
+            plan.add(new Behavior(edge.b.xyts.get(0).startXYT,
+                                  edge.b.xyts.get(0).endXYT,
+                                  edge.b.xyts.get(0).dist,
                                   dtt,
                                   new NearTag(params)));
         }
@@ -303,7 +305,11 @@ public class BehaviorGraph
             prev = dn;
             dn = dn.parent;
         }
-        plan.add(new Behavior(prev.getEdge().startXYTs.get(0), 0, null, null));
+        plan.add(new Behavior(prev.getEdge().startXYTs.get(0),
+                              prev.getEdge().startXYTs.get(0),
+                              0,
+                              null,
+                              null));
 
         Collections.reverse(plan);
         return plan;
