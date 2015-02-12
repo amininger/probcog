@@ -23,6 +23,7 @@ import probcog.commands.tests.*;
  */
 public class BehaviorGraph
 {
+    static final double WHEELBASE_M = 0.5;
     static final double XYT_DIST_M = 0.3; // XXX
     static final double XYT_THETA_RAD = Math.toRadians(5);
 
@@ -42,6 +43,8 @@ public class BehaviorGraph
     {
         public int nodeIdx = -1;            // Our current node
         public int edgeID = -1;             // The edge that brought us here
+        public double prob = 1.0;
+        public double dist = 0;
         public double score = 1.0;
         public DijkstraNode parent = null;
 
@@ -64,7 +67,9 @@ public class BehaviorGraph
             DijkstraNode dn = new DijkstraNode();
             dn.edgeID = edgeID;
             dn.nodeIdx = findNodeIdx(e.b.theoreticalXYT.endXYT);
-            dn.score = score*e.b.myprob;
+            dn.prob = prob*e.b.myprob;
+            dn.dist = dist+e.b.theoreticalXYT.myDist;
+            dn.score = prob*Behavior.LAMBDA - dist; // ADD WAVEFRONT HEURISTIC STUFF XXX
 
             dn.parent = this;
 
@@ -299,7 +304,7 @@ public class BehaviorGraph
                 vb.addBack(new VisChain(LinAlg.xytToMatrix(e.b.theoreticalXYT.startXYT),
                                         new VzBox(new VzMesh.Style(Color.red))));
             }
-            TimeUtil.sleep(500);
+            //TimeUtil.sleep(500);
 
             vb.swap();
         }
@@ -328,22 +333,24 @@ public class BehaviorGraph
             // BACKWARDS, so take this into account when generating a turn
             double[] prevXYT = prev.getEdge().b.theoreticalXYT.startXYT;
             double[] currXYT = edge.b.theoreticalXYT.endXYT;
+            double myDist = edge.b.theoreticalXYT.myDist;
             double dist = edge.b.theoreticalXYT.dist;
             double dt = MathUtil.mod2pi(prevXYT[2] - currXYT[2]);
             if (Math.abs(dt) > XYT_THETA_RAD) {
                 HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                 params.put("direction", new TypedValue(dt > 0 ? (byte)1 : (byte)0));
-                params.put("yaw", new TypedValue(dt));
+                params.put("yaw", new TypedValue(Math.abs(dt)));
                 params.put("no-lcm", new TypedValue(1));
                 Turn turn = new Turn(params);
                 RotationTest rt = new RotationTest(params);
                 Behavior b = new Behavior(currXYT,
                                           prevXYT,
                                           dist,
+                                          dist+Math.abs(dt)*(WHEELBASE_M/2),
                                           turn,
                                           rt);
                 b.prob = edge.b.prob;
-                //plan.add(b);
+                plan.add(b); // XXX WIP
             }
 
             plan.add(edge.b);
@@ -353,6 +360,7 @@ public class BehaviorGraph
         plan.add(new Behavior(prev.getEdge().b.theoreticalXYT.startXYT,
                               prev.getEdge().b.theoreticalXYT.startXYT,
                               0,
+                              0,
                               null,
                               null));
 
@@ -360,6 +368,7 @@ public class BehaviorGraph
         System.out.println("Constructed plan of size: "+plan.size());
         for (Behavior b: plan)
             System.out.println(b);
+        System.out.println("=====================");
         return plan;
     }
 

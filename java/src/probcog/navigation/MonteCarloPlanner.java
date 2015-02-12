@@ -425,8 +425,10 @@ public class MonteCarloPlanner
         params.put("distance", new TypedValue(0.1));    // XXX What should this be?
 
         ArrayList<double[]> startXYTs = new ArrayList<double[]>();
-        ArrayList<double[]> xyts = new ArrayList<double[]>();
-        ArrayList<Double> distances = new ArrayList<Double>();
+        ArrayList<double[]> endXYTs = new ArrayList<double[]>();
+        ArrayList<Double> startDists = new ArrayList<Double>();
+        ArrayList<Double> endDists = new ArrayList<Double>();
+
 
         MonteCarloBot mcb = new MonteCarloBot(sw);
         for (int i = 0; i < numSamples; i++) {
@@ -444,14 +446,16 @@ public class MonteCarloPlanner
             }
             // Find where we are and how much we've driven to get there
             startXYTs.add(node.data.theoreticalXYT.endXYT);
-            xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-            distances.add(mcb.getTrajectoryLength());
+            endXYTs.add(LinAlg.matrixToXYT(mcb.getPose()));
+            startDists.add(node.data.theoreticalXYT.dist);
+            endDists.add(mcb.getTrajectoryLength());
         }
 
         // The behavior begins where the last one ended.
         Behavior b = new Behavior(startXYTs,
-                                  xyts,
-                                  distances,
+                                  endXYTs,
+                                  startDists,
+                                  endDists,
                                   dtt,
                                   new NearTag(params));
         // XXX Is this only possible because of our model?
@@ -508,6 +512,7 @@ public class MonteCarloPlanner
 
                 ArrayList<double[]> xyts = new ArrayList<double[]>();
                 ArrayList<Double> dists = new ArrayList<Double>();
+                ArrayList<Double> startDists = new ArrayList<Double>();
                 MonteCarloBot mcb = new MonteCarloBot(sw);
                 for (int i = 0; i < numExploreSamples; i++) {
                     Turn turn = new Turn(params);
@@ -519,11 +524,13 @@ public class MonteCarloPlanner
                     if (mcb.success()) {
                         xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
                         dists.add(mcb.getTrajectoryLength());
+                        startDists.add(pair.dist);
                     }
                 }
 
                 Behavior b = new Behavior(node.data.getEndXYTs(),
                                           xyts,
+                                          startDists,
                                           dists,
                                           new Turn(params),
                                           new RotationTest(params2));
@@ -565,6 +572,7 @@ public class MonteCarloPlanner
         ArrayList<double[]> startXYTs = new ArrayList<double[]>();
         ArrayList<double[]> xyts = new ArrayList<double[]>();
         ArrayList<Double> distances = new ArrayList<Double>();
+        ArrayList<Double> startDists = new ArrayList<Double>();
         for (int i = 0; i < numSamples; i++) {
             Behavior.XYTPair pair = node.data.randomXYT();
             mcb.init(b.law,
@@ -584,6 +592,7 @@ public class MonteCarloPlanner
                 // Find where we are and how much we've driven to get there
                 startXYTs.add(pair.endXYT);
                 xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                startDists.add(pair.dist);
                 distances.add(mcb.getTrajectoryLength());
             }
         }
@@ -591,6 +600,7 @@ public class MonteCarloPlanner
             return null;    // Complete and utter failure of execution
         Behavior behavior = new Behavior(startXYTs,
                                          xyts,
+                                         startDists,
                                          distances,
                                          b.law,
                                          b.test.copyCondition());
@@ -652,7 +662,7 @@ public class MonteCarloPlanner
         // tag location. It is up to our search to escape efficiently.
         // Is there a place for turn-in-place? I expect yes, and that we'll
         // want that.
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt_0, xyt_0, 0, null, null));
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt_0, xyt_0, 0, 0, null, null));
 
         // Find the best routes to all other locations simultaneously. Reward
         // a combination of distance traveled and arrival rate. Basically,
@@ -812,6 +822,7 @@ public class MonteCarloPlanner
         gsnHeap.clear();
         Node<Behavior> behaviorNode = new Node<Behavior>(new Behavior(starts,
                                                                       starts,
+                                                                      dists,
                                                                       dists,
                                                                       null,
                                                                       null));

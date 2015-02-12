@@ -455,6 +455,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 System.out.println(b);
                 bot.init(b.law, b.test);
                 bot.simulate(true);
+                LinAlg.print(LinAlg.matrixToXYT(bot.getPose()));
 
                 assert (bot.success()); // XXX
             }
@@ -463,6 +464,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             vb.setDrawOrder(-900);
             vb.addBack(bot.getVisObject());
             vb.swap();
+
         }
     }
 

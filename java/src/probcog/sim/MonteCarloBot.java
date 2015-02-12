@@ -172,6 +172,7 @@ public class MonteCarloBot implements SimObject
         double time = 0;
 
         double[] startXYT = LinAlg.matrixToXYT(getPose());
+        double startDist = getTrajectoryLength();
         while ((test == null || !test.conditionMet()) && timeout > 0) {
             tic.tic();
             // LASER UPDATE
@@ -306,7 +307,10 @@ public class MonteCarloBot implements SimObject
                         }
                     }
                 } else {
-                    buildBehaviors(startXYT, tag, perfect);
+                    buildBehaviors(startXYT,
+                                   startDist,
+                                   tag,
+                                   perfect);
                 }
             }
 
@@ -327,9 +331,12 @@ public class MonteCarloBot implements SimObject
         //System.out.printf("%f [s]\n", time);
     }
 
-    private void buildBehaviors(double[] startXYT, SimAprilTag tag, boolean perfect)
+    private void buildBehaviors(double[] startXYT,
+                                double startDist,
+                                SimAprilTag tag,
+                                boolean perfect)
     {
-        buildBehaviors(startXYT, tag, perfect, false);
+        buildBehaviors(startXYT, startDist, tag, perfect, false);
     }
 
     /** Take a list of classifications and our tag history to update our
@@ -339,7 +346,11 @@ public class MonteCarloBot implements SimObject
      *  @param tag  The tag observed and being converted to a landmark
      *  @param repeatLandmarks  If true, allow things like "go until nth door" for n> 1
      **/
-    private void buildBehaviors(double[] startXYT, SimAprilTag tag, boolean perfect, boolean repeatLandmarks)
+    private void buildBehaviors(double[] startXYT,
+                                double startDist,
+                                SimAprilTag tag,
+                                boolean perfect,
+                                boolean repeatLandmarks)
     {
         // Handle tags that don't have labels OR are repeat landmarks. Note that
         // in this updated version of the function, we ONLY consider the actual
@@ -414,6 +425,7 @@ public class MonteCarloBot implements SimObject
             double[] xyt = LinAlg.matrixToXYT(getPose());
             Behavior rec = new Behavior(startXYT,
                                         xyt,
+                                        startDist,
                                         getTrajectoryLength(),
                                         law,
                                         cct);

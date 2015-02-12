@@ -18,7 +18,7 @@ public class Behavior
     // LAMBA should be selected such that you are willing to travel an extra
     // LAMBA/100 meters to gain a 1% improvement in arrival rate.
     // XXX CONFIG
-    static final double LAMBDA = 1000;
+    public static final double LAMBDA = 1000;
     Random r = new Random();
 
     // Control state
@@ -33,8 +33,6 @@ public class Behavior
     // after executing command.
     public int tagID = -1;
     XYTPair theoreticalXYT = new XYTPair();
-    //public double[] theoreticalXYT = new double[3];
-    //public double theoreticalDistance = 0;
 
     // The probability that this behavior will actually be executed correctly.
     // For counting-based behaviors, one would expect this to be our estimate of
@@ -46,24 +44,24 @@ public class Behavior
     // distribution AFTER executing this command.
     private double behaviorScore = Double.MAX_VALUE;
     private double scoreSoFar = Double.MAX_VALUE;
-    //public ArrayList<double[]> xyts = new ArrayList<double[]>();
-    //public ArrayList<Double> distances = new ArrayList<Double>()
     public ArrayList<XYTPair> xyts = new ArrayList<XYTPair>();
     public class XYTPair
     {
         public double[] startXYT = new double[3];
         public double[] endXYT = new double[3];
+        public double myDist = 0;
         public double dist = 0;
 
         public XYTPair()
         {
         }
 
-        public XYTPair(double[] startXYT, double[] endXYT, double dist)
+        public XYTPair(double[] startXYT, double[] endXYT, double startDist, double endDist)
         {
             this.startXYT = startXYT;
             this.endXYT = endXYT;
-            this.dist = dist;
+            this.myDist = endDist - startDist;
+            this.dist = endDist;
         }
 
         public XYTPair copy()
@@ -71,6 +69,7 @@ public class Behavior
             XYTPair copy = new XYTPair();
             copy.startXYT = LinAlg.copy(startXYT);
             copy.endXYT = LinAlg.copy(endXYT);
+            copy.myDist = myDist;
             copy.dist = dist;
 
             return copy;
@@ -141,26 +140,34 @@ public class Behavior
     {
     }
 
-    public Behavior(double[] startXYT, double[] endXYT, double distance, ControlLaw law, ConditionTest test)
+    public Behavior(double[] startXYT,
+                    double[] endXYT,
+                    double startDist,
+                    double endDist,
+                    ControlLaw law,
+                    ConditionTest test)
     {
-        xyts.add(new XYTPair(startXYT, endXYT, distance));
+        xyts.add(new XYTPair(startXYT, endXYT, startDist, endDist));
         this.law = law;
         this.test = test;
-        theoreticalXYT = new XYTPair(startXYT, endXYT, distance);
+        theoreticalXYT = new XYTPair(startXYT, endXYT, startDist, endDist);
     }
 
     public Behavior(ArrayList<double[]> startXYTs,
                     ArrayList<double[]> endXYTs,
-                    ArrayList<Double> distances,
+                    ArrayList<Double> startDists,
+                    ArrayList<Double> endDists,
                     ControlLaw law,
                     ConditionTest test)
     {
         assert (startXYTs.size() == endXYTs.size());
-        assert (startXYTs.size() == distances.size());
+        assert (startXYTs.size() == startDists.size());
+        assert (startXYTs.size() == endDists.size());
         for (int i = 0; i < startXYTs.size(); i++) {
             this.xyts.add(new XYTPair(startXYTs.get(i),
                                       endXYTs.get(i),
-                                      distances.get(i)));
+                                      startDists.get(i),
+                                      endDists.get(i)));
         }
         this.law = law;
         this.test = test;
@@ -469,7 +476,13 @@ public class Behavior
     {
         if (law == null || test == null)
             return "NULL";
-        return String.format("(%f) %s until %s", prob, law.toString(), test.toString());
+        return String.format("[%.1f %.1f %.1f]: (%f) %s until %s",
+                             theoreticalXYT.startXYT[0],
+                             theoreticalXYT.startXYT[1],
+                             theoreticalXYT.startXYT[2],
+                             prob,
+                             law.toString(),
+                             test.toString());
     }
 
     // A more useful equals call, this one is actually called when graph building.
