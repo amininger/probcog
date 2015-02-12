@@ -663,6 +663,7 @@ public class MonteCarloPlanner
         Set<Integer> visitedTags = new HashSet<Integer>();
         visitedTags.add(tag.getID());
 
+        boolean addNeighbors = true;
         while (heap.size() > 0 && (TimeUtil.utime() - start_utime) < timeout_us) {
             GreedySearchNode gsn = heap.poll();
 
@@ -716,6 +717,45 @@ public class MonteCarloPlanner
                 if (b != null) {
                     Node<Behavior> node = gsn.node.addChild(b);
                     GreedySearchNode nextGSN = new GreedySearchNode(node);
+
+                    // Handle turns early
+                    if (b.law instanceof Turn) {
+                        watch.start("turns");
+                        ArrayList<Behavior> turnBehaviors = generateChildren(nextGSN.node);
+                        nextGSN.addSortedChildren(turnBehaviors, new SpanningTreeChildComparator());
+                        while (nextGSN.hasNextChild()) {
+                            Behavior turnNext = nextGSN.getNextChild();
+                            if (visitedTags.contains(turnNext.tagID))
+                                continue;
+
+                            Behavior tb = turnNext;
+                            tb.prob *= nextGSN.node.data.prob;
+                            Node<Behavior> nextNode = nextGSN.node.addChild(tb);
+
+                            // Add immediately ajacent neighbors
+                            if (addNeighbors && gsn.node.depth == 0 && tb.tagID >= 0) {
+                                visitedTags.add(tb.tagID);
+                                Behavior lastStep = finishPlan(nextNode,
+                                                               getTag(tb.tagID),
+                                                               1.0);
+                                heap.add(new GreedySearchNode(nextNode.addChild(lastStep)));
+                            }
+
+                            heap.add(new GreedySearchNode(nextNode));
+                        }
+                        watch.stop();
+                        continue;
+                    }
+
+                    // Add immediately adjacent neighbors
+                    if (addNeighbors && gsn.node.depth == 0 && node.data.tagID >= 0) {
+                        visitedTags.add(node.data.tagID);
+                        Behavior lastStep = finishPlan(node,
+                                                       getTag(node.data.tagID),
+                                                       1.0);
+                        heap.add(new GreedySearchNode(node.addChild(lastStep)));
+                    }
+
                     heap.add(nextGSN);
                 }
             }
