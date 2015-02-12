@@ -422,7 +422,7 @@ public class MonteCarloPlanner
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
         params.put("id", new TypedValue(goalTag.getID()));
         DriveTowardsTag dtt = new DriveTowardsTag(params);
-        params.put("distance", new TypedValue(0.5));
+        params.put("distance", new TypedValue(0.1));    // XXX What should this be?
 
         ArrayList<double[]> startXYTs = new ArrayList<double[]>();
         ArrayList<double[]> xyts = new ArrayList<double[]>();
@@ -457,6 +457,7 @@ public class MonteCarloPlanner
         // XXX Is this only possible because of our model?
         if (node.data != null)
             b.prob = Math.min(pct, node.data.prob);
+        b.tagID = goalTag.getID(); // XXX
         return b;
         //Node<Behavior> newNode = node.addChild(b);
         //System.out.printf("\tSCORE: %f\n", b.getBestScore(gm, wf, b.prob, 0));

@@ -433,12 +433,14 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             // 1 can be known, but at that point, why aren't you just paying
             // the full cost. 2 cannot be known in advance.
             HashMap<Integer, Tree<Behavior> > trees =
-                TreeUtil.makeTrees(simulator.getWorld(), gm, null);//, (long)(1.0*1000000));
+                TreeUtil.makeTrees(simulator.getWorld(), gm, vw, (long)(1.0*1000000)); // XXX
             //TreeUtil.hist(trees);
-            BehaviorGraph graph = TreeUtil.compress(trees);
+            BehaviorGraph graph = TreeUtil.union(trees);
 
             // Test it out
-            ArrayList<Behavior> testPlan = graph.navigate(3, 6 , vw);
+            ArrayList<Behavior> testPlan = graph.navigate(3,
+                                                          6,
+                                                          vw);
 
             if (testPlan == null) {
                 System.err.println("ERR: No path could be found between these nodes");
@@ -491,7 +493,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                                                           gm,
                                                           null);
 
-            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID());
+            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), (long)(1.0*1000000));
             System.out.println("Done! Built tree size "+tree.size());
 
             TreeUtil.renderTree(tree, simulator.getWorld(), vw.getBuffer("spanning-tree"));

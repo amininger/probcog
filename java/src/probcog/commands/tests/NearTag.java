@@ -37,7 +37,10 @@ public class NearTag implements ConditionTest, LCMSubscriber
 
     public ConditionTest copyCondition()
     {
-        return null;
+        NearTag nt = new NearTag();
+        nt.tagID = tagID;
+        nt.stoppingDistance = stoppingDistance;
+        return nt;
     }
 
     public void processTag(classification_t c)

@@ -187,104 +187,31 @@ public class TreeUtil
      *  Unsure about whether to be completionist or merely minimalist. For
      *  first pass, try minimalist.
      **/
-    static public BehaviorGraph compress(HashMap<Integer, Tree<Behavior> > trees)
+    static public BehaviorGraph union(HashMap<Integer, Tree<Behavior> > trees)
     {
-        HashMap<Integer, Integer> hits = hist(trees);
-        ArrayList<Integer> sortedIDs = new ArrayList<Integer>(hits.keySet());
-        Collections.sort(sortedIDs, new HistogramComparator(hits));
+        //HashMap<Integer, Integer> hits = hist(trees);
+        //ArrayList<Integer> sortedIDs = new ArrayList<Integer>(hits.keySet());
+        //Collections.sort(sortedIDs, new HistogramComparator(hits));
 
-        // Initialize graph. Add nodes first, leaving them unconnected.
-        // NOTE: An alternative strategy involves multiple nodes per tag ID.
-        // This seems to be an easier way to build the structure
         BehaviorGraph graph = new BehaviorGraph();
-        for (Integer id: sortedIDs)
-            graph.addNode(id);
 
-        // XXX TODO: Experiment with adding more yaws to child generation
-        // Greedily add edges to the the graph by pulling them from the trees in
-        // histogram order. Note: We should also be adding edges from the
-        // beginning of the tree...children of root for that tree
-        // STOP when the graph is fully connected.
-        // NOTE: Must handle both "finishing" steps and actual movement around!
-        // We can handle this by ignoring drive-to-tag steps when constructing
-        // the graph and always adding these to the ends of plans.
-        int idCount = 0;
-        for (Integer id: sortedIDs) {
-            idCount++;
-            for (Integer key: trees.keySet()) {
-                Tree<Behavior> tree = trees.get(key);
-                // XXX Known inefficiencies! Could cache this somehow.
-                ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
-                for (Node<Behavior> node: nodes) {
-                    if (node.data.law instanceof DriveTowardsTag)
-                        continue;
-                    if (node.data.tagID != id)
-                        continue;
+        // No reason to add things in a particular order. Just union everything.
+        // Don't add turns in place, but anything else goes.
+        for (Integer rootID: trees.keySet()) {
+            Tree<Behavior> tree = trees.get(rootID);
+            ArrayList<Node<Behavior> > nodes = tree.inOrderTraversal();
+            for (Node<Behavior> node: nodes) {
+                if (node.data.law == null)
+                    continue;
+                if (node.data.tagID < 0)
+                    continue;
 
-                    for (Node<Behavior> child: node.children) {
-                        if (child.data.law instanceof DriveTowardsTag)
-                            continue;
-                        if (child.data.tagID < 0)
-                            continue;
-
-                        // Add the edge. This either means creating the edge
-                        // from scratch if it did not previously exist OR adding
-                        // an XYT to an existing edge of the same type. Hopefully,
-                        // that gives us adequate diversity to match against when
-                        // looking up where to latch on to, later!
-                        graph.addEdge(id, child.data.tagID, child.data, child.parent.data.theoreticalXYT.endXYT);
-                    }
-
-                    // There should only be one such edge. Break!
-                    break;
-                }
-
-                // Additionally, add edges coming out of appropriate tree root. Very hacky
-                // and special-cased. XXX
-                if (key.equals(id)) {
-                    for (Node<Behavior> child: tree.root.children) {
-                        if (child.data.law instanceof DriveTowardsTag)
-                            continue;
-                        if (child.data.law instanceof Turn) {
-                            for (Node<Behavior> grandchild: child.children) {
-                                if (grandchild.data.law instanceof DriveTowardsTag)
-                                    continue;
-                                assert (grandchild.data.tagID > -1);
-                                graph.addEdge(id,
-                                              grandchild.data.tagID,
-                                              grandchild.data,
-                                              child.data.theoreticalXYT.endXYT);
-                            }
-                            continue;
-                        }
-
-                        // Add the edge. This either means creating the edge
-                        // from scratch if it did not previously exist OR adding
-                        // an XYT to an existing edge of the same type. Hopefully,
-                        // that gives us adequate diversity to match against when
-                        // looking up where to latch on to, later!
-                        //
-                        // XXX Is there any benefit to avoiding adding edges
-                        // to things that are already connected by some other
-                        // route?
-                        graph.addEdge(id,
-                                      child.data.tagID,
-                                      child.data,
-                                      child.parent.data.theoreticalXYT.endXYT);
-                    }
-                }
+                graph.addEdge(node.data);   // Add nodes automatically
             }
-
-            // We are done early if the graph is fully reachable
-            if (graph.isFullyReachable())
-                break;
         }
 
-        // XXX I would expect to need all of these, since outgoing "bad" edges
-        // may only exist in very particular cases. In other words, we are just
-        // compressing the structure of many trees into one graph, which we
-        // will need to search AGAIN.
-        System.out.printf("Graph constructed using %d of %d landmarks.\n", idCount, sortedIDs.size());
+        graph.print();
+
         return graph;
     }
 }

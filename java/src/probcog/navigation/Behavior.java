@@ -469,7 +469,7 @@ public class Behavior
     {
         if (law == null || test == null)
             return "NULL";
-        return String.format("(%f) %s until %s\n", prob, law.toString(), test.toString());
+        return String.format("(%f) %s until %s", prob, law.toString(), test.toString());
     }
 
     // A more useful equals call, this one is actually called when graph building.

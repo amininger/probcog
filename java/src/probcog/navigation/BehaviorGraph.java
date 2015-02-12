@@ -23,6 +23,9 @@ import probcog.commands.tests.*;
  */
 public class BehaviorGraph
 {
+    static final double XYT_DIST_M = 0.3; // XXX
+    static final double XYT_THETA_RAD = Math.toRadians(5);
+
     class DijkstraComparator implements Comparator<DijkstraNode>
     {
         public int compare(DijkstraNode a, DijkstraNode b)
@@ -37,17 +40,16 @@ public class BehaviorGraph
 
     class DijkstraNode
     {
-        public int nodeID = -1;
-        public int edgeID = -1;
+        public int nodeIdx = -1;            // Our current node
+        public int edgeID = -1;             // The edge that brought us here
         public double score = 1.0;
         public DijkstraNode parent = null;
 
         private DijkstraNode() {};
 
-        public DijkstraNode(int nodeID)
+        public DijkstraNode(int nodeIdx)
         {
-            // XXX What about non-node based search/lookup? Arbitrary locations!
-            this.nodeID = nodeID;
+            this.nodeIdx = nodeIdx;
         }
 
         /** Add a child to our search graph. The child documents the edgeID
@@ -61,7 +63,7 @@ public class BehaviorGraph
 
             DijkstraNode dn = new DijkstraNode();
             dn.edgeID = edgeID;
-            dn.nodeID = e.b.tagID;   // If -1? We're currently saying this never happens
+            dn.nodeIdx = findNodeIdx(e.b.theoreticalXYT.endXYT);
             dn.score = score*e.b.myprob;
 
             dn.parent = this;
@@ -78,9 +80,9 @@ public class BehaviorGraph
 
         public Node getNode()
         {
-            if (nodeID < 0)
+            if (nodeIdx < 0)
                 return null;
-            return nodes.get(nodeID);
+            return nodes.get(nodeIdx);
         }
 
         public int hashCode()
@@ -99,22 +101,37 @@ public class BehaviorGraph
         }
     }
 
-    //static int nodeID = 0;
-    Map<Integer, Node> nodes = new HashMap<Integer, Node>();    // id -> node
+    HashMap<Integer, Integer> tagIDs = new HashMap<Integer, Integer>(); // id -> nodeidx
+    ArrayList<Node> nodes = new ArrayList<Node>();   // Inefficient, but easy
     static class Node
     {
-        public int id;
-
-        // A mapping of inbound edges to outbound edges they can feed into.
-        Map<Integer, Set<Integer> > in2out = new HashMap<Integer, Set<Integer> >();
+        public int tagID = -1;  // If this node counts as being at a tag,
+                                // mark it as such
+        double[] xy;
 
         // Inbound and outbound edges
         Set<Integer> edgesIn = new HashSet<Integer>();
         Set<Integer> edgesOut = new HashSet<Integer>();
 
-        public Node(int tagID)
+        public Node(double[] xy)
         {
-            id = tagID; // Will this be sufficient?
+            this(-1, xy);   // -1 == no tag associated
+        }
+
+        public Node(int tagID, double[] xy)
+        {
+            this.tagID = tagID;
+            this.xy = xy;
+        }
+
+        public boolean equals(Object o)
+        {
+            if (o == null)
+                return false;
+            if (!(o instanceof Node))
+                return false;
+            Node n = (Node)o;
+            return xyEquals(xy, n.xy);
         }
     }
 
@@ -125,15 +142,10 @@ public class BehaviorGraph
         public int id;
         public Behavior b;
 
-        // XXX NEED TO KNOW START AND END POINTS ARE FOR LOOKUPS! Ends are
-        // encoded in the behavior...starts need to be maintained separately
-        public ArrayList<double[]> startXYTs = new ArrayList<double[]>();
-
-        public Edge(Behavior b, double[] xyt)
+        public Edge(Behavior b)
         {
             id = edgeID++;
             this.b = b.copyBehavior();
-            startXYTs.add(xyt);
         }
 
         public boolean equals(Object o)
@@ -147,87 +159,106 @@ public class BehaviorGraph
         }
     }
 
-    private boolean xytEquals(double[] xyt0, double[] xyt1)
+    static private boolean xyEquals(double[] xy0, double[] xy1)
+    {
+        double dx = Math.abs(xy0[0] - xy1[0]);
+        double dy = Math.abs(xy0[1] - xy1[1]);
+
+        return Math.sqrt(dx*dx + dy*dy) < XYT_DIST_M;
+    }
+
+    static private boolean xytEquals(double[] xyt0, double[] xyt1)
     {
         double dx = Math.abs(xyt0[0] - xyt1[0]);
         double dy = Math.abs(xyt0[1] - xyt1[1]);
         double dt = Math.abs(MathUtil.mod2pi(xyt0[2] - xyt1[2]));
+        dt = 0; // Ignore dt
         //System.out.printf("[%f %f %f]\n", dx, dy, dt);
 
-        return dx < 0.2 && dy < 0.2 && dt < Math.toRadians(5);  // XXX
+        return Math.sqrt(dx*dx + dy*dy) < XYT_DIST_M && dt < XYT_THETA_RAD;  // XXX
     }
 
-    /** Add a node to the graph */
-    public void addNode(int tagID)
+    /** Find the index of a matching node, if any exists. If none is found,
+     *  returns -1, an invalid index.
+     **/
+    private int findNodeIdx(double[] xy)
     {
-        nodes.put(tagID, new Node(tagID)); // XXX Do we care about XY location?
+        for (int i = 0; i < nodes.size(); i++) {
+            Node node = nodes.get(i);
+            if (xyEquals(xy, node.xy))
+                return i;
+        }
+        return -1;
     }
 
-    /** Add an edge to the graph, or modify an existing edge as necessary */
-    public void addEdge(int outID, int inID, Behavior b, double[] startXYT)
+    private int findNodeIdxByID(int tagID)
     {
-        assert (nodes.containsKey(outID));
-        assert (nodes.containsKey(inID));
-        assert (outID != inID);
+        if (tagIDs.containsKey(tagID))
+            return tagIDs.get(tagID);
+        return -1;
+    }
 
-        Edge e = new Edge(b, startXYT);
-        edges.put(e.id, e);
+    private Set<Integer> setIntersect(Set<Integer> s0, Set<Integer> s1)
+    {
+        Set<Integer> intersection = new HashSet<Integer>();
+        for (Integer i: s0) {
+            for (Integer j: s1) {
+                if (i.equals(j))
+                    intersection.add(i);
+            }
+        }
+        return intersection;
+    }
 
-        Node out = nodes.get(outID);
-        Node in = nodes.get(inID);
+    public void addEdge(Behavior b)
+    {
+        assert (b != null);
+        assert (b.law != null);
+        assert (b.test != null);
 
-        // Does this edge exist? Check for outbound edges ending at in
-        // of the same type.
-        Edge match = null;
-        for (Integer key: out.edgesOut) {
-            Edge edgeOut = edges.get(key);
-            if (e.equals(edgeOut)) {
-                match = edgeOut;
+        double[] startXYT = b.theoreticalXYT.startXYT;
+        double[] endXYT = b.theoreticalXYT.endXYT;
+
+        int tagID = -1;
+        if (b.law instanceof DriveTowardsTag)
+            tagID = b.tagID;
+
+        int startIdx = findNodeIdx(startXYT);
+        int endIdx = findNodeIdx(endXYT);
+
+        // If nodes do not exist, create them
+        if (startIdx < 0) {
+            startIdx = nodes.size();
+            nodes.add(new Node(startXYT));
+        }
+        if (endIdx < 0) {
+            endIdx = nodes.size();
+            nodes.add(new Node(tagID, endXYT));
+        }
+
+        if (tagID >= 0 && !tagIDs.containsKey(tagID)) {
+            tagIDs.put(tagID, endIdx);
+        }
+
+        Node out = nodes.get(startIdx);
+        Node in = nodes.get(endIdx);
+
+        Set<Integer> edgeset = setIntersect(out.edgesOut, in.edgesIn);
+        Edge match = new Edge(b);    // ID wackiness when tons of matches
+        for (Integer key: edgeset) {
+            Edge edge = edges.get(key);
+            if (edge.equals(match)) {
+                match = edge;
                 break;
             }
         }
 
-        if (match != null) {
-            match.startXYTs.add(startXYT);
-            match.b.xyts.addAll(e.b.xyts);
-        } else {
-            out.edgesOut.add(e.id);
-            in.edgesIn.add(e.id);
-            if (!in.in2out.containsKey(e.id)) {
-                in.in2out.put(e.id, new HashSet<Integer>());
-            }
-            match = e;
-        }
-
-        // Check to see if this edge chains with others by comparing XYTs. There
-        // is, by necessity, some tolerance here, but make it quite small.
-        // First, look through all incoming edges @ outID and see if they
-        // overlap with and of match.xyts. Then, look at all outgoing edges @
-        // inID and likewise look for overlap. We only need to consider the
-        // most recently proposed xyts in behavior!
-        for (Behavior.XYTPair pair: match.b.xyts) {
-            double[] xyt = pair.endXYT;
-            for (Integer key: in.edgesOut) {
-                Edge edgeOut = edges.get(key);
-                for (double[] outXYT: edgeOut.startXYTs) {
-                    if (xytEquals(xyt, outXYT)) {
-                        in.in2out.get(match.id).add(edgeOut.id);
-                    }
-                }
-            }
-        }
-
-        for (double[] xyt: match.startXYTs) {
-            for (Integer key: out.edgesIn) {
-                Edge edgeIn = edges.get(key);
-                for (Behavior.XYTPair pair: edgeIn.b.xyts) {
-                    double[] inXYT = pair.endXYT;
-                    if (xytEquals(xyt, inXYT)) {
-                        out.in2out.get(edgeIn.id).add(match.id);
-                    }
-                }
-            }
-        }
+        boolean addedout = out.edgesOut.add(match.id);
+        boolean addedin = in.edgesIn.add(match.id);
+        if (addedout && addedin)
+            edges.put(match.id, match);
+        else if (addedout || addedin)
+            assert (false);
     }
 
     // XXX Eventually, want to change "startTag" to a specific
@@ -235,22 +266,24 @@ public class BehaviorGraph
     public ArrayList<Behavior> navigate(int startTag, int endTag, VisWorld vw)
     {
         // Perform a Dijkstra search through the graph. MOAR NODES
-        DijkstraNode dn = new DijkstraNode(startTag);
+        int startIdx = findNodeIdxByID(startTag);
+        assert (startIdx >= 0);
+        DijkstraNode dn = new DijkstraNode(startIdx);
 
         HashSet<DijkstraNode> closedList = new HashSet<DijkstraNode>();
         PriorityQueue<DijkstraNode> queue =
             new PriorityQueue<DijkstraNode>(10, new DijkstraComparator());
         queue.add(dn);
 
-        //VisWorld.Buffer vb = vw.getBuffer("debug-graph-nav");
+        VisWorld.Buffer vb = vw.getBuffer("debug-graph-nav");
         while (queue.size() > 0) {
             dn = queue.poll();
 
             // If this node reaches our goal, return a plan
-            Edge currEdge = dn.getEdge();
             Node currNode = dn.getNode();
-            if (currNode != null && currNode.id == endTag)
-                return planHelper(dn); // XXX
+            assert (currNode != null);
+            if (currNode.tagID == endTag)
+                return planHelper(dn);
 
             // Pass over previously visited search nodes
             if (closedList.contains(dn))
@@ -258,23 +291,21 @@ public class BehaviorGraph
             closedList.add(dn);
 
             // Generate children
-            Set<Integer> validEdgesOut;
-            if (currEdge == null)
-                validEdgesOut = currNode.edgesOut;
-            else
-                validEdgesOut = currNode.in2out.get(currEdge.id);
-            for (Integer edgeID: validEdgesOut) {
+            for (Integer edgeID: currNode.edgesOut) {
                 queue.add(dn.addChild(edgeID));
-                //Edge e = edges.get(edgeID);
-                //System.out.println("\t"+edgeID+"->"+e.b.tagID);
-                //vb.addBack(new VisChain(LinAlg.xytToMatrix(e.startXYTs.get(0)),
-                //                        new VzBox(new VzMesh.Style(Color.red))));
-            }
-            //vb.swap();
-        }
-        //vb.swap();
 
-        //System.err.println("ERR: Could not find path between tags");
+                // XXX DEBUG
+                Edge e = edges.get(edgeID);
+                vb.addBack(new VisChain(LinAlg.xytToMatrix(e.b.theoreticalXYT.startXYT),
+                                        new VzBox(new VzMesh.Style(Color.red))));
+            }
+            TimeUtil.sleep(500);
+
+            vb.swap();
+        }
+
+        vb.swap();
+
         return null; // Failure
     }
 
@@ -284,34 +315,51 @@ public class BehaviorGraph
 
         Node node = dn.getNode();
         Edge edge = dn.getEdge();
-        if (node != null && node.id > 0) {
-            HashMap<String, TypedValue> params =
-                new HashMap<String, TypedValue>();
-            params.put("id", new TypedValue(node.id));
-            DriveTowardsTag dtt = new DriveTowardsTag(params);
-            params.put("distance", new TypedValue(0.5));
-            plan.add(new Behavior(edge.b.xyts.get(0).startXYT,
-                                  edge.b.xyts.get(0).endXYT,
-                                  edge.b.xyts.get(0).dist,
-                                  dtt,
-                                  new NearTag(params)));
-        }
 
-
+        // Walk back through our plan, creating a sequence of the appropriate
+        // behaviors for planner consumption. In the event that the end point
+        // orientations for a behavior to be included do NOT align with the
+        // start points of another, first perform a corrective turn in place.
         DijkstraNode prev = dn;
         while (dn.parent != null) {
             edge = dn.getEdge();
+
+            // Determine turn necessity. Remember, we are traversing the plan
+            // BACKWARDS, so take this into account when generating a turn
+            double[] prevXYT = prev.getEdge().b.theoreticalXYT.startXYT;
+            double[] currXYT = edge.b.theoreticalXYT.endXYT;
+            double dist = edge.b.theoreticalXYT.dist;
+            double dt = MathUtil.mod2pi(prevXYT[2] - currXYT[2]);
+            if (Math.abs(dt) > XYT_THETA_RAD) {
+                HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                params.put("direction", new TypedValue(dt > 0 ? (byte)1 : (byte)0));
+                params.put("yaw", new TypedValue(dt));
+                params.put("no-lcm", new TypedValue(1));
+                Turn turn = new Turn(params);
+                RotationTest rt = new RotationTest(params);
+                Behavior b = new Behavior(currXYT,
+                                          prevXYT,
+                                          dist,
+                                          turn,
+                                          rt);
+                b.prob = edge.b.prob;
+                //plan.add(b);
+            }
+
             plan.add(edge.b);
             prev = dn;
             dn = dn.parent;
         }
-        plan.add(new Behavior(prev.getEdge().startXYTs.get(0),
-                              prev.getEdge().startXYTs.get(0),
+        plan.add(new Behavior(prev.getEdge().b.theoreticalXYT.startXYT,
+                              prev.getEdge().b.theoreticalXYT.startXYT,
                               0,
                               null,
                               null));
 
         Collections.reverse(plan);
+        System.out.println("Constructed plan of size: "+plan.size());
+        for (Behavior b: plan)
+            System.out.println(b);
         return plan;
     }
 
@@ -319,8 +367,8 @@ public class BehaviorGraph
     public boolean isFullyReachable()
     {
         // Brute force: try to reach every node from every other one
-        for (Integer startID: nodes.keySet()) {
-            for (Integer endID: nodes.keySet()) {
+        for (Integer startID: tagIDs.keySet()) {
+            for (Integer endID: tagIDs.keySet()) {
                 if (startID.equals(endID))
                     continue;
                 if (navigate(startID, endID, null) == null)
@@ -330,5 +378,12 @@ public class BehaviorGraph
         return true;
     }
 
+    // XXX DEBUG
+    public void print()
+    {
+        System.out.println("TAG IDS: ");
+        for (Integer id: tagIDs.keySet())
+            System.out.printf("\t%d\n", id);
+    }
 
 }
