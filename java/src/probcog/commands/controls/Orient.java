@@ -83,7 +83,6 @@ public class Orient implements ControlLaw, LCMSubscriber
         }
     }
 
-
     /** Start/stop the execution of the control law.
      *
      *  @param run  True causes the control law to begin execution, false stops it
@@ -151,6 +150,19 @@ public class Orient implements ControlLaw, LCMSubscriber
 
 
         return dd;
+    }
+
+    public control_law_t toLCM()
+    {
+        control_law_t cl = new control_law_t();
+        cl.name = "orient";
+        cl.num_params = 1;
+        cl.param_names = new String[cl.num_params];
+        cl.param_values = new typed_value_t[cl.num_params];
+        cl.param_names[0] = "yaw";
+        cl.param_values[1] = new TypedValue(goalYaw).toLCM();
+
+        return cl;
     }
 
     public String toString()
