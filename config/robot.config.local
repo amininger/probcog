@@ -487,7 +487,7 @@ monte_carlo {
     start_search_depth = 3; // XXX Currently unused
 
     // Robot parameters
-    default_steps_per_second = 5;
+    default_steps_per_second = 20;
     steps_per_second = 20;  // Ignore right now?
     default_forward_search_time = 60.0; // [s] XXX
     step_degrees = 3;
