@@ -69,10 +69,10 @@ public class FastDrive
         double K_wr = 5.5;  // XXX Old winding resistance [ohms]
         leftMotor.winding_resistance = K_wr;
         rightMotor.winding_resistance = K_wr;
-        double K_inertia = 0.2; // XXX Old inertia [kg m^2] ... different from SimRobot
+        double K_inertia = 0.5; // XXX Old inertia [kg m^2] ... different from SimRobot
         leftMotor.inertia = K_inertia;
         rightMotor.inertia = K_inertia;
-        double K_drag = 1.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
+        double K_drag = 2.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
         leftMotor.drag_constant = K_drag;
         rightMotor.drag_constant = K_drag;
     }

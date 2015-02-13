@@ -20,7 +20,7 @@ public class Orient implements ControlLaw, LCMSubscriber
     LCM lcm = LCM.getSingleton();
 
     static final double MAX_SPEED = 0.25;   // Not enough to overshoot
-    static final double MIN_SPEED = 0.10;   // XXX This won't overcome stall
+    static final double MIN_SPEED = 0.20;   // Enough to overcome stall
     static final int HZ = 40;
 
     double goalYaw = 0;
