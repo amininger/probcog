@@ -25,7 +25,7 @@ public class BehaviorGraph
 {
     static final double WHEELBASE_M = 0.5;
     static final double XYT_DIST_M = 0.3; // XXX
-    static final double XYT_THETA_RAD = Math.toRadians(5);
+    static final double XYT_THETA_RAD = Math.toRadians(3);
 
     class DijkstraComparator implements Comparator<DijkstraNode>
     {
@@ -335,20 +335,19 @@ public class BehaviorGraph
             double[] currXYT = edge.b.theoreticalXYT.endXYT;
             double myDist = edge.b.theoreticalXYT.myDist;
             double dist = edge.b.theoreticalXYT.dist;
-            double dt = MathUtil.mod2pi(prevXYT[2] - currXYT[2]);
-            if (Math.abs(dt) > XYT_THETA_RAD) {
+            double dt = Math.abs(prevXYT[2] - currXYT[2]);
+            if (dt > XYT_THETA_RAD) {
                 HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-                params.put("direction", new TypedValue(dt > 0 ? (byte)1 : (byte)0));
-                params.put("yaw", new TypedValue(Math.abs(dt)));
+                params.put("yaw", new TypedValue(prevXYT[2]));
                 params.put("no-lcm", new TypedValue(1));
-                Turn turn = new Turn(params);
-                RotationTest rt = new RotationTest(params);
+                Orient orient = new Orient(params);
+                Stabilized stable = new Stabilized(params);
                 Behavior b = new Behavior(currXYT,
                                           prevXYT,
                                           dist,
-                                          dist+Math.abs(dt)*(WHEELBASE_M/2),
-                                          turn,
-                                          rt);
+                                          dist+dt*(WHEELBASE_M/2),
+                                          orient,
+                                          stable);
                 b.prob = edge.b.prob;
                 plan.add(b); // XXX WIP
             }

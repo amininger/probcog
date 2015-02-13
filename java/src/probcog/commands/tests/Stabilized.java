@@ -20,7 +20,7 @@ public class Stabilized implements ConditionTest, LCMSubscriber
 {
     LCM lcm = LCM.getSingleton();
     static final double PERIOD_S = 1.0;
-    static final double THETA_THRESH_RAD = Math.toRadians(1);
+    static final double THETA_THRESH_RAD = Math.toRadians(3);
     static final double DIST_THRESH_M = 0.05;
 
     boolean begun = false;
@@ -63,9 +63,9 @@ public class Stabilized implements ConditionTest, LCMSubscriber
         }
 
         synchronized(poseQueue) {
-            while (poseQueue.size() > 0) {
+            while (poseQueue.size() > 1) {
                 pose_t front = poseQueue.peek();
-                if (pose.utime - front.utime < PERIOD_S * 1000000)
+                if ((pose.utime - front.utime) < PERIOD_S * 1000000)
                     break;
                 poseQueue.poll();
             }
@@ -79,7 +79,7 @@ public class Stabilized implements ConditionTest, LCMSubscriber
      **/
     public boolean conditionMet()
     {
-        if (!begun)
+        if (!begun || poseQueue.size() < 2)
             return false;
         synchronized (poseQueue) {
             pose_t last = poseQueue.peekLast();
@@ -109,7 +109,8 @@ public class Stabilized implements ConditionTest, LCMSubscriber
         double dy = maxy - miny;
         double dt = maxt - mint;
 
-        return Math.sqrt(dx*dx + dy*dy) < DIST_THRESH_M && dt < THETA_THRESH_RAD;
+        boolean ret = Math.sqrt(dx*dx + dy*dy) < DIST_THRESH_M && dt < THETA_THRESH_RAD;
+        return ret;
     }
 
     /** Get the parameters that can be set for this condition test.

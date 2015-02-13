@@ -19,9 +19,10 @@ public class Orient implements ControlLaw, LCMSubscriber
 {
     LCM lcm = LCM.getSingleton();
 
-    static final double MAX_SPEED = 0.25;   // Not enough to overshoot
-    static final double MIN_SPEED = 0.20;   // Enough to overcome stall
-    static final int HZ = 40;
+    static final double SPEED_THRESH_RANGE_RAD = Math.PI/2;
+    static final double MAX_SPEED = 0.25;   // Not enough to overshoot, ideally
+    static final double MIN_SPEED = 0.20;   // Enough to overcome stall XXX
+    static final int HZ = 20;
 
     double goalYaw = 0;
 
@@ -133,7 +134,7 @@ public class Orient implements ControlLaw, LCMSubscriber
 
         // We want to rotate toward the goal, but not overshoot.
         double dyaw = MathUtil.mod2pi(goalYaw - yaw);
-        double speed = MathUtil.clamp(MAX_SPEED*(dyaw / (Math.PI/4)),
+        double speed = MathUtil.clamp(MAX_SPEED*(dyaw / SPEED_THRESH_RANGE_RAD),
                                       MIN_SPEED,
                                       MAX_SPEED);
         if (dyaw > 0) {
@@ -145,7 +146,7 @@ public class Orient implements ControlLaw, LCMSubscriber
             dd.right = -speed;
         }
 
-        if (Math.abs(dyaw) < Math.toRadians(2))
+        if (Math.abs(dyaw) < Math.toRadians(3))
             dd.left = dd.right = 0;
 
 

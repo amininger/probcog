@@ -470,7 +470,7 @@ public class MonteCarloPlanner
 
     private ArrayList<Behavior> generateChildren(Node<Behavior> node)
     {
-        double[] yaws = new double[] {Math.PI/2, Math.PI, 3*Math.PI/2};
+        double[] yaws = new double[] {Math.PI/2, Math.PI, -Math.PI/2};
         return generateChildren(node, yaws);
     }
     // XXX Notable points of failure could be...
@@ -503,37 +503,41 @@ public class MonteCarloPlanner
         if (node.depth == 0) {
             for (double yaw: yaws) {
                 HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-                params.put("direction", new TypedValue((byte)1));  // Left turn in place
                 params.put("yaw", new TypedValue(yaw));
                 params.put("no-lcm", new TypedValue(0));
-                HashMap<String, TypedValue> params2 = new HashMap<String, TypedValue>();
-                params2.put("yaw", new TypedValue(yaw));
-                params2.put("no-lcm", new TypedValue(0));
 
+                ArrayList<double[]> startXYTs = new ArrayList<double[]>();
                 ArrayList<double[]> xyts = new ArrayList<double[]>();
                 ArrayList<Double> dists = new ArrayList<Double>();
                 ArrayList<Double> startDists = new ArrayList<Double>();
                 MonteCarloBot mcb = new MonteCarloBot(sw);
                 for (int i = 0; i < numExploreSamples; i++) {
-                    Turn turn = new Turn(params);
-                    RotationTest rt = new RotationTest(params2);
+                    Orient orient = new Orient(params);
+                    Stabilized stable = new Stabilized(params);
                     Behavior.XYTPair pair = node.data.randomXYT();
-                    mcb.init(turn, rt, pair.endXYT, pair.dist);
+                    mcb.init(orient, stable, pair.endXYT, pair.dist);
                     mcb.simulate();
                     // Only consider plans that actually "work"
                     if (mcb.success()) {
+                        System.out.printf("%f: %f\n", yaw, LinAlg.matrixToXYT(mcb.getPose())[2]);
+                        startXYTs.add(pair.endXYT);
                         xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
                         dists.add(mcb.getTrajectoryLength());
                         startDists.add(pair.dist);
                     }
                 }
 
-                Behavior b = new Behavior(node.data.getEndXYTs(),
+                if (xyts.size() < 1) {
+                    System.out.printf("Failed to turn to %f\n", yaw);
+                    continue;
+                }
+
+                Behavior b = new Behavior(startXYTs,
                                           xyts,
                                           startDists,
                                           dists,
-                                          new Turn(params),
-                                          new RotationTest(params2));
+                                          new Orient(params),
+                                          new Stabilized(params));
                 b.prob = node.data.prob;
                 recs.add(b);
                 // XXX Leaves out GreedySearchNode step. Bah.
@@ -730,7 +734,7 @@ public class MonteCarloPlanner
                     GreedySearchNode nextGSN = new GreedySearchNode(node);
 
                     // Handle turns early
-                    if (b.law instanceof Turn) {
+                    if (b.law instanceof Orient) {
                         watch.start("turns");
                         ArrayList<Behavior> turnBehaviors = generateChildren(nextGSN.node);
                         nextGSN.addSortedChildren(turnBehaviors, new SpanningTreeChildComparator());

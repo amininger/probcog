@@ -69,18 +69,24 @@ public class FastDrive
         double K_wr = 5.5;  // XXX Old winding resistance [ohms]
         leftMotor.winding_resistance = K_wr;
         rightMotor.winding_resistance = K_wr;
-        double K_inertia = 0.5; // XXX Old inertia [kg m^2] ... different from SimRobot
+        double K_inertia = 0.5; // XXX Hand picked inertia [kg m^2]
         leftMotor.inertia = K_inertia;
         rightMotor.inertia = K_inertia;
-        double K_drag = 2.0;    // XXX Old drag [Nm / (rad/s)], always >= 0
+        double K_drag = 2.0;    // XXX Hand picked drag [Nm / (rad/s)], always >= 0
         leftMotor.drag_constant = K_drag;
         rightMotor.drag_constant = K_drag;
     }
 
+    // We act like we update every SIM_DT seconds, even if we actually only apply updates every DT
+    public static double SIM_DT = 1.0 / 20;
     public static double DT = 1.0 / Util.getConfig().requireInt("monte_carlo.default_steps_per_second");
     public void update()
     {
-        update(DT);
+        int steps = (int) Math.max(DT / SIM_DT, 1);
+        double timestep = Math.min(DT, SIM_DT);
+
+        for (int i = 0; i < steps; i++)
+            update(timestep);
     }
 
     public void update(double dt)

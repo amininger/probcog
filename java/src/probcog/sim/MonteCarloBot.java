@@ -238,16 +238,18 @@ public class MonteCarloBot implements SimObject
             laser.utime = currentUtime;
 
             // Update condition test, if necessary
-            if (test instanceof RotationTest) {
-                RotationTest rt = (RotationTest)test;
-                rt.update(drive.poseOdom);
+            if (test instanceof Stabilized) {
+                Stabilized stable = (Stabilized)test;
+                pose_t stable_pose = drive.poseTruth.copy();
+                stable_pose.utime = currentUtime;
+                stable.update(stable_pose);
             }
 
             // Update law if necessary
-            if (law instanceof Turn) {
-                Turn turn = (Turn)law;
-                turn.update(drive.poseOdom);
-            }
+            //if (law instanceof Orient) {
+            //    Orient orient = (Orient)law;
+            //    orient.update(drive.poseOdom);
+            //}
 
             // Rough outline:
             //  Keep a global timestamp for simulated time. This will be
@@ -552,10 +554,11 @@ public class MonteCarloBot implements SimObject
         VzLines.Style style;
         if (c != null)
             style = new VzLines.Style(c, 2);
-        else if (success())
-            style = new VzLines.Style(vcd, 2);
         else
-            style = new VzLines.Style(Color.red, 2);
+        //else if (success())
+            style = new VzLines.Style(vcd, 2);
+        //else
+        //    style = new VzLines.Style(Color.red, 2);
 
         if (c != null) {
             return new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
@@ -565,6 +568,8 @@ public class MonteCarloBot implements SimObject
             return new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
                                             VzLines.LINE_STRIP,
                                             style),
+                                //new VzPoints(new VisVertexData(trajectoryTruth),
+                                //             new VzPoints.Style(Color.white, 3)),
                                 getPose(),
                                 model4);
         }

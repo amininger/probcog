@@ -457,6 +457,12 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 bot.simulate(true);
                 LinAlg.print(LinAlg.matrixToXYT(bot.getPose()));
 
+                if (!bot.success()) {
+                    VisWorld.Buffer vb = vw.getBuffer("test-navigation");
+                    vb.setDrawOrder(-900);
+                    vb.addBack(bot.getVisObject());
+                    vb.swap();
+                }
                 assert (bot.success()); // XXX
             }
 
