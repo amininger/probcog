@@ -433,13 +433,13 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             // 1 can be known, but at that point, why aren't you just paying
             // the full cost. 2 cannot be known in advance.
             HashMap<Integer, Tree<Behavior> > trees =
-                TreeUtil.makeTrees(simulator.getWorld(), gm, vw, (long)(1.0*1000000)); // XXX
+                TreeUtil.makeTrees(simulator.getWorld(), gm, vw, (long)(5.0*1000000)); // XXX
             //TreeUtil.hist(trees);
             BehaviorGraph graph = TreeUtil.union(trees);
 
             // Test it out
             ArrayList<Behavior> testPlan = graph.navigate(3,
-                                                          6,
+                                                          41,
                                                           vw);
 
             if (testPlan == null) {

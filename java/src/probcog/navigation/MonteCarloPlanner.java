@@ -519,7 +519,6 @@ public class MonteCarloPlanner
                     mcb.simulate();
                     // Only consider plans that actually "work"
                     if (mcb.success()) {
-                        System.out.printf("%f: %f\n", yaw, LinAlg.matrixToXYT(mcb.getPose())[2]);
                         startXYTs.add(pair.endXYT);
                         xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
                         dists.add(mcb.getTrajectoryLength());
