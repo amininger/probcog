@@ -60,7 +60,7 @@ public class FastDrive
         // No fixed delay tasks, here, since we update on request!
 
         // Motor setup
-        double K_t = 0.7914*2;    // torque constant in [Nm / A] * multiplier to speed us up
+        double K_t = 0.7914*2.5;    // torque constant in [Nm / A] * multiplier to speed us up
         leftMotor.torque_constant = K_t;
         rightMotor.torque_constant = K_t;
         double K_emf = 1.406; // emf constant [V/(rad/s)]

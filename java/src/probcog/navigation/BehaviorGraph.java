@@ -71,7 +71,7 @@ public class BehaviorGraph
             dn.nodeIdx = findNodeIdx(e.b.theoreticalXYT.endXYT);
             dn.prob = prob*e.b.myprob;
             dn.dist = dist+e.b.theoreticalXYT.myDist;
-            dn.score = prob*Behavior.LAMBDA - dist; // ADD WAVEFRONT HEURISTIC STUFF XXX
+            dn.score = dn.prob*LAMBDA - dist; // ADD WAVEFRONT HEURISTIC STUFF XXX
 
             dn.parent = this;
 

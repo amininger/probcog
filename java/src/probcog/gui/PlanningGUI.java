@@ -436,7 +436,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 TreeUtil.makeTrees(simulator.getWorld(), gm, vw, (long)(5.0*1000000)); // XXX
             //TreeUtil.hist(trees);
             BehaviorGraph graph = TreeUtil.union(trees);
-            System.out.println("Graph is fully reachable: "+graph.isFullyReachable(null));
+            //System.out.println("Graph is fully reachable: "+graph.isFullyReachable(null));
 
             // Test it out
             ArrayList<Behavior> testPlan = graph.navigate(3,
@@ -502,7 +502,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                                                           gm,
                                                           null);
 
-            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), (long)(20.0*1000000));
+            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), (long)(5.0*1000000));
             System.out.println("Done! Built tree size "+tree.size());
 
             TreeUtil.renderTree(tree, simulator.getWorld(), vw.getBuffer("spanning-tree"));
