@@ -243,12 +243,20 @@ public class BehaviorGraph
             nodes.add(new Node(tagID, endXYT));
         }
 
+        // XXX
         if (tagID >= 0 && !tagIDs.containsKey(tagID)) {
             tagIDs.put(tagID, endIdx);
         }
 
         Node out = nodes.get(startIdx);
         Node in = nodes.get(endIdx);
+
+        // Node might have been created already. Shouldn't ever have another
+        // tag label, so this should be fine.
+        if (tagID >= 0) {
+            assert (in.tagID == tagID || in.tagID == -1);
+            in.tagID = tagID;
+        }
 
         Set<Integer> edgeset = setIntersect(out.edgesOut, in.edgesIn);
         Edge match = new Edge(b);    // ID wackiness when tons of matches
@@ -301,8 +309,9 @@ public class BehaviorGraph
             }
 
             // Pass over previously visited search nodes
-            if (closedList.contains(dn))
+            if (closedList.contains(dn)) {
                 continue;
+            }
             closedList.add(dn);
 
             // Generate children
@@ -313,11 +322,12 @@ public class BehaviorGraph
                     Edge e = edges.get(edgeID);
                     vb.addBack(new VisChain(LinAlg.xytToMatrix(e.b.theoreticalXYT.startXYT),
                                             new VzBox(new VzMesh.Style(Color.red))));
+                }
             }
 
-            if (vb != null)
+            if (vb != null) {
                 vb.swap();
-                //TimeUtil.sleep(500);
+                TimeUtil.sleep(500);
             }
         }
 
@@ -386,7 +396,7 @@ public class BehaviorGraph
     }
 
     /** Determine whether or not the graph is fully reachable. */
-    public boolean isFullyReachable()
+    public boolean isFullyReachable(VisWorld vw)
     {
         // Brute force: try to reach every node from every other one
         for (Integer startID: tagIDs.keySet()) {
@@ -394,7 +404,7 @@ public class BehaviorGraph
                 if (startID.equals(endID))
                     continue;
                 System.out.printf("Testing reachability from %d to %d\n", startID, endID);
-                if (navigate(startID, endID, null) == null)
+                if (navigate(startID, endID, vw) == null)
                     return false;
             }
         }

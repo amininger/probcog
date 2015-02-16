@@ -436,12 +436,12 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 TreeUtil.makeTrees(simulator.getWorld(), gm, vw, (long)(5.0*1000000)); // XXX
             //TreeUtil.hist(trees);
             BehaviorGraph graph = TreeUtil.union(trees);
-            System.out.println("Graph is fully reachable: "+graph.isFullyReachable());
+            System.out.println("Graph is fully reachable: "+graph.isFullyReachable(null));
 
             // Test it out
             ArrayList<Behavior> testPlan = graph.navigate(3,
                                                           41,
-                                                          vw);
+                                                          null);
 
             if (testPlan == null) {
                 System.err.println("ERR: No path could be found between these nodes");
