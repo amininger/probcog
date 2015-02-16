@@ -690,7 +690,11 @@ public class MonteCarloPlanner
             // XXX Can we maintain such a visited list, after all? Maybe not,
             // since visiting a tag from a new angle might be useful...try
             // it for now and see.
-            if (visitedTags.contains(currTagID))
+            //
+            // This gives us huge time savings and seems necessary to allow the
+            // search to proceed usefully in some capacity. It also prevents us
+            // from linking together visually servoed commands...
+            if (visitedTags.contains(currTagID) && !(gsn.node.data.law instanceof DriveTowardsTag))
                 continue;
             if (currTagID >= 0 && !visitedTags.contains(currTagID)) {
                 // We are at a new tag! Add a finishing step to the tree.
@@ -715,10 +719,8 @@ public class MonteCarloPlanner
             watch.start("simulate-children");
             while (gsn.hasNextChild()) {
                 Behavior next = gsn.getNextChild();
-                // XXX Is this a valid assumption? I bet coming back to an
-                // intersection makes it NOT so, since orientation matters.
-                // Trying it for now. We DO seem to need it to reduce
-                // computation time.
+                // XXX Same problem as earlier. Make the concession for the sake
+                // of rapid exploration?
                 if (visitedTags.contains(next.tagID))
                     continue;
 
@@ -739,6 +741,7 @@ public class MonteCarloPlanner
                         nextGSN.addSortedChildren(turnBehaviors, new SpanningTreeChildComparator());
                         while (nextGSN.hasNextChild()) {
                             Behavior turnNext = nextGSN.getNextChild();
+                            // XXX One more visitation skip step
                             if (visitedTags.contains(turnNext.tagID))
                                 continue;
 
@@ -746,8 +749,9 @@ public class MonteCarloPlanner
                             tb.prob *= nextGSN.node.data.prob;
                             Node<Behavior> nextNode = nextGSN.node.addChild(tb);
 
-                            // Add immediately ajacent neighbors
-                            if (addNeighbors && gsn.node.depth == 0 && tb.tagID >= 0) {
+                            // Add immediately adjacent neighbors
+                            if (addNeighbors && gsn.node.depth == 0 && tb.tagID >= 0 && !visitedTags.contains(tb.tagID)) {
+                                // XXX Does this count as visiting, yet?
                                 visitedTags.add(tb.tagID);
                                 Behavior lastStep = finishPlan(nextNode,
                                                                getTag(tb.tagID),
@@ -762,7 +766,8 @@ public class MonteCarloPlanner
                     }
 
                     // Add immediately adjacent neighbors
-                    if (addNeighbors && gsn.node.depth == 0 && node.data.tagID >= 0) {
+                    if (addNeighbors && gsn.node.depth == 0 && node.data.tagID >= 0 && !visitedTags.contains(node.data.tagID)) {
+                        // XXX Does this count as visiting, yet?
                         visitedTags.add(node.data.tagID);
                         Behavior lastStep = finishPlan(node,
                                                        getTag(node.data.tagID),
@@ -775,6 +780,10 @@ public class MonteCarloPlanner
             }
             watch.stop();
         }
+
+        long timeDiff = TimeUtil.utime() - start_utime;
+        System.out.printf("Spent %d of %d searching\n", timeDiff, timeout_us);
+        System.out.printf("Heap size %d\n", heap.size());
 
         // Clean up non-terminal leaves
         ArrayList<Node<Behavior> > leaves = tree.getLeaves();

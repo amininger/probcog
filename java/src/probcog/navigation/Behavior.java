@@ -10,15 +10,15 @@ import april.vis.*;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
+import probcog.util.*;
 
 // Used to represent a law-test pair, along with some state for distributions
 // of states associated with executing this pair.
 public class Behavior
 {
-    // LAMBA should be selected such that you are willing to travel an extra
-    // LAMBA/100 meters to gain a 1% improvement in arrival rate.
-    // XXX CONFIG
-    public static final double LAMBDA = 1000;
+    // LAMBDA should be selected such that you are willing to travel an extra
+    // LAMBDA/100 meters to gain a 1% improvement in arrival rate.
+    public static final double LAMBDA = Util.getConfig().requireDouble("monte_carlo.lambda");
     Random r = new Random();
 
     // Control state

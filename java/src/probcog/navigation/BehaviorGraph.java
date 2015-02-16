@@ -10,6 +10,7 @@ import april.util.*;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
+import probcog.util.*;
 
 /** A graph structure with some wrinkles particular to this application.
  *  Could certainly be done generally given more time, but this is
@@ -23,9 +24,10 @@ import probcog.commands.tests.*;
  */
 public class BehaviorGraph
 {
+    static final double LAMBDA = Util.getConfig().requireDouble("monte_carlo.lambda");
     static final double WHEELBASE_M = 0.5;
-    static final double XYT_DIST_M = 0.3; // XXX
-    static final double XYT_THETA_RAD = Math.toRadians(3);
+    static final double XYT_DIST_M = Util.getConfig().requireDouble("monte_carlo.xyt_dist_m");
+    static final double XYT_THETA_RAD = Math.toRadians(Util.getConfig().requireDouble("monte_carlo.xyt_theta_deg"));
 
     class DijkstraComparator implements Comparator<DijkstraNode>
     {
@@ -280,15 +282,23 @@ public class BehaviorGraph
             new PriorityQueue<DijkstraNode>(10, new DijkstraComparator());
         queue.add(dn);
 
-        VisWorld.Buffer vb = vw.getBuffer("debug-graph-nav");
+        VisWorld.Buffer vb = null;
+        if (vw != null) {
+            vb = vw.getBuffer("debug-graph-nav");
+        }
+
         while (queue.size() > 0) {
             dn = queue.poll();
 
             // If this node reaches our goal, return a plan
             Node currNode = dn.getNode();
             assert (currNode != null);
-            if (currNode.tagID == endTag)
+            if (currNode.tagID == endTag) {
+                if (vb != null) {
+                    vb.swap();
+                }
                 return planHelper(dn);
+            }
 
             // Pass over previously visited search nodes
             if (closedList.contains(dn))
@@ -299,17 +309,21 @@ public class BehaviorGraph
             for (Integer edgeID: currNode.edgesOut) {
                 queue.add(dn.addChild(edgeID));
 
-                // XXX DEBUG
-                Edge e = edges.get(edgeID);
-                vb.addBack(new VisChain(LinAlg.xytToMatrix(e.b.theoreticalXYT.startXYT),
-                                        new VzBox(new VzMesh.Style(Color.red))));
+                if (vb != null) {
+                    Edge e = edges.get(edgeID);
+                    vb.addBack(new VisChain(LinAlg.xytToMatrix(e.b.theoreticalXYT.startXYT),
+                                            new VzBox(new VzMesh.Style(Color.red))));
             }
-            //TimeUtil.sleep(500);
 
-            vb.swap();
+            if (vb != null)
+                vb.swap();
+                //TimeUtil.sleep(500);
+            }
         }
 
-        vb.swap();
+        if (vb != null) {
+            vb.swap();
+        }
 
         return null; // Failure
     }
@@ -379,6 +393,7 @@ public class BehaviorGraph
             for (Integer endID: tagIDs.keySet()) {
                 if (startID.equals(endID))
                     continue;
+                System.out.printf("Testing reachability from %d to %d\n", startID, endID);
                 if (navigate(startID, endID, null) == null)
                     return false;
             }

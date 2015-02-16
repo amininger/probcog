@@ -117,17 +117,18 @@ public class TreeUtil
     static public HashMap<Integer, Tree<Behavior> > makeTrees(SimWorld sw,
                                                               GridMap gm,
                                                               VisWorld vw,
-                                                              long timeout_ms)
+                                                              long timeout_us)
     {
         MonteCarloPlanner mcp = new MonteCarloPlanner(sw, gm, null);
         HashMap<Integer, Tree<Behavior> > trees = new HashMap<Integer, Tree<Behavior> >();
 
+        System.out.println("Timeout after "+timeout_us+" usec");
         for (SimObject so: sw.objects) {
             if (!(so instanceof SimAprilTag))
                 continue;
             SimAprilTag tag = (SimAprilTag)so;
             System.out.println("Building tree for tag "+tag.getID());
-            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), timeout_ms);
+            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), timeout_us);
             System.out.println("Done! Build tree size "+tree.size());
             trees.put(tag.getID(), tree);
 
