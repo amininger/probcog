@@ -110,13 +110,14 @@ public class TreeUtil
                                                               GridMap gm,
                                                               VisWorld vw)
     {
-        return makeTrees(sw, gm, vw, Long.MAX_VALUE);
+        return makeTrees(sw, gm, vw, true, Long.MAX_VALUE);
     }
 
     /** Build all of the trees for the landmarks in the given world */
     static public HashMap<Integer, Tree<Behavior> > makeTrees(SimWorld sw,
                                                               GridMap gm,
                                                               VisWorld vw,
+                                                              boolean addNeighbors,
                                                               long timeout_us)
     {
         MonteCarloPlanner mcp = new MonteCarloPlanner(sw, gm, null);
@@ -128,7 +129,7 @@ public class TreeUtil
                 continue;
             SimAprilTag tag = (SimAprilTag)so;
             System.out.println("Building tree for tag "+tag.getID());
-            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), timeout_us);
+            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), addNeighbors, timeout_us);
             System.out.println("Done! Build tree size "+tree.size());
             trees.put(tag.getID(), tree);
 

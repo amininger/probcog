@@ -468,23 +468,25 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 fout = new TextStructureWriter(new BufferedWriter(new FileWriter(filename)));
 
                 // Initial file setup
-                fout.writeComment("Lambda, worldname, ...");
+                fout.writeComment("Lambda, worldname, number of samples taken");
                 fout.writeDouble(Util.getConfig().requireDouble("monte_carlo.lambda"));
                 fout.writeString(opts.getString("world"));
+                fout.writeInt(pg.gi("samples"));
 
                 Tic treeTic = new Tic();
                 HashMap<Integer, Tree<Behavior> > trees =
-                    TreeUtil.makeTrees(simulator.getWorld(), gm, null);
+                    TreeUtil.makeTrees(simulator.getWorld(), gm, null, false, Long.MAX_VALUE);
                 double time = treeTic.toc();
                 double timePerTree = time / trees.size();
                 analyzeTrees(fout, trees, (long)(time*1000000), (long)(timePerTree*1000000));
 
                 int numSamples = pg.gi("samples");
-                double timestep = timePerTree / numSamples;
-                for (double timeSeconds = timePerTree - timestep; timeSeconds > 0; timeSeconds -= timestep) {
+                double timestep = timePerTree / (numSamples);
+                for (int i = 1; i < numSamples; i++) {
+                    double timeSeconds = timePerTree - i*timestep;
                     long longSeconds = (long)(timeSeconds*1000000);
                     treeTic.tic();
-                    trees = TreeUtil.makeTrees(simulator.getWorld(), gm, null, longSeconds);
+                    trees = TreeUtil.makeTrees(simulator.getWorld(), gm, null, true, longSeconds);
                     time = treeTic.toc();
                     analyzeTrees(fout, trees, (long)(time*1000000), longSeconds);
                 }
@@ -576,7 +578,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             // 1 can be known, but at that point, why aren't you just paying
             // the full cost. 2 cannot be known in advance.
             HashMap<Integer, Tree<Behavior> > trees =
-                TreeUtil.makeTrees(simulator.getWorld(), gm, vw, (long)(5.0*1000000)); // XXX
+                TreeUtil.makeTrees(simulator.getWorld(), gm, vw, true, (long)(5.0*1000000)); // XXX
             //TreeUtil.hist(trees);
             BehaviorGraph graph = TreeUtil.union(trees);
             //System.out.println("Graph is fully reachable: "+graph.isFullyReachable(null));
@@ -645,7 +647,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                                                           gm,
                                                           null);
 
-            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), (long)(5.0*1000000));
+            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), true, (long)(5.0*1000000));
             System.out.println("Done! Built tree size "+tree.size());
 
             TreeUtil.renderTree(tree, simulator.getWorld(), vw.getBuffer("spanning-tree"));

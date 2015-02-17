@@ -638,7 +638,7 @@ public class MonteCarloPlanner
     public Tree<Behavior> buildSpanningTree(int tagID)
     {
         // By default, just run forever
-        return buildSpanningTree(tagID, Long.MAX_VALUE);
+        return buildSpanningTree(tagID, true, Long.MAX_VALUE);
     }
 
     /** Build a spanning tree describing trajectories from the given to all
@@ -649,7 +649,7 @@ public class MonteCarloPlanner
      *
      *  @return A spanning tree of the best routes to each goal
      **/
-    public Tree<Behavior> buildSpanningTree(int tagID, long timeout_us)
+    public Tree<Behavior> buildSpanningTree(int tagID, boolean addNeighbors, long timeout_us)
     {
         boolean CONNECT_NEIGHBORS = true;
         watch = new Stopwatch();
@@ -677,7 +677,6 @@ public class MonteCarloPlanner
         Set<Integer> visitedTags = new HashSet<Integer>();
         visitedTags.add(tag.getID());
 
-        boolean addNeighbors = true;
         while (heap.size() > 0 && (TimeUtil.utime() - start_utime) < timeout_us) {
             GreedySearchNode gsn = heap.poll();
 
