@@ -39,6 +39,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
     VisWorld vw;
     VisLayer vl;
     VisCanvas vc;
+    ParameterGUI pg;
+
     int commandID = 0;
     private ProbCogSimulator simulator;
     private GridMap gm;
@@ -46,6 +48,16 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
     private double[] goal = new double[2];
 
     ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
+
+    private class InputHandler implements ParameterListener
+    {
+        public void parameterChanged(ParameterGUI pg, String name)
+        {
+            if (name.equals("test")) {
+                new TestThread().start();
+            }
+        }
+    }
 
     public PlanningGUI(GetOpt opts)
     {
@@ -60,6 +72,14 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         vc = new VisCanvas(vl);
         vl.addEventHandler(new PlanningGUIEventHandler(vw));
         this.add(vc, BorderLayout.CENTER);
+
+        pg = new ParameterGUI();
+        pg.addInt("startTag", "Start tag", 1);
+        pg.addInt("endTag", "End tag", 2);
+        pg.addIntSlider("samples", "Num Samples", 2, 100, 10);
+        pg.addButtons("test", "Run Test");
+        pg.addListener(new InputHandler());
+        this.add(pg, BorderLayout.SOUTH);
 
         VisConsole console = new VisConsole(vw, vl, vc);
         simulator = new ProbCogSimulator(opts, vw, vl, vc, console);
@@ -322,7 +342,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             if (e.getKeyCode() == KeyEvent.VK_W)
                 new WavefrontThread().start();
             if (e.getKeyCode() == KeyEvent.VK_Q)
-                new DataThread().start();
+                new TestThread().start();
+                //new DataThread().start();
             if (e.getKeyCode() == KeyEvent.VK_S)
                 new SpanningTreeThread().start();
             if (e.getKeyCode() == KeyEvent.VK_A)
@@ -423,6 +444,128 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         }
     }
 
+    private class TestThread extends Thread
+    {
+        public void run()
+        {
+            try {
+                // Collect data for testing. We want to know...
+                // 1) How much we were supposed to take for computation
+                // 2) How much time we actually took (I expect)
+                // 3) How path quality degraded for each tag pair
+                // 4) Plan time computation
+                // 5) How lambda affects things. We are going to do this separately, though
+
+                // To compute these things, we work our way backwards! Calculate the
+                // size of the trees, first, and then use the full planning time to
+                // select points for partial planning times. We do an arbitrary number
+                // of sample points. Note that this may give some useless data when
+                // we go TOO low
+
+                String date = (new SimpleDateFormat("yyMMdd_kkmmss")).format(new Date());
+                String filename = "/tmp/"+date+".graph_union";
+                TextStructureWriter fout;
+                fout = new TextStructureWriter(new BufferedWriter(new FileWriter(filename)));
+
+                // Initial file setup
+                fout.writeComment("Lambda, worldname, ...");
+                fout.writeDouble(Util.getConfig().requireDouble("monte_carlo.lambda"));
+                fout.writeString(opts.getString("world"));
+
+                Tic treeTic = new Tic();
+                HashMap<Integer, Tree<Behavior> > trees =
+                    TreeUtil.makeTrees(simulator.getWorld(), gm, null);
+                double time = treeTic.toc();
+                double timePerTree = time / trees.size();
+                analyzeTrees(fout, trees, (long)(time*1000000), (long)(timePerTree*1000000));
+
+                int numSamples = pg.gi("samples");
+                double timestep = timePerTree / numSamples;
+                for (double timeSeconds = timePerTree - timestep; timeSeconds > 0; timeSeconds -= timestep) {
+                    long longSeconds = (long)(timeSeconds*1000000);
+                    treeTic.tic();
+                    trees = TreeUtil.makeTrees(simulator.getWorld(), gm, null, longSeconds);
+                    time = treeTic.toc();
+                    analyzeTrees(fout, trees, (long)(time*1000000), longSeconds);
+                }
+                fout.close();
+            } catch (IOException ioex) {
+                System.err.println("ERR: Issue with saving data to file - "+ioex);
+                ioex.printStackTrace();
+            }
+        }
+
+        // For a set of trees...plan
+        private void analyzeTrees(TextStructureWriter fout,
+                                  HashMap<Integer, Tree<Behavior> > trees,
+                                  long actualTime,
+                                  long timestep)
+            throws IOException
+        {
+            assert (trees.size() > 0);
+            fout.writeComment("Trial data");
+            fout.writeComment("\tActual full time");
+            fout.writeComment("\tActual time/tree");
+            fout.writeComment("\tDesired time/tree");
+            fout.writeDouble(actualTime/1000000.0);                 // Full time
+            fout.writeDouble((actualTime/1000000.0)/trees.size());  // Actual time/tree
+            fout.writeDouble(timestep/1000000.0);                   // Theoretical time/tree
+
+            BehaviorGraph graph = TreeUtil.union(trees);
+
+            //System.out.printf("======================================\n");
+            //System.out.printf("=== Timeout: %f\n", timestep/1000000.0);
+            //System.out.printf("======================================\n");
+            fout.writeComment("Individual trials");
+            fout.writeComment("\t# of trials");
+            fout.writeComment("\t{");
+            fout.writeComment("\t\tstartID");
+            fout.writeComment("\t\tendID");
+            fout.writeComment("\t\tprob");
+            fout.writeComment("\t\tdist");
+            fout.writeComment("\t}");
+            fout.writeComment("\t{ ...");
+            int treeCount = trees.size()*(trees.size()-1);
+            fout.writeInt(treeCount);
+            int count = 0;
+            for (Integer start: trees.keySet()) {
+                for (Integer end: trees.keySet()) {
+                    if (start.equals(end))
+                        continue;
+                    count++;
+
+                    Tic planTic = new Tic();
+                    ArrayList<Behavior> plan = graph.navigate(start, end, null);
+                    double planTime = planTic.toc();
+                    assert (plan != null);
+
+                    // Calculate probability of success
+                    double prob = 1.0;
+                    double dist = 0;
+                    for (Behavior b: plan) {
+                        if (b.law == null)
+                            continue;
+                        prob *= b.myprob;
+                        dist += b.theoreticalXYT.myDist;
+                    }
+
+                    fout.blockBegin();
+                    fout.writeInt(start);
+                    fout.writeInt(end);
+                    fout.writeDouble(prob);
+                    fout.writeDouble(dist);
+                    fout.blockEnd();
+                    //System.out.printf("%d -> %d\n", start, end);
+                    //System.out.printf("\tprob: %f\n", prob);
+                    //System.out.printf("\tdist: %f\n", dist);
+                }
+            }
+            fout.flush();
+
+            assert (treeCount == count);
+        }
+    }
+
     private class AllTreesThread extends Thread
     {
         public void run()
@@ -439,8 +582,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             //System.out.println("Graph is fully reachable: "+graph.isFullyReachable(null));
 
             // Test it out
-            ArrayList<Behavior> testPlan = graph.navigate(3,
-                                                          41,
+            ArrayList<Behavior> testPlan = graph.navigate(pg.gi("startTag"),
+                                                          pg.gi("endTag"),
                                                           null);
 
             if (testPlan == null) {

@@ -388,10 +388,10 @@ public class BehaviorGraph
                               null));
 
         Collections.reverse(plan);
-        System.out.println("Constructed plan of size: "+plan.size());
-        for (Behavior b: plan)
-            System.out.println(b);
-        System.out.println("=====================");
+        //System.out.println("Constructed plan of size: "+plan.size());
+        //for (Behavior b: plan)
+        //    System.out.println(b);
+        //System.out.println("=====================");
         return plan;
     }
 

@@ -32,7 +32,7 @@ public class Behavior
     // Likewise, theoreticalDistance tells us how far we think we've traveled
     // after executing command.
     public int tagID = -1;
-    XYTPair theoreticalXYT = new XYTPair();
+    public XYTPair theoreticalXYT = new XYTPair();
 
     // The probability that this behavior will actually be executed correctly.
     // For counting-based behaviors, one would expect this to be our estimate of

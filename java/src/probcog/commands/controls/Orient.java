@@ -24,10 +24,12 @@ public class Orient implements ControlLaw, LCMSubscriber
     static final double MIN_SPEED = 0.20;   // Enough to overcome stall XXX
     static final int HZ = 20;
 
+
     double goalYaw = 0;
 
     Object poseLock = new Object();
     pose_t lastPose = null;
+    private double lastSpeed = 0;       // Ramp up/down
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private class OrientTask implements PeriodicTasks.Task
@@ -137,6 +139,7 @@ public class Orient implements ControlLaw, LCMSubscriber
         double speed = MathUtil.clamp(MAX_SPEED*(dyaw / SPEED_THRESH_RANGE_RAD),
                                       MIN_SPEED,
                                       MAX_SPEED);
+        speed = Math.min((speed + lastSpeed) / 2, MAX_SPEED);
         if (dyaw > 0) {
             // We need to go LEFT
             dd.left = -speed;
@@ -148,6 +151,8 @@ public class Orient implements ControlLaw, LCMSubscriber
 
         if (Math.abs(dyaw) < Math.toRadians(3))
             dd.left = dd.right = 0;
+
+        lastSpeed = Math.abs(dd.left);
 
 
         return dd;
