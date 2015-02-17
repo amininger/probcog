@@ -41,6 +41,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
     VisCanvas vc;
     ParameterGUI pg;
 
+    BehaviorGraph lastGraph = null;
+
     int commandID = 0;
     private ProbCogSimulator simulator;
     private GridMap gm;
@@ -55,6 +57,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         {
             if (name.equals("test")) {
                 new TestThread().start();
+            } else if (name.equals("plan")) {
+                new NavThread().start();
             }
         }
     }
@@ -75,9 +79,11 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
         pg = new ParameterGUI();
         pg.addInt("startTag", "Start tag", 1);
-        pg.addInt("endTag", "End tag", 2);
+        pg.addInt("endTag", "End tag", 3);
+        pg.addDoubleSlider("time", "Time [s]", 1.0, 300.0, 1.0);
         pg.addIntSlider("samples", "Num Samples", 2, 100, 10);
-        pg.addButtons("test", "Run Test");
+        pg.addButtons("plan", "Plan",
+                      "test", "Run Test");
         pg.addListener(new InputHandler());
         this.add(pg, BorderLayout.SOUTH);
 
@@ -537,7 +543,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                     count++;
 
                     Tic planTic = new Tic();
-                    ArrayList<Behavior> plan = graph.navigate(start, end, null);
+                    ArrayList<Behavior> plan = graph.navigate(start, end, gm, null);
                     double planTime = planTic.toc();
                     assert (plan != null);
 
@@ -568,6 +574,60 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         }
     }
 
+    boolean running = false;
+    private class NavThread extends Thread
+    {
+        public void run()
+        {
+            if (running)
+                return;
+
+            running = true;
+            if (lastGraph == null) {
+                running = false;
+                return;
+            }
+
+            ArrayList<Behavior> testPlan = lastGraph.navigate(pg.gi("startTag"),
+                                                              pg.gi("endTag"),
+                                                              gm,
+                                                              null);
+
+            if (testPlan == null) {
+                System.err.println("ERR: No path could be found between these nodes");
+                return;
+            }
+            MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+            Behavior start = testPlan.get(0);
+            bot.setPose(LinAlg.xytToMatrix(start.theoreticalXYT.endXYT)); // XXX
+            for (Behavior b: testPlan) {
+                if (b.law == null)
+                    continue;
+                System.out.println(b);
+                bot.init(b.law, b.test);
+                bot.simulate(300, true);
+                //LinAlg.print(LinAlg.matrixToXYT(bot.getPose()));
+                //VisWorld.Buffer vb = vw.getBuffer("test-navigation");
+                //vb.setDrawOrder(-900);
+                //vb.addBack(bot.getVisObject());
+                //vb.swap();
+                //TimeUtil.sleep(1000);
+
+                if (!bot.success()) {
+                    System.err.println("ERR: could not finish path");
+                    break;
+                }
+                //assert (bot.success()); // XXX
+            }
+
+            VisWorld.Buffer vb = vw.getBuffer("test-navigation");
+            vb.setDrawOrder(-900);
+            vb.addBack(bot.getVisObject());
+            vb.swap();
+            running = false;
+        }
+    }
+
     private class AllTreesThread extends Thread
     {
         public void run()
@@ -578,14 +638,16 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             // 1 can be known, but at that point, why aren't you just paying
             // the full cost. 2 cannot be known in advance.
             HashMap<Integer, Tree<Behavior> > trees =
-                TreeUtil.makeTrees(simulator.getWorld(), gm, vw, true, (long)(5.0*1000000)); // XXX
+                TreeUtil.makeTrees(simulator.getWorld(), gm, vw, true, (long)(pg.gd("time")*1000000)); // XXX
             //TreeUtil.hist(trees);
             BehaviorGraph graph = TreeUtil.union(trees);
+            lastGraph = graph;
             //System.out.println("Graph is fully reachable: "+graph.isFullyReachable(null));
 
             // Test it out
             ArrayList<Behavior> testPlan = graph.navigate(pg.gi("startTag"),
                                                           pg.gi("endTag"),
+                                                          gm,
                                                           null);
 
             if (testPlan == null) {
@@ -647,7 +709,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                                                           gm,
                                                           null);
 
-            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), true, (long)(5.0*1000000));
+            Tree<Behavior> tree = mcp.buildSpanningTree(tag.getID(), true, (long)(pg.gd("time")*1000000));
             System.out.println("Done! Built tree size "+tree.size());
 
             TreeUtil.renderTree(tree, simulator.getWorld(), vw.getBuffer("spanning-tree"));

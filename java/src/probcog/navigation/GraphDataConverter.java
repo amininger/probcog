@@ -22,9 +22,9 @@ public class GraphDataConverter
     {
         public void parameterChanged(ParameterGUI pg, String name)
         {
-            if (name.equals("graph")) {
+            //if (name.equals("graph")) {
                 generateGraph();
-            }
+            //}
         }
     }
 
@@ -119,6 +119,7 @@ public class GraphDataConverter
         }
 
         double maxTime = data.get(0).timePerTree;
+        double maxDist = 0;
         ArrayList<double[]> prob = new ArrayList<double[]>();
         ArrayList<double[]> dist = new ArrayList<double[]>();
         for (TrialData trialData: data) {
@@ -134,6 +135,11 @@ public class GraphDataConverter
             assert (planData != null);
             prob.add(new double[] {time/maxTime, planData.prob});
             dist.add(new double[] {time/maxTime, planData.dist});
+            maxDist = Math.max(maxDist, planData.dist);
+        }
+
+        for (double[] d: dist) {
+            d[1] /= maxDist;
         }
 
         VisWorld.Buffer vb = vw.getBuffer("axes");
@@ -150,6 +156,15 @@ public class GraphDataConverter
                                new VzLines.Style(Color.red, 2)));
         vb.addBack(new VzPoints(new VisVertexData(prob),
                                 new VzPoints.Style(Color.yellow, 2)));
+        vb.swap();
+
+        vb = vw.getBuffer("dist-data");
+        vb.setDrawOrder(5);
+        vb.addBack(new VzLines(new VisVertexData(dist),
+                               VzLines.LINE_STRIP,
+                               new VzLines.Style(Color.blue, 2)));
+        vb.addBack(new VzPoints(new VisVertexData(dist),
+                                new VzPoints.Style(Color.cyan, 2)));
         vb.swap();
     }
 

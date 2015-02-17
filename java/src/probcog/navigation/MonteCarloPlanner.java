@@ -323,7 +323,7 @@ public class MonteCarloPlanner
         // Initialize planning components
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
         params.put("side", new TypedValue((byte)-1));
-        params.put("distance", new TypedValue((double)0.65));
+        params.put("distance", new TypedValue((double)0.75));
         controls.add(new FollowWall(params));
         params.put("side", new TypedValue((byte)1));
         controls.add(new FollowWall(params));

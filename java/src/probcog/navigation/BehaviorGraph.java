@@ -33,9 +33,9 @@ public class BehaviorGraph
     {
         public int compare(DijkstraNode a, DijkstraNode b)
         {
-            if (a.score > b.score)
+            if (a.score < b.score)
                 return -1;
-            else if (b.score > a.score)
+            else if (b.score < a.score)
                 return 1;
             return 0;
         }
@@ -47,7 +47,8 @@ public class BehaviorGraph
         public int edgeID = -1;             // The edge that brought us here
         public double prob = 1.0;
         public double dist = 0;
-        public double score = 1.0;
+        public double distLeft = 0;
+        public double score = 0;
         public DijkstraNode parent = null;
 
         private DijkstraNode() {};
@@ -61,7 +62,7 @@ public class BehaviorGraph
          *  of the edge that took it to its presesnt location. The edge itself
          *  contains a behavior noting which node it is currently at.
          **/
-        public DijkstraNode addChild(int edgeID)
+        public DijkstraNode addChild(int edgeID, GridMap gm, float[] costMap)
         {
             assert (edges.containsKey(edgeID));
             Edge e = edges.get(edgeID);
@@ -71,7 +72,19 @@ public class BehaviorGraph
             dn.nodeIdx = findNodeIdx(e.b.theoreticalXYT.endXYT);
             dn.prob = prob*e.b.myprob;
             dn.dist = dist+e.b.theoreticalXYT.myDist;
-            dn.score = dn.prob*LAMBDA - dist; // ADD WAVEFRONT HEURISTIC STUFF XXX
+
+            if (gm != null) {
+                double[] xy = nodes.get(dn.nodeIdx).xy;
+
+                int ix = (int)(Math.floor((xy[0]-gm.x0)/gm.metersPerPixel));
+                int iy = (int)(Math.floor((xy[1]-gm.y0)/gm.metersPerPixel));
+
+                dn.distLeft = (double) (costMap[iy*gm.width + ix]);
+            } else {
+                dn.distLeft = 0;
+            }
+            dn.score = (dn.dist + dn.distLeft) - dn.prob*LAMBDA;
+            //dn.score = (dn.dist + dn.distLeft);
 
             dn.parent = this;
 
@@ -278,11 +291,23 @@ public class BehaviorGraph
 
     // XXX Eventually, want to change "startTag" to a specific
     // goal or orientation to match against graph structure.
-    public ArrayList<Behavior> navigate(int startTag, int endTag, VisWorld vw)
+    public ArrayList<Behavior> navigate(int startTag, int endTag, GridMap gm, VisWorld vw)
     {
         // Perform a Dijkstra search through the graph. MOAR NODES
         int startIdx = findNodeIdxByID(startTag);
         assert (startIdx >= 0);
+        int endIdx = findNodeIdxByID(endTag);
+        assert (endIdx >= 0);
+
+        double[] goal = nodes.get(endIdx).xy;
+
+        // Compute wavefront
+        float[] costMap = null;
+        if (gm != null) {
+            WavefrontPlanner wfp = new WavefrontPlanner(gm, 0.0);
+            costMap = wfp.getWavefront(null, goal);
+        }
+
         DijkstraNode dn = new DijkstraNode(startIdx);
 
         HashSet<DijkstraNode> closedList = new HashSet<DijkstraNode>();
@@ -297,6 +322,7 @@ public class BehaviorGraph
 
         while (queue.size() > 0) {
             dn = queue.poll();
+            //System.out.printf("%f+%f - %f*%f = %f\n", dn.dist, dn.distLeft, LAMBDA, dn.prob, dn.score);
 
             // If this node reaches our goal, return a plan
             Node currNode = dn.getNode();
@@ -316,7 +342,7 @@ public class BehaviorGraph
 
             // Generate children
             for (Integer edgeID: currNode.edgesOut) {
-                queue.add(dn.addChild(edgeID));
+                queue.add(dn.addChild(edgeID, gm, costMap));
 
                 if (vb != null) {
                     Edge e = edges.get(edgeID);
@@ -327,7 +353,7 @@ public class BehaviorGraph
 
             if (vb != null) {
                 vb.swap();
-                TimeUtil.sleep(500);
+                TimeUtil.sleep(250);
             }
         }
 
@@ -372,11 +398,11 @@ public class BehaviorGraph
                                           dist+dt*(WHEELBASE_M/2),
                                           orient,
                                           stable);
-                b.prob = edge.b.prob;
+                b.prob = edge.b.prob; // XXX
                 plan.add(b); // XXX WIP
             }
 
-            plan.add(edge.b);
+            plan.add(edge.b.copyBehavior());
             prev = dn;
             dn = dn.parent;
         }
@@ -404,7 +430,7 @@ public class BehaviorGraph
                 if (startID.equals(endID))
                     continue;
                 System.out.printf("Testing reachability from %d to %d\n", startID, endID);
-                if (navigate(startID, endID, vw) == null)
+                if (navigate(startID, endID, null, vw) == null)
                     return false;
             }
         }

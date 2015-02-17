@@ -213,7 +213,7 @@ public class MonteCarloBot implements SimObject
 
             if (law instanceof DriveTowardsTag) {
                 DriveTowardsTag dtt = (DriveTowardsTag)law;
-                HashSet<SimAprilTag> currentTags = getSeenTags(2.5);
+                HashSet<SimAprilTag> currentTags = getSeenTags(2.0);
                 for (SimAprilTag tag: currentTags) {
                     if (dtt.getID() == tag.getID()) {
                         double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
@@ -444,7 +444,7 @@ public class MonteCarloBot implements SimObject
 
     public HashSet<SimAprilTag> getSeenTags()
     {
-        return getSeenTags(2.0);    // XXX Config, and why this distance?
+        return getSeenTags(1.5);    // XXX Config, and why this distance?
     }
 
     public HashSet<SimAprilTag> getSeenTags(double classificationRange)

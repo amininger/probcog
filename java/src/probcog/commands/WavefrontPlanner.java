@@ -8,7 +8,7 @@ import april.util.*;
 /** A tool for computing wavefront paths through the environment */
 public class WavefrontPlanner
 {
-    boolean failure = false;
+    public boolean failure = false;
     GridMap gm;
     float[] costMap;
     double[] start, goal;
@@ -98,12 +98,14 @@ public class WavefrontPlanner
                 if (sx == npx && sy == npy) {
                     start = s;
                     goal = g;
+                    System.out.println("Found wavefront");
                     return costMap;
                 }
             }
         }
 
         failure = true;
+        System.out.println("Failed to find wavefront");
 
         // Finished without finding goal. Just send back a cost map
         return costMap;
