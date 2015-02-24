@@ -473,7 +473,7 @@ public class MonteCarloPlanner
 
     private ArrayList<Behavior> generateChildren(Node<Behavior> node)
     {
-        double[] yaws = new double[] {Math.PI/2, Math.PI, -Math.PI/2};
+        double[] yaws = new double[] {0, Math.PI/2, Math.PI, -Math.PI/2};
         //double[] yaws = new double[] {};
         return generateChildren(node, yaws);
     }
@@ -853,6 +853,7 @@ public class MonteCarloPlanner
         gsnHeap.add(node);
 
         HashSet<Integer> closedList = new HashSet<Integer>();
+        HashSet<Integer> closedChildren = new HashSet<Integer>();
 
         // Reset state from last search
         soln = null;
@@ -884,23 +885,11 @@ public class MonteCarloPlanner
             // followed. We might want to come back and change how that is handled.
             // For now, just greedily take the first such option. For our cases,
             // they should be morally equivalent.
-            if (closedList.contains(node.node.data.tagID)) {
+            if (closedList.contains(node.node.data.tagID) &&
+                !(node.node.data.law instanceof DriveTowardsTag))
+            {
                 continue;
             }
-
-            // Trigger DriveTowardsTag finishing step if we are
-            // sufficiently close to the goal.
-            // XXX We need to visit this condition step. How do we set this
-            // threshold? Why?
-            /*double pct = node.node.data.getPctNearGoal(gm, wf, numSamples);
-            double ARRIVAL_RATE_THRESH = 0.5; // XXX
-            //if (pct >= ARRIVAL_RATE_THRESH) {
-            if (node.node.data.tagID == goalTag.getID()) {
-                Behavior lastStep = finishPlan(node.node, goalTag, pct);
-                Node<Behavior> lastNode = node.node.addChild(lastStep);
-                gsnHeap.add(new GreedySearchNode(lastNode));
-                continue;
-            }*/
 
             // We're not done yet! Greedily pursue the next child in the
             // pecking order of possible choices. To do this, first do a
@@ -921,14 +910,18 @@ public class MonteCarloPlanner
             if (node.hasNextChild()) {
                 Behavior next = node.getNextChild();
 
-                // Simulation.
-                Behavior b = simulateBehavior(next, node.node);
-                b.tagID = next.tagID;
+                if (next != null && (!closedChildren.contains(next.tagID) || next.law instanceof DriveTowardsTag)) {
+                    // Simulation.
+                    Behavior b = simulateBehavior(next, node.node);
+                    b.tagID = next.tagID;
 
-                // Add to heap if non-null
-                if (b != null) {
-                    GreedySearchNode nextNode = new GreedySearchNode(node.node.addChild(b));
-                    gsnHeap.add(nextNode);
+                    // Add to heap if non-null
+                    if (b != null) {
+                        GreedySearchNode nextNode = new GreedySearchNode(node.node.addChild(b));
+                        gsnHeap.add(nextNode);
+                        if (next.tagID > 0)
+                            closedChildren.add(next.tagID);
+                    }
                 }
             }
 
@@ -936,8 +929,8 @@ public class MonteCarloPlanner
             if (node.hasNextChild()) {
                 gsnHeap.add(node);
             } else if (node.node.data.tagID > 0) {
-                //System.out.println("ADD "+node.node.data.tagID);
                 closedList.add(node.node.data.tagID);
+                closedChildren.add(node.node.data.tagID);
             }
 
         }
