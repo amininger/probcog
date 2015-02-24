@@ -98,14 +98,14 @@ public class WavefrontPlanner
                 if (sx == npx && sy == npy) {
                     start = s;
                     goal = g;
-                    System.out.println("Found wavefront");
+                    //System.out.println("Found wavefront");
                     return costMap;
                 }
             }
         }
 
         failure = true;
-        System.out.println("Failed to find wavefront");
+        //System.out.println("Failed to find wavefront");
 
         // Finished without finding goal. Just send back a cost map
         return costMap;

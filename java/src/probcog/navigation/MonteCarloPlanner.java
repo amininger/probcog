@@ -123,6 +123,8 @@ public class MonteCarloPlanner
             // If scores are sufficiently close, treat as equivalent and
             // order in favor of actual distance traveled instead of
             // estimated
+            // XXX Change epsilon here for analysis! Don't want depth dependent.
+            // XXX See old Ed emails.
             if (diff < EPSILON*maxDepth) {
                 if (adist < bdist) {
                     return -1;

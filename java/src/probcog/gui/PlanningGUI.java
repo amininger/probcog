@@ -597,13 +597,62 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 System.err.println("ERR: No path could be found between these nodes");
                 return;
             }
+            // Additionally, simulate many times and build up samples of our
+            // observations
+            ArrayList<ArrayList<classification_t> > good = new ArrayList<ArrayList<classification_t> >();
+            ArrayList<ArrayList<classification_t> > bad = new ArrayList<ArrayList<classification_t> >();
+            for (int i = 0; i < 100; i++) {
+                boolean success = true;
+                MonteCarloBot mcb = new MonteCarloBot(simulator.getWorld());
+                Behavior start = testPlan.get(0);
+                mcb.setPose(LinAlg.xytToMatrix(start.theoreticalXYT.endXYT));
+                for (Behavior b: testPlan) {
+                    if (b.law == null)
+                        continue;
+                    Behavior copy = b.copyBehavior();
+                    mcb.init(copy.law, copy.test);
+                    mcb.simulate(300.0);
+
+                    success &= mcb.success();
+                }
+
+                if (success)
+                    good.add(mcb.observations);
+                else
+                    bad.add(mcb.observations);
+            }
+
+            System.out.printf("%d good, %d bad\n", good.size(), bad.size());
+            for (int i = 0; i < good.size(); i++) {
+                ArrayList<classification_t> classies = good.get(i);
+                System.out.println("GOOD");
+                for (classification_t classy: classies) {
+                    if (classy.name.equals(""))
+                        continue;
+                    System.out.printf("\t%s\n", classy.name);
+                }
+            }
+            for (int i = 0; i < bad.size(); i++) {
+                ArrayList<classification_t> classies = bad.get(i);
+                System.out.println("BAD");
+                for (classification_t classy: classies) {
+                    if (classy.name.equals(""))
+                        continue;
+                    System.out.printf("\t%s\n", classy.name);
+                }
+            }
+
+            // Build a classifier from these samples. Test it on N more trials!
+            //
+
+            // Final sim
             MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
             Behavior start = testPlan.get(0);
             bot.setPose(LinAlg.xytToMatrix(start.theoreticalXYT.endXYT)); // XXX
             for (Behavior b: testPlan) {
                 if (b.law == null)
                     continue;
-                System.out.println(b);
+                //System.out.println(b);
                 bot.init(b.law, b.test);
                 bot.simulate(300, true);
                 //LinAlg.print(LinAlg.matrixToXYT(bot.getPose()));
@@ -625,6 +674,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             vb.addBack(bot.getVisObject());
             vb.swap();
             running = false;
+
         }
     }
 
@@ -666,12 +716,13 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 LinAlg.print(LinAlg.matrixToXYT(bot.getPose()));
 
                 if (!bot.success()) {
-                    VisWorld.Buffer vb = vw.getBuffer("test-navigation");
-                    vb.setDrawOrder(-900);
-                    vb.addBack(bot.getVisObject());
-                    vb.swap();
+                    //VisWorld.Buffer vb = vw.getBuffer("test-navigation");
+                    //vb.setDrawOrder(-900);
+                    //vb.addBack(bot.getVisObject());
+                    //vb.swap();
+                    System.out.println("FAILURE: "+b);
                 }
-                assert (bot.success()); // XXX
+                //assert (bot.success()); // XXX
             }
 
             VisWorld.Buffer vb = vw.getBuffer("test-navigation");

@@ -71,6 +71,9 @@ public class MonteCarloBot implements SimObject
         new HashMap<String, ClassificationCounterTest>();
     public HashMap<Behavior, Behavior> tagRecords = new HashMap<Behavior, Behavior>();
 
+    // For use in multi-simulation tag observations
+    public ArrayList<classification_t> observations = new ArrayList<classification_t>();
+
     // === Random sampling interface =========================
     private void resetTrajectories()
     {
@@ -297,7 +300,10 @@ public class MonteCarloBot implements SimObject
                     //System.out.println("skipped tag "+tag.getID());
                     continue;
                 }
-                //System.out.println("observed tag "+tag.getID());
+
+                // XXX Classification entry point. Store the classification to
+                // a list that chronologically tracks what we've seen, for now.
+                observations.add(classies.get(0));
 
                 // Handle one of the two cases. Case 1) We're just navigating
                 // normally! Pass off the information to the condition test.
