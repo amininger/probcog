@@ -424,26 +424,29 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             // Visualization only
             if (DEBUG) {
                 MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
-                //double[] xyt = LinAlg.matrixToXYT(robot.getPose());
-                do {
-                    bot.setPose(robot.getPose());
-                    for (int i = 0; i < behaviors.size(); i++) {
-                        System.out.println(behaviors.get(i));
-                        bot.init(behaviors.get(i).law, behaviors.get(i).test);
-                        bot.simulate();
-                    }
-                } while (!bot.success());
+                bot.setPose(robot.getPose());
+                for (int i = 0; i < behaviors.size(); i++) {
+                    System.out.println(behaviors.get(i));
+                    Behavior b = behaviors.get(i).copyBehavior();
+                    bot.init(b.law, b.test);
+                    bot.simulate(true);
+                }
 
                 VisWorld.Buffer vb = vw.getBuffer("test-simulation");
                 vb.setDrawOrder(-900);
                 vb.addBack(bot.getVisObject());
                 vb.swap();
 
+                java.util.List<Color> colors = Palette.qualitative_brewer1.listAll();
+
                 // Show behaviors distribution
                 vb = vw.getBuffer("test-distribution");
                 vb.setDrawOrder(10);
+                int counter = 0;
                 for (Behavior b: behaviors) {
-                    vb.addBack(b.getVisObject());
+                    Color c = colors.get(counter % colors.size());
+                    counter++;
+                    vb.addBack(b.getVisObject(c));
                 }
                 vb.swap();
             }

@@ -422,14 +422,14 @@ public class Behavior
     }
 
 
-    public VisObject getVisObject()
+    public VisObject getVisObject(Color c)
     {
         VisVertexData vvd = new VisVertexData();
         for (XYTPair pair: xyts) {
             double[] xyt = pair.endXYT;
             vvd.add(xyt, 1, 2); // Not very efficient
         }
-        return new VzPoints(vvd, new VzPoints.Style(Color.red, 5));
+        return new VzPoints(vvd, new VzPoints.Style(c, 5));
     }
 
     // === Utility ===========================================================

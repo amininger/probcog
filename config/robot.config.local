@@ -486,18 +486,18 @@ monte_carlo {
     iterative_deepening = false;
     max_search_depth = 20;   // How should this be selected? This seems sufficient for CSE
     num_exploration_samples = 1;
-    num_evaluation_samples = 100;  // XXX ? ? ? ? ? ?
+    num_evaluation_samples = 100;  // XXX
 
     start_search_depth = 3; // XXX Currently unused
 
     // Robot parameters
     default_steps_per_second = 5;
     steps_per_second = 20;  // Ignore right now?
-    default_forward_search_time = 60.0; // [s] XXX
-    step_degrees = 3;
+    default_forward_search_time = 90.0; // [s] XXX
+    step_degrees = 5;
     min_degrees = -90; //-135;
     max_degrees = 90; //135;
-    max_range = 29.9;
+    max_range = 7.5;
 
 
 }

@@ -418,8 +418,7 @@ public class MonteCarloPlanner
 
     /** Add a DriveTowardsTag step when appropriate */
     private Behavior finishPlan(Node<Behavior> node,
-                                SimAprilTag goalTag,
-                                double pct)
+                                SimAprilTag goalTag)
     {
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
         params.put("id", new TypedValue(goalTag.getID()));
@@ -460,9 +459,11 @@ public class MonteCarloPlanner
                                   endDists,
                                   dtt,
                                   new NearTag(params));
-        // XXX Is this only possible because of our model?
-        if (node.data != null)
-            b.prob = Math.min(pct, node.data.prob);
+
+        if (node.data != null) {
+            b.prob = node.data.prob;
+            b.myprob = 1.0;
+        }
         b.tagID = goalTag.getID(); // XXX
         return b;
         //Node<Behavior> newNode = node.addChild(b);
@@ -473,6 +474,7 @@ public class MonteCarloPlanner
     private ArrayList<Behavior> generateChildren(Node<Behavior> node)
     {
         double[] yaws = new double[] {Math.PI/2, Math.PI, -Math.PI/2};
+        //double[] yaws = new double[] {};
         return generateChildren(node, yaws);
     }
     // XXX Notable points of failure could be...
@@ -500,9 +502,13 @@ public class MonteCarloPlanner
         ArrayList<Node<Behavior> > startNodes = new ArrayList<Node<Behavior> >();
         startNodes.add(node);
 
+        boolean isTurn = false;
+        if (node.data.law != null)
+            isTurn = node.data.law instanceof Orient;
+
         // Special case: we also consider turning in place at the beggining
         // phase of planning.
-        if (node.depth == 0) {
+        if ((node.depth == 0 || true) && !isTurn) { // XXX
             for (double yaw: yaws) {
                 HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                 params.put("yaw", new TypedValue(yaw));
@@ -539,7 +545,7 @@ public class MonteCarloPlanner
                                           dists,
                                           new Orient(params),
                                           new Stabilized(params));
-                b.prob = node.data.prob;
+                b.prob = node.data.prob * 0.999;    // XXX Not perfect! Fudge
                 recs.add(b);
                 // XXX Leaves out GreedySearchNode step. Bah.
                 //Node<Behavior> nextNode = node.addChild(b);
@@ -562,6 +568,14 @@ public class MonteCarloPlanner
                     recs.add(rec);
                 }
             }
+
+            // Handle finishing steps
+            if (startNode.data.tagID > 0 && !(startNode.data.law instanceof DriveTowardsTag)) {
+                SimAprilTag tag = getTag(node.data.tagID);
+                Behavior next = finishPlan(node, tag);
+                recs.add(next);
+            }
+
         }
 
         return recs;
@@ -612,7 +626,8 @@ public class MonteCarloPlanner
         // XXX So do we even USE our sample points due to this?
         if (node.data != null)
             behavior.prob = node.data.prob;
-        behavior.prob *= b.prob;
+        behavior.prob *= b.myprob;
+        behavior.myprob = b.myprob;
         behavior.tagID = node.data.tagID;   // COPY OVER TAG ID! Awful bookkeeping
         behavior.theoreticalXYT = b.theoreticalXYT.copy();
         //System.out.printf("\t%s SCORE: %f\n", behavior.law.toString(), behavior.getBestScore(gm, wf, behavior.prob, 0));
@@ -702,8 +717,7 @@ public class MonteCarloPlanner
                 // Don't bother adding this to the heap
                 visitedTags.add(currTagID);
                 Behavior lastStep = finishPlan(gsn.node,
-                                               getTag(currTagID),
-                                               1.0);
+                                               getTag(currTagID));
                 Node<Behavior> node = gsn.node.addChild(lastStep);
                 heap.add(new GreedySearchNode(node));
                 //continue;
@@ -755,8 +769,7 @@ public class MonteCarloPlanner
                                 // XXX Does this count as visiting, yet?
                                 visitedTags.add(tb.tagID);
                                 Behavior lastStep = finishPlan(nextNode,
-                                                               getTag(tb.tagID),
-                                                               1.0);
+                                                               getTag(tb.tagID));
                                 heap.add(new GreedySearchNode(nextNode.addChild(lastStep)));
                             }
 
@@ -771,8 +784,7 @@ public class MonteCarloPlanner
                         // XXX Does this count as visiting, yet?
                         visitedTags.add(node.data.tagID);
                         Behavior lastStep = finishPlan(node,
-                                                       getTag(node.data.tagID),
-                                                       1.0);
+                                                       getTag(node.data.tagID));
                         heap.add(new GreedySearchNode(node.addChild(lastStep)));
                     }
 
@@ -819,8 +831,6 @@ public class MonteCarloPlanner
      **/
     int nodesExpanded;
     double penalty;
-    private PriorityQueue<Node<Behavior> > heap =
-        new PriorityQueue<Node<Behavior> >(10, new BNComparator());
     private PriorityQueue<GreedySearchNode> gsnHeap =
         new PriorityQueue<GreedySearchNode>(10, new GSNComparator());
 
@@ -842,6 +852,8 @@ public class MonteCarloPlanner
         GreedySearchNode node = new GreedySearchNode(behaviorNode);
         gsnHeap.add(node);
 
+        HashSet<Integer> closedList = new HashSet<Integer>();
+
         // Reset state from last search
         soln = null;
         solnScore = Double.MAX_VALUE;
@@ -851,20 +863,36 @@ public class MonteCarloPlanner
         // scoring heuristic is admissible and consistent.
         while (gsnHeap.size() > 0) {
             node = gsnHeap.poll();
+            //System.out.println("TAG ID: "+node.node.data.tagID);
 
             // If this is close to our goal, return it!
-            if (node.node.data.law instanceof DriveTowardsTag)
-                return node.node;
+            if (node.node.data.law instanceof DriveTowardsTag) {
+                if (goalTag.getID() == node.node.data.tagID) {
+                    return node.node;
+                }
+            }
 
             // Don't search TOO deep
             if (node.node.depth >= searchDepth)
                 continue;
 
+            // If we have already expanded some version of this node,
+            // skip it. This isn't quite fair, as encountering a landmark
+            // from some other direction might be advantageous, but it should
+            // slim down the repetitions. Revisit later to investigate impact?
+            // NOTE: The policy followed here MAY matter in the case of wall
+            // followed. We might want to come back and change how that is handled.
+            // For now, just greedily take the first such option. For our cases,
+            // they should be morally equivalent.
+            if (closedList.contains(node.node.data.tagID)) {
+                continue;
+            }
+
             // Trigger DriveTowardsTag finishing step if we are
             // sufficiently close to the goal.
             // XXX We need to visit this condition step. How do we set this
             // threshold? Why?
-            double pct = node.node.data.getPctNearGoal(gm, wf, numSamples);
+            /*double pct = node.node.data.getPctNearGoal(gm, wf, numSamples);
             double ARRIVAL_RATE_THRESH = 0.5; // XXX
             //if (pct >= ARRIVAL_RATE_THRESH) {
             if (node.node.data.tagID == goalTag.getID()) {
@@ -872,7 +900,7 @@ public class MonteCarloPlanner
                 Node<Behavior> lastNode = node.node.addChild(lastStep);
                 gsnHeap.add(new GreedySearchNode(lastNode));
                 continue;
-            }
+            }*/
 
             // We're not done yet! Greedily pursue the next child in the
             // pecking order of possible choices. To do this, first do a
@@ -907,7 +935,11 @@ public class MonteCarloPlanner
             // If any children STILL exist, add the main node back, too
             if (node.hasNextChild()) {
                 gsnHeap.add(node);
+            } else if (node.node.data.tagID > 0) {
+                //System.out.println("ADD "+node.node.data.tagID);
+                closedList.add(node.node.data.tagID);
             }
+
         }
 
         return null;
