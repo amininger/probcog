@@ -13,6 +13,12 @@ import probcog.lcmtypes.*;
 import probcog.commands.*;
 import probcog.util.*;
 
+/** A not-very-principaled wall follower. Should be revisited later. Note:
+ *  when it reaches a wall in front of it that forces a turn, the follower
+ *  should STOP. This is more "conforming" in that the robot will 1) not turn
+ *  around because a person got in the way and 2) will typically converge to
+ *  the same place as time approaches infinity.
+ **/
 public class FollowWall implements ControlLaw, LCMSubscriber
 {
     private static final double FW_HZ = 100;
@@ -222,10 +228,12 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         }
 
         // Special case turn-in-place when near a dead end in front
+        // XXX Now this is a STOP case
         //System.out.printf("%f\n", rFront);
         if (rFront < goalDistance + 0.25) {
-            nearSpeed = MIN_V;
-            farSpeed = -MIN_V;
+            //nearSpeed = MIN_V;
+            //farSpeed = -MIN_V;
+            nearSpeed = farSpeed = 0;
         }
 
 
