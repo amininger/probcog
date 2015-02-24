@@ -45,7 +45,7 @@ public class MonteCarloBot implements SimObject
     // Internal Simulation State
     int simSinceReset = 0;
     int iteration = 0;
-    boolean success = false;
+    boolean success = false;        // Did the simulation terminate without timeout?
 
     public MonteCarloBot(SimWorld sw)
     {

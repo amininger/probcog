@@ -113,9 +113,11 @@ public class MonteCarloPlanner
         {
             double ascore = a.node.data.getBestScore(gm, wf, a.node.data.prob, 0);
             double bscore = b.node.data.getBestScore(gm, wf, b.node.data.prob, 0);
+            //double ascore = a.node.data.getBestScore(gm, wf, numSamples, 0);
+            //double bscore = b.node.data.getBestScore(gm, wf, numSamples, 0);
 
-            double adist = a.node.data.getMeanDistToGoal(gm, wf);
-            double bdist = b.node.data.getMeanDistToGoal(gm, wf);
+            double awfdist = a.node.data.getMeanDistToGoal(gm, wf);
+            double bwfdist = b.node.data.getMeanDistToGoal(gm, wf);
 
             double diff = Math.abs(ascore - bscore);
             double maxDepth = Math.max(a.node.depth, b.node.depth);
@@ -125,10 +127,10 @@ public class MonteCarloPlanner
             // estimated
             // XXX Change epsilon here for analysis! Don't want depth dependent.
             // XXX See old Ed emails.
-            if (diff < EPSILON*maxDepth) {
-                if (adist < bdist) {
+            if (diff < EPSILON) {
+                if (awfdist < bwfdist) {
                     return -1;
-                } else if (adist > bdist) {
+                } else if (awfdist > bwfdist) {
                     return 1;
                 }
                 //if (a.node.depth > b.node.depth)
@@ -436,7 +438,7 @@ public class MonteCarloPlanner
             //Behavior.XYTPair pair = node.data.randomXYT();
             mcb.init(dtt,
                      new NearTag(params),
-                     node.data.theoreticalXYT.endXYT,
+                     node.data.theoreticalXYT.endXYT,   // Cheating!
                      node.data.theoreticalXYT.dist);
             mcb.simulate(10.0); // XXX Another magic number
             if (vw != null) {
@@ -507,8 +509,8 @@ public class MonteCarloPlanner
             isTurn = node.data.law instanceof Orient;
 
         // Special case: we also consider turning in place at the beggining
-        // phase of planning.
-        if ((node.depth == 0 || true) && !isTurn) { // XXX
+        // phase of planning. Don't chain turns
+        if ((node.depth == 0 || true) && !isTurn) {
             for (double yaw: yaws) {
                 HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
                 params.put("yaw", new TypedValue(yaw));
@@ -545,11 +547,9 @@ public class MonteCarloPlanner
                                           dists,
                                           new Orient(params),
                                           new Stabilized(params));
-                b.prob = node.data.prob * 0.999;    // XXX Not perfect! Fudge
+                b.myprob = 0.999;
+                b.prob = node.data.prob * b.myprob;    // XXX Not perfect! Fudge
                 recs.add(b);
-                // XXX Leaves out GreedySearchNode step. Bah.
-                //Node<Behavior> nextNode = node.addChild(b);
-                //startNodes.add(nextNode);
             }
         }
 
@@ -569,7 +569,9 @@ public class MonteCarloPlanner
                 }
             }
 
-            // Handle finishing steps
+            // Handle finishing steps. Note: We use visual servoing towards our
+            // ACTUAL goal, necessitating tag matches. In reality, we would like
+            // to servo towards something of type "label"
             if (startNode.data.tagID > 0 && !(startNode.data.law instanceof DriveTowardsTag)) {
                 SimAprilTag tag = getTag(node.data.tagID);
                 Behavior next = finishPlan(node, tag);
@@ -606,14 +608,14 @@ public class MonteCarloPlanner
                 vb.addBack(mcb.getVisObject());
                 vb.swap();
             }
-            // We only count success because ...?
-            if (mcb.success()) {
+            // We only count success because ...? XXX
+            //if (mcb.success()) {
                 // Find where we are and how much we've driven to get there
                 startXYTs.add(pair.endXYT);
                 xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
                 startDists.add(pair.dist);
                 distances.add(mcb.getTrajectoryLength());
-            }
+            //}
         }
         if (xyts.size() < 1)
             return null;    // Complete and utter failure of execution
@@ -623,12 +625,13 @@ public class MonteCarloPlanner
                                          distances,
                                          b.law,
                                          b.test.copyCondition());
+        behavior.prob = behavior.getPctNearTheoretical();
+
         // XXX So do we even USE our sample points due to this?
-        if (node.data != null)
-            behavior.prob = node.data.prob;
-        behavior.prob *= b.myprob;
-        behavior.myprob = b.myprob;
-        behavior.tagID = node.data.tagID;   // COPY OVER TAG ID! Awful bookkeeping
+        //if (node.data != null)
+        //    behavior.prob = node.data.prob;
+        //behavior.prob *= behavior.myprob;
+        behavior.tagID = b.tagID; //node.data.tagID;   // COPY OVER TAG ID! Awful bookkeeping
         behavior.theoreticalXYT = b.theoreticalXYT.copy();
         //System.out.printf("\t%s SCORE: %f\n", behavior.law.toString(), behavior.getBestScore(gm, wf, behavior.prob, 0));
 

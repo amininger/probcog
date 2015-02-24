@@ -479,14 +479,14 @@ espeak {
 // === Real time simulation stuff begins here ===
 monte_carlo {
     // Search parameters
-    lambda = 1000;
+    lambda = 100;
     xyt_dist_m = 0.3;       // Range within which nodes are merged in meters
     xyt_theta_deg = 3.0;    // Same as above, but for orientation
 
     iterative_deepening = false;
     max_search_depth = 20;   // How should this be selected? This seems sufficient for CSE
     num_exploration_samples = 1;
-    num_evaluation_samples = 10;  // XXX
+    num_evaluation_samples = 100;  // XXX
 
     start_search_depth = 3; // XXX Currently unused
 

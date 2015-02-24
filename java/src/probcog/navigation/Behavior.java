@@ -265,7 +265,7 @@ public class Behavior
         if (numSamples < 1)
             return 0;
 
-        double GOAL_THRESH = 4.0;
+        double GOAL_THRESH = 0.5;
         int count = 0;
         for (int i = 0; i < xyts.size(); i++) {
             double[] xyt = xyts.get(i).endXYT;
@@ -277,6 +277,22 @@ public class Behavior
         }
 
         return (double)count/(double)numSamples;
+    }
+
+    public double getPctNearTheoretical()
+    {
+        if (xyts.size() < 1)
+            return 0;
+        double GOAL_THRESH = 0.25;
+        int count = 0;
+        for (XYTPair pair: xyts) {
+            double[] xyt = pair.endXYT;
+            double dist = LinAlg.distance(xyt, theoreticalXYT.endXYT, 2);
+            if (dist < GOAL_THRESH)
+                count++;
+        }
+
+        return (double)count/(double)xyts.size();
     }
 
     public double getMeanDistTraveled()
