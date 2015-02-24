@@ -59,14 +59,18 @@ public class Turn implements ControlLaw
     public Turn(Map<String, TypedValue> parameters)
     {
         System.out.println("TURN");
-
+        
         // Needs a direction to turn, currently
-        assert (parameters.containsKey("direction"));
-        byte direction = parameters.get("direction").getByte();
-        if (direction > 0) // CW
-            dir = Direction.LEFT;
-        else // CCW
-            dir = Direction.RIGHT;
+        if (parameters.containsKey("direction")){
+        	byte direction = parameters.get("direction").getByte();
+            if (direction > 0) // CW
+                dir = Direction.LEFT;
+            else // CCW
+                dir = Direction.RIGHT;
+        } else {
+        	dir = Direction.LEFT;
+        }
+
         tasks.addFixedDelay(new TurnTask(), 1.0/DD_HZ);
     }
 

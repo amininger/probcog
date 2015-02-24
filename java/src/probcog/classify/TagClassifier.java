@@ -41,7 +41,9 @@ public class TagClassifier
      **/
     public TagClassifier(boolean useLcm) throws IOException
     {
-        Config config = new ConfigFile(tagConfig);
+    	String filepath = StringUtil.replaceEnvironmentVariables("$PROBCOG_HOME");
+    	filepath += "/config/" + tagConfig;
+        Config config = new ConfigFile(filepath);
 
         idToTag = new HashMap<Integer, ArrayList<TagClass>>();
 

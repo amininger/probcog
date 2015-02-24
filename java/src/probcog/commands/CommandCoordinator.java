@@ -40,7 +40,7 @@ public class CommandCoordinator
 
     public enum Status
     {
-        EXECUTING, FAILURE, SUCCESS, UNKNOWN
+        RECEIVED, EXECUTING, FAILURE, SUCCESS, UNKNOWN
     }
 
     private class ControlLawRecord

@@ -1,4 +1,4 @@
-package probcog.rosie.world;
+package probcog.rosie; 
 
 import java.util.HashSet;
 import java.util.Set;
@@ -140,33 +140,32 @@ public class WMUtil
             }
         }
     }
+    
+    public static typed_value_t wrapTypedValue(WMElement wme){
+		typed_value_t tv = new typed_value_t();
+		tv.value = wme.GetValueAsString();
 
-		public static typed_value_t wrapTypedValue(String value){
-			typed_value_t tv = new typed_value_t();
-			tv.value = value;
+		String valType = wme.GetValueType();
+        if(valType.equals(INTEGER_VAL)){
+        	tv.type = typed_value_t.TYPE_INT;
+        } else if(valType.equals(FLOAT_VAL)){
+        	tv.type = typed_value_t.TYPE_DOUBLE;
+        } else if(tv.value.equals("true") || tv.value.equals("false")){
+        	tv.type = typed_value_t.TYPE_BOOL;
+        } else {
+        	tv.type = typed_value_t.TYPE_STRING;
+        }
+        return tv;
+    }
 
-			try{
-				// Integer
-				Long.parseLong(value);
-				tv.type = typed_value_t.TYPE_INT;
-			} catch (NumberFormatException e){
-				try{
-					// Double
-					Double.parseDouble(value);
-					tv.type = typed_value_t.TYPE_DOUBLE;
-				} catch (NumberFormatException e2){
-					// Boolean
-					if(value.equals("true") || value.equals("false")){
-						tv.type = typed_value_t.TYPE_BOOL;
-					// String
-					} else {
-						tv.type = typed_value_t.TYPE_STRING;
-					}
-				}
-			}
-			return tv;
-		}
-   
+	public static typed_value_t wrapTypedValue(Identifier id, String att){
+		WMElement wme = id.FindByAttribute(att, 0);
+        if(wme == null || wme.GetValueAsString().length() == 0){
+            return null;
+        }
+        return wrapTypedValue(wme);
+	}
+		
     /**
      * Given id and attribute, returns value for WME (id ^attribute value)
      */

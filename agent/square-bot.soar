@@ -12,6 +12,7 @@ sp {simple-bot*Apply*init-agent
 				^next-command <c1>)
 }
 
+
 sp {do-command*apply*send-command*move
     (state <s> ^name do-command
      ^operator <o>)
@@ -22,8 +23,7 @@ sp {do-command*apply*send-command*move
 	(<move> ^name drive-forward
 					^termination-condition <dist>)
 	(<dist> ^name distance
-					^compare-type gte
-					^compared-value 0.5)
+         ^parameters.distance 1.0)
 }
 sp {do-command*apply*send-command*turn
     (state <s> ^name do-command
@@ -35,7 +35,5 @@ sp {do-command*apply*send-command*turn
 	(<turn> ^name turn
 					^termination-condition <rot>)
 	(<rot> ^name rotation
-           ^parameters.direction left
-				 ^compare-type gte
-				 ^compared-value 1.5708)
+        ^parameters.yaw 1.5708)
 }

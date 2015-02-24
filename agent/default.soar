@@ -6,6 +6,13 @@ sp {topstate*propose*init-agent
 	(<o> ^name init-agent)
 }
 
+sp {topstate*apply*init-agent
+   (state <s> ^superstate nil
+              ^operator.name init-agent)
+-->
+   (<s> ^command-counter 0)
+}
+
 sp {substate*elaborate*io
 	(state <s> ^superstate.io <io>)
 -->
@@ -43,6 +50,7 @@ sp {do-command*elaborate*command
 	(<s> ^command <cmd>)
 }
 
+
 sp {do-command*propose*send-command
 	(state <s> ^name do-command
 						 ^command <cmd>
@@ -66,7 +74,7 @@ sp {do-command*apply*send-command*send
 
 sp {do-command*propose*complete-do-command
 	(state <s> ^name do-command
-						 ^ol-command.status << complete error >>)
+						 ^ol-command.status << success failure unknown >>)
 -->
 	(<s> ^operator <o> + >)
 	(<o> ^name complete-do-command)
@@ -76,11 +84,14 @@ sp {do-command*apply*complete-do-command
 	(state <s> ^name do-command
 						 ^operator.name complete-do-command
 						 ^superstate <top>)
-	(<top> ^current-command <cmd>)
+	(<top> ^current-command <cmd>
+        ^command-counter <c>)
 	(<cmd> ^next-command <next>)
 -->
 	(<top> ^current-command <cmd> -
 			   ^current-command <next>)
+    (<top> ^command-counter <c> -
+           ^command-counter (+ <c> 1))
 }
 
 sp {do-command*apply*complete-do-command*remove*command
