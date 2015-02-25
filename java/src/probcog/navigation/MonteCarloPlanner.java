@@ -429,17 +429,20 @@ public class MonteCarloPlanner
 
         ArrayList<double[]> startXYTs = new ArrayList<double[]>();
         ArrayList<double[]> endXYTs = new ArrayList<double[]>();
+        ArrayList<double[]> startOdoms = new ArrayList<double[]>();
+        ArrayList<double[]> endOdoms = new ArrayList<double[]>();
         ArrayList<Double> startDists = new ArrayList<Double>();
         ArrayList<Double> endDists = new ArrayList<Double>();
 
 
         MonteCarloBot mcb = new MonteCarloBot(sw);
         for (int i = 0; i < numSamples; i++) {
-            //Behavior.XYTPair pair = node.data.randomXYT();
+            Behavior.XYTPair pair = node.data.randomXYT(); // Theoretical?
             mcb.init(dtt,
                      new NearTag(params),
-                     node.data.theoreticalXYT.endXYT,   // Cheating!
-                     node.data.theoreticalXYT.dist);
+                     pair.endXYT,
+                     pair.endOdom,
+                     pair.dist);
             mcb.simulate(10.0); // XXX Another magic number
             if (vw != null) {
                 VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
@@ -448,15 +451,19 @@ public class MonteCarloPlanner
                 vb.swap();
             }
             // Find where we are and how much we've driven to get there
-            startXYTs.add(node.data.theoreticalXYT.endXYT);
+            startXYTs.add(pair.endXYT);
             endXYTs.add(LinAlg.matrixToXYT(mcb.getPose()));
-            startDists.add(node.data.theoreticalXYT.dist);
+            startOdoms.add(pair.endOdom);
+            endOdoms.add(LinAlg.matrixToXYT(mcb.getOdom()));
+            startDists.add(pair.dist);
             endDists.add(mcb.getTrajectoryLength());
         }
 
         // The behavior begins where the last one ended.
         Behavior b = new Behavior(startXYTs,
                                   endXYTs,
+                                  startOdoms,
+                                  endOdoms,
                                   startDists,
                                   endDists,
                                   dtt,
@@ -518,6 +525,8 @@ public class MonteCarloPlanner
 
                 ArrayList<double[]> startXYTs = new ArrayList<double[]>();
                 ArrayList<double[]> xyts = new ArrayList<double[]>();
+                ArrayList<double[]> startOdoms = new ArrayList<double[]>();
+                ArrayList<double[]> endOdoms = new ArrayList<double[]>();
                 ArrayList<Double> dists = new ArrayList<Double>();
                 ArrayList<Double> startDists = new ArrayList<Double>();
                 MonteCarloBot mcb = new MonteCarloBot(sw);
@@ -525,15 +534,21 @@ public class MonteCarloPlanner
                     Orient orient = new Orient(params);
                     Stabilized stable = new Stabilized(params);
                     Behavior.XYTPair pair = node.data.randomXYT();
-                    mcb.init(orient, stable, pair.endXYT, pair.dist);
+                    mcb.init(orient,
+                             stable,
+                             pair.endXYT,
+                             pair.endOdom,
+                             pair.dist);
                     mcb.simulate();
                     // Only consider plans that actually "work"
-                    if (mcb.success()) {
-                        startXYTs.add(pair.endXYT);
-                        xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-                        dists.add(mcb.getTrajectoryLength());
-                        startDists.add(pair.dist);
-                    }
+                    //if (mcb.success()) {
+                    startXYTs.add(pair.endXYT);
+                    xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+                    startOdoms.add(pair.endOdom);
+                    endOdoms.add(LinAlg.matrixToXYT(mcb.getOdom()));
+                    dists.add(mcb.getTrajectoryLength());
+                    startDists.add(pair.dist);
+                    //}
                 }
 
                 if (xyts.size() < 1) {
@@ -543,6 +558,8 @@ public class MonteCarloPlanner
 
                 Behavior b = new Behavior(startXYTs,
                                           xyts,
+                                          startOdoms,
+                                          endOdoms,
                                           startDists,
                                           dists,
                                           new Orient(params),
@@ -561,6 +578,7 @@ public class MonteCarloPlanner
                     mcb.init(law,
                              null,
                              startNode.data.theoreticalXYT.endXYT,
+                             startNode.data.theoreticalXYT.endXYT,  // Doesn't matter here
                              startNode.data.theoreticalXYT.dist);
                     mcb.simulate(); // This will always timeout.
                 }
@@ -592,6 +610,8 @@ public class MonteCarloPlanner
         // Try multiple simulations to evaluate each possible step
         ArrayList<double[]> startXYTs = new ArrayList<double[]>();
         ArrayList<double[]> xyts = new ArrayList<double[]>();
+        ArrayList<double[]> startOdoms = new ArrayList<double[]>();
+        ArrayList<double[]> endOdoms = new ArrayList<double[]>();
         ArrayList<Double> distances = new ArrayList<Double>();
         ArrayList<Double> startDists = new ArrayList<Double>();
         for (int i = 0; i < numSamples; i++) {
@@ -599,6 +619,7 @@ public class MonteCarloPlanner
             mcb.init(b.law,
                      (ConditionTest)b.test.copyCondition(),
                      pair.endXYT,
+                     pair.endOdom,
                      pair.dist);
             //mcb.simulate(70.0); // XXX How to choose?
             mcb.simulate(300.0); // XXX
@@ -610,17 +631,21 @@ public class MonteCarloPlanner
             }
             // We only count success because ...? XXX
             //if (mcb.success()) {
-                // Find where we are and how much we've driven to get there
-                startXYTs.add(pair.endXYT);
-                xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
-                startDists.add(pair.dist);
-                distances.add(mcb.getTrajectoryLength());
+            // Find where we are and how much we've driven to get there
+            startXYTs.add(pair.endXYT);
+            xyts.add(LinAlg.matrixToXYT(mcb.getPose()));
+            startOdoms.add(pair.endOdom);
+            endOdoms.add(LinAlg.matrixToXYT(mcb.getOdom()));
+            startDists.add(pair.dist);
+            distances.add(mcb.getTrajectoryLength());
             //}
         }
         if (xyts.size() < 1)
             return null;    // Complete and utter failure of execution
         Behavior behavior = new Behavior(startXYTs,
                                          xyts,
+                                         startOdoms,
+                                         endOdoms,
                                          startDists,
                                          distances,
                                          b.law,
@@ -685,7 +710,12 @@ public class MonteCarloPlanner
         // tag location. It is up to our search to escape efficiently.
         // Is there a place for turn-in-place? I expect yes, and that we'll
         // want that.
-        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt_0, xyt_0, 0, 0, null, null));
+        Tree<Behavior> tree = new Tree<Behavior>(new Behavior(xyt_0,
+                                                              xyt_0,
+                                                              xyt_0,
+                                                              xyt_0,
+                                                              0, 0,
+                                                              null, null));
 
         // Find the best routes to all other locations simultaneously. Reward
         // a combination of distance traveled and arrival rate. Basically,
@@ -847,6 +877,8 @@ public class MonteCarloPlanner
 
         gsnHeap.clear();
         Node<Behavior> behaviorNode = new Node<Behavior>(new Behavior(starts,
+                                                                      starts,
+                                                                      starts,
                                                                       starts,
                                                                       dists,
                                                                       dists,

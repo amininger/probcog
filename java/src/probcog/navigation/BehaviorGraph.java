@@ -394,6 +394,8 @@ public class BehaviorGraph
                 Stabilized stable = new Stabilized(params);
                 Behavior b = new Behavior(currXYT,
                                           prevXYT,
+                                          currXYT,      // XXX Meaningless here, so just use perfect
+                                          prevXYT,      // XXX Meaningless here, as well
                                           dist,
                                           dist+dt*(WHEELBASE_M/2),
                                           orient,
@@ -407,6 +409,8 @@ public class BehaviorGraph
             dn = dn.parent;
         }
         plan.add(new Behavior(prev.getEdge().b.theoreticalXYT.startXYT,
+                              prev.getEdge().b.theoreticalXYT.startXYT,
+                              prev.getEdge().b.theoreticalXYT.startXYT,
                               prev.getEdge().b.theoreticalXYT.startXYT,
                               0,
                               0,

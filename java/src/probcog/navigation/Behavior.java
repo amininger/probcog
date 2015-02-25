@@ -49,6 +49,8 @@ public class Behavior
     {
         public double[] startXYT = new double[3];
         public double[] endXYT = new double[3];
+        public double[] startOdom = new double[3];
+        public double[] endOdom = new double[3];
         public double myDist = 0;
         public double dist = 0;
 
@@ -56,10 +58,17 @@ public class Behavior
         {
         }
 
-        public XYTPair(double[] startXYT, double[] endXYT, double startDist, double endDist)
+        public XYTPair(double[] startXYT,
+                       double[] endXYT,
+                       double[] startOdom,
+                       double[] endOdom,
+                       double startDist,
+                       double endDist)
         {
             this.startXYT = startXYT;
             this.endXYT = endXYT;
+            this.startOdom = startOdom;
+            this.endOdom = endOdom;
             this.myDist = endDist - startDist;
             this.dist = endDist;
         }
@@ -69,6 +78,8 @@ public class Behavior
             XYTPair copy = new XYTPair();
             copy.startXYT = LinAlg.copy(startXYT);
             copy.endXYT = LinAlg.copy(endXYT);
+            copy.startOdom = LinAlg.copy(startOdom);
+            copy.endOdom = LinAlg.copy(endOdom);
             copy.myDist = myDist;
             copy.dist = dist;
 
@@ -142,19 +153,23 @@ public class Behavior
 
     public Behavior(double[] startXYT,
                     double[] endXYT,
+                    double[] startOdom,
+                    double[] endOdom,
                     double startDist,
                     double endDist,
                     ControlLaw law,
                     ConditionTest test)
     {
-        xyts.add(new XYTPair(startXYT, endXYT, startDist, endDist));
+        xyts.add(new XYTPair(startXYT, endXYT, startOdom, endOdom, startDist, endDist));
         this.law = law;
         this.test = test;
-        theoreticalXYT = new XYTPair(startXYT, endXYT, startDist, endDist);
+        theoreticalXYT = new XYTPair(startXYT, endXYT, startOdom, endOdom, startDist, endDist);
     }
 
     public Behavior(ArrayList<double[]> startXYTs,
                     ArrayList<double[]> endXYTs,
+                    ArrayList<double[]> startOdoms,
+                    ArrayList<double[]> endOdoms,
                     ArrayList<Double> startDists,
                     ArrayList<Double> endDists,
                     ControlLaw law,
@@ -166,6 +181,8 @@ public class Behavior
         for (int i = 0; i < startXYTs.size(); i++) {
             this.xyts.add(new XYTPair(startXYTs.get(i),
                                       endXYTs.get(i),
+                                      startOdoms.get(i),
+                                      endOdoms.get(i),
                                       startDists.get(i),
                                       endDists.get(i)));
         }
@@ -205,7 +222,6 @@ public class Behavior
         for (XYTPair pair: xyts)
             startXYTs.add(pair.startXYT);
         return startXYTs;
-
     }
 
     public double getScoreSoFar(int numSamples)
@@ -440,12 +456,26 @@ public class Behavior
 
     public VisObject getVisObject(Color c)
     {
-        VisVertexData vvd = new VisVertexData();
+        VisVertexData truth = new VisVertexData();
         for (XYTPair pair: xyts) {
-            double[] xyt = pair.endXYT;
-            vvd.add(xyt, 1, 2); // Not very efficient
+            truth.add(pair.endXYT, 1, 2); // Not very efficient
         }
-        return new VzPoints(vvd, new VzPoints.Style(c, 5));
+        VisChain vo = new VisChain();
+        vo.add(new VzPoints(truth, new VzPoints.Style(c, 3)));
+
+        return vo;
+    }
+
+    public VisObject getNoisyVis(Color c)
+    {
+        VisVertexData odom = new VisVertexData();
+        for (XYTPair pair: xyts) {
+            odom.add(pair.endOdom, 1, 2);
+        }
+        VisChain vo = new VisChain();
+        vo.add(new VzPoints(odom, new VzPoints.Style(c, 3)));
+
+        return vo;
     }
 
     // === Utility ===========================================================

@@ -84,6 +84,7 @@ public class TreeUtil
             mcb.init(node.data.law,
                      node.data.test,
                      node.parent.data.theoreticalXYT.endXYT,
+                     node.parent.data.theoreticalXYT.endXYT,    // Not important here
                      0);
             mcb.simulate(true);
             if (!mcb.success()) {

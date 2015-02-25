@@ -85,17 +85,15 @@ public class MonteCarloBot implements SimObject
         // NOTE: does not reset tagRecords.
     }
 
-    //public void init(FollowWall law, ClassificationCounterTest test)
     public void init(ControlLaw law, ConditionTest test)
     {
-        init(law, test, null, 0);
+        init(law, test, null, null, 0);
     }
 
-    //public void init(FollowWall law,
-    //                 ClassificationCounterTest test,
     public void init(ControlLaw law,
                      ConditionTest test,
                      double[] xyt,
+                     double[] odomxyt,
                      double initialDistanceTraveled)
     {
         success = false;
@@ -103,8 +101,8 @@ public class MonteCarloBot implements SimObject
         this.test = test;
 
         if (xyt != null) {
-            drive = new FastDrive(sw, this, xyt);
-            drive.centerOfRotation = new double[] { 0.13, 0, 0 };
+            drive = new FastDrive(sw, this, xyt, odomxyt);
+            drive.centerOfRotation = new double[] { 0.13, 0, 0 };   // Right for new robot?
 
             resetTrajectories();
             this.initialDistanceTraveled = initialDistanceTraveled;
@@ -433,6 +431,8 @@ public class MonteCarloBot implements SimObject
             double[] xyt = LinAlg.matrixToXYT(getPose());
             Behavior rec = new Behavior(startXYT,
                                         xyt,
+                                        startXYT,   // Unimportant here
+                                        xyt,        // Unimportant here
                                         startDist,
                                         getTrajectoryLength(),
                                         law,
@@ -531,6 +531,12 @@ public class MonteCarloBot implements SimObject
     {
         return LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
                                       drive.poseTruth.pos);
+    }
+
+    public double[][] getOdom()
+    {
+        return LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
+                                      drive.poseOdom.pos);
     }
 
     public void setPose(double[][] T)

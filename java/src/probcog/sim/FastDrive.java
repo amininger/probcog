@@ -41,10 +41,15 @@ public class FastDrive
     SimObject simobj;   // Object representing the robot
     Random r = new Random();
 
+    public FastDrive(SimWorld sw, SimObject simobj, double[] init_xyt)
+    {
+        this(sw, simobj, init_xyt, init_xyt);
+    }
+
     /** Ignore: a set of objects that will not be used for collision detection.
      *  Typically, this includes the robot itself.
      **/
-    public FastDrive(SimWorld sw, SimObject simobj, double[] init_xyt)
+    public FastDrive(SimWorld sw, SimObject simobj, double[] init_xyt, double[] odom_xyt)
     {
         this.sw = sw;
         this.simobj = simobj;
@@ -53,7 +58,10 @@ public class FastDrive
         poseTruth.pos = new double[] { init_xyt[0], init_xyt[1], 0 };
         poseTruth.orientation = LinAlg.rollPitchYawToQuat(new double[] { 0, 0, init_xyt[2] });
 
-        poseOdom = poseTruth.copy();
+        poseOdom.utime = poseTruth.utime;
+        poseOdom.pos = new double[] { odom_xyt[0], odom_xyt[1], 0 };
+        poseOdom.orientation = LinAlg.rollPitchYawToQuat(new double[] { 0, 0, odom_xyt[2] });
+        //poseOdom = poseTruth.copy();
         // Historically, this is a copy of the poseTruth reset to 0s...we'll
         // allow it to be perfect
 
