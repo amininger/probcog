@@ -269,6 +269,7 @@ public class Behavior
             return behaviorScore;
 
         double meanDistance = getMeanEstimatedDistance(gm, wavefront);
+        double orientationDistance = getMeanDirectionalBonus(gm, wavefront);
 
         // XXX Penalty is always 0 here
         behaviorScore = meanDistance - LAMBDA*(pct*penalty); // Not perfect, but interesting
@@ -338,7 +339,7 @@ public class Behavior
             mean += wfdist;
         }
 
-        return mean /= xyts.size();
+        return (mean / xyts.size() + getMeanDirectionalBonus(gm, wavefront));
     }
 
     public double getMeanEstimatedDistance(GridMap gm, float[] wavefront)
@@ -366,6 +367,10 @@ public class Behavior
             double wfdist = (double)wavefront[iy*gm.width + ix];
 
             // Project forward 1 unit along theta to get bonus
+            // The idea is, if we are facing the wrong way along the
+            // wavefront, turning will be involved and this will cost energy.
+            // This is not perfect, since really, we want to know what penalty
+            // we will have to pay to turn to face the right direction.
             int dx = (int)(Math.round(Math.cos(xyt[2])));
             int dy = (int)(Math.round(Math.sin(xyt[2])));
             ix += dx;
@@ -373,7 +378,8 @@ public class Behavior
             double ddist = wfdist;
             if (ix >= 0 && ix < gm.width && iy >= 0 && iy < gm.height)
                 ddist = (double)wavefront[iy*gm.width + ix];
-            mean += (ddist - wfdist); // Negative is better
+            // Negative is better
+            mean += (ddist - wfdist)/gm.metersPerPixel;
         }
 
         return mean / xyts.size();
