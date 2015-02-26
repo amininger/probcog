@@ -52,15 +52,15 @@ public class TagClassifier
         // and store them in hashmap accessed by tag id.
         for (int i = 0;; i++) {
 
-            String[] labels = config.requireStrings("classes.c"+i+".label");
-            double[] probs = config.requireDoubles("classes.c"+i+".badlabel");
+            String[] labels = config.getStrings("classes.c"+i+".labels", null);
+            double[] probs = config.getDoubles("classes.c"+i+".probs", null);
             int[] ids = config.getInts("classes.c"+i+".ids", null);
             double mean = config.getDouble("classes.c"+i+".mean", 0);
             double stddev = config.getDouble("classes.c"+i+".stddev", 0);
             double minRange = config.getDouble("classes.c"+i+".minRange", 0);
             double maxRange = config.getDouble("classes.c"+i+".maxRange", 0);
 
-            if(labels.length < 1 || (ids == null))
+            if (labels == null)
                 break;
 
             if (!tagClassToIDs.containsKey(labels[0]))
@@ -142,6 +142,19 @@ public class TagClassifier
         return tc.probs.get(0);
     }
 
+    public String correctClass(int tagID)
+    {
+        if (!idToTag.containsKey(tagID))
+            return  "";
+
+        ArrayList<TagClass> tcs = idToTag.get(tagID);
+        if (tcs.size() < 1)
+            return "";
+
+        TagClass tc = tcs.get(0);
+        return tc.labels.get(0);
+    }
+
     public double sampleRange(int tagID)
     {
         if (!idToTag.containsKey(tagID))
@@ -153,8 +166,9 @@ public class TagClassifier
 
         TagClass tc = tcs.get(0);
 
-        double v = classifierRandom.nextDouble();  // Prefer gaussian, but meh
-        double range = tc.minRange + v*(tc.maxRange - tc.minRange);
+        double v = MathUtil.clamp(classifierRandom.nextGaussian(), -3, 3);
+        double diff = tc.maxRange - tc.minRange;
+        double range = (tc.minRange+diff/2) + v*(diff/6);
         return range;
     }
 

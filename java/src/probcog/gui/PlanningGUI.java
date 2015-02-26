@@ -202,6 +202,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             HashMap<String, Color> classToColor = new HashMap<String, Color>();
             int idx = 3;
             for (String c: tagClasses) {
+                if (c == "")
+                    continue;
                 classToColor.put(c, colors.get(idx % colors.size()));
                 idx++;
             }
@@ -261,11 +263,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 if (!(so instanceof SimAprilTag))
                     continue;
                 SimAprilTag tag = (SimAprilTag)so;
-                tagClasses = tc.getClasses(tag.getID());
-                String name = null;
-                if (tagClasses.size() > 0)
-                    name = tagClasses.iterator().next();
-                else
+                String name = tc.correctClass(tag.getID());
+                if (name.equals(""))
                     continue;
                 double pct = tc.correctProbability(tag.getID());
                 int alpha = ((int)(0xff * pct)) << 24;

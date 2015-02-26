@@ -300,7 +300,7 @@ public class Behavior
     {
         if (xyts.size() < 1)
             return 0;
-        double GOAL_THRESH = 0.25;
+        double GOAL_THRESH = 2.5;   // XXX Need to adjust this based on tag!
         int count = 0;
         for (XYTPair pair: xyts) {
             double[] xyt = pair.endXYT;

@@ -370,16 +370,15 @@ public class MonteCarloBot implements SimObject
         // Handle tags that don't have labels OR are repeat landmarks. Note that
         // in this updated version of the function, we ONLY consider the actual
         // label of the tag, not the false label.
-        Set<String> tagClasses = tc.getClasses(tag.getID());
-        List<String> tagList = new ArrayList<String>(tagClasses);
-        if (tagClasses.size() < 1)
+        String tagClass = tc.correctClass(tag.getID());
+        if (tagClass == "")
             return;
-        if (!repeatLandmarks && counts.containsKey(tagList.get(0)))
+        if (!repeatLandmarks && counts.containsKey(tagClass))
             return;
 
         // XXX Is this the best way to handle observations? At this point,
         // we might as well just look the damn number up.
-        int NUM_TAG_SAMPLES = 100;  // Not used so much, now. Save some compute
+        int NUM_TAG_SAMPLES = 1000;  // Not used so much, now. Save some compute
         double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
         double[] relXyzrpy = relativePose(getPose(), xyzrpy);
         HashMap<String, Integer> labelCount = new HashMap<String, Integer>();
@@ -394,7 +393,7 @@ public class MonteCarloBot implements SimObject
             // Count the number of times we successfully observe this tag. Only
             // count observations of the ACTUAL label value
             String label = classies.get(0).name;
-            if (!tagClasses.contains(label))
+            if (!tagClass.equals(label))
                 continue;
             if (!labelCount.containsKey(label))
                 labelCount.put(label, 0);
