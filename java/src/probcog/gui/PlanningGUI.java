@@ -612,7 +612,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             }
             // Additionally, simulate many times and build up samples of our
             // observations
-            ArrayList<ArrayList<classification_t> > good = new ArrayList<ArrayList<classification_t> >();
+            /*ArrayList<ArrayList<classification_t> > good = new ArrayList<ArrayList<classification_t> >();
             ArrayList<ArrayList<classification_t> > bad = new ArrayList<ArrayList<classification_t> >();
             for (int i = 0; i < 100; i++) {
                 boolean success = true;
@@ -653,7 +653,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                         continue;
                     System.out.printf("\t%s\n", classy.name);
                 }
-            }
+            }*/
 
             // Build a classifier from these samples. Test it on N more trials!
             //

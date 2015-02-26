@@ -52,22 +52,34 @@ public class TagClassifier
         // and store them in hashmap accessed by tag id.
         for (int i = 0;; i++) {
 
-            String label = config.getString("classes.c"+i+".label", "");
-            String badlabel = config.getString("classes.c"+i+".badlabel", "");
+            String[] labels = config.requireStrings("classes.c"+i+".label");
+            double[] probs = config.requireDoubles("classes.c"+i+".badlabel");
             int[] ids = config.getInts("classes.c"+i+".ids", null);
             double mean = config.getDouble("classes.c"+i+".mean", 0);
             double stddev = config.getDouble("classes.c"+i+".stddev", 0);
-            double plabel = config.getDouble("classes.c"+i+".plabel", 1.0);
+            double minRange = config.getDouble("classes.c"+i+".minRange", 0);
+            double maxRange = config.getDouble("classes.c"+i+".maxRange", 0);
 
-            if(label.equals("") || (ids == null))
+            if(labels.length < 1 || (ids == null))
                 break;
 
-            if (!tagClassToIDs.containsKey(label))
-                tagClassToIDs.put(label, new HashSet<Integer>());
+            if (!tagClassToIDs.containsKey(labels[0]))
+                tagClassToIDs.put(labels[0], new HashSet<Integer>());
 
-            tagClasses.add(label);
+            for (String label: labels) {
+                if (label.equals(""))
+                    continue;
+                tagClasses.add(label);
+            }
 
-            TagClass tag = new TagClass(label, badlabel, mean, stddev, plabel);
+            ArrayList<String> labelList = new ArrayList<String>();
+            for (String label: labels)
+                labelList.add(label);
+            ArrayList<Double> probList = new ArrayList<Double>();
+            for (double prob: probs)
+                probList.add(prob);
+
+            TagClass tag = new TagClass(labelList, probList, mean, stddev, minRange, maxRange);
             for(int id : ids) {
                 ArrayList<TagClass> allTags;
                 if(idToTag.containsKey(id))
@@ -75,10 +87,9 @@ public class TagClassifier
                 else
                     allTags = new ArrayList<TagClass>();
 
-
                 allTags.add(tag);
                 idToTag.put(id, allTags);
-                tagClassToIDs.get(label).add(id);
+                tagClassToIDs.get(labels[0]).add(id);
             }
         }
 
@@ -109,7 +120,7 @@ public class TagClassifier
             return classes;
 
         for (TagClass tc: tcs)
-            classes.add(tc.label);
+            classes.addAll(tc.labels);
 
         return classes;
     }
@@ -128,28 +139,37 @@ public class TagClassifier
             return 0;
 
         TagClass tc = tcs.get(0);
-        return tc.plabel;
+        return tc.probs.get(0);
     }
 
-
-    // XXX Phase out in favor of different visibility check. Should be a check
-    // for if the tag appears in the database at all. The random sampling should
-    // be done when classifying a tag.
-    public boolean tagIsVisible(int id)
+    public double sampleRange(int tagID)
     {
-        ArrayList<TagClass> tcs = idToTag.get(id);
-        if (tcs == null)
-            return false;
-        return true;
+        if (!idToTag.containsKey(tagID))
+            return -1;
 
-        //TagClass tc = tcs.get(0);
-        //double v = classifierRandom.nextDouble();
-        //String label = "";
-        //if (v <= tc.plabel)
-        //    label = tc.label;
-        //else
-        //    label = tc.badlabel;
-        //return !label.equals("");   // Empty strings signify invisible tags
+        ArrayList<TagClass> tcs = idToTag.get(tagID);
+        if (tcs.size() < 1)
+            return -1;
+
+        TagClass tc = tcs.get(0);
+
+        double v = classifierRandom.nextDouble();  // Prefer gaussian, but meh
+        double range = tc.minRange + v*(tc.maxRange - tc.minRange);
+        return range;
+    }
+
+    /** Get the max range we are capable of sensing this tag */
+    public double getMaxRange(int tagID)
+    {
+        if (!idToTag.containsKey(tagID))
+            return -1;
+
+        ArrayList<TagClass> tcs = idToTag.get(tagID);
+        if (tcs.size() < 1)
+            return -1;
+
+        TagClass tc = tcs.get(0);
+        return tc.maxRange;
     }
 
     public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy)
@@ -167,16 +187,24 @@ public class TagClassifier
         if (tcs == null)
             return classies;    // No config entries
 
-        double v = classifierRandom.nextDouble();
-        if (perfect)
-            v = 0.0;
-
         for (TagClass tc: tcs) {
+            double v = classifierRandom.nextDouble();
+            if (perfect)
+                v = 0.0;
+
+            double sum = 0.0;
+            String label = tc.labels.get(0);
+            for (int i = 0; i < tc.labels.size(); i++) {
+                sum += tc.probs.get(i);
+                if (sum <= v) {
+                    label = tc.labels.get(i);
+                    break;
+                }
+            }
+
             classification_t classy = new classification_t();
-            if (v <= tc.plabel)
-                classy.name = tc.label;
-            else
-                classy.name = tc.badlabel;  // What if this is empty?
+            classy.name = label;
+            classy.range = sampleRange(id); // When perfect, what should this do?
             classy.id = id;
             classy.xyzrpy = xyzrpy;
             classy.confidence = sampleConfidence(tc.mean, tc.stddev);
@@ -265,19 +293,27 @@ public class TagClassifier
      **/
     class TagClass
     {
-        String label;
-        String badlabel;
+        ArrayList<String> labels;
+        ArrayList<Double> probs;
         double mean;
         double stddev;
-        double plabel;
+        double minRange;
+        double maxRange;
 
-        public TagClass(String label, String badlabel, double mean, double stddev, double plabel)
+        public TagClass(ArrayList<String> labels,
+                        ArrayList<Double> probs,
+                        double mean,
+                        double stddev,
+                        double minRange,
+                        double maxRange)
         {
-            this.label = label;
-            this.badlabel = badlabel;
+            // Assume that the FIRST label is the real one.
+            this.labels = labels;
+            this.probs = probs;
             this.mean = mean;
             this.stddev = stddev;
-            this.plabel = plabel;
+            this.minRange = minRange;
+            this.maxRange = maxRange;
         }
     }
 

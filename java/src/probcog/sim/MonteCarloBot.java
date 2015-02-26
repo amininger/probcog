@@ -167,6 +167,9 @@ public class MonteCarloBot implements SimObject
             tagHistory.addObservation(classy, currentUtime);
         }
 
+        // XXX Can we incorporate more noise here in terms of what ACTUALLY
+        // happens vs. what odometry says happens?
+        //
         // While control law has not finished OR timeout, try updating
         int timeout = (int)(seconds/FastDrive.DT);
         Tic tic = new Tic();
@@ -184,7 +187,6 @@ public class MonteCarloBot implements SimObject
                                                                        drive.poseOdom.pos),
                                                 LinAlg.translate(0.3, 0, 0.25));
 
-            // XXX This is where most of the low hanging fruit lies
             double ranges[] = Sensors.laser(sw, ignore, T_truth, (int) ((rad1-rad0)/radstep), rad0, radstep, maxRange);
 
             if (!perfect) {
@@ -212,9 +214,10 @@ public class MonteCarloBot implements SimObject
             dd.left_enabled = dd.right_enabled = false;
             dd.left = dd.right = 0;
 
+            // Special behavior for driving towards a tag. Very generous with sight
             if (law instanceof DriveTowardsTag) {
                 DriveTowardsTag dtt = (DriveTowardsTag)law;
-                HashSet<SimAprilTag> currentTags = getSeenTags(2.0);
+                HashSet<SimAprilTag> currentTags = getSeenTags();
                 for (SimAprilTag tag: currentTags) {
                     if (dtt.getID() == tag.getID()) {
                         double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
@@ -275,6 +278,7 @@ public class MonteCarloBot implements SimObject
             //  this to generate potential behaviors to try executing.
             //
             // HANDLE TAG CLASSIFICATIONS
+            // XXX Seen tag stuff
             HashSet<SimAprilTag> seenTags = getSeenTags();
             for (SimAprilTag tag: seenTags) {
                 double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
@@ -294,23 +298,28 @@ public class MonteCarloBot implements SimObject
                 // Note that this means we're doing work for the counter test
                 // here. It will only ever get a new classification added for
                 // a given tag ONCE, unless we reobserve it. XXX
-                if (!tagHistory.addObservation(classies.get(0), currentUtime)) {
-                    //System.out.println("skipped tag "+tag.getID());
+                double range = Math.sqrt(LinAlg.sq(relXyzrpy[0]) + LinAlg.sq(relXyzrpy[1]));
+                tagHistory.addObservation(classies.get(0), currentUtime);
+                if (!tagHistory.isVisible(tag.getID(), range)) {
                     continue;
                 }
 
+                tagHistory.markTagObserved(tag.getID());
+                String label = tagHistory.getLabel(tag.getID(), currentUtime);
+
                 // XXX Classification entry point. Store the classification to
                 // a list that chronologically tracks what we've seen, for now.
-                observations.add(classies.get(0));
+                //observations.add(classies.get(0));
 
                 // Handle one of the two cases. Case 1) We're just navigating
                 // normally! Pass off the information to the condition test.
                 if (test != null) {
                     if (test instanceof ClassificationCounterTest) {
                         ClassificationCounterTest cct = (ClassificationCounterTest)test;
-                        for (classification_t classy: classies) {
-                            cct.addSample(classy);
-                        }
+                        //for (classification_t classy: classies) {
+                        //    cct.addSample(classy);
+                        //}
+                        cct.addSample(tag.getID(), label);
                     }
                 } else {
                     buildBehaviors(startXYT,
@@ -370,7 +379,7 @@ public class MonteCarloBot implements SimObject
 
         // XXX Is this the best way to handle observations? At this point,
         // we might as well just look the damn number up.
-        int NUM_TAG_SAMPLES = 100000;
+        int NUM_TAG_SAMPLES = 100;  // Not used so much, now. Save some compute
         double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
         double[] relXyzrpy = relativePose(getPose(), xyzrpy);
         HashMap<String, Integer> labelCount = new HashMap<String, Integer>();
@@ -450,20 +459,22 @@ public class MonteCarloBot implements SimObject
 
     public HashSet<SimAprilTag> getSeenTags()
     {
-        return getSeenTags(1.5);    // XXX Config, and why this distance?
-    }
-
-    public HashSet<SimAprilTag> getSeenTags(double classificationRange)
-    {
         HashSet<SimAprilTag> seenTags = new HashSet<SimAprilTag>();
 
         for (SimObject so: sw.objects) {
             if (!(so instanceof SimAprilTag))
                 continue;
+            SimAprilTag tag = (SimAprilTag)so;
             double[] xyzrpy = LinAlg.matrixToXyzrpy(so.getPose());
             double d = LinAlg.distance(drive.poseTruth.pos, xyzrpy, 2);
-            if (d > classificationRange)
+            double maxRange = tc.getMaxRange(tag.getID());
+            if (d > maxRange)
                 continue;
+
+            // This is good enough, but not quite realistic. Our camera will
+            // determine this range in reality, at which point we'll be able
+            // to sample a fake observation distance, but this protects us
+            // from accidentally sampling outside our camera range.
             seenTags.add((SimAprilTag)so);
         }
 

@@ -61,6 +61,15 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
                 metOrientation = true;
             }
         }
+
+        public void addSample(String label)
+        {
+            n++;
+            mean = 1.0; // Very confident for now.
+
+            if (metOrientation)
+                return;
+        }
     }
 
     /** Strictly for use for parameter checking */
@@ -212,6 +221,10 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     // === Sample adding/tracking ============================================
     synchronized public void addSample(classification_t classy)
     {
+        // XXX On real robot, will we need independent tag tracking here, or
+        // in multiple places? Probably want a unified front...for now, hacking
+        // stuff in.
+
         if (ignore.contains(classy.id))
             return;
 
@@ -221,6 +234,21 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
                     observed.put(classy.id, new DetectionRecord());
                 }
                 observed.get(classy.id).addSample(classy);
+            }
+        }
+    }
+
+    synchronized public void addSample(int id, String label)
+    {
+        if (ignore.contains(id))
+            return;
+
+        synchronized (observed) {
+            if (classType.equals(label)) {
+                if (!observed.containsKey(id)) {
+                    observed.put(id, new DetectionRecord());
+                }
+                observed.get(id).addSample(label);
             }
         }
     }
