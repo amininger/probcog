@@ -165,6 +165,7 @@ public class MonteCarloBot implements SimObject
                 continue;
             classification_t classy = classies.get(0);
             tagHistory.addObservation(classy, currentUtime);
+            tagHistory.markTagObserved(tag.getID());
         }
 
         // XXX Can we incorporate more noise here in terms of what ACTUALLY
@@ -191,7 +192,7 @@ public class MonteCarloBot implements SimObject
 
             if (!perfect) {
                 double mean = 0;
-                double stddev = 0.01;   // Laser noise
+                double stddev = 0.20;   // Laser noise
                 for (int i = 0; i < ranges.length; i++) {
                     if (ranges[i] >= maxRange || ranges[i] < 0)
                         continue;
@@ -434,6 +435,7 @@ public class MonteCarloBot implements SimObject
             params.put("count", new TypedValue(lcr.count));
             params.put("class", new TypedValue(label));
             params.put("no-lcm", new TypedValue(0));
+            params.put("goal-tag", new TypedValue(tag.getID()));
             ClassificationCounterTest cct = new ClassificationCounterTest(params);
 
             double[] xyt = LinAlg.matrixToXYT(getPose());

@@ -113,23 +113,12 @@ public class MonteCarloPlanner
         {
             double ascore = a.node.data.getBestScore(gm, wf, a.node.data.prob, 0);
             double bscore = b.node.data.getBestScore(gm, wf, b.node.data.prob, 0);
-            //double ascore = a.node.data.getBestScore(gm, wf, numSamples, 0);
-            //double bscore = b.node.data.getBestScore(gm, wf, numSamples, 0);
 
             double awfdist = a.node.data.getMeanDistToGoal(gm, wf);
             double bwfdist = b.node.data.getMeanDistToGoal(gm, wf);
 
-
             double diff = Math.abs(ascore - bscore);
             double maxDepth = Math.max(a.node.depth, b.node.depth);
-
-            boolean aorient = a.node.data.law instanceof Orient;
-            boolean borient = b.node.data.law instanceof Orient;
-
-            //System.out.printf("%s, %f\n", a.node.data, awfdist);
-            //System.out.printf("%s, %f\n", b.node.data, bwfdist);
-            //System.out.println();
-
             // If scores are sufficiently close, treat as equivalent and
             // order in favor of actual distance traveled instead of
             // estimated
@@ -185,14 +174,14 @@ public class MonteCarloPlanner
             float bbonus = (float)b.getMeanDirectionalBonus(gm, wf);
 
             // Only look at estimated distance remaining
-            double da = awf + abonus;   // Multiplier on bonuses?
-            double db = bwf + bbonus;
+            double da = awf;// + abonus;   // Multiplier on bonuses?
+            double db = bwf;// + bbonus;
 
             // A bit of a hack to force early expansion of turns
-            if ((a.law instanceof Orient) && !(b.law instanceof Orient))
-                return -1;
-            else if (!(a.law instanceof Orient) && (b.law instanceof Orient))
-                return 1;
+            //if ((a.law instanceof Orient) && !(b.law instanceof Orient))
+            //    return -1;
+            //else if (!(a.law instanceof Orient) && (b.law instanceof Orient))
+            //    return 1;
 
             if (da < db)
                 return -1;
@@ -578,7 +567,7 @@ public class MonteCarloPlanner
                                           dists,
                                           new Orient(params),
                                           new Stabilized(params));
-                b.myprob = 1.0;
+                b.myprob = 0.999;   // Some penalty for turning
                 b.prob = node.data.prob * b.myprob;    // XXX Not perfect! Fudge
                 recs.add(b);
             }
@@ -628,21 +617,35 @@ public class MonteCarloPlanner
         ArrayList<double[]> endOdoms = new ArrayList<double[]>();
         ArrayList<Double> distances = new ArrayList<Double>();
         ArrayList<Double> startDists = new ArrayList<Double>();
+        int successCount = 0;
         for (int i = 0; i < numSamples; i++) {
             Behavior.XYTPair pair = node.data.randomXYT();
+            ConditionTest test = b.test.copyCondition();
             mcb.init(b.law,
-                     (ConditionTest)b.test.copyCondition(),
+                     test,
                      pair.endXYT,
                      pair.endOdom,
                      pair.dist);
             //mcb.simulate(70.0); // XXX How to choose?
-            mcb.simulate(300.0); // XXX
+            double time = 300.0;
+            if (b.law instanceof Orient || b.law instanceof DriveTowardsTag)
+                time = 10.0;
+            mcb.simulate(time); // XXX
             if (vw != null) {
                 VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
                 vb.setDrawOrder(-500);
                 vb.addBack(mcb.getVisObject());
                 vb.swap();
             }
+            if (test instanceof ClassificationCounterTest) {
+                ClassificationCounterTest cct = (ClassificationCounterTest)test;
+                if (cct.conditionMetCorrectly())
+                    successCount++;
+            } else {
+                if (mcb.success())
+                    successCount++; // Meh
+            }
+
             // We only count success because ...? XXX
             //if (mcb.success()) {
             // Find where we are and how much we've driven to get there
@@ -664,7 +667,12 @@ public class MonteCarloPlanner
                                          distances,
                                          b.law,
                                          b.test.copyCondition());
-        behavior.prob = behavior.getPctNearTheoretical();
+        behavior.successCount = successCount;
+        double successRate = behavior.getPctNearTheoretical();
+        if (b.law instanceof Orient)
+            behavior.prob = node.data.prob * successRate;
+        else
+            behavior.prob = successRate;
 
         // XXX So do we even USE our sample points due to this?
         //if (node.data != null)

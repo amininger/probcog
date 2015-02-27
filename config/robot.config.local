@@ -479,7 +479,7 @@ espeak {
 // === Real time simulation stuff begins here ===
 monte_carlo {
     // Search parameters
-    lambda = 100;
+    lambda = 1000;
     xyt_dist_m = 0.3;       // Range within which nodes are merged in meters
     xyt_theta_deg = 3.0;    // Same as above, but for orientation
 

@@ -55,6 +55,7 @@ public class TagHistory
         if (diff > MAX_AGE_MS*1000) {
             r.label = classy.name;
             r.range = classy.range;
+            r.observed = false;
             return true;
         }
 

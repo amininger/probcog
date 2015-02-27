@@ -40,6 +40,9 @@ public class Behavior
     public double prob = 1.0;           // Cumulative probability to date
     public double myprob = 1.0;         // Probability of executing THIS behavior correctly
 
+    // XXX Last minute hack for results generation
+    public int successCount = 0;
+
     // Bookkeeping for evaluating search. XYTs and distances refer to our
     // distribution AFTER executing this command.
     private double behaviorScore = Double.MAX_VALUE;
@@ -204,8 +207,9 @@ public class Behavior
         b.prob = prob;
         b.myprob = myprob;
         b.theoreticalXYT = theoreticalXYT.copy();
+        // Resets success count
 
-        return b; // XXX
+        return b;
     }
 
     public ArrayList<double[]> getEndXYTs()
@@ -296,11 +300,15 @@ public class Behavior
         return (double)count/(double)numSamples;
     }
 
+    // XXX WE WANT TO FEED THIS MORE STATE
     public double getPctNearTheoretical()
     {
         if (xyts.size() < 1)
             return 0;
-        double GOAL_THRESH = 2.5;   // XXX Need to adjust this based on tag!
+
+        return (double)successCount/(double)xyts.size();
+        /*
+        double GOAL_THRESH = 0.5;   // XXX This is a bit wacky for some cases
         int count = 0;
         for (XYTPair pair: xyts) {
             double[] xyt = pair.endXYT;
@@ -309,7 +317,7 @@ public class Behavior
                 count++;
         }
 
-        return (double)count/(double)xyts.size();
+        return (double)count/(double)xyts.size();*/
     }
 
     public double getMeanDistTraveled()
@@ -339,7 +347,7 @@ public class Behavior
             mean += wfdist;
         }
 
-        return (mean / xyts.size() + getMeanDirectionalBonus(gm, wavefront));
+        return (mean / xyts.size()); //+ getMeanDirectionalBonus(gm, wavefront));
     }
 
     public double getMeanEstimatedDistance(GridMap gm, float[] wavefront)

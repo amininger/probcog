@@ -210,7 +210,7 @@ public class TagClassifier
             String label = tc.labels.get(0);
             for (int i = 0; i < tc.labels.size(); i++) {
                 sum += tc.probs.get(i);
-                if (sum <= v) {
+                if (sum >= v) {
                     label = tc.labels.get(i);
                     break;
                 }

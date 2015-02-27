@@ -21,6 +21,9 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     static final double CONFIDENCE_THRESHOLD = 0.8;
     static final double ORIENTATION_THRESHOLD = Math.toRadians(15);
 
+    private int goalTag = -1;
+    boolean stoppedAtRightTag = false;
+
     private int goalCount = 0;
     // By default, set to -Pi. Any value <= -3.14 will be treated as a default
     // value in which object position relative to the robot is not relevant. In
@@ -91,6 +94,10 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         if (parameters.containsKey("orientation"))
             orientation = parameters.get("orientation").getDouble();
 
+        // Optional specification of a goal tag...useful for sim eval
+        if (parameters.containsKey("goal-tag"))
+            goalTag = parameters.get("goal-tag").getInt();
+
         // Hidden parameters. Used to hack in tag ignorance
         for (String key: parameters.keySet()) {
             if (!key.startsWith("ignore"))
@@ -117,6 +124,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         test.classType = classType;
         test.orientation = orientation;
         test.observed = new HashMap<Integer, DetectionRecord>();
+        test.goalTag = goalTag;
         for (Integer i: ignore)
             test.ignore.add(i);
 
@@ -131,6 +139,11 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     {
         int count = getCurrentCount();
         return count >= goalCount;
+    }
+
+    public boolean conditionMetCorrectly()
+    {
+        return stoppedAtRightTag;
     }
 
     public String getClassType()
@@ -173,6 +186,9 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
                                       new TypedValue(-Math.PI),
                                       new TypedValue(Math.PI),
                                       false));
+        params.add(new TypedParameter("goal-tag",
+                                      TypedValue.TYPE_INT,
+                                      false));
         return params;
     }
 
@@ -180,7 +196,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     {
         condition_test_t ct = new condition_test_t();
         ct.name = "count";
-        ct.num_params = 3+ignore.size();
+        ct.num_params = 4+ignore.size();
         ct.param_names = new String[ct.num_params];
         ct.param_values = new typed_value_t[ct.num_params];
         ct.param_names[0] = "count";
@@ -189,10 +205,12 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
         ct.param_values[1] = new TypedValue(classType).toLCM();
         ct.param_names[2] = "orientation";
         ct.param_values[2] = new TypedValue(orientation).toLCM();
+        ct.param_names[3] = "goal-tag";
+        ct.param_values[3] = new TypedValue(goalTag).toLCM();
         int idx = 0;
         for (Integer i: ignore) {
-            ct.param_names[3+idx] = "ignore_"+i;
-            ct.param_values[3+idx] = new TypedValue(i).toLCM();
+            ct.param_names[4+idx] = "ignore_"+i;
+            ct.param_values[4+idx] = new TypedValue(i).toLCM();
             idx++;
         }
 
@@ -251,6 +269,13 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
                 observed.get(id).addSample(label);
             }
         }
+
+        //System.out.printf("%d: %d, %s\n", goalTag, id, label);
+        int currCount = getCurrentCount();
+        if (currCount >= goalCount && id == goalTag) {
+            stoppedAtRightTag = true;   // Only affects sim, for the most part
+        }
+        //System.out.println(stoppedAtRightTag);
     }
 
     public int getCurrentCount()
