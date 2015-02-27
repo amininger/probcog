@@ -89,15 +89,17 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
         VisConsole console = new VisConsole(vw, vl, vc);
         simulator = new ProbCogSimulator(opts, vw, vl, vc, console);
-        //simulator.getWorld().setRunning(false); // Stop the world here, by default
+        simulator.getWorld().setRunning(false); // Stop the world here, by default. Save some compute
 
         init(); // This does things like compute a full grid map for wavefront based on the sim world
 
         NUM_TRIALS = opts.getInt("num-trials");
 
         // Render some bonus information about tags types, etc.
-        vl.backgroundColor = new Color(0x55, 0x55, 0x55, 0xff);
+        vl.backgroundColor = new Color(0xff, 0xff, 0xff, 0xff);
+        ((DefaultCameraManager)vl.cameraManager).setPerspectiveness(0.0);
         draw();
+        //vw.getBuffer("grid").swap();
 
         lcm.subscribe("POSE", this);
 
@@ -369,6 +371,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 if (time < 0.4) {
                     goal = LinAlg.resize(ray.intersectPlaneXY(), 2);
                     VisWorld.Buffer vb = world.getBuffer("goal");
+                    vb.setDrawOrder(500);
                     vb.addBack(new VisChain(LinAlg.translate(goal),
                                             LinAlg.scale(0.5),
                                             new VzStar(new VzMesh.Style(Color.yellow))));
@@ -422,19 +425,25 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
 
             // Visualization only
             if (DEBUG) {
-                MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
-                bot.setPose(robot.getPose());
-                for (int i = 0; i < behaviors.size(); i++) {
-                    System.out.println(behaviors.get(i));
-                    Behavior b = behaviors.get(i).copyBehavior();
-                    bot.init(b.law, b.test);
-                    bot.simulate(true);
-                }
-
+                vw.getBuffer("debug-DFS").swap();
                 VisWorld.Buffer vb = vw.getBuffer("test-simulation");
-                vb.setDrawOrder(-900);
-                vb.addBack(bot.getVisObject());
+                for (int n = 0; n < 100; n++) {
+                    MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+                    bot.setPose(robot.getPose());
+                    for (int i = 0; i < behaviors.size(); i++) {
+                        //System.out.println(behaviors.get(i));
+                        Behavior b = behaviors.get(i).copyBehavior();
+                        bot.init(b.law, b.test);
+                        bot.simulate();
+                    }
+
+                    vb.setDrawOrder(900);
+                    vb.addBack(bot.getVisObject());
+                }
                 vb.swap();
+
+                for (Behavior b: behaviors)
+                    System.out.println(b);
 
                 java.util.List<Color> colors = Palette.qualitative_brewer1.listAll();
 

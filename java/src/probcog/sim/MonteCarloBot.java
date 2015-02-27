@@ -133,8 +133,6 @@ public class MonteCarloBot implements SimObject
     public void simulate(double seconds, boolean perfect)
     {
         long currentUtime = TimeUtil.utime();
-        simSinceReset++;
-        iteration++;
 
         // Precalculated paramters
         HashSet<SimObject> ignore = new HashSet<SimObject>();
@@ -333,10 +331,12 @@ public class MonteCarloBot implements SimObject
             // Visualization etc.
             trajectoryTruth.add(drive.poseTruth.pos);
             trajectoryOdom.add(drive.poseOdom.pos);
-            if (simSinceReset%2 == 1)
-                vcd.add(0xffff0000);  // BGR
-            else
-                vcd.add(0xffff00ff);  // BGR
+            java.util.List<Color> colors = Palette.qualitative_brewer1.listAll();
+            vcd.add(ColorUtil.swapRedBlue(colors.get(simSinceReset % colors.size()).getRGB()));
+            //if (simSinceReset%2 == 1)
+            //    vcd.add(0xffff0000);  // BGR
+            //else
+            //    vcd.add(0xffff00ff);  // BGR
 
             // TIME UPDATE
             timeout--;
@@ -344,6 +344,8 @@ public class MonteCarloBot implements SimObject
             //System.out.printf("\t%f [s]\n", tic.toc());
         }
         success = timeout > 0;
+        simSinceReset++;
+        iteration++;
         //System.out.printf("%f [s]\n", time);
     }
 
@@ -577,25 +579,25 @@ public class MonteCarloBot implements SimObject
     {
         VzLines.Style style;
         if (c != null)
-            style = new VzLines.Style(c, 2);
+            style = new VzLines.Style(c, 1);
         else
         //else if (success())
-            style = new VzLines.Style(vcd, 2);
+            style = new VzLines.Style(vcd, 1);
         //else
         //    style = new VzLines.Style(Color.red, 2);
 
         if (c != null) {
-            return new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
-                                            VzLines.LINE_STRIP,
-                                            style));
+            return new VisLighting(false, new VzLines(new VisVertexData(trajectoryTruth),
+                                                      VzLines.LINE_STRIP,
+                                                      style));
         } else {
-            return new VisChain(new VzLines(new VisVertexData(trajectoryTruth),
-                                            VzLines.LINE_STRIP,
-                                            style),
-                                //new VzPoints(new VisVertexData(trajectoryTruth),
-                                //             new VzPoints.Style(Color.white, 3)),
-                                getPose(),
-                                model4);
+            return new VisLighting(false, new VzLines(new VisVertexData(trajectoryTruth),
+                                                      VzLines.LINE_STRIP,
+                                                      style));
+                                   //new VzPoints(new VisVertexData(trajectoryTruth),
+                                   //             new VzPoints.Style(Color.white, 3)),
+                                   //getPose(),
+                                   //model4);
         }
     }
 

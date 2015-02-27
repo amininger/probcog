@@ -474,8 +474,8 @@ public class Behavior
         for (XYTPair pair: xyts) {
             truth.add(pair.endXYT, 1, 2); // Not very efficient
         }
-        VisChain vo = new VisChain();
-        vo.add(new VzPoints(truth, new VzPoints.Style(c, 3)));
+        VisLighting vo = new VisLighting(false);
+        vo.add(new VzPoints(truth, new VzPoints.Style(c, 5)));
 
         return vo;
     }
@@ -486,8 +486,8 @@ public class Behavior
         for (XYTPair pair: xyts) {
             odom.add(pair.endOdom, 1, 2);
         }
-        VisChain vo = new VisChain();
-        vo.add(new VzPoints(odom, new VzPoints.Style(c, 3)));
+        VisLighting vo = new VisLighting(false);
+        vo.add(new VzPoints(odom, new VzPoints.Style(c, 5)));
 
         return vo;
     }

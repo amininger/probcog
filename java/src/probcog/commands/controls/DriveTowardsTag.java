@@ -24,6 +24,11 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     static final double MAX_SPEED = 0.5;
     static final double MAX_TURN = 0.3;
 
+    static final double FORWARD_SPEED = 0.1;
+    static final double TURN_WEIGHT = 5.0;
+    static final double WHEELBASE = 0.46;
+    static final double WHEEL_DIAMETER = 0.25;
+
     private int targetID;
     private Object classyLock = new Object();
     ExpiringMessageCache<classification_t> lastClassification =
@@ -78,8 +83,17 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         } else {
             //double mag = MathUtil.clamp(MAX_SPEED*(dist/DIST_THRESH), MIN_SPEED, MAX_SPEED);
 
-            dd.left = 0.3 + 0.6*(theta/(-Math.PI/2));
-            dd.right = 0.3 + 0.6*(theta/(Math.PI/2));
+            //dd.left = 0.3 + 0.6*(theta/(-Math.PI/2));
+            //dd.right = 0.3 + 0.6*(theta/(Math.PI/2));
+            double turn_speed = TURN_WEIGHT*(theta/Math.PI);
+            dd.right = (2*FORWARD_SPEED + turn_speed*WHEELBASE)/WHEEL_DIAMETER;
+            dd.left = (2*FORWARD_SPEED - turn_speed*WHEELBASE)/WHEEL_DIAMETER;
+            double max_mag = Math.max(Math.abs(dd.left), Math.abs(dd.right));
+
+            if (max_mag > 0) {
+                dd.left = MAX_SPEED*dd.left/max_mag;
+                dd.right = MAX_SPEED*dd.right/max_mag;
+            }
         }
 
         return dd;
