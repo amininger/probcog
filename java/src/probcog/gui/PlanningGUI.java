@@ -426,29 +426,37 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             // Visualization only
             if (DEBUG) {
                 vw.getBuffer("debug-DFS").swap();
-                VisWorld.Buffer vb = vw.getBuffer("test-simulation");
+                java.util.List<Color> colors = Palette.qualitative_brewer1.listAll();
                 for (int n = 0; n < 100; n++) {
                     MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
                     bot.setPose(robot.getPose());
+                    int counter = 0;
                     for (int i = 0; i < behaviors.size(); i++) {
-                        //System.out.println(behaviors.get(i));
+                        VisWorld.Buffer vb = vw.getBuffer("test-behavior-"+i);
                         Behavior b = behaviors.get(i).copyBehavior();
-                        bot.init(b.law, b.test);
+                        double[] xyt = LinAlg.matrixToXYT(bot.getPose());
+                        bot.init(b.law, b.test, xyt, xyt, 0);
                         bot.simulate();
-                    }
+                        vb.setDrawOrder(900);
 
-                    vb.setDrawOrder(900);
-                    vb.addBack(bot.getVisObject());
+                        Color c = colors.get(counter % colors.size());
+                        counter++;
+
+                        vb.addBack(bot.getVisObject(c));
+                    }
                 }
-                vb.swap();
+
+                for (int i = 0; i < behaviors.size(); i++) {
+                    VisWorld.Buffer vb = vw.getBuffer("test-behavior-"+i);
+                    vb.swap();
+                }
 
                 for (Behavior b: behaviors)
                     System.out.println(b);
 
-                java.util.List<Color> colors = Palette.qualitative_brewer1.listAll();
 
                 // Show behaviors distribution
-                vb = vw.getBuffer("test-distribution");
+                VisWorld.Buffer vb = vw.getBuffer("test-distribution");
                 vb.setDrawOrder(1000);
                 int counter = 0;
                 for (Behavior b: behaviors) {

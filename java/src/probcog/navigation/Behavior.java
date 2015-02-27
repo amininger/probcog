@@ -18,7 +18,7 @@ public class Behavior
 {
     // LAMBDA should be selected such that you are willing to travel an extra
     // LAMBDA/100 meters to gain a 1% improvement in arrival rate.
-    public static final double LAMBDA = Util.getConfig().requireDouble("monte_carlo.lambda");
+    public static double LAMBDA = Util.getConfig().requireDouble("monte_carlo.lambda");
     Random r = new Random();
 
     // Control state
@@ -325,12 +325,13 @@ public class Behavior
         if (xyts.size() < 1)
             return 0;
 
-        double mean = 0;
-        for (int i = 0; i < xyts.size(); i++) {
-            mean += xyts.get(i).dist;
-        }
+        return theoreticalXYT.dist;
+        //double mean = 0;
+        //for (int i = 0; i < xyts.size(); i++) {
+        //    mean += xyts.get(i).dist;
+        //}
 
-        return mean / xyts.size();
+        //return mean / xyts.size();
     }
 
     public double getMeanDistToGoal(GridMap gm, float[] wavefront)
@@ -338,16 +339,19 @@ public class Behavior
         if (xyts.size() < 1)
             return Double.MAX_VALUE;
 
-        double mean = 0;
-        for (int i = 0; i < xyts.size(); i++) {
-            double[] xyt = xyts.get(i).endXYT;
-            int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
-            int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
-            double wfdist = (double)wavefront[iy*gm.width + ix];
-            mean += wfdist;
-        }
+        int ix = (int)(Math.floor((theoreticalXYT.endXYT[0]-gm.x0)/gm.metersPerPixel));
+        int iy = (int)(Math.floor((theoreticalXYT.endXYT[1]-gm.y0)/gm.metersPerPixel));
+        return (double)wavefront[iy*gm.width + ix];
+        //double mean = 0;
+        //for (int i = 0; i < xyts.size(); i++) {
+        //    double[] xyt = xyts.get(i).endXYT;
+        //    int ix = (int)(Math.floor((xyt[0]-gm.x0)/gm.metersPerPixel));
+        //    int iy = (int)(Math.floor((xyt[1]-gm.y0)/gm.metersPerPixel));
+        //    double wfdist = (double)wavefront[iy*gm.width + ix];
+        //    mean += wfdist;
+        //}
 
-        return (mean / xyts.size()); //+ getMeanDirectionalBonus(gm, wavefront));
+        //return (mean / xyts.size()); //+ getMeanDirectionalBonus(gm, wavefront));
     }
 
     public double getMeanEstimatedDistance(GridMap gm, float[] wavefront)
