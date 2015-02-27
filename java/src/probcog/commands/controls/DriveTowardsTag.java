@@ -30,6 +30,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     static final double WHEEL_DIAMETER = 0.25;
 
     private int targetID;
+    private String classType;
     private Object classyLock = new Object();
     ExpiringMessageCache<classification_t> lastClassification =
         new ExpiringMessageCache<classification_t>(0.5);
@@ -54,7 +55,29 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         }
     }
 
-    //public diff_drive_t drive(classification_t classy, double dt)
+    public void handleClassification(classification_t curr, long utime)
+    {
+        if (!curr.name.equals(classType))
+            return;
+        synchronized (classyLock) {
+            if (lastClassification.get() == null) {
+                lastClassification.put(curr, utime);
+            }
+            classification_t classy = lastClassification.get();
+            if (curr.id == classy.id) {
+                lastClassification.put(curr, utime);
+                return;
+            }
+
+            double d0 = LinAlg.sq(classy.xyzrpy[0]) + LinAlg.sq(classy.xyzrpy[1]);
+            double d1 = LinAlg.sq(curr.xyzrpy[0]) + LinAlg.sq(curr.xyzrpy[1]);
+            if (d1 < d0) {
+                lastClassification.put(curr, Math.max(utime, classy.utime+1));
+                return;
+            }
+        }
+    }
+
     public diff_drive_t drive(DriveParams params)
     {
         classification_t classy = params.classy;
@@ -96,6 +119,10 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
             }
         }
 
+        if (dist <= 0.2)
+            dd.left = dd.right = 0;
+
+
         return dd;
     }
 
@@ -104,14 +131,21 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         return targetID;
     }
 
+    public String getClassType()
+    {
+        return classType;
+    }
+
     public DriveTowardsTag()
     {
     }
 
     public DriveTowardsTag(HashMap<String, TypedValue> parameters)
     {
-        assert (parameters.containsKey("id"));
-        targetID = parameters.get("id").getInt();
+        //assert (parameters.containsKey("id"));
+        //targetID = parameters.get("id").getInt();
+        assert (parameters.containsKey("class"));
+        classType = parameters.get("class").toString();
 
         lcm.subscribe("CLASSIFICATIONS", this);
         tasks.addFixedDelay(new DriveTask(), 1.0/DTT_HZ);
@@ -125,11 +159,8 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                 classification_list_t cl = new classification_list_t(ins);
 
                 for (int i = 0; i < cl.num_classifications; i++) {
-                    if (cl.classifications[i].id == targetID) {
-                        synchronized (classyLock) {
-                            lastClassification.put(cl.classifications[i], cl.utime);
-                        }
-                    }
+                    classification_t curr = cl.classifications[i];
+                    handleClassification(curr, cl.utime);
                 }
             }
         } catch (IOException ex) {
@@ -158,7 +189,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
     public String toString()
     {
-        return String.format("Drive to tag %d", targetID);
+        return String.format("Drive to tag %s", classType);
     }
 
     /** Get the parameters that can be set for this condition test.
@@ -168,8 +199,11 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     public Collection<TypedParameter> getParameters()
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-        params.add(new TypedParameter("id",
-                                      TypedValue.TYPE_INT,
+        //params.add(new TypedParameter("id",
+        //                              TypedValue.TYPE_INT,
+        //                              true));
+        params.add(new TypedParameter("class",
+                                      TypedValue.TYPE_STRING,
                                       true));
         return params;
     }
@@ -181,8 +215,8 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         cl.num_params = 1;
         cl.param_names = new String[cl.num_params];
         cl.param_values = new typed_value_t[cl.num_params];
-        cl.param_names[0] = "id";
-        cl.param_values[0] = new TypedValue(targetID).toLCM();
+        cl.param_names[0] = "class";
+        cl.param_values[0] = new TypedValue(classType).toLCM();
 
         return cl;
     }

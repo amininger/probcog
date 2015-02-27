@@ -474,11 +474,16 @@ public class SimRobot implements SimObject, LCMSubscriber
                     continue;
 
                 // XXX This means that the first observations can be lost to UDP. :(
+                // XXX This also means that we need to fix this for range checks
                 classification_t classy = temp.get(0);
-                if (tagHistory.addObservation(classy, TimeUtil.utime()))
-                    classies.addAll(temp);
-                else
-                    classies.add(empty_classy.copy());
+                tagHistory.addObservation(classy, TimeUtil.utime());
+                //if (tagHistory.isVisible(tag.getID(), sensingThreshold)) {
+                empty_classy.name = tagHistory.getLabel(tag.getID());
+                classies.add(empty_classy.copy());
+                //}
+                //else {
+                //    classies.add(empty_classy.copy());
+                //}
 
             }
             classy_list.num_classifications = classies.size();

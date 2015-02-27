@@ -190,7 +190,7 @@ public class MonteCarloBot implements SimObject
 
             if (!perfect) {
                 double mean = 0;
-                double stddev = 0.20;   // Laser noise
+                double stddev = 0.10;   // Laser noise
                 for (int i = 0; i < ranges.length; i++) {
                     if (ranges[i] >= maxRange || ranges[i] < 0)
                         continue;
@@ -217,19 +217,21 @@ public class MonteCarloBot implements SimObject
             if (law instanceof DriveTowardsTag) {
                 DriveTowardsTag dtt = (DriveTowardsTag)law;
                 HashSet<SimAprilTag> currentTags = getSeenTags();
+                params.classy = null;
+                double minDist = Double.MAX_VALUE;
                 for (SimAprilTag tag: currentTags) {
-                    if (dtt.getID() == tag.getID()) {
-                        double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
-                        double[] relXyzrpy = relativePose(getPose(), xyzrpy);
-                        ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
-                        if (classies.size() < 1)
-                            continue;
+                    double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
+                    double[] relXyzrpy = relativePose(getPose(), xyzrpy);
 
-                        // XXX Handle non-existence of tag?
-                        params.classy = tc.classifyTag(tag.getID(), relXyzrpy).get(0);
-                        dd = dtt.drive(params);
+                    classification_t classy = tc.classifyTag(tag.getID(), relXyzrpy).get(0);
+                    classy.name = tc.correctClass(tag.getID());
+                    double dist = LinAlg.magnitude(LinAlg.resize(relXyzrpy, 2));
+                    if (classy.name.equals(dtt.getClassType()) && dist < minDist) {
+                        params.classy = classy;
+                        minDist = dist;
                     }
                 }
+                dd = dtt.drive(params);
             } else {
                 dd = law.drive(params);
             }

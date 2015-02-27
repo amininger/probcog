@@ -426,9 +426,10 @@ public class MonteCarloPlanner
                                 SimAprilTag goalTag)
     {
         HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-        params.put("id", new TypedValue(goalTag.getID()));
+        //params.put("id", new TypedValue(goalTag.getID()));
+        params.put("class", new TypedValue(tagdb.correctClass(goalTag.getID())));
         DriveTowardsTag dtt = new DriveTowardsTag(params);
-        params.put("distance", new TypedValue(0.1));    // XXX What should this be?
+        //params.put("distance", new TypedValue(0.1));    // XXX What should this be?
 
         ArrayList<double[]> startXYTs = new ArrayList<double[]>();
         ArrayList<double[]> endXYTs = new ArrayList<double[]>();
@@ -442,7 +443,7 @@ public class MonteCarloPlanner
         for (int i = 0; i < numSamples; i++) {
             Behavior.XYTPair pair = node.data.randomXYT(); // Theoretical?
             mcb.init(dtt,
-                     new NearTag(params),
+                     new Stabilized(params),
                      pair.endXYT,
                      pair.endOdom,
                      pair.dist);
@@ -470,7 +471,7 @@ public class MonteCarloPlanner
                                   startDists,
                                   endDists,
                                   dtt,
-                                  new NearTag(params));
+                                  new Stabilized(params));
 
         if (node.data != null) {
             b.prob = node.data.prob;
@@ -669,7 +670,7 @@ public class MonteCarloPlanner
                                          b.test.copyCondition());
         behavior.successCount = successCount;
         double successRate = behavior.getPctNearTheoretical();
-        if (b.law instanceof Orient)
+        if (b.law instanceof Orient || b.law instanceof DriveTowardsTag)
             behavior.prob = node.data.prob * successRate;
         else
             behavior.prob = successRate;
