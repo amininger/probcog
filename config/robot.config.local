@@ -1,6 +1,6 @@
 // This file holds ALL constants, configurations probcog needs
 
-tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.lambda";
+tag_config = "/home/april/probcog/config/tagdb.small-doors";
 
 proc_config = "procman/proc.config";
 
@@ -289,11 +289,16 @@ cameraCalibration {
     // camera calibration parameters for CalTech camera calibration toolbox
     // determined on robot #2 on June 3rd, 2010
     intrinsics {
-        fc = [477.73045, 478.72077];            // focal length
-        cc = [393.83418, 256.00990];            // principal point
-        kc = [-0.27777, 0.08649, 0.00082,       // distortion (combined radial/tangential model)
-               0.00093, 0.00000];
+        //fc = [477.73045, 478.72077];            // focal length
+        //cc = [393.83418, 256.00990];            // principal point
+        //kc = [-0.27777, 0.08649, 0.00082,       // distortion (combined radial/tangential model)
+        //       0.00093, 0.00000];
         skew = 0;                               // skew
+
+        // From april-carl, default model
+        fc = [ 773.621630, 773.949082 ];
+        cc = [ 639.435827, 558.448606 ];
+        kc = [ 0.010309, 0.145309, -0.218348, 0.117207 ];
 
         // error terms (just to have available)
         //kc_err = [1.21183, 1.22115];
@@ -302,6 +307,9 @@ cameraCalibration {
         kc_err = [0.00328, 0.00430, 0.00037, 0.00031, 0.00000];
         pixel_err = [0.40137, 0.26483];
     }
+
+    imWidth = 1296;
+    imHeight = 964;
 }
 
 tag_detection {
@@ -311,7 +319,7 @@ tag_detection {
 
     tag {                                       // TagDetector settings
         family      = "Tag36h11";               // tag family for detections
-        size_m      = 0.11;
+        size_m      = 0.15;
 
         segSigma    = 1;
         sigma       = 0;

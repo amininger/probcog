@@ -7,12 +7,16 @@ import lcm.lcm.*;
 
 import april.config.*;
 import april.jmat.*;
-import april.lcmtypes.*;
+//import april.lcmtypes.*;
 import april.util.*;
 import april.tag.TagDetection;
 
-import probcog.lcmtypes.*;
+//import probcog.lcmtypes.*;
+import probcog.lcmtypes.classification_list_t;
+import probcog.lcmtypes.classification_t;
 import probcog.util.*;
+
+import magic2.lcmtypes.*;
 
 public class TagClassifier
 {
@@ -22,6 +26,7 @@ public class TagClassifier
     //static Random classifierRandom = new Random(104395301);
     Random classifierRandom = new Random();
     LCM lcm = LCM.getSingleton();
+    TagHistory history = new TagHistory();
 
     HashMap<Integer, ArrayList<TagClass>> idToTag;
     HashMap<String, Set<Integer> > tagClassToIDs;
@@ -228,23 +233,47 @@ public class TagClassifier
         return classies;
     }
 
-    private void publishDetections(pan_tilt_tag_detections_t tagList)
+    private void publishDetections(tag_detection_list_t tagList)
     {
         ArrayList<classification_t> classies = new ArrayList<classification_t>();
 
-        for(int i=0; i<tagList.ndetects; i++) {
+        for (int n=0; n < tagList.ndetections; n++) {
+            tag_detection_t td = tagList.detections[n];
 
-            if(!idToTag.containsKey(tagList.detections[i].id))
+            // Ignore tags we can't map to anything
+            if (!idToTag.containsKey(td.id))
                 continue;
 
-            TagDetection td = new TagDetection();
-            td.id = tagList.detections[i].id;
-            td.hammingDistance = tagList.detections[i].errors;
-            td.homography = tagList.detections[i].homography;
-            td.hxy = tagList.detections[i].hxy;
+            // Eventually, we may want to do calibration correction here.
+            // For now, let's just trust it .
+            TagDetection tag = new TagDetection();
+            tag.id = td.id;
+            tag.hammingDistance = td.hamming_dist;
+            tag.homography = new double[3][];
+            for (int i = 0; i < 3; i++) {
+                tag.homography[i] = new double[3];
+                for (int j = 0; j < 3; j++) {
+                    tag.homography[i][j] = (double)td.H[i][j];
+                }
+            }
+            tag.cxy = new double[] {td.cxy[0], td.cxy[1]};
+            tag.p = new double[][] {{td.pxy[0][0], td.pxy[0][1]},
+                                    {td.pxy[1][0], td.pxy[1][1]},
+                                    {td.pxy[2][0], td.pxy[2][1]},
+                                    {td.pxy[3][0], td.pxy[3][1]}};
 
-            double[][] T2B = TagUtil.getTagToPose(tagList.cam_to_pose, td, tagSize_m);
-            classies.addAll(classifyTag(td.id, LinAlg.matrixToXyzrpy(T2B)));
+            double[][] T2B = TagUtil.getTagToPose(tag, tagSize_m);
+            double[] xyzrpy = LinAlg.matrixToXyzrpy(T2B);
+            classification_t classy = (classifyTag(tag.id, xyzrpy)).get(0);
+
+            // Incorporate tag history stuff
+            history.addObservation(classy, tagList.utime);
+            double dist = LinAlg.magnitude(LinAlg.resize(xyzrpy, 2));
+            if (history.isVisible(tag.id, dist, tagList.utime)) {
+                classy.name = history.getLabel(tag.id, tagList.utime);
+                classy.range = dist;
+                classies.add(classy);
+            }
         }
 
         classification_list_t classy_list = new classification_list_t();
@@ -284,7 +313,7 @@ public class TagClassifier
         private void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
         {
             if (channel.equals("TAG_DETECTIONS")) {
-                pan_tilt_tag_detections_t tagList = new pan_tilt_tag_detections_t(ins);
+                tag_detection_list_t tagList = new tag_detection_list_t(ins);
                 publishDetections(tagList);
             }
         }
@@ -334,7 +363,7 @@ public class TagClassifier
     public static void main(String[] args)
     {
         try {
-           TagClassifier tc = new TagClassifier();
+           TagClassifier tc = new TagClassifier(true);
          } catch (IOException ioex) {
             System.err.println("ERR: Error starting tag classifier");
             ioex.printStackTrace();
