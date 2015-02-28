@@ -207,7 +207,7 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
         }
 
         LCM.getSingleton().subscribe("POSE", this);
-        LCM.getSingleton().subscribe("LASER", this);
+        LCM.getSingleton().subscribe("HOKUYO_LIDAR", this);
         tasks.addFixedDelay(new UpdateTask(), 1.0/FH_HZ);
     }
 
@@ -223,7 +223,7 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if ("LASER".equals(channel)) {
+        if ("HOKUYO_LIDAR".equals(channel)) {
             laser_t laser = new laser_t(ins);
             laserCache.put(laser, laser.utime);
         } else if ("POSE".equals(channel)) {

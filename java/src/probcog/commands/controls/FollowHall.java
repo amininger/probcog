@@ -205,7 +205,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     public FollowHall()
     {
         // Temporary
-        LCM.getSingleton().subscribe("LASER", this);
+        LCM.getSingleton().subscribe("HOKUYO_LIDAR", this);
         LCM.getSingleton().subscribe("POSE", this);
     }
 
@@ -216,7 +216,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
 
         tasks.addFixedDelay(new UpdateTask(), 1.0/FH_HZ);
 
-        LCM.getSingleton().subscribe("LASER", this);
+        LCM.getSingleton().subscribe("HOKUYO_LIDAR", this);
         LCM.getSingleton().subscribe("POSE", this);
     }
 
@@ -232,7 +232,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if ("LASER".equals(channel)) {
+        if ("HOKUYO_LIDAR".equals(channel)) {
             laser_t laser = new laser_t(ins);
             laserCache.put(laser, laser.utime);
         } else if ("POSE".equals(channel)) {

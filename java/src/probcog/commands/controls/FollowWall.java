@@ -54,13 +54,18 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     {
         public void run(double dt)
         {
+            System.out.println("diff drive");
             laser_t laser = laserCache.get();
-            if (laser == null)
+            if (laser == null) {
+                System.out.println("Waiting on laser data");
                 return;
+            }
 
             pose_t pose = poseCache.get();
-            if (pose == null)
+            if (pose == null) {
+                System.out.println("Waiting on pose data");
                 return;
+            }
 
             // Initialization step.
             // Find the laser beam we will observe for distance. If we are using
@@ -272,7 +277,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("heading"))
             targetHeading = parameters.get("heading").getDouble();
 
-        LCM.getSingleton().subscribe("LASER", this);
+        LCM.getSingleton().subscribe("HOKUYO_LIDAR", this);
         LCM.getSingleton().subscribe("POSE", this);
         tasks.addFixedDelay(new UpdateTask(), 1.0/FW_HZ);
     }
@@ -305,7 +310,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if ("LASER".equals(channel)) {
+        if ("HOKUYO_LIDAR".equals(channel)) {
             laser_t laser = new laser_t(ins);
             laserCache.put(laser, laser.utime);
         } else if ("POSE".equals(channel)) {
