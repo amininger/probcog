@@ -401,7 +401,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
             ArrayList<Integer> lazyExpansions = new ArrayList<Integer>();
             ArrayList<Integer> fullExpansions = new ArrayList<Integer>();
             ArrayList<Double> time = new ArrayList<Double>();
-            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
+            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, null);
             for (int i = 0; i < tags.size(); i++) {
                 for (int j = 0; j < tags.size(); j++) {
                     if (i == j)
@@ -453,6 +453,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 }
                 fout.printf("];\n");
                 fout.close();
+                System.out.printf("Done! Wrote to %d\n", filename);
             } catch (IOException ioex) {
                 ioex.printStackTrace();
             }

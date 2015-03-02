@@ -1,6 +1,6 @@
 // This file holds ALL constants, configurations probcog needs
 
-tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.lambda";
+tag_config = "/home/rgoeddel/lab/probcog/config/tagdb.small-doors";
 
 proc_config = "procman/proc.config";
 
@@ -484,7 +484,7 @@ monte_carlo {
     iterative_deepening = false;
     max_search_depth = 20;   // How should this be selected? This seems sufficient for CSE
     num_exploration_samples = 1;
-    num_evaluation_samples = 10;  // XXX
+    num_evaluation_samples = 100;  // XXX
 
     start_search_depth = 3; // XXX Currently unused
 
