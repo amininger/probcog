@@ -581,25 +581,25 @@ public class MonteCarloBot implements SimObject
     {
         VzLines.Style style;
         if (c != null)
-            style = new VzLines.Style(c, 1);
+            style = new VzLines.Style(c, 5);
         else
         //else if (success())
-            style = new VzLines.Style(vcd, 1);
+            style = new VzLines.Style(vcd, 5);
         //else
         //    style = new VzLines.Style(Color.red, 2);
 
         if (c != null) {
             return new VisLighting(false, new VzLines(new VisVertexData(trajectoryTruth),
                                                       VzLines.LINE_STRIP,
-                                                      style));
+                                                      style),
+                                   getPose(),
+                                   new Model4(null, c, 0.5));
         } else {
             return new VisLighting(false, new VzLines(new VisVertexData(trajectoryTruth),
                                                       VzLines.LINE_STRIP,
-                                                      style));
-                                   //new VzPoints(new VisVertexData(trajectoryTruth),
-                                   //             new VzPoints.Style(Color.white, 3)),
-                                   //getPose(),
-                                   //model4);
+                                                      style),
+                                   getPose(),
+                                   model4);
         }
     }
 

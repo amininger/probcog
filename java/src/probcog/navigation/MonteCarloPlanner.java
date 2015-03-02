@@ -86,6 +86,12 @@ public class MonteCarloPlanner
             assert (hasNextChild());
             return futureChildren.get(nextChildIdx++);
         }
+
+        public Behavior peekNextChild()
+        {
+            assert (hasNextChild());
+            return futureChildren.get(nextChildIdx);
+        }
     }
 
     private class SpanningTreeComparator implements Comparator<GreedySearchNode>
@@ -398,7 +404,8 @@ public class MonteCarloPlanner
         Node<Behavior> soln = hybridSearch(starts, goal);
         watch.stop();
 
-        System.out.println("NODES EXPANDED: "+nodesExpanded);
+        System.out.println("LAZILY EXPANDED: "+nodesLazilyExpanded);
+        System.out.println("FULLY EXPANDED: "+nodesFullyExpanded);
 
         // Trace back behaviors to reach said node
         while (soln != null && soln.parent != null) {
@@ -447,7 +454,9 @@ public class MonteCarloPlanner
                      pair.endXYT,
                      pair.endOdom,
                      pair.dist);
+            watch.start("sim");
             mcb.simulate(10.0); // XXX Another magic number
+            watch.stop();
             if (vw != null) {
                 VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
                 vb.setDrawOrder(-500);
@@ -543,7 +552,9 @@ public class MonteCarloPlanner
                              pair.endXYT,
                              pair.endOdom,
                              pair.dist);
-                    mcb.simulate();
+                    watch.start("sim");
+                    mcb.simulate(10.0);
+                    watch.stop();
                     // Only consider plans that actually "work"
                     //if (mcb.success()) {
                     startXYTs.add(pair.endXYT);
@@ -584,7 +595,9 @@ public class MonteCarloPlanner
                              startNode.data.theoreticalXYT.endXYT,
                              startNode.data.theoreticalXYT.endXYT,  // Doesn't matter here
                              startNode.data.theoreticalXYT.dist);
+                    watch.start("sim");
                     mcb.simulate(); // This will always timeout.
+                    watch.stop();
                 }
                 for (Behavior rec: mcb.tagRecords.values()) {
                     recs.add(rec);
@@ -631,7 +644,9 @@ public class MonteCarloPlanner
             double time = 300.0;
             if (b.law instanceof Orient || b.law instanceof DriveTowardsTag)
                 time = 10.0;
+            watch.start("sim");
             mcb.simulate(time); // XXX
+            watch.stop();
             if (vw != null) {
                 VisWorld.Buffer vb = vw.getBuffer("debug-DFS");
                 vb.setDrawOrder(-500);
@@ -885,7 +900,8 @@ public class MonteCarloPlanner
      *  to evaluate when it's time to backtrack instead of mindlessly pursuing
      *  a bad avenue of search.
      **/
-    int nodesExpanded;
+    public int nodesLazilyExpanded;
+    public int nodesFullyExpanded;
     double penalty;
     private PriorityQueue<GreedySearchNode> gsnHeap =
         new PriorityQueue<GreedySearchNode>(10, new GSNComparator());
@@ -893,6 +909,8 @@ public class MonteCarloPlanner
     public Node<Behavior> hybridSearch(ArrayList<double[]> starts,
                                        double goal[])
     {
+        nodesLazilyExpanded = 0;
+        nodesFullyExpanded = 0;
         // Initialize search
         ArrayList<Double> dists = new ArrayList<Double>();
         for (double[] s: starts)
@@ -960,6 +978,7 @@ public class MonteCarloPlanner
             // do not bother adding it back.
             if (!node.madeChildren()) {
                 ArrayList<Behavior> records = generateChildren(node.node);
+                nodesLazilyExpanded += records.size();
                 node.addSortedChildren(records, new GreedyChildComparator());
             }
 
@@ -970,11 +989,14 @@ public class MonteCarloPlanner
                 if (next != null && (!closedChildren.contains(next.tagID) || next.law instanceof DriveTowardsTag)) {
                     // Simulation.
                     Behavior b = simulateBehavior(next, node.node);
+                    nodesFullyExpanded++;
+
                     b.tagID = next.tagID;
 
                     // Add to heap if non-null
                     if (b != null) {
                         GreedySearchNode nextNode = new GreedySearchNode(node.node.addChild(b));
+
                         gsnHeap.add(nextNode);
                         if (next.tagID > 0)
                             closedChildren.add(next.tagID);

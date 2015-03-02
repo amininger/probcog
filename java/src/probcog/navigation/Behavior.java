@@ -155,6 +155,14 @@ public class Behavior
     }
 
     public Behavior(double[] startXYT,
+                    double[] startOdom,
+                    ControlLaw law,
+                    ConditionTest test)
+    {
+        this(startXYT, startXYT, startOdom, startOdom, 0, 0, law, test);
+    }
+
+    public Behavior(double[] startXYT,
                     double[] endXYT,
                     double[] startOdom,
                     double[] endOdom,
@@ -479,7 +487,7 @@ public class Behavior
             truth.add(pair.endXYT, 1, 2); // Not very efficient
         }
         VisLighting vo = new VisLighting(false);
-        vo.add(new VzPoints(truth, new VzPoints.Style(c, 5)));
+        vo.add(new VzPoints(truth, new VzPoints.Style(c, 10)));
 
         return vo;
     }
@@ -491,7 +499,7 @@ public class Behavior
             odom.add(pair.endOdom, 1, 2);
         }
         VisLighting vo = new VisLighting(false);
-        vo.add(new VzPoints(odom, new VzPoints.Style(c, 5)));
+        vo.add(new VzPoints(odom, new VzPoints.Style(c, 10)));
 
         return vo;
     }

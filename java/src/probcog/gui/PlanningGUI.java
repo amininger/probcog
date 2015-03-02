@@ -344,6 +344,8 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         public boolean keyPressed(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, KeyEvent e)
         {
             // Toggle mode
+            if (e.getKeyCode() == KeyEvent.VK_C)
+                new ComputationThread().start();
             if (e.getKeyCode() == KeyEvent.VK_T)
                 new MonteCarloThread().start();
             if (e.getKeyCode() == KeyEvent.VK_W)
@@ -384,6 +386,79 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
         }
     }
 
+    /** Plan between all goals. Record number of expansions */
+    private class ComputationThread extends Thread
+    {
+        public void run() {
+            SimRobot robot = getRobot();
+            ArrayList<SimAprilTag> tags = new ArrayList<SimAprilTag>();
+            for (SimObject so: simulator.getWorld().objects) {
+                if (!(so instanceof SimAprilTag))
+                    continue;
+                tags.add((SimAprilTag)so);
+            }
+
+            ArrayList<Integer> lazyExpansions = new ArrayList<Integer>();
+            ArrayList<Integer> fullExpansions = new ArrayList<Integer>();
+            ArrayList<Double> time = new ArrayList<Double>();
+            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
+            for (int i = 0; i < tags.size(); i++) {
+                for (int j = 0; j < tags.size(); j++) {
+                    if (i == j)
+                        continue;
+                    SimAprilTag startTag = tags.get(i);
+                    SimAprilTag goalTag = tags.get(j);
+                    System.out.println(startTag.getID() + " --> " + goalTag.getID());
+
+                    double[] startXYT = LinAlg.matrixToXYT(startTag.getPose());
+                    startXYT[2] = 0;
+                    ArrayList<double[]> starts = new ArrayList<double[]>();
+                    starts.add(startXYT);
+
+                    double[] goalXY = LinAlg.resize(LinAlg.matrixToXYT(goalTag.getPose()), 2);
+                    Tic tic = new Tic();
+                    ArrayList<Behavior> plan = mcp.plan(starts, goal, goalTag);
+                    time.add(tic.toc());
+
+                    if (plan.size() < 1) {
+                        System.err.println("ERR: Could not find path");
+                        continue;
+                    }
+
+                    lazyExpansions.add(mcp.nodesLazilyExpanded);
+                    fullExpansions.add(mcp.nodesFullyExpanded);
+                }
+            }
+
+            try {
+                String date = (new SimpleDateFormat("yyMMdd_kkmmss")).format(new Date());
+                String filename = "/tmp/"+date+".m";
+                PrintWriter fout = new PrintWriter(new File(filename));
+
+                fout.printf("lazy = [ ");
+                for (int i: lazyExpansions) {
+                    fout.printf("%d ", i);
+                }
+                fout.printf("];\n");
+
+                fout.printf("full = [ ");
+                for (int i: fullExpansions) {
+                    fout.printf("%d ", i);
+                }
+                fout.printf("];\n");
+
+                fout.printf("time = [ ");
+                for (double d: time) {
+                    fout.printf("%f ", d);
+                }
+                fout.printf("];\n");
+                fout.close();
+            } catch (IOException ioex) {
+                ioex.printStackTrace();
+            }
+        }
+    }
+
     private class MonteCarloThread extends Thread
     {
         public void run()
@@ -416,18 +491,33 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 System.err.println("ERR: Did not find a valid set of behaviors");
                 return;
             }
-            // Just run once for now. Initialize robot. Then simulate!
-            //HashMap<String, TypedValue> lawParams = new HashMap<String, TypedValue>();
-            //lawParams.put("side", new TypedValue((byte)1));
-            //HashMap<String, TypedValue> testParams = new HashMap<String, TypedValue>();
-            //testParams.put("count", new TypedValue(2));
-            //testParams.put("class", new TypedValue("door"));
+
+            // Random test of simulation time
+            //Stopwatch myWatch = new Stopwatch();
+            //myWatch.start("SIMULATIONS");
+            //HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+            //params.put("side", new TypedValue((byte)(-1)));
+            //params.put("distance", new TypedValue(0.75));
+            //ControlLaw law = new FollowWall(params);
+            //params.put("timeout", new TypedValue(10000.0)); // Never will happen
+            //ConditionTest test = new TimeoutTest(params);
+            //for (int n = 0; n < 100; n++) {
+            //    MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+            //    bot.setPose(robot.getPose());
+            //    double[] xyt = LinAlg.matrixToXYT(bot.getPose());
+            //    bot.init(law, test.copyCondition(), xyt, xyt, 0);
+            //    myWatch.start("sim-"+n);
+            //    bot.simulate(10.0, true);
+            //    myWatch.stop();
+            //}
+            //myWatch.stop();
+            //myWatch.print();
 
             // Visualization only
             if (DEBUG) {
                 vw.getBuffer("debug-DFS").swap();
                 java.util.List<Color> colors = Palette.qualitative_brewer1.listAll();
-                for (int n = 0; n < 100; n++) {
+                for (int n = 0; n < 1; n++) {
                     MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
                     bot.setPose(robot.getPose());
                     int counter = 0;
@@ -436,7 +526,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                         Behavior b = behaviors.get(i).copyBehavior();
                         double[] xyt = LinAlg.matrixToXYT(bot.getPose());
                         bot.init(b.law, b.test, xyt, xyt, 0);
-                        bot.simulate();
+                        bot.simulate(true);
                         vb.setDrawOrder(900);
 
                         Color c = colors.get(counter % colors.size());
