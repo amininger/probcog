@@ -329,6 +329,11 @@ public class TagClassifier
             this.minRange = minRange;
             this.maxRange = maxRange;
         }
+
+        public String toString()
+        {
+            return String.format("%f %f", minRange, maxRange);
+        }
     }
 
     public static void main(String[] args)

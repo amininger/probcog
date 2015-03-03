@@ -414,8 +414,10 @@ public class MonteCarloPlanner
         }
 
         Collections.reverse(behaviors);
-        Behavior last = behaviors.get(behaviors.size()-1);
-        System.out.printf("FINAL SCORE: %f\n", last.getBestScore(gm, wf, last.prob, 0));
+        if (behaviors.size() > 0) {
+            Behavior last = behaviors.get(behaviors.size()-1);
+            System.out.printf("FINAL SCORE: %f\n", last.getBestScore(gm, wf, last.prob, 0));
+        }
 
         watch.stop();
         watch.print();
@@ -596,7 +598,7 @@ public class MonteCarloPlanner
                              startNode.data.theoreticalXYT.endXYT,  // Doesn't matter here
                              startNode.data.theoreticalXYT.dist);
                     watch.start("sim");
-                    mcb.simulate(); // This will always timeout.
+                    mcb.simulate(true); // This will always timeout. PERFECT ADDED LATE
                     watch.stop();
                 }
                 for (Behavior rec: mcb.tagRecords.values()) {
