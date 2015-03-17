@@ -24,7 +24,8 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     static final double MAX_SPEED = 0.5;
     static final double MAX_TURN = 0.3;
 
-    static final double FORWARD_SPEED = 0.1;
+    static final double DIST_FUDGE = 0.25;
+    static final double FORWARD_SPEED = 0.2;
     static final double TURN_WEIGHT = 5.0;
     static final double WHEELBASE = 0.46;
     static final double WHEEL_DIAMETER = 0.25;
@@ -71,7 +72,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
             double d0 = LinAlg.sq(classy.xyzrpy[0]) + LinAlg.sq(classy.xyzrpy[1]);
             double d1 = LinAlg.sq(curr.xyzrpy[0]) + LinAlg.sq(curr.xyzrpy[1]);
-            if (d1 < d0) {
+            if (d1+DIST_FUDGE < d0) {
                 lastClassification.put(curr, Math.max(utime, classy.utime+1));
                 return;
             }

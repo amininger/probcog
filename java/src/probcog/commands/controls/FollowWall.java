@@ -54,16 +54,13 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     {
         public void run(double dt)
         {
-            System.out.println("diff drive");
             laser_t laser = laserCache.get();
             if (laser == null) {
-                System.out.println("Waiting on laser data");
                 return;
             }
 
             pose_t pose = poseCache.get();
             if (pose == null) {
-                System.out.println("Waiting on pose data");
                 return;
             }
 

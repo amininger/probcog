@@ -23,7 +23,7 @@ public class TagUtil
         //double imHeight = 480;
         //double imWidth = 743;
 
-        double M[][] = CameraUtil.homographyToPose(camera_fc[0], camera_fc[1], imWidth/2, imHeight/2, d.homography);
+        double M[][] = CameraUtil.homographyToPose(-camera_fc[0], camera_fc[1], imWidth/2, imHeight/2, d.homography);
         M = CameraUtil.scalePose(M, 2.0, tagSize_m);
 
         // double M[][]   = CameraUtil.homographyToPose(camera_fc[0],

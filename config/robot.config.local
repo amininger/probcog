@@ -1,6 +1,6 @@
 // This file holds ALL constants, configurations probcog needs
 
-tag_config = "/home/april/probcog/config/tagdb.small-doors";
+tag_config = "/home/april/probcog/config/tagdb.cse-small";
 
 proc_config = "procman/proc.config";
 
