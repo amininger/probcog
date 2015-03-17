@@ -343,6 +343,13 @@ public class ArmCommandInterpreter
                 if (debug) {
                     dthread.render(obj.getPointCloud().getPoints());
                 }
+                if(obj.getPointCloud().getPoints().size() == 0){
+                	// In sim without point cloud, we don't really care about specifics
+                	bcmd.xyz = LinAlg.resize(obj.getPose(), 3);
+                	bcmd.wrist = 0.0;
+                	heldHeight = obj.getBoundingBox().lenxyz[2]/2 + .01;
+                	return bcmd;
+                }
                 // XXX WHERE IS FLATTEN?
                 ArrayList<double[]> xyPoints = flattenPoints(obj.getPointCloud().getPoints());
                 double[] uxy = getMeanXY(xyPoints);
