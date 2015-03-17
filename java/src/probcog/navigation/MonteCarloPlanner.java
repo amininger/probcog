@@ -35,7 +35,6 @@ public class MonteCarloPlanner
     Stopwatch watch = new Stopwatch();
 
     // Search parameters XXX MOVE TO CONFIG. Get rid of ROBOT_CONFIG bit?
-    boolean iterativeDeepening = Util.getConfig().requireBoolean("monte_carlo.iterative_deepening");
     int searchDepth = Util.getConfig().requireInt("monte_carlo.max_search_depth");
     int numExploreSamples = Util.getConfig().requireInt("monte_carlo.num_exploration_samples");
     int numSamples = Util.getConfig().requireInt("monte_carlo.num_evaluation_samples");

@@ -25,7 +25,6 @@ import probcog.commands.CommandInterpreter;
 import probcog.lcmtypes.*;
 import probcog.util.*;
 import probcog.vis.*;
-import probcog.perception.ObstacleMap;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
 
