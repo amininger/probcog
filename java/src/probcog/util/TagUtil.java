@@ -14,27 +14,38 @@ public class TagUtil
     static final double camera_cc[]  = Util.getConfig().requireDoubles("cameraCalibration.intrinsics.cc");
     static final double camera_kc[]  = Util.getConfig().requireDoubles("cameraCalibration.intrinsics.kc");
     static final double camera_skew= Util.getConfig().requireDouble("cameraCalibration.intrinsics.skew");
+    static final double imHeight = Util.getConfig().requireDouble("cameraCalibration.imHeight");
+    static final double imWidth = Util.getConfig().requireDouble("cameraCalibration.imWidth");
 
-    public static double[][] getTagToPose(double cam2pose[][], TagDetection d, double tagSize_m)
+    public static double[][] getTagToPose(TagDetection d, double tagSize_m)
     {
         // get center pixel for tag
-        double imHeight = 480;
-        double imWidth = 743;
+        //double imHeight = 480;
+        //double imWidth = 743;
 
-        double M[][] = CameraUtil.homographyToPose(camera_fc[0], camera_fc[1], imWidth/2, imHeight/2, d.homography);
+        double M[][] = CameraUtil.homographyToPose(-camera_fc[0], camera_fc[1], imWidth/2, imHeight/2, d.homography);
         M = CameraUtil.scalePose(M, 2.0, tagSize_m);
 
         // double M[][]   = CameraUtil.homographyToPose(camera_fc[0],
         //                                              camera_fc[1],
         //                                              tagSize_m,
         //                                              d.homography);
+        // Hardcoded transform for vertical facing camera
+        double[][] xform = new double[][]{{ 0,-1, 0, 0},
+                                          {-1, 0, 0, 0},
+                                          { 0, 0,-1, 0},
+                                          { 0, 0, 0, 1}};
 
         // observation-to-body transformation
-        return LinAlg.multiplyMany(cam2pose,
-                                   // camera observation transformation
-                                   // z is forward out of the camera, x horizontal
-                                   LinAlg.rotateX(Math.PI),
-                                   M);
+        //return LinAlg.multiplyMany(cam2pose,
+        //                           // camera observation transformation
+        //                           // z is forward out of the camera, x horizontal
+        //                           LinAlg.rotateX(Math.PI),
+        //                           M);
+        M = LinAlg.matrixAB(xform, M);
+        M = LinAlg.matrixAB(M, LinAlg.rotateZ(Math.PI));
+
+        return M;
     }
 
     public static double[] getTagXyzrpy(double O2B[][], double Observer[][], boolean transformToRobotPose)
@@ -55,10 +66,10 @@ public class TagUtil
         return LinAlg.matrixToXyzrpy(R2W);
     }
 
-    public static double[] getTagXyzrpy(double cam2pose[][], TagDetection d,
+    public static double[] getTagXyzrpy(TagDetection d,
                                         double Observer[][], double tagSize_m, boolean transformToRobotPose)
     {
-        double O2B[][] = getTagToPose(cam2pose, d, tagSize_m);
+        double O2B[][] = getTagToPose(d, tagSize_m);
         return getTagXyzrpy(O2B, Observer, transformToRobotPose);
     }
 
