@@ -482,91 +482,169 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
                 }
             }
 
-            System.out.println("TESTING MONTE CARLO METHOD");
-            ArrayList<double[]> starts = new ArrayList<double[]>();
-            starts.add(LinAlg.matrixToXYT(robot.getPose()));
+            ArrayList<Integer> lazyExpansions = new ArrayList<Integer>();
+            ArrayList<Integer> fullExpansions = new ArrayList<Integer>();
+            ArrayList<Double> times = new ArrayList<Double>();
 
-            MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
-            ArrayList<Behavior> behaviors = mcp.plan(starts, goal, tag);
-            if (behaviors.size() < 1) {
-                System.err.println("ERR: Did not find a valid set of behaviors");
-                return;
-            }
+            ArrayList<Double> successRates = new ArrayList<Double>();
+            ArrayList<Double> distances = new ArrayList<Double>();
+            for (int trial = 0; trial < 50; trial++) {
+                //System.out.println("TESTING MONTE CARLO METHOD");
+                System.out.println("Trial "+trial);
+                ArrayList<double[]> starts = new ArrayList<double[]>();
+                starts.add(LinAlg.matrixToXYT(robot.getPose()));
 
-            // Random test of simulation time
-            //Stopwatch myWatch = new Stopwatch();
-            //myWatch.start("SIMULATIONS");
-            //HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-            //params.put("side", new TypedValue((byte)(-1)));
-            //params.put("distance", new TypedValue(0.75));
-            //ControlLaw law = new FollowWall(params);
-            //params.put("timeout", new TypedValue(10000.0)); // Never will happen
-            //ConditionTest test = new TimeoutTest(params);
-            //for (int n = 0; n < 100; n++) {
-            //    MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
-            //    bot.setPose(robot.getPose());
-            //    double[] xyt = LinAlg.matrixToXYT(bot.getPose());
-            //    bot.init(law, test.copyCondition(), xyt, xyt, 0);
-            //    myWatch.start("sim-"+n);
-            //    bot.simulate(10.0, true);
-            //    myWatch.stop();
-            //}
-            //myWatch.stop();
-            //myWatch.print();
+                MonteCarloPlanner mcp = new MonteCarloPlanner(simulator.getWorld(), gm, vw);
+                Tic tic = new Tic();
+                ArrayList<Behavior> behaviors = mcp.plan(starts, goal, tag);
+                times.add(tic.toc());
+                if (behaviors.size() < 1) {
+                    System.err.println("ERR: Did not find a valid set of behaviors");
+                    return;
+                }
+                distances.add(behaviors.get(behaviors.size()-1).theoreticalXYT.dist);
+                lazyExpansions.add(mcp.nodesLazilyExpanded);
+                fullExpansions.add(mcp.nodesFullyExpanded);
 
-            // Visualization only
-            if (DEBUG) {
-                vw.getBuffer("debug-DFS").swap();
-                java.util.List<Color> colors = Palette.qualitative_brewer1.listAll();
-                for (int n = 0; n < 1; n++) {
-                    MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
-                    bot.setPose(robot.getPose());
-                    int counter = 0;
+                // Random test of simulation time
+                //Stopwatch myWatch = new Stopwatch();
+                //myWatch.start("SIMULATIONS");
+                //HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+                //params.put("side", new TypedValue((byte)(-1)));
+                //params.put("distance", new TypedValue(0.75));
+                //ControlLaw law = new FollowWall(params);
+                //params.put("timeout", new TypedValue(10000.0)); // Never will happen
+                //ConditionTest test = new TimeoutTest(params);
+                //for (int n = 0; n < 100; n++) {
+                //    MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+                //    bot.setPose(robot.getPose());
+                //    double[] xyt = LinAlg.matrixToXYT(bot.getPose());
+                //    bot.init(law, test.copyCondition(), xyt, xyt, 0);
+                //    myWatch.start("sim-"+n);
+                //    bot.simulate(10.0, true);
+                //    myWatch.stop();
+                //}
+                //myWatch.stop();
+                //myWatch.print();
+
+                // Visualization only
+                if (DEBUG) {
+                    vw.getBuffer("debug-DFS").swap();
+                    java.util.List<Color> colors = Palette.qualitative_brewer1.listAll();
+
+                    for (Behavior b: behaviors)
+                        System.out.println(b);
+
+                    int successes = 0;
+                    double NMAX = 1;
+                    for (int n = 0; n < NMAX; n++) {
+                        //System.out.println("trial "+n);
+                        MonteCarloBot bot = new MonteCarloBot(simulator.getWorld());
+                        bot.setPose(robot.getPose());
+                        int counter = 0;
+                        for (int i = 0; i < behaviors.size(); i++) {
+                            VisWorld.Buffer vb = vw.getBuffer("test-behavior-"+i);
+                            Behavior b = behaviors.get(i).copyBehavior();
+                            double[] xyt = LinAlg.matrixToXYT(bot.getPose());
+                            bot.init(b.law, b.test, xyt, xyt, 0);
+                            bot.simulate(true);
+                            //bot.simulate();
+                            vb.setDrawOrder(900);
+
+                            Color c = colors.get(counter % colors.size());
+                            counter++;
+
+                            //vb.addBack(bot.getVisObject(c));
+                        }
+
+                        double[] botXY = LinAlg.resize(LinAlg.matrixToXYT(bot.getPose()), 2);
+                        double goalDist = LinAlg.distance(botXY, goal, 2);
+                        if (goalDist < 0.25) {
+                            successes++;
+                            //System.out.printf("%f\n", successes/(double)n);
+                        }
+                    }
+
+                    System.out.println(successes/NMAX + " " + distances.get(distances.size()-1));
+                    System.out.println(mcp.nodesFullyExpanded + " " + mcp.nodesLazilyExpanded);
+                    successRates.add(successes/NMAX);
+
                     for (int i = 0; i < behaviors.size(); i++) {
                         VisWorld.Buffer vb = vw.getBuffer("test-behavior-"+i);
-                        Behavior b = behaviors.get(i).copyBehavior();
-                        double[] xyt = LinAlg.matrixToXYT(bot.getPose());
-                        bot.init(b.law, b.test, xyt, xyt, 0);
-                        bot.simulate(true);
-                        vb.setDrawOrder(900);
+                        //vb.swap();
+                    }
 
+                    // Show behaviors distribution
+                    VisWorld.Buffer vb = vw.getBuffer("test-distribution");
+                    vb.setDrawOrder(1000);
+                    int counter = 0;
+                    for (Behavior b: behaviors) {
                         Color c = colors.get(counter % colors.size());
                         counter++;
-
-                        vb.addBack(bot.getVisObject(c));
+                        //vb.addBack(b.getVisObject(c));
                     }
+                    //vb.swap();
+
+                    vb = vw.getBuffer("test-distribution-noisy");
+                    vb.setDrawOrder(1000);
+                    counter = 0;
+                    for (Behavior b: behaviors) {
+                        Color c = colors.get(counter % colors.size());
+                        counter++;
+                        //vb.addBack(b.getNoisyVis(c));
+                    }
+                    //vb.swap();
                 }
-
-                for (int i = 0; i < behaviors.size(); i++) {
-                    VisWorld.Buffer vb = vw.getBuffer("test-behavior-"+i);
-                    vb.swap();
-                }
-
-                for (Behavior b: behaviors)
-                    System.out.println(b);
-
-
-                // Show behaviors distribution
-                VisWorld.Buffer vb = vw.getBuffer("test-distribution");
-                vb.setDrawOrder(1000);
-                int counter = 0;
-                for (Behavior b: behaviors) {
-                    Color c = colors.get(counter % colors.size());
-                    counter++;
-                    vb.addBack(b.getVisObject(c));
-                }
-                vb.swap();
-
-                vb = vw.getBuffer("test-distribution-noisy");
-                vb.setDrawOrder(1000);
-                counter = 0;
-                for (Behavior b: behaviors) {
-                    Color c = colors.get(counter % colors.size());
-                    counter++;
-                    vb.addBack(b.getNoisyVis(c));
-                }
-                vb.swap();
             }
+            try {
+                String date = (new SimpleDateFormat("yyMMdd_kkmmss")).format(new Date());
+                String filename = "/tmp/"+date+".m";
+                PrintWriter fout = new PrintWriter(new File(filename));
+
+                fout.printf("lazy = [ ");
+                for (int i: lazyExpansions) {
+                    fout.printf("%d ", i);
+                }
+                fout.printf("];\n");
+
+                fout.printf("full = [ ");
+                for (int i: fullExpansions) {
+                    fout.printf("%d ", i);
+                }
+                fout.printf("];\n");
+
+                fout.printf("time = [ ");
+                for (double d: times) {
+                    fout.printf("%f ", d);
+                }
+                fout.printf("];\n");
+                fout.close();
+                System.out.printf("Done! Wrote to %s\n", filename);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+
+            //try {
+            //    String date = (new SimpleDateFormat("yyMMdd_kkmmss")).format(new Date());
+            //    String filename = "/tmp/"+date+".success";
+            //    PrintWriter fout = new PrintWriter(new File(filename));
+
+            //    fout.printf("r = [ ");
+            //    for (Double d: successRates)
+            //        fout.printf("%f ", d);
+            //    fout.printf("]\n");
+
+            //    fout.printf("d = [ ");
+            //    for (Double d: distances)
+            //        fout.printf("%f ", d);
+            //    fout.printf("]\n");
+
+            //    fout.close();
+            //} catch (IOException ex) {
+            //    ex.printStackTrace();
+            //}
+
+
         }
     }
 
