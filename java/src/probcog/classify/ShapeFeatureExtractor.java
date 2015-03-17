@@ -2,7 +2,9 @@ package probcog.classify;
 
 import java.util.*;
 
+import april.util.TimeUtil;
 import probcog.perception.PointCloud;
+import probcog.util.Util;
 
 public class ShapeFeatureExtractor
 {
@@ -17,7 +19,6 @@ public class ShapeFeatureExtractor
         ArrayList<double[]> flat = PointCloud.flattenXY(canonical);
         ArrayList<double[]> normalized = PointCloud.normalize(flat);
         ArrayList<Double> features = PCA.getFeatures(normalized, 7);
-
        
         return features;
     }

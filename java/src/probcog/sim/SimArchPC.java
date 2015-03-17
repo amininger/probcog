@@ -12,42 +12,40 @@ import april.vis.VisObject;
 import april.vis.VzBox;
 import april.vis.VzMesh;
 import april.vis.VzRectangle;
-
 public class SimArchPC extends SimObjectPC{
 
 	public SimArchPC(SimWorld sw) {
 		super(sw);
+		this.lenxyz = new double[]{3, 2, 1};
 	}
 
 	@Override
 	public Shape getShape() {
-	    Shape leg1 = new BoxShape(LinAlg.scale(new double[]{1, 1, 1}, scale));
-	    Shape leg2 = new BoxShape(LinAlg.scale(new double[]{1, 1, 1}, scale));
-	    Shape top = new BoxShape(LinAlg.scale(new double[]{3, 1, 1}, scale));
-	    return new CompoundShape(LinAlg.translate(new double[]{scale, -scale/2, 0}), leg1,
-	                LinAlg.translate(new double[]{-2*scale, 0, 0}), leg2,
-	                LinAlg.translate(new double[]{scale, scale, 0}), top);
+	    return new CompoundShape(
+	    		LinAlg.scale(scale), 
+	    		LinAlg.translate(1, -0.5, 0), new BoxShape(1, 1, 1), // Left Leg
+	    		LinAlg.translate(-2, 0, 0), new BoxShape(1, 1, 1),   // Right Leg
+	    		LinAlg.translate(1, 1, 0), new BoxShape(3, 1, 1)     // Top Bar
+	    );
 	}
 
 	@Override
 	public VisObject getVisObject() {
 		ArrayList<Object> objs = new ArrayList<Object>();
+		objs.add(LinAlg.scale(scale));
 
         // The right leg of the arch
-        objs.add(new VisChain(LinAlg.scale(scale), LinAlg.translate(1, -.5, 0), 
+        objs.add(new VisChain(LinAlg.translate(1, -.5, 0), 
         		new VzBox(new VzMesh.Style(color))));
         
         // The left leg of the arch
-        objs.add(new VisChain(LinAlg.scale(scale), LinAlg.translate(-1, -.5, 0), 
+        objs.add(new VisChain(LinAlg.translate(-1, -.5, 0), 
         		new VzBox(new VzMesh.Style(color))));
         
         // The larger box making up the top
-        objs.add(new VisChain(LinAlg.scale(scale), LinAlg.translate(0, .5, 0), 
+        objs.add(new VisChain(LinAlg.translate(0, .5, 0), 
         		LinAlg.scale(3, 1, 1), new VzBox(new VzMesh.Style(color))));
 
         return new VisChain(objs.toArray());
 	}
-	
-
-
 }

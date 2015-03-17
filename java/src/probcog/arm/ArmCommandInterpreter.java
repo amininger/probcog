@@ -352,6 +352,14 @@ public class ArmCommandInterpreter
                 }
                 // XXX WHERE IS FLATTEN?
                 ArrayList<double[]> xyPoints = flattenPoints(obj.getPointCloud().getPoints());
+                if (xyPoints.size() == 0){
+                	double[] objpose = obj.getPose();
+                	bcmd.wrist = 0.0;
+                	bcmd.xyz = new double[]{ objpose[0], objpose[1], objpose[2] };
+                	gripWidth = .01;
+                	heldHeight = objpose[2] + 0.002;
+                	return bcmd;
+                }
                 double[] uxy = getMeanXY(xyPoints);
                 bcmd.xyz = LinAlg.resize(uxy, 3);
                 double zMax = getHeight(uxy, obj);

@@ -13,7 +13,10 @@ import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.categorized_data_t;
 import probcog.lcmtypes.category_t;
 import probcog.perception.Obj;
+import probcog.util.BoundingBox;
+import sun.security.util.Length;
 import april.jmat.LinAlg;
+import april.sim.BoxShape;
 import april.sim.Shape;
 import april.sim.SimObject;
 import april.sim.SimWorld;
@@ -23,7 +26,9 @@ import april.vis.VisObject;
 
 public abstract class SimObjectPC implements SimObject, ISimStateful
 {
-	protected double T[][] = LinAlg.identity(4);  // position
+	protected double[] xyzrpy;
+	protected double[] lenxyz;
+
 	protected Color  color = Color.gray;
 	protected double scale = 1.0;
     
@@ -41,6 +46,8 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     	possibleStates = new HashMap<String, String[]>();
     	currentState = new HashMap<String, String>();
     	simClassifications = new HashMap<FeatureCategory, String>();
+    	xyzrpy = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    	lenxyz = new double[]{1.0, 1.0, 1.0};
     	id = -1;
     }
     
@@ -53,12 +60,12 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
 
     public double[][] getPose()
     {
-        return LinAlg.copy(T);
+    	return LinAlg.xyzrpyToMatrix(xyzrpy);
     }
 
     public void setPose(double T[][])
     {
-        this.T = LinAlg.copy(T);
+    	this.xyzrpy = LinAlg.matrixToXyzrpy(T);
     }
     
     public boolean getVisible(){
@@ -67,10 +74,40 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     public void setVisible(boolean visible){
     	this.visible = visible;
     }
-
-    public abstract Shape getShape();
+    
+    public double[] getScaledDims(){
+    	return new double[]{scale * lenxyz[0], scale * lenxyz[1], scale * lenxyz[2]};
+    }
+    
+    public Shape getShape(){
+    	return new BoxShape(scale*lenxyz[0], scale*lenxyz[1], scale*lenxyz[2]);
+    }
 
     public abstract VisObject getVisObject();
+    
+    public Obj getObj()
+    {
+    	if(id == Obj.NULL_ID){
+    		id = Obj.nextID();
+    	}
+        
+    	Obj obj = new Obj(id);
+    	
+    	obj.setPose(xyzrpy);
+    	obj.setCentroid(LinAlg.copy(xyzrpy, 3));
+    	obj.setBoundingBox(new BoundingBox(getScaledDims(), xyzrpy));
+    	
+    	obj.setVisObject(getVisObject());
+    	obj.setShape(getShape());
+    	obj.setSourceSimObject(this);
+        
+        obj.setStates(this.getCurrentState());
+        for(Map.Entry<FeatureCategory, String> e : simClassifications.entrySet()){
+        	obj.setLabel(e.getKey(), e.getValue());
+        }
+
+        return obj;
+    }
 
 
 	@Override
@@ -146,8 +183,7 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     	}
     	
     	// 6 doubles for pose information (XYZRPY)
-        double xyzrpy[] = ins.readDoubles();
-        this.T = LinAlg.xyzrpyToMatrix(xyzrpy);
+        xyzrpy = ins.readDoubles();
         
         // 1 double for scale
         this.scale = ins.readDouble();
@@ -174,7 +210,7 @@ public abstract class SimObjectPC implements SimObject, ISimStateful
     public void write(StructureWriter outs) throws IOException
     {
     	outs.writeInt(id);
-        outs.writeDoubles(LinAlg.matrixToXyzrpy(T));
+        outs.writeDoubles(xyzrpy);
         outs.writeDouble(scale);
         float f[] = color.getRGBComponents(null);
         outs.writeDoubles(LinAlg.copyDoubles(f));

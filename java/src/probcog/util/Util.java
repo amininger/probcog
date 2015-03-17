@@ -3,12 +3,18 @@ package probcog.util;
 import java.util.*;
 
 import april.jmat.*;
+import april.util.TimeUtil;
 import april.vis.VisCameraManager.CameraPosition;
-
 import probcog.sensor.*;
 
 public class Util
 {
+	public static long ticktock(String message, long time){
+	    	long curTime = TimeUtil.utime();
+	    	System.out.println(message + ": " + (curTime - time));
+	    	return curTime;
+	    }
+	 
     /** Give a string of key=token pairs, extract the token
      *  value corresponding to the given key
      **/

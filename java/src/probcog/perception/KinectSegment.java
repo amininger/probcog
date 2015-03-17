@@ -31,7 +31,7 @@ public class KinectSegment implements Segmenter
     final static double MIN_FROM_FLOOR_PLANE = .015; // XXX 0.015
     final static double MIN_OBJECT_SIZE = 100;
     final static double RANSAC_PERCENT = .6;
-    final static int RANSAC_ITERATIONS = 1000;
+    final static int RANSAC_ITERATIONS = 250;
 
     private ArrayList<double[]> points;
     private double[] floorPlane;
@@ -78,10 +78,10 @@ public class KinectSegment implements Segmenter
      ** where the arm is expected to be.
      ** @return list of point clouds for each object segmented in the scene.
      **/
-    public ArrayList<Obj> getSegmentedObjects()
+    public synchronized ArrayList<Obj> getSegmentedObjects()
     {
         if (!kinect.stashFrame())
-            return new ArrayList<Obj>();
+            return null;
 
         width = kinect.getWidth();
         height = kinect.getHeight();
@@ -89,28 +89,16 @@ public class KinectSegment implements Segmenter
         // Get points from camera
         long time = TimeUtil.utime();
         points = kinect.getAllXYZRGB(true);
-        if(Tracker.SHOW_TIMERS){
-        	System.out.println("      TRACING: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        }
         
         // Remove floor and arm points
         removeFloorAndArmPoints();
-        if(Tracker.SHOW_TIMERS){
-        	System.out.println("      REMOVE POINTS: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        }
         
         // Do a union find to do segmentation
         ArrayList<PointCloud> pointClouds = unionFind();
-        if(Tracker.SHOW_TIMERS){
-        	System.out.println("      SEGMENTATION: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        }
         
         ArrayList<Obj> segmentedObjects = new ArrayList<Obj>();
         for(PointCloud pc : pointClouds){
-        	segmentedObjects.add(new Obj(false, pc.removeTopPoints(0.05)));
+        	segmentedObjects.add(new Obj(pc.removeTopPoints(0.05)));
         }
         return segmentedObjects;
     }
@@ -144,6 +132,12 @@ public class KinectSegment implements Segmenter
                inArmRange(p))
             {
                 points.set(i, new double[4]);
+            } else if(p[0] < .1 && p[1] > -.15 && p[1] < .15){
+            	// XXX: HACK: ONLY FOR AAAI DEMO
+                points.set(i, new double[4]);
+            } else if(p[2] > .3){
+            	// XXX: HACK: ONLY FOR AAAI DEMO
+                points.set(i, new double[4]);
             }
         }
         return true;
@@ -151,7 +145,7 @@ public class KinectSegment implements Segmenter
 
     /** union find- for each pixel, compare with pixels around it and merge if
      ** they are close enough. **/
-    public ArrayList<PointCloud> unionFind()
+    private ArrayList<PointCloud> unionFind()
     {
         ArrayList<PointCloud> objects = new ArrayList<PointCloud>();
 
@@ -211,46 +205,46 @@ public class KinectSegment implements Segmenter
         	i++;
         }
         
-//        for(i = 0; i < clouds.size(); i++){
-//        	PointCloud c1 = clouds.get(i);
-//        	BoundingBox bbox1 = boxes.get(i);
-//        	for(int j = i+1; j < clouds.size(); j++){
-//        		BoundingBox bbox2 = boxes.get(j);
-//        		PointCloud c2 = clouds.get(j);
-//        		if(BoundingBox.intersects(bbox1, bbox2, 1.1)){
-//        			double[] hsv1 = ColorFeatureExtractor.avgHSV(c1.getPoints());
-//        			double[] hsv2 = ColorFeatureExtractor.avgHSV(c2.getPoints());
-//        			boolean merge = false;
-//        			if(hsv1[0] > .8 && hsv2[0] > .8){
-//        				merge = true;
-//        			} else if(hsv1[0] <= .8 && hsv2[0] <= .8 && hsv1[0] > .65 && hsv2[0] > .65){
-//        				merge = true;
-//        			} else if(hsv1[0] <= .65 && hsv2[0] <= .65 && hsv1[0] > .54 && hsv2[0] > .54){
-//        				merge = true;
-//        			} else if(hsv1[0] <= .54 && hsv2[0] <= .54 && hsv1[0] > .48 && hsv2[0] > .48){
-//        				merge = true;
-//        			} else if(hsv1[0] <= .48 && hsv2[0] <= .48 && hsv1[0] > .2 && hsv2[0] > .2){
-//        				merge = true;
-//        			} else if(hsv1[0] <= .2 && hsv2[0] <= .2){
-//        				merge = true;
-//        			}
-//        			if(merge){
-////        				System.out.println("Merging " + i + " and " + j);
-//        				int newSet = mappings.get(i);
-//        				int oldSet = mappings.get(j);
-//        				HashSet<Integer> setToMerge = new HashSet<Integer>();
-//        				for(Map.Entry<Integer, Integer> e : mappings.entrySet()){
-//        					if(e.getValue() == oldSet){
-//        						setToMerge.add(e.getKey());
-//        					}
-//        				}
-//        				for(Integer pcId : setToMerge){
-//        					mappings.put(pcId, newSet);
-//        				}
-//        			}
-//        		}
-//        	}
-//        }
+        for(i = 0; i < clouds.size(); i++){
+        	PointCloud c1 = clouds.get(i);
+        	BoundingBox bbox1 = boxes.get(i);
+        	for(int j = i+1; j < clouds.size(); j++){
+        		BoundingBox bbox2 = boxes.get(j);
+        		PointCloud c2 = clouds.get(j);
+        		if(BoundingBox.intersects(bbox1, bbox2, 1.1)){
+        			double[] hsv1 = ColorFeatureExtractor.avgHSV(c1.getPoints());
+        			double[] hsv2 = ColorFeatureExtractor.avgHSV(c2.getPoints());
+        			boolean merge = false;
+        			if(hsv1[0] > .8 && hsv2[0] > .8){
+        				merge = true;
+        			} else if(hsv1[0] <= .8 && hsv2[0] <= .8 && hsv1[0] > .65 && hsv2[0] > .65){
+        				merge = true;
+        			} else if(hsv1[0] <= .65 && hsv2[0] <= .65 && hsv1[0] > .54 && hsv2[0] > .54){
+        				merge = true;
+        			} else if(hsv1[0] <= .54 && hsv2[0] <= .54 && hsv1[0] > .48 && hsv2[0] > .48){
+        				merge = true;
+        			} else if(hsv1[0] <= .48 && hsv2[0] <= .48 && hsv1[0] > .2 && hsv2[0] > .2){
+        				merge = true;
+        			} else if(hsv1[0] <= .2 && hsv2[0] <= .2){
+        				merge = true;
+        			}
+        			if(merge){
+//        				System.out.println("Merging " + i + " and " + j);
+        				int newSet = mappings.get(i);
+        				int oldSet = mappings.get(j);
+        				HashSet<Integer> setToMerge = new HashSet<Integer>();
+        				for(Map.Entry<Integer, Integer> e : mappings.entrySet()){
+        					if(e.getValue() == oldSet){
+        						setToMerge.add(e.getKey());
+        					}
+        				}
+        				for(Integer pcId : setToMerge){
+        					mappings.put(pcId, newSet);
+        				}
+        			}
+        		}
+        	}
+        }
         
         HashMap<Integer, PointCloud> mergedClouds = new HashMap<Integer, PointCloud>();
         for(Map.Entry<Integer, Integer> e : mappings.entrySet()){

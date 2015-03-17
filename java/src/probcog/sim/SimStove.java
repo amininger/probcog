@@ -2,8 +2,9 @@ package probcog.sim;
 
 import java.io.IOException;
 
+import probcog.classify.WeightFeatureExtractor;
+import probcog.classify.Features.FeatureCategory;
 import probcog.perception.Obj;
-
 import april.jmat.LinAlg;
 import april.sim.SimWorld;
 import april.util.StructureReader;
@@ -17,7 +18,7 @@ public class SimStove extends SimLocation implements ISimEffector{
 	@Override
 	public void checkObject(Obj obj){
 		SimObjectPC simObj = obj.getSourceSimObjectPC();
-		if(simObj == null || !(simObj instanceof ISimStateful)){
+		if(simObj == null || simObj instanceof SimLocation || !(simObj instanceof ISimStateful)){
 			return;
 		}
 
@@ -29,11 +30,12 @@ public class SimStove extends SimLocation implements ISimEffector{
 		if(!currentState.containsKey("heat") || !currentState.get("heat").equals("on")){
 			return;
 		}
-		
-		double[] diff = LinAlg.subtract(LinAlg.matrixToXyzrpy(T), LinAlg.matrixToXyzrpy(simObj.getPose()));
+
+		double[] diff = LinAlg.subtract(xyzrpy, obj.getPose());
 		double dx = Math.abs(diff[0]);
 		double dy = Math.abs(diff[1]);
-		if(dx < lwh[0]/2 * scale && dy < lwh[1]/2 * scale){
+		double[] dims = getScaledDims();
+		if(dx < dims[0]/2 && dy < dims[1]/2){
 			// Center of object is over the stove, cook it!
 			((ISimStateful)simObj).setState("cooking", "true");
 		}

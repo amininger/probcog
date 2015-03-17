@@ -17,6 +17,7 @@ public class SimSpherePC extends SimObjectPC{
 
 	public SimSpherePC(SimWorld sw) {
 		super(sw);
+		this.lenxyz = new double[]{ 2.0, 2.0, 2.0 };
 	}
 
 	@Override
