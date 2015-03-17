@@ -1564,7 +1564,7 @@ public class PlanningGUI extends JFrame implements LCMSubscriber
     {
         GetOpt opts = new GetOpt();
         opts.addBoolean('h', "help", false, "Show this help screen");
-        opts.addString('c', "config", null, "Global configuration file");
+        //opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
         opts.addInt('n', "num-trials", 100, "Number of trials");
         opts.addBoolean('\0', "vis", false, "Use vis");

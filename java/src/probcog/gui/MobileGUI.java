@@ -67,7 +67,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLayout(new BorderLayout());
 
-
         vw = new VisWorld();
         vl = new VisLayer(vw);
         vc = new VisCanvas(vl);
@@ -459,7 +458,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         GetOpt opts = new GetOpt();
 
         opts.addBoolean('h', "help", false, "Show this help screen");
-        opts.addString('c', "config", null, "Global configuration file");
+        //opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
         opts.addString('g', "graph", null, "Graph file");
         opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
