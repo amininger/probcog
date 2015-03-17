@@ -317,7 +317,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             laser.rad0 = (float) rad0;
             laser.radstep = (float) radstep;
 
-            lcm.publish("LASER", laser);
+            lcm.publish(Util.getConfig().getString("robot.lcm.laser_channel", "LASER"), laser);
         }
     }
 

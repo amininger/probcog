@@ -11,6 +11,7 @@ import april.util.*;
 
 import probcog.commands.*;
 import probcog.lcmtypes.*;
+import probcog.util.*;
 
 /** Given a heading (yaw) to follow relative to the global coordinate frame, try
  *  to drive the robot in that direction, avoiding obstacles along the way.
@@ -23,6 +24,12 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
     private static final double MAX_THETA = Math.PI/2;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double K_d = 0.05;
+
+    LCM lcm = LCM.getSingleton();
+    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
+    String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
+    String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
+
 
     double targetHeading = 0;
     double distance = 0.75;   // default distance to be away from wall
@@ -81,7 +88,7 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
                 dd = drive(params);
 
             assert (!(Double.isNaN(dd.left) || Double.isNaN(dd.right)));
-            LCM.getSingleton().publish("DIFF_DRIVE", dd);
+            lcm.publish(driveChannel, dd);
         }
 
     }
@@ -206,8 +213,8 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
             distance = Math.abs(parameters.get("distance").getDouble());
         }
 
-        LCM.getSingleton().subscribe("POSE", this);
-        LCM.getSingleton().subscribe("HOKUYO_LIDAR", this);
+        lcm.subscribe(poseChannel, this);
+        lcm.subscribe(laserChannel, this);
         tasks.addFixedDelay(new UpdateTask(), 1.0/FH_HZ);
     }
 
@@ -223,10 +230,10 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if ("HOKUYO_LIDAR".equals(channel)) {
+        if (laserChannel.equals(channel)) {
             laser_t laser = new laser_t(ins);
             laserCache.put(laser, laser.utime);
-        } else if ("POSE".equals(channel)) {
+        } else if (poseChannel.equals(channel)) {
             pose_t pose = new pose_t(ins);
             poseCache.put(pose, pose.utime);
         }

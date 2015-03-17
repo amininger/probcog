@@ -19,6 +19,7 @@ import april.vis.*;
 
 import probcog.commands.*;
 import probcog.lcmtypes.*;
+import probcog.util.*;
 
 // TODO: Add orientation stuff if needed
 public class FollowHall implements ControlLaw, LCMSubscriber
@@ -39,6 +40,12 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     private static final double MAX_R_THETA = Math.PI/2;
     private static final double WALL_RIGHT_CEIL= 3.0;
     private static final double WALL_LEFT_CEIL = 3.0;
+
+    LCM lcm = LCM.getSingleton();
+    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
+    String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
+    String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
+
 
     PeriodicTasks tasks = new PeriodicTasks(1);
     ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
@@ -75,7 +82,7 @@ public class FollowHall implements ControlLaw, LCMSubscriber
             params.pose = pose;
             params.dt = dt;
             diff_drive_t dd = drive(params);
-            LCM.getSingleton().publish("DIFF_DRIVE", dd);
+            lcm.publish(driveChannel, dd);
         }
 
     }
@@ -216,8 +223,8 @@ public class FollowHall implements ControlLaw, LCMSubscriber
 
         tasks.addFixedDelay(new UpdateTask(), 1.0/FH_HZ);
 
-        LCM.getSingleton().subscribe("HOKUYO_LIDAR", this);
-        LCM.getSingleton().subscribe("POSE", this);
+        lcm.subscribe(laserChannel, this);
+        lcm.subscribe(poseChannel, this);
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -232,10 +239,10 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if ("HOKUYO_LIDAR".equals(channel)) {
+        if (laserChannel.equals(channel)) {
             laser_t laser = new laser_t(ins);
             laserCache.put(laser, laser.utime);
-        } else if ("POSE".equals(channel)) {
+        } else if (poseChannel.equals(channel)) {
             pose_t pose = new pose_t(ins);
             poseCache.put(pose, pose.utime);
         }

@@ -29,6 +29,11 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double MAX_V = 0.6;
     private static final double MIN_V = 0.4;
 
+    LCM lcm = LCM.getSingleton();
+    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
+    String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
+    String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
+
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
         new ExpiringMessageCache<laser_t>(.2);
@@ -118,7 +123,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             dd = drive(params);
         }
 
-        LCM.getSingleton().publish("DIFF_DRIVE", dd);
+        lcm.publish(driveChannel, dd);
     }
 
     private diff_drive_t orient(pose_t pose, double heading)
@@ -274,8 +279,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("heading"))
             targetHeading = parameters.get("heading").getDouble();
 
-        LCM.getSingleton().subscribe("HOKUYO_LIDAR", this);
-        LCM.getSingleton().subscribe("POSE", this);
+        lcm.subscribe(laserChannel, this);
+        lcm.subscribe(poseChannel, this);
         tasks.addFixedDelay(new UpdateTask(), 1.0/FW_HZ);
     }
 
@@ -307,10 +312,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if ("HOKUYO_LIDAR".equals(channel)) {
+        if (laserChannel.equals(channel)) {
             laser_t laser = new laser_t(ins);
             laserCache.put(laser, laser.utime);
-        } else if ("POSE".equals(channel)) {
+        } else if (poseChannel.equals(channel)) {
             pose_t pose = new pose_t(ins);
             poseCache.put(pose, pose.utime);
         }

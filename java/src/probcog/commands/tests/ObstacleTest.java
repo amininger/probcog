@@ -10,6 +10,7 @@ import april.util.*;
 import april.lcmtypes.*;
 
 import probcog.commands.*;
+import probcog.util.*;
 
 /** A condition test that fails when the robot is sufficiently close to running
  *  into an obstacle. This is a last-ditch safety tool, typically, though could
@@ -18,6 +19,7 @@ import probcog.commands.*;
 public class ObstacleTest implements ConditionTest, LCMSubscriber
 {
     LCM lcm = LCM.getSingleton();
+    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
 
     // Stay at least half a meter away from things directly ahead of you
     double hazardDistance = 0.5;
@@ -32,7 +34,7 @@ public class ObstacleTest implements ConditionTest, LCMSubscriber
         if (parameters.containsKey("distance"))
             hazardDistance = parameters.get("distance").getDouble();
 
-        lcm.subscribe("LASER", this);
+        lcm.subscribe(laserChannel, this);
     }
 
     public ConditionTest copyCondition()
@@ -71,7 +73,7 @@ public class ObstacleTest implements ConditionTest, LCMSubscriber
             if (danger)
                 return;
 
-            if ("LASER".equals(channel)) {
+            if (laserChannel.equals(channel)) {
                 laser_t laser = new laser_t(ins);
                 double[] xAxis = new double[] {1.0, 0};
                 double[] yAxis = new double[] {0, 1.0};
