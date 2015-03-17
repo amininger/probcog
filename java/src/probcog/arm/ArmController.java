@@ -9,8 +9,10 @@ import april.config.*;
 import april.jmat.*;
 import april.util.*;
 
-import probcog.lcmtypes.*;
 import probcog.util.*;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 /** Receives as input commands from user interface. These
  *  high level commands are converted into scripted arm

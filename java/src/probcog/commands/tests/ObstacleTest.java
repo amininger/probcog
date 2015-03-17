@@ -7,10 +7,11 @@ import lcm.lcm.*;
 
 import april.jmat.*;
 import april.util.*;
-import april.lcmtypes.*;
 
 import probcog.commands.*;
 import probcog.util.*;
+
+import magic2.lcmtypes.*;
 
 /** A condition test that fails when the robot is sufficiently close to running
  *  into an obstacle. This is a last-ditch safety tool, typically, though could

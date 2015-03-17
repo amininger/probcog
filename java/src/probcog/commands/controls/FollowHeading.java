@@ -6,12 +6,13 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
-import april.lcmtypes.*;
 import april.util.*;
 
 import probcog.commands.*;
-import probcog.lcmtypes.*;
 import probcog.util.*;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 /** Given a heading (yaw) to follow relative to the global coordinate frame, try
  *  to drive the robot in that direction, avoiding obstacles along the way.

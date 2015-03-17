@@ -5,12 +5,13 @@ import java.util.*;
 
 import lcm.lcm.*;
 
-import april.lcmtypes.*;
 import april.util.*;
 import april.jmat.*;
 
-import probcog.lcmtypes.*;
 import probcog.commands.*;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class Turn implements ControlLaw, LCMSubscriber
 {

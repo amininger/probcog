@@ -9,16 +9,17 @@ import april.jmat.*;
 import april.sim.*;
 import april.vis.*;
 import april.util.*;
-import april.lcmtypes.*;
 
 import probcog.vis.*;
-import probcog.lcmtypes.*;
 import probcog.classify.*;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
 import probcog.util.*;
 import probcog.navigation.*;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class MonteCarloBot implements SimObject
 {
@@ -206,7 +207,7 @@ public class MonteCarloBot implements SimObject
             DriveParams params = new DriveParams();
             params.dt = FastDrive.DT;
             params.laser = laser;
-            params.pose = drive.poseOdom; // XXX
+            params.pose = LCMUtil.a2mPose(drive.poseOdom); // XXX
 
             diff_drive_t dd = new diff_drive_t();
             dd.utime = TimeUtil.utime();
@@ -245,7 +246,7 @@ public class MonteCarloBot implements SimObject
             // Update condition test, if necessary
             if (test instanceof Stabilized) {
                 Stabilized stable = (Stabilized)test;
-                pose_t stable_pose = drive.poseTruth.copy();
+                pose_t stable_pose = LCMUtil.a2mPose(drive.poseTruth);
                 stable_pose.utime = currentUtime;
                 stable.update(stable_pose);
             }

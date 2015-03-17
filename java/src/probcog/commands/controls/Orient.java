@@ -5,12 +5,13 @@ import java.util.*;
 
 import lcm.lcm.*;
 
-import april.lcmtypes.*;    // XXX
 import april.util.*;
 import april.jmat.*;
 
 import probcog.commands.*;
-import probcog.lcmtypes.*;  // XXX
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 /** Orient the robot to face along a particular heading. Automatically turns
  *  the most efficient direction.

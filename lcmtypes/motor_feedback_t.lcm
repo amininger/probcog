@@ -1,9 +1,0 @@
-struct motor_feedback_t
-{
-	int64_t utime;
-
-    int16_t nmotors;
-    int32_t encoders[nmotors];
-    double  current[nmotors];
-    double  applied_voltage[nmotors];
-}

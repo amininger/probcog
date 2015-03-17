@@ -10,8 +10,10 @@ import april.sim.*;
 import april.util.*;
 
 // import probcog.sim.*;
-import probcog.lcmtypes.*;
 import probcog.sim.SimObjectPC;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 /** Simulates the movements of the robotic arm through the environment based
  *  on observed arm commands. Produces arm_status_t messages on the designated
@@ -247,13 +249,13 @@ public class SimArm implements LCMSubscriber
                         double[][] currPose = arm.getGripperPose();
 
                         double[][] objPose = LinAlg.matrixAB(currPose, deltaGrabbed);
-                        
+
                         // XXX: AM: Hack so sim objects don't get rotated except along yaw
                         double[] xyzrpy = LinAlg.matrixToXyzrpy(objPose);
                         xyzrpy[3] = 0;
                         xyzrpy[4] = 0;
                         grabbed.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
-                        
+
                         // XXX: AM: Hack so that grabbed objects aren't viewed (only in perfect segmentation)
                         if(grabbed instanceof SimObjectPC){
                         	((SimObjectPC)grabbed).setVisible(false);

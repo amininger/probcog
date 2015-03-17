@@ -6,11 +6,12 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
-import april.lcmtypes.*;
 import april.util.*;
 
 import probcog.commands.*;
+
 import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 {

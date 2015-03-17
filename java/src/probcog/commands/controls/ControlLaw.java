@@ -4,7 +4,7 @@ import java.util.*;
 
 import probcog.commands.*;
 
-import probcog.lcmtypes.*;  // XXX
+import magic2.lcmtypes.*;
 
 public interface ControlLaw
 {

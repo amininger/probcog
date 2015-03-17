@@ -1,7 +1,7 @@
 package probcog.commands.controls;
 
-import april.lcmtypes.*;
 import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 /** A container class holding possible inputs to a control law.
  *  It is expected that these will be a fairly small subset of

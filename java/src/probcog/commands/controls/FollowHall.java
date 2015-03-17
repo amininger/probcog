@@ -13,13 +13,14 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
-import april.lcmtypes.*;
 import april.util.*;
 import april.vis.*;
 
 import probcog.commands.*;
-import probcog.lcmtypes.*;
 import probcog.util.*;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 // TODO: Add orientation stuff if needed
 public class FollowHall implements ControlLaw, LCMSubscriber

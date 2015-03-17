@@ -7,6 +7,8 @@ import april.util.*;
 import probcog.commands.*;
 import probcog.lcmtypes.*;
 
+// XXX IS this broken when not executed immediately? It would seem so, since
+// elapsed is initialized on creation.
 public class TimeoutTest implements ConditionTest
 {
     double timeout;

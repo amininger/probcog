@@ -5,12 +5,13 @@ import java.util.*;
 
 import lcm.lcm.*;
 
-import april.lcmtypes.pose_t;
 import april.jmat.*;
 import april.util.*;
 
-import probcog.lcmtypes.*;
 import probcog.commands.*;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class RotationTest implements ConditionTest, LCMSubscriber
 {

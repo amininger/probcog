@@ -18,15 +18,16 @@ import april.vis.*;
 import april.lcm.*;
 import april.util.*;
 import april.sim.*;
-import april.lcmtypes.*;
 
 import probcog.classify.*;
 import probcog.commands.CommandInterpreter;
-import probcog.lcmtypes.*;
 import probcog.util.*;
 import probcog.vis.*;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class SimRobot implements SimObject, LCMSubscriber
 {
@@ -519,9 +520,9 @@ public class SimRobot implements SimObject, LCMSubscriber
         {
             pose_t pose;
             if (useNoise) {
-                pose = drive.poseOdom;
+                pose = LCMUtil.a2mPose(drive.poseOdom);
             } else {
-                pose = drive.poseTruth;
+                pose = LCMUtil.a2mPose(drive.poseTruth);
             }
             //lcm.publish("POSE", pose);
             lcm.publish("POSE", drive.poseOdom);

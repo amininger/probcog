@@ -6,12 +6,13 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
-import april.lcmtypes.*;
 import april.util.*;
 
-import probcog.lcmtypes.*;
 import probcog.commands.*;
 import probcog.util.*;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 /** A not-very-principaled wall follower. Should be revisited later. Note:
  *  when it reaches a wall in front of it that forces a turn, the follower

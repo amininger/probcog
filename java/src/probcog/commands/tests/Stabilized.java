@@ -7,10 +7,11 @@ import lcm.lcm.*;
 
 import april.jmat.*;
 import april.util.*;
-import april.lcmtypes.*;    // XXX
 
 import probcog.commands.*;
-import probcog.lcmtypes.*;  // XXX
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 /** Detects whether or not a system has basically ceased moving. In
  *  other words, it has "stabilized." For now, no parameters, just

@@ -8,7 +8,9 @@ import lcm.lcm.*;
 import april.jmat.*;
 
 import probcog.commands.*;
+
 import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class NearTag implements ConditionTest, LCMSubscriber
 {

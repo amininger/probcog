@@ -6,7 +6,7 @@ import april.jmat.*;
 import april.jmat.geom.*;
 import april.util.*;
 
-import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class PathControl
 {

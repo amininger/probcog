@@ -7,13 +7,13 @@ import lcm.lcm.*;
 
 import april.jmat.*;
 import april.jmat.geom.*;
-import april.lcmtypes.pose_t;
 import april.util.*;
 
-import probcog.lcmtypes.*;
 import probcog.commands.*;
 import probcog.robot.control.*;
 import probcog.util.*;
+
+import magic2.lcmtypes.*;
 
 // XXX Temporary port to new control law implementation. This is just a water-
 // through-the-pipes implementation.
