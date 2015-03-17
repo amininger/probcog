@@ -7,10 +7,15 @@ import april.jmat.geom.*;
 import april.util.*;
 
 import probcog.lcmtypes.*;
-import probcog.robot.robot.RobotDriver;
 
 public class PathControl
 {
+    // Ported from RobotDriver
+    public final static int LEFT = 0;
+    public final static int RIGHT = 1;
+
+    public final static double BASELINE_METERS = 0.46;  // Should be in config
+
     static diff_drive_t last_drive = new diff_drive_t();
 
     // Get diff drive command to drive the CENTER of the robot along path
@@ -131,8 +136,8 @@ public class PathControl
 
         double[] drive = getKProp(cur_pos, lookaheadPoint, params, combinedSpeedLimit, dt);
 
-        diff_drive.left  = drive[RobotDriver.LEFT];
-        diff_drive.right = drive[RobotDriver.RIGHT];
+        diff_drive.left  = drive[LEFT];
+        diff_drive.right = drive[RIGHT];
         last_drive = diff_drive;
         return diff_drive;
     }
@@ -174,8 +179,8 @@ public class PathControl
             maxSpeed = Math.min(maxSpeed, .4);
         }
 
-        double targetSpeeds[] = {speed - turn*RobotDriver.BASELINE_METERS,  // LEFT
-                                 speed + turn*RobotDriver.BASELINE_METERS}; // RIGHT
+        double targetSpeeds[] = {speed - turn*BASELINE_METERS,  // LEFT
+                                 speed + turn*BASELINE_METERS}; // RIGHT
 
         // Compute a norm [1,infty) to make sure we aren't exceeding a speed limit
         double norm = MathUtil.clamp(LinAlg.max(LinAlg.abs(targetSpeeds)),
