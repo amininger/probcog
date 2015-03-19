@@ -13,7 +13,9 @@ import april.util.*;
 import april.vis.*;
 
 import probcog.gui.*;
+
 import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 /** Move the arm to a preset number of positions, measuring
  *  the actual assumed position after each command is finished.

@@ -5,7 +5,10 @@ import java.util.*;
 import april.util.*;
 
 import probcog.commands.*;
+import probcog.lcmtypes.*;
 
+// XXX IS this broken when not executed immediately? It would seem so, since
+// elapsed is initialized on creation.
 public class TimeoutTest implements ConditionTest
 {
     double timeout;
@@ -44,5 +47,31 @@ public class TimeoutTest implements ConditionTest
                                       true)); // Timeout [s]
 
         return params;
+    }
+
+    public ConditionTest copyCondition()
+    {
+        TimeoutTest tt = new TimeoutTest();
+        tt.timeout = timeout;
+        tt.elapsed = new Tic();
+
+        return tt;
+    }
+
+    public condition_test_t getLCM()
+    {
+        condition_test_t ct = new condition_test_t();
+        ct.name = "timeout";
+        ct.num_params = 1;
+        ct.param_names = new String[ct.num_params];
+        ct.param_values = new typed_value_t[ct.num_params];
+        ct.param_names[0] = "timeout";
+        ct.param_values[0] = new TypedValue(timeout).toLCM();
+
+        // Not used
+        ct.compare_type = condition_test_t.CMP_GT;
+        ct.compared_value = new TypedValue(0).toLCM();
+
+        return ct;
     }
 }

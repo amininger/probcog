@@ -7,13 +7,13 @@ import lcm.lcm.*;
 
 import april.jmat.*;
 import april.jmat.geom.*;
-import april.lcmtypes.pose_t;
 import april.util.*;
 
-import probcog.lcmtypes.*;
 import probcog.commands.*;
 import probcog.robot.control.*;
 import probcog.util.*;
+
+import magic2.lcmtypes.*;
 
 // XXX Temporary port to new control law implementation. This is just a water-
 // through-the-pipes implementation.
@@ -21,6 +21,10 @@ public class DriveForward implements ControlLaw, LCMSubscriber
 {
     static final int DB_HZ = 100;
     static final double VERY_FAR = 3671000;     // Earth's radius [m]
+
+    Params storedParams = Params.makeParams();
+    //GLineSegment2D path;
+    ArrayList<double[]> path = null;
 
     // XXX This needs to change
     double centerOffsetX_m = Util.getConfig().requireDouble("robot.geometry.centerOffsetX_m");
@@ -32,9 +36,6 @@ public class DriveForward implements ControlLaw, LCMSubscriber
 
     private class DriveTask implements PeriodicTasks.Task
     {
-        //GLineSegment2D path;
-        ArrayList<double[]> path = null;
-        Params storedParams = Params.makeParams();
 
         public DriveTask()
         {
@@ -46,43 +47,66 @@ public class DriveForward implements ControlLaw, LCMSubscriber
         // should result in approximately straight forward driving for now.
         public void run(double dt)
         {
-            // Non-blocking initialization
-            if (path == null) {
-                pose_t initialPose = poseCache.get();
-                if (initialPose == null)
-                    return;
-
-                double[] rpy = LinAlg.quatToRollPitchYaw(initialPose.orientation);
-                double goalX = VERY_FAR*Math.cos(rpy[2]);
-                double goalY = VERY_FAR*Math.sin(rpy[2]);
-
-                double[] start2D = LinAlg.resize(initialPose.pos, 2);
-                double[] goal2D = new double[] {start2D[0]+goalX,
-                                                start2D[1]+goalY};
-
-                //path = new GLineSegment2D(start2D, goal2D); // XXX - update?
-                path = new ArrayList<double[]>();
-                path.add(start2D);
-                path.add(goal2D);
-            }
-
             // Get the most recent position
-            pose_t pose = poseCache.get();
-            if(pose == null)
-                return;
-            double offset[] = LinAlg.matrixAB(LinAlg.quatToMatrix(pose.orientation),
-                                               new double[] {centerOffsetX_m, 0 , 0, 1});
-            double center_pos[] = new double[]{pose.pos[0] + offset[0],
-                                               pose.pos[1] + offset[1] };
+            DriveParams params = new DriveParams();
+            params.pose = poseCache.get();
+            params.dt = dt;
+            diff_drive_t dd = drive(params);
 
-            // Create and publish controls used by RobotDriver
-            diff_drive_t dd = PathControl.getDiffDrive(center_pos,
-                                                       pose.orientation,
-                                                       path,
-                                                       storedParams,
-                                                       1.0);
             publishDiff(dd);
         }
+    }
+
+    private void init(pose_t initialPose)
+    {
+        if (initialPose == null)
+            return;
+
+        double[] rpy = LinAlg.quatToRollPitchYaw(initialPose.orientation);
+        double goalX = VERY_FAR*Math.cos(rpy[2]);
+        double goalY = VERY_FAR*Math.sin(rpy[2]);
+
+        double[] start2D = LinAlg.resize(initialPose.pos, 2);
+        double[] goal2D = new double[] {start2D[0]+goalX,
+            start2D[1]+goalY};
+
+        //path = new GLineSegment2D(start2D, goal2D); // XXX - update?
+        path = new ArrayList<double[]>();
+        path.add(start2D);
+        path.add(goal2D);
+    }
+
+    public diff_drive_t drive(DriveParams params)
+    {
+        pose_t pose = params.pose;
+        double dt = params.dt;
+
+        if (path == null)
+            init(pose);
+
+        diff_drive_t dd = new diff_drive_t();
+        dd.left_enabled = true;
+        dd.right_enabled = true;
+        dd.left = 0;
+        dd.right = 0;
+
+        // Get the most recent position
+        if(pose == null)
+            return dd;
+        double offset[] = LinAlg.matrixAB(LinAlg.quatToMatrix(pose.orientation),
+                                          new double[] {centerOffsetX_m, 0 , 0, 1});
+        double center_pos[] = new double[]{pose.pos[0] + offset[0],
+            pose.pos[1] + offset[1] };
+
+        // Create and publish controls used by RobotDriver
+        dd = PathControl.getDiffDrive(center_pos,
+                                      pose.orientation,
+                                      path,
+                                      storedParams,
+                                      1.0,
+                                      dt);
+
+        return dd;
     }
 
     /** Strictly for creating instances for parameter checks */

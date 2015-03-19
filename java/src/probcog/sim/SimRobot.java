@@ -18,16 +18,16 @@ import april.vis.*;
 import april.lcm.*;
 import april.util.*;
 import april.sim.*;
-import april.lcmtypes.*;
 
-import probcog.classify.TagClassifier;
+import probcog.classify.*;
 import probcog.commands.CommandInterpreter;
-import probcog.lcmtypes.*;
 import probcog.util.*;
 import probcog.vis.*;
-import probcog.perception.ObstacleMap;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
+
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class SimRobot implements SimObject, LCMSubscriber
 {
@@ -42,6 +42,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     boolean drawSensor;
     int robotID;
 
+    TagHistory tagHistory = new TagHistory();
     LCM lcm = LCM.getSingleton();
 
     CompoundShape shape;
@@ -76,8 +77,31 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         CommandInterpreter ci = new CommandInterpreter();
 
+        // Reproduce this in monte-carlo bot
         drive = new DifferentialDrive(sw, this, new double[3]);
-        drive.centerOfRotation = new double[] { 0.13, 0, 0 };
+        drive.centerOfRotation = new double[] { 0.23, 0, 0 };
+        drive.voltageScale = 24.0;
+        drive.wheelDiameter = 0.25;
+        drive.baseline = 0.46;  // As measured to wheel centers
+        drive.translation_noise = 0.1;
+        drive.rotation_noise = 0.05;
+
+        // Motor setup
+        double K_t = 0.7914*2.5;    // torque constant in [Nm / A] * multiplier to speed us up
+        drive.leftMotor.torque_constant = K_t;
+        drive.rightMotor.torque_constant = K_t;
+        double K_emf = 1.406; // emf constant [V/(rad/s)]
+        drive.leftMotor.emf_constant = K_emf;
+        drive.rightMotor.emf_constant = K_emf;
+        double K_wr = 5.5;  // XXX Old winding resistance [ohms]
+        drive.leftMotor.winding_resistance = K_wr;
+        drive.rightMotor.winding_resistance = K_wr;
+        double K_inertia = 0.5; // XXX Hand-picked inertia [kg m^2]
+        drive.leftMotor.inertia = K_inertia;
+        drive.rightMotor.inertia = K_inertia;
+        double K_drag = 2.0;    // XXX Hand-picked drag [Nm / (rad/s)], always >= 0
+        drive.leftMotor.drag_constant = K_drag;
+        drive.rightMotor.drag_constant = K_drag;
 
         lcm.subscribe("GAMEPAD", this);
         lcm.subscribe("DIFF_DRIVE", this);
@@ -171,6 +195,45 @@ public class SimRobot implements SimObject, LCMSubscriber
                                       drive.poseTruth.pos);
     }
 
+    public double[][] getNoisyPose(double[] L2G)
+    {
+        double[][] M = LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
+                                              drive.poseOdom.pos);
+        if (L2G == null)
+            return M;
+
+        double[] M_xyt = LinAlg.matrixToXYT(M);
+        M_xyt = LinAlg.xytMultiply(L2G, M_xyt);
+        return LinAlg.xytToMatrix(M_xyt);
+    }
+
+    /* Get a transformation that will convert the current local pose into the
+     * current global pose. Returns an XYT
+     */
+    public double[] getL2G()
+    {
+        double[] gxyt = LinAlg.matrixToXYT(getPose());
+        double[] lxyt = LinAlg.matrixToXYT(getNoisyPose(null));
+        double[] L2G = new double[3];
+
+        // L2G * lxyt = gxyt
+        // c = cos(L2G[2])
+        // s = sin(L2G[2])
+        // gxyt[0] = c*lxyt[0] - s*lxyt[1] + L2G[0];
+        // gxyt[1] = s*lxyt[0] + c*lxyt[1] + L2G[1];
+        // gxyt[2] = lxyt[2] + L2G[2];
+
+        // Angle is easy to compute
+        L2G[2] = gxyt[2] - lxyt[2];
+        double s = Math.sin(L2G[2]);
+        double c = Math.cos(L2G[2]);
+
+        L2G[0] = gxyt[0] - c*lxyt[0] + s*lxyt[1];
+        L2G[1] = gxyt[1] - s*lxyt[0] - c*lxyt[1];
+
+        return L2G;
+    }
+
     public void setPose(double T[][])
     {
         drive.poseTruth.orientation = LinAlg.matrixToQuat(T);
@@ -255,7 +318,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             laser.rad0 = (float) rad0;
             laser.radstep = (float) radstep;
 
-            lcm.publish("LASER", laser);
+            lcm.publish(Util.getConfig().getString("robot.lcm.laser_channel", "LASER"), laser);
         }
     }
 
@@ -285,8 +348,8 @@ public class SimRobot implements SimObject, LCMSubscriber
             for(SimObject so : sw.objects) {
                 detectDoor(so, xyzrpyBot);
                 detectHallway(so, xyzrpyBot);
-                detectApriltag(so, xyzrpyBot);
             }
+            detectApriltags(sw.objects, xyzrpyBot);
         }
 
         private void detectDoor(SimObject so, double[] xyzrpyBot)
@@ -378,26 +441,51 @@ public class SimRobot implements SimObject, LCMSubscriber
             lcm.publish("CLASSIFICATIONS", classy_list);
         }
 
-        private void detectApriltag(SimObject so, double[] xyzrpyBot)
+        private void detectApriltags(Collection<SimObject> sos, double[] xyzrpyBot)
         {
-            if (!(so instanceof SimAprilTag))
-                return;
-            SimAprilTag tag = (SimAprilTag)so;
-            double sensingThreshold = 2.0;
-
-            double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
-            double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
-            if (dist > sensingThreshold)
-                return;
-
-            // Position relative to robot. For now, tossing away orientation data,
-            // but may be relevant later.
-            double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
-
-            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy);
+            ArrayList<classification_t> classies = new ArrayList<classification_t>();
+            classification_t empty_classy = new classification_t();
+            empty_classy.utime = TimeUtil.utime();
+            empty_classy.name = "";
+            empty_classy.confidence = 1.0;
 
             classification_list_t classy_list = new classification_list_t();
             classy_list.utime = TimeUtil.utime();
+
+            for (SimObject so: sos) {
+                if (!(so instanceof SimAprilTag))
+                    continue;
+                SimAprilTag tag = (SimAprilTag)so;
+                double sensingThreshold = 2;
+
+                double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
+                double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
+                if (dist > sensingThreshold)
+                    continue;
+
+                // Position relative to robot. For now, tossing away orientation data,
+                // but may be relevant later.
+                double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
+                empty_classy.xyzrpy = relXyzrpy;
+                empty_classy.id = tag.getID();
+
+                ArrayList<classification_t> temp = tc.classifyTag(tag.getID(), relXyzrpy);
+                if (temp.size() < 1)
+                    continue;
+
+                // XXX This means that the first observations can be lost to UDP. :(
+                // XXX This also means that we need to fix this for range checks
+                classification_t classy = temp.get(0);
+                tagHistory.addObservation(classy, TimeUtil.utime());
+                //if (tagHistory.isVisible(tag.getID(), sensingThreshold)) {
+                empty_classy.name = tagHistory.getLabel(tag.getID());
+                classies.add(empty_classy.copy());
+                //}
+                //else {
+                //    classies.add(empty_classy.copy());
+                //}
+
+            }
             classy_list.num_classifications = classies.size();
             classy_list.classifications = classies.toArray(new classification_t[0]);
             lcm.publish("CLASSIFICATIONS", classy_list);
@@ -432,11 +520,13 @@ public class SimRobot implements SimObject, LCMSubscriber
         {
             pose_t pose;
             if (useNoise) {
-                pose = drive.poseOdom;
+                pose = LCMUtil.a2mPose(drive.poseOdom);
             } else {
-                pose = drive.poseTruth;
+                pose = LCMUtil.a2mPose(drive.poseTruth);
             }
-            lcm.publish("POSE", pose);
+            //lcm.publish("POSE", pose);
+            lcm.publish("POSE", drive.poseOdom);
+            lcm.publish("POSE_TRUTH", drive.poseTruth);
         }
     }
 

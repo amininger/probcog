@@ -7,4 +7,5 @@ struct classification_t
     double xyzrpy[6];
 
     double confidence; // [0-1] e.g. .7
+    double range; // Range of detection
 }

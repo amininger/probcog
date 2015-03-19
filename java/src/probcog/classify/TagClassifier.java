@@ -7,22 +7,29 @@ import lcm.lcm.*;
 
 import april.config.*;
 import april.jmat.*;
-import april.lcmtypes.*;
+//import april.lcmtypes.*;
 import april.util.*;
 import april.tag.TagDetection;
 
-import probcog.lcmtypes.*;
+//import probcog.lcmtypes.*;
+import probcog.lcmtypes.classification_list_t;
+import probcog.lcmtypes.classification_t;
 import probcog.util.*;
+
+import magic2.lcmtypes.*;
 
 public class TagClassifier
 {
     String tagConfig = Util.getConfig().requireString("tag_config");
     double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
 
-    static Random classifierRandom = new Random(8437531);
+    //static Random classifierRandom = new Random(104395301);
+    Random classifierRandom = new Random();
     LCM lcm = LCM.getSingleton();
+    TagHistory history = new TagHistory();
 
     HashMap<Integer, ArrayList<TagClass>> idToTag;
+    HashMap<String, Set<Integer> > tagClassToIDs;
     HashSet<String> tagClasses = new HashSet<String>();
 
     public TagClassifier() throws IOException
@@ -46,22 +53,40 @@ public class TagClassifier
         Config config = new ConfigFile(filepath);
 
         idToTag = new HashMap<Integer, ArrayList<TagClass>>();
+        tagClassToIDs = new HashMap<String, Set<Integer> >();
 
         // Read in all possible tag classes with associated tag ids
         // and store them in hashmap accessed by tag id.
         for (int i = 0;; i++) {
 
-            String label = config.getString("classes.c"+i+".label", "");
+            String[] labels = config.getStrings("classes.c"+i+".labels", null);
+            double[] probs = config.getDoubles("classes.c"+i+".probs", null);
             int[] ids = config.getInts("classes.c"+i+".ids", null);
             double mean = config.getDouble("classes.c"+i+".mean", 0);
             double stddev = config.getDouble("classes.c"+i+".stddev", 0);
+            double minRange = config.getDouble("classes.c"+i+".minRange", 0);
+            double maxRange = config.getDouble("classes.c"+i+".maxRange", 0);
 
-            if(label.equals("") || (ids == null))
+            if (labels == null)
                 break;
 
-            tagClasses.add(label);
+            if (!tagClassToIDs.containsKey(labels[0]))
+                tagClassToIDs.put(labels[0], new HashSet<Integer>());
 
-            TagClass tag = new TagClass(label, mean, stddev);
+            for (String label: labels) {
+                if (label.equals(""))
+                    continue;
+                tagClasses.add(label);
+            }
+
+            ArrayList<String> labelList = new ArrayList<String>();
+            for (String label: labels)
+                labelList.add(label);
+            ArrayList<Double> probList = new ArrayList<Double>();
+            for (double prob: probs)
+                probList.add(prob);
+
+            TagClass tag = new TagClass(labelList, probList, mean, stddev, minRange, maxRange);
             for(int id : ids) {
                 ArrayList<TagClass> allTags;
                 if(idToTag.containsKey(id))
@@ -71,11 +96,20 @@ public class TagClassifier
 
                 allTags.add(tag);
                 idToTag.put(id, allTags);
+                tagClassToIDs.get(labels[0]).add(id);
             }
         }
 
         if (useLcm)
             new ListenerThread().start();
+    }
+
+    /** Get an exhaustive list of all of the tag IDs matching a particular class */
+    public Set<Integer> getIDsForClass(String tagClass)
+    {
+        if (tagClassToIDs.containsKey(tagClass))
+            return tagClassToIDs.get(tagClass);
+        return new HashSet<Integer>();
     }
 
     /** Get an exhaustive list of the classes of tags that exist in the world. */
@@ -93,15 +127,81 @@ public class TagClassifier
             return classes;
 
         for (TagClass tc: tcs)
-            classes.add(tc.label);
+            classes.addAll(tc.labels);
 
         return classes;
+    }
+
+    /** Expose the probability that a tag is CORRECTLY labeled. Assumes you
+     *  only care about the first class (since we only ever have one class
+     *  right now.
+     **/
+    public double correctProbability(int tagID)
+    {
+        if (!idToTag.containsKey(tagID))
+            return 0;
+
+        ArrayList<TagClass> tcs = idToTag.get(tagID);
+        if (tcs.size() < 1)
+            return 0;
+
+        TagClass tc = tcs.get(0);
+        return tc.probs.get(0);
+    }
+
+    public String correctClass(int tagID)
+    {
+        if (!idToTag.containsKey(tagID))
+            return  "";
+
+        ArrayList<TagClass> tcs = idToTag.get(tagID);
+        if (tcs.size() < 1)
+            return "";
+
+        TagClass tc = tcs.get(0);
+        return tc.labels.get(0);
+    }
+
+    public double sampleRange(int tagID)
+    {
+        if (!idToTag.containsKey(tagID))
+            return -1;
+
+        ArrayList<TagClass> tcs = idToTag.get(tagID);
+        if (tcs.size() < 1)
+            return -1;
+
+        TagClass tc = tcs.get(0);
+
+        double v = MathUtil.clamp(classifierRandom.nextGaussian(), -3, 3);
+        double diff = tc.maxRange - tc.minRange;
+        double range = (tc.minRange+diff/2) + v*(diff/6);
+        return range;
+    }
+
+    /** Get the max range we are capable of sensing this tag */
+    public double getMaxRange(int tagID)
+    {
+        if (!idToTag.containsKey(tagID))
+            return -1;
+
+        ArrayList<TagClass> tcs = idToTag.get(tagID);
+        if (tcs.size() < 1)
+            return -1;
+
+        TagClass tc = tcs.get(0);
+        return tc.maxRange;
+    }
+
+    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy)
+    {
+        return classifyTag(id, xyzrpy, false);
     }
 
     /** Return a list of classifications for a tag of a given ID and xyzrpy
      *  relative to the robot
      **/
-    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy)
+    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy, boolean perfect)
     {
         ArrayList<classification_t> classies = new ArrayList<classification_t>();
         ArrayList<TagClass> tcs = idToTag.get(id);
@@ -109,8 +209,23 @@ public class TagClassifier
             return classies;    // No config entries
 
         for (TagClass tc: tcs) {
+            double v = classifierRandom.nextDouble();
+            if (perfect)
+                v = 0.0;
+
+            double sum = 0.0;
+            String label = tc.labels.get(0);
+            for (int i = 0; i < tc.labels.size(); i++) {
+                sum += tc.probs.get(i);
+                if (sum >= v) {
+                    label = tc.labels.get(i);
+                    break;
+                }
+            }
+
             classification_t classy = new classification_t();
-            classy.name = tc.label;
+            classy.name = label;
+            classy.range = sampleRange(id); // When perfect, what should this do?
             classy.id = id;
             classy.xyzrpy = xyzrpy;
             classy.confidence = sampleConfidence(tc.mean, tc.stddev);
@@ -120,23 +235,47 @@ public class TagClassifier
         return classies;
     }
 
-    private void publishDetections(pan_tilt_tag_detections_t tagList)
+    private void publishDetections(tag_detection_list_t tagList)
     {
         ArrayList<classification_t> classies = new ArrayList<classification_t>();
 
-        for(int i=0; i<tagList.ndetects; i++) {
+        for (int n=0; n < tagList.ndetections; n++) {
+            tag_detection_t td = tagList.detections[n];
 
-            if(!idToTag.containsKey(tagList.detections[i].id))
+            // Ignore tags we can't map to anything
+            if (!idToTag.containsKey(td.id))
                 continue;
 
-            TagDetection td = new TagDetection();
-            td.id = tagList.detections[i].id;
-            td.hammingDistance = tagList.detections[i].errors;
-            td.homography = tagList.detections[i].homography;
-            td.hxy = tagList.detections[i].hxy;
+            // Eventually, we may want to do calibration correction here.
+            // For now, let's just trust it .
+            TagDetection tag = new TagDetection();
+            tag.id = td.id;
+            tag.hammingDistance = td.hamming_dist;
+            tag.homography = new double[3][];
+            for (int i = 0; i < 3; i++) {
+                tag.homography[i] = new double[3];
+                for (int j = 0; j < 3; j++) {
+                    tag.homography[i][j] = (double)td.H[i][j];
+                }
+            }
+            tag.cxy = new double[] {td.cxy[0], td.cxy[1]};
+            tag.p = new double[][] {{td.pxy[0][0], td.pxy[0][1]},
+                                    {td.pxy[1][0], td.pxy[1][1]},
+                                    {td.pxy[2][0], td.pxy[2][1]},
+                                    {td.pxy[3][0], td.pxy[3][1]}};
 
-            double[][] T2B = TagUtil.getTagToPose(tagList.cam_to_pose, td, tagSize_m);
-            classies.addAll(classifyTag(td.id, LinAlg.matrixToXyzrpy(T2B)));
+            double[][] T2B = TagUtil.getTagToPose(tag, tagSize_m);
+            double[] xyzrpy = LinAlg.matrixToXyzrpy(T2B);
+            classification_t classy = (classifyTag(tag.id, xyzrpy)).get(0);
+
+            // Incorporate tag history stuff
+            history.addObservation(classy, tagList.utime);
+            double dist = LinAlg.magnitude(LinAlg.resize(xyzrpy, 2));
+            if (history.isVisible(tag.id, dist, tagList.utime)) {
+                classy.name = history.getLabel(tag.id, tagList.utime);
+                classy.range = dist;
+                classies.add(classy);
+            }
         }
 
         classification_list_t classy_list = new classification_list_t();
@@ -176,7 +315,7 @@ public class TagClassifier
         private void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
         {
             if (channel.equals("TAG_DETECTIONS")) {
-                pan_tilt_tag_detections_t tagList = new pan_tilt_tag_detections_t(ins);
+                tag_detection_list_t tagList = new tag_detection_list_t(ins);
                 publishDetections(tagList);
             }
         }
@@ -191,7 +330,6 @@ public class TagClassifier
         return MathUtil.clamp(u + classifierRandom.nextGaussian()*s, 0, 1);
     }
 
-
     /**
      * Keep track of the information associated with each tag id. Tags
      * belong to classes (i.e. door, hallway, red) and have some
@@ -200,22 +338,39 @@ public class TagClassifier
      **/
     class TagClass
     {
-        String label;
+        ArrayList<String> labels;
+        ArrayList<Double> probs;
         double mean;
         double stddev;
+        double minRange;
+        double maxRange;
 
-        public TagClass(String label, double mean, double stdeev)
+        public TagClass(ArrayList<String> labels,
+                        ArrayList<Double> probs,
+                        double mean,
+                        double stddev,
+                        double minRange,
+                        double maxRange)
         {
-            this.label = label;
+            // Assume that the FIRST label is the real one.
+            this.labels = labels;
+            this.probs = probs;
             this.mean = mean;
             this.stddev = stddev;
+            this.minRange = minRange;
+            this.maxRange = maxRange;
+        }
+
+        public String toString()
+        {
+            return String.format("%f %f", minRange, maxRange);
         }
     }
 
     public static void main(String[] args)
     {
         try {
-           TagClassifier tc = new TagClassifier();
+           TagClassifier tc = new TagClassifier(true);
          } catch (IOException ioex) {
             System.err.println("ERR: Error starting tag classifier");
             ioex.printStackTrace();

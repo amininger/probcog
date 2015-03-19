@@ -17,7 +17,9 @@ public class Stopwatch
         public double time;
         public String name;
         public TimeNode parent;
-        public ArrayList<TimeNode> children = new ArrayList<TimeNode>();
+        public HashMap<String, TimeNode> children =
+            new HashMap<String, TimeNode>();
+        //public ArrayList<TimeNode> children = new ArrayList<TimeNode>();
 
         public TimeNode(TimeNode parent, String name)
         {
@@ -27,14 +29,16 @@ public class Stopwatch
 
         public TimeNode addChild(String name)
         {
-            TimeNode child = new TimeNode(this, name);
-            children.add(child);
-            return child;
+            if (!children.containsKey(name)) {
+                TimeNode child = new TimeNode(this, name);
+                children.put(name, child);
+            }
+            return children.get(name);
         }
 
-        public void setTime(double time)
+        public void addTime(double time)
         {
-            this.time = time;
+            this.time += time;
         }
     }
 
@@ -47,8 +51,9 @@ public class Stopwatch
     /** Please use unique names */
     public void start(String name)
     {
-        if (!tics.containsKey(name))
+        if (!tics.containsKey(name)) {
             tics.put(name, new Tic());
+        }
         tics.get(name).tic();
         leaf = leaf.addChild(name);
     }
@@ -62,7 +67,7 @@ public class Stopwatch
         }
         String name = leaf.name;
         assert (tics.containsKey(name));
-        leaf.setTime(tics.get(name).toc());
+        leaf.addTime(tics.get(name).toc());
         leaf = leaf.parent;
     }
 
@@ -80,7 +85,7 @@ public class Stopwatch
             System.out.printf("%s%s: %f\n", tabs, node.name, node.time);
         }
 
-        for (TimeNode child: node.children)
+        for (TimeNode child: node.children.values())
             printHelper(child, d+1);
     }
 

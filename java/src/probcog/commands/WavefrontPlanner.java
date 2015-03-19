@@ -8,6 +8,7 @@ import april.util.*;
 /** A tool for computing wavefront paths through the environment */
 public class WavefrontPlanner
 {
+    public boolean failure = false;
     GridMap gm;
     float[] costMap;
     double[] start, goal;
@@ -31,24 +32,30 @@ public class WavefrontPlanner
             costMap[i] = gm.data[i] == 0 ? Float.MAX_VALUE : -1;
         start = null;
         goal = null;
+        failure = false;
     }
 
     public float[] getWavefront(double[] s, double[] g)
     {
         initMap();
 
+        goal = g;
+        start = s;
+
         // Starting/finishing indices. Note: we search BACK from the goal
-        int sx = (int) ((s[0]-gm.x0)/gm.metersPerPixel);
-        int sy = (int) ((s[1]-gm.y0)/gm.metersPerPixel);
+        int sx = Integer.MAX_VALUE;
+        int sy = Integer.MAX_VALUE;
         int gx = (int) ((g[0]-gm.x0)/gm.metersPerPixel);
         int gy = (int) ((g[1]-gm.y0)/gm.metersPerPixel);
         int w = gm.width;
         int h = gm.height;
+        if (s != null) {
+            sx = (int) ((s[0]-gm.x0)/gm.metersPerPixel);
+            sy = (int) ((s[1]-gm.y0)/gm.metersPerPixel);
+        }
 
-        // Error check start/goal. We only accept plans within our grid map.
-        if (sx < 0 || sx >= w ||
-            sy < 0 || sy >= h ||
-            gx < 0 || gx >= w ||
+        // Error check goal. We only accept plans within our grid map.
+        if (gx < 0 || gx >= w ||
             gy < 0 || gy >= h)
             assert (false);
 
@@ -82,7 +89,7 @@ public class WavefrontPlanner
                 // We are assuming fixed-cost movement between all cells (there
                 // is no such thing as cell cost weighting), so we can measure
                 // cost as being the distance between cells
-                float cost = costMap[n] + (float)LinAlg.magnitude(neighbor);
+                float cost = costMap[n] + (float)(LinAlg.magnitude(neighbor)*gm.metersPerPixel);
                 costMap[np] = cost;
                 c = ((npx & 0xffff) << 16) | (npy & 0xffff);
                 wavefront.add(c, -cost);
@@ -91,24 +98,31 @@ public class WavefrontPlanner
                 if (sx == npx && sy == npy) {
                     start = s;
                     goal = g;
+                    //System.out.println("Found wavefront");
                     return costMap;
                 }
             }
         }
 
-        // Finished without finding goal. Error! You gave us an impossible task
-        assert (false);
+        failure = true;
+        //System.out.println("Failed to find wavefront");
 
+        // Finished without finding goal. Just send back a cost map
         return costMap;
     }
 
     // XXX This is sub-optimal, but we split out cost map computation for
-    // quick visualization
+    // quick visualization. Only call if we found a path!
     /** Get a path corresponding to the existing cost map */
     public ArrayList<double[]> getPath()
     {
         assert (start != null && goal != null);
         ArrayList<double[]> path = new ArrayList<double[]>();
+
+        if (failure) {
+            System.out.println("ERR: No path was found");
+            return path;
+        }
 
         // Starting/finishing indices.
         int sx = (int) ((start[0]-gm.x0)/gm.metersPerPixel);

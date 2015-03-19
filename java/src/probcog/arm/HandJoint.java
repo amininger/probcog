@@ -9,6 +9,7 @@ import april.util.*;
 import april.vis.*;
 
 import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class HandJoint implements Joint
 {

@@ -6,21 +6,34 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
-import april.lcmtypes.*;
 import april.util.*;
 
-import probcog.lcmtypes.*;
 import probcog.commands.*;
 import probcog.util.*;
 
+import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
+
+/** A not-very-principaled wall follower. Should be revisited later. Note:
+ *  when it reaches a wall in front of it that forces a turn, the follower
+ *  should STOP. This is more "conforming" in that the robot will 1) not turn
+ *  around because a person got in the way and 2) will typically converge to
+ *  the same place as time approaches infinity.
+ **/
 public class FollowWall implements ControlLaw, LCMSubscriber
 {
     private static final double FW_HZ = 100;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
-    private static final double BACK_THETA = 12*Math.PI/36;
+    private static final double BACK_THETA = 16*Math.PI/36;
     private static final double FRONT_THETA = 6*Math.PI/36;
-    private static final double MAX_V = 0.8;
+    private static final double MAX_V = 0.6;
+    private static final double MIN_V = 0.4;
+
+    LCM lcm = LCM.getSingleton();
+    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
+    String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
+    String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
@@ -39,8 +52,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     int finIdx = -1;
 
     // State for PID
-    //double K_d = 0.05;
-    double K_d = 0.001;
+    double K_d = 0.05;
+    //double K_d = 0.001;
     double lastRange = -1;
 
     private class UpdateTask implements PeriodicTasks.Task
@@ -48,12 +61,14 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         public void run(double dt)
         {
             laser_t laser = laserCache.get();
-            if (laser == null)
+            if (laser == null) {
                 return;
+            }
 
             pose_t pose = poseCache.get();
-            if (pose == null)
+            if (pose == null) {
                 return;
+            }
 
             // Initialization step.
             // Find the laser beam we will observe for distance. If we are using
@@ -103,10 +118,13 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (!oriented) {
             dd = orient(pose, targetHeading);
         } else {
-            dd = drive(laser, dt);
+            DriveParams params = new DriveParams();
+            params.dt = dt;
+            params.laser = laser;
+            dd = drive(params);
         }
 
-        LCM.getSingleton().publish("DIFF_DRIVE", dd);
+        lcm.publish(driveChannel, dd);
     }
 
     private diff_drive_t orient(pose_t pose, double heading)
@@ -142,8 +160,18 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     // Publicly exposed diff drive fn (can be used repeatedly as if static obj)
     // after initialized once
-    public diff_drive_t drive(laser_t laser, double dt)
+    //public diff_drive_t drive(laser_t laser, double dt)
+    public diff_drive_t drive(DriveParams params)
     {
+        laser_t laser = params.laser;
+        double dt = params.dt;
+
+        if (startIdx < 0)
+            init(laser);
+
+        double[] xAxis = new double[] {1.0, 0};
+        double[] yAxis = new double[] {0, 1.0};
+
         // Initialize no-speed diff drive
         diff_drive_t dd = new diff_drive_t();
         dd.utime = TimeUtil.utime();
@@ -152,26 +180,53 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         dd.right = 0;
 
         double r = Double.MAX_VALUE;
+        double rFront = Double.MAX_VALUE;
         for (int i = startIdx; i <= finIdx; i++) {
             // Handle error states
             if (laser.ranges[i] < 0)
                 continue;
 
-            double w = MathUtil.clamp(Math.abs(Math.sin(laser.rad0+laser.radstep*i)),
-                    Math.sin(Math.PI/6), 1.0);
+            double t = laser.rad0 + laser.radstep*i;
+            double w = MathUtil.clamp(Math.abs(Math.sin(t)),
+                                      Math.sin(Math.PI/6),
+                                      1.0);
             r = Math.min(r, w*laser.ranges[i]);
         }
+
+        for (int i = 0; i < laser.nranges; i++) {
+            // Handle error states
+            if (laser.ranges[i] < 0)
+                continue;
+
+            double t = laser.rad0 + laser.radstep*i;
+
+            // Points in front
+            double[] xy = new double[] {laser.ranges[i]*Math.cos(t),
+                                        laser.ranges[i]*Math.sin(t)};
+            double width = Math.abs(LinAlg.dotProduct(xy, yAxis));
+            if (width > 0.3)
+                continue;
+
+            double dist = LinAlg.dotProduct(xy, xAxis);
+            if (dist > 0.1) {
+                rFront = Math.min(rFront, dist);
+            }
+        }
+
         double deriv = 0;
         if (lastRange > 0)
             deriv = (r - lastRange)/dt; // [m/s] of change
         lastRange = r;
 
         // XXX
-        double K_p = r/goalDistance;
-        double prop = MathUtil.clamp(-0.5 + K_p, -1.0, 1.0);//0.65);
+        double G_weight = Math.pow(goalDistance, .5);
+        double K_p = (1.0 - r/G_weight);
+        double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
 
-        double nearSpeed = 0.5;
-        double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
+        //double nearSpeed = 0.5;
+        //double farSpeed = MathUtil.clamp(prop + K_d*deriv, -1.0, 1.0);
+        double farSpeed = 0.5;
+        double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0.0, 1.0);    // XXX
         double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
         if (max < 0.01) {
             nearSpeed = farSpeed = 0;
@@ -179,6 +234,16 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             nearSpeed = MAX_V*nearSpeed/max;
             farSpeed = MAX_V*farSpeed/max;
         }
+
+        // Special case turn-in-place when near a dead end in front
+        // XXX Now this is a STOP case
+        //System.out.printf("%f\n", rFront);
+        if (rFront < goalDistance + 0.25) {
+            //nearSpeed = MIN_V;
+            //farSpeed = -MIN_V;
+            nearSpeed = farSpeed = 0;
+        }
+
 
         switch (dir) {
             case LEFT:
@@ -215,9 +280,25 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("heading"))
             targetHeading = parameters.get("heading").getDouble();
 
-        LCM.getSingleton().subscribe("LASER", this);
-        LCM.getSingleton().subscribe("POSE", this);
+        lcm.subscribe(laserChannel, this);
+        lcm.subscribe(poseChannel, this);
         tasks.addFixedDelay(new UpdateTask(), 1.0/FW_HZ);
+    }
+
+    // Ignore heading for now
+    public int hashCode()
+    {
+        return dir.hashCode() ^ new Double(goalDistance).hashCode();
+    }
+
+    public boolean equals(Object o)
+    {
+        if (o == null)
+            return false;
+        else if (!(o instanceof FollowWall))
+            return false;
+        FollowWall fw = (FollowWall)o;
+        return dir == fw.dir && goalDistance == fw.goalDistance;
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -232,10 +313,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if ("LASER".equals(channel)) {
+        if (laserChannel.equals(channel)) {
             laser_t laser = new laser_t(ins);
             laserCache.put(laser, laser.utime);
-        } else if ("POSE".equals(channel)) {
+        } else if (poseChannel.equals(channel)) {
             pose_t pose = new pose_t(ins);
             poseCache.put(pose, pose.utime);
         }
@@ -266,6 +347,11 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         return "RIGHT";
     }
 
+    public String toString()
+    {
+        return String.format("Follow %s wall @ %2.3f [m]", getSide(), goalDistance);
+    }
+
     /** Get the parameters that can be set for this control law.
      *
      *  @return An iterable collection of all possible parameters
@@ -292,5 +378,22 @@ public class FollowWall implements ControlLaw, LCMSubscriber
                                       false));
 
         return params;
+    }
+
+    public control_law_t getLCM()
+    {
+        control_law_t cl = new control_law_t();
+        cl.name = "follow-wall";
+        cl.num_params = 3;
+        cl.param_names = new String[cl.num_params];
+        cl.param_values = new typed_value_t[cl.num_params];
+        cl.param_names[0] = "side";
+        cl.param_values[0] = new TypedValue((byte)(dir == Direction.LEFT ? 1 : -1)).toLCM();
+        cl.param_names[1] = "distance";
+        cl.param_values[1] = new TypedValue(goalDistance).toLCM();
+        cl.param_names[2] = "heading";
+        cl.param_values[2] = new TypedValue(targetHeading).toLCM();
+
+        return cl;
     }
 }

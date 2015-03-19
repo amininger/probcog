@@ -8,6 +8,7 @@ import april.util.*;
 import april.vis.*;
 
 import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 class RevoluteJoint implements Joint
 {

@@ -79,6 +79,8 @@ public class CommandCoordinator
         /** Query control laws for statuses, manage termination conditions, etc. */
         public void run(double dt)
         {
+            // XXX TODO: When do we clean up after these things?
+
             // Check termination conditions. If any are met, handle control law
             // updates accordingly. For example, some conditions might be
             // indicative of failure.
@@ -90,9 +92,13 @@ public class CommandCoordinator
                         if (test.conditionMet() && terminationConditions.containsKey(key)) {
                             ArrayList<TerminationCondition> terms = terminationConditions.get(key);
                             for (TerminationCondition term: terms) {
-                                assert (controlLaws.containsKey(term.id));
-                                controlLaws.get(term.id).controlLaw.setRunning(false);
-                                controlLaws.get(term.id).executionStatus = term.terminationStatus;
+                                // XXX Multiple condition interactions?
+                                if (controlLaws.containsKey(term.id)) {
+                                    controlLaws.get(term.id).controlLaw.setRunning(false);
+                                    controlLaws.get(term.id).executionStatus = term.terminationStatus;
+                                } else {
+                                    // XXX
+                                }
                             }
                         }
                         // Broadcast relevant status information to those who care
@@ -144,6 +150,16 @@ public class CommandCoordinator
             controlLaws.put(id, new ControlLawRecord(controlLaw));
             controlLaw.setRunning(true);
             System.out.printf("Registered and started Law <%d>\n", id);
+
+            // Automatically insert a failure condition for getting too close
+            // to an obstacle...
+            //int termId = registerConditionTest(new ObstacleTest(new HashMap<String, TypedValue>()));
+            //registerTerminationCondition(termId, id, CommandCoordinator.Status.FAILURE);
+            HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+            params.put("timeout", new TypedValue(300.0));   // 5 minutes XXX
+            int termId = registerConditionTest(new TimeoutTest(params));
+            registerTerminationCondition(termId, id, CommandCoordinator.Status.FAILURE);
+
             return id;
         }
     }
@@ -161,6 +177,24 @@ public class CommandCoordinator
             if (record != null) {
                 record.controlLaw.setRunning(false);
                 System.out.printf("Destroyed Law <%d>\n", id);
+
+                // Go through and clean up termination condition stuff.
+                // XXX Assumes that condition tests never apply to more than one law
+                // at the same time.
+                ArrayList<Integer> condIDs = new ArrayList<Integer>();
+                synchronized (terminationConditions) {
+                    for (Integer key: terminationConditions.keySet()) {
+                        ArrayList<TerminationCondition> terms = terminationConditions.get(key);
+                        for (int i = 0; i < terms.size(); i++) {
+                            if (terms.get(i).id == id) {
+                                condIDs.add(key);
+                            }
+                        }
+                    }
+                }
+
+                for (Integer key: condIDs)
+                    destroyConditionTest(key);
             }
             return record != null;
         }

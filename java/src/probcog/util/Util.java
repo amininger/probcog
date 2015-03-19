@@ -181,7 +181,7 @@ public class Util
     {
         String path = StringUtil.replaceEnvironmentVariables(configPath);
         // Try to replace with a local version of the file if it exists
-        String localPath = StringUtil.replaceEnvironmentVariables("$ROBOT_CONFIG");
+        String localPath = StringUtil.replaceEnvironmentVariables("$PROBCOG_CONFIG");
         if (localPath != null && localPath.length() > 0)
             path = localPath;
         File file = new File(path);
@@ -213,4 +213,5 @@ public class Util
         ensureConfig();
         return config;
     }
+
 }

@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import probcog.sim.ISimEffector;
-import probcog.sim.SimObjectPC;
 import april.config.Config;
 import april.sim.SimObject;
 import april.sim.SimWorld;
@@ -18,6 +16,9 @@ import april.vis.VisCanvas;
 import april.vis.VisConsole;
 import april.vis.VisLayer;
 import april.vis.VisWorld;
+
+import probcog.sim.ISimEffector;
+import probcog.sim.SimObjectPC;
 
 public class ProbCogSimulator implements VisConsole.Listener
 {

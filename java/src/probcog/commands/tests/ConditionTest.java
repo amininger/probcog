@@ -17,4 +17,8 @@ public interface ConditionTest
      *  @return An iterable collection of all possible parameters.
      **/
     public Collection<TypedParameter> getParameters();
+
+    public String toString();
+
+    public ConditionTest copyCondition();    // Like clone
 }

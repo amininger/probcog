@@ -8,6 +8,7 @@ import java.util.Formatter;
  */
 public class Tree<T>
 {
+    static int nodeID = 0;
     public Node<T> root;
 
     public Tree(T rootData)
@@ -20,6 +21,9 @@ public class Tree<T>
         public T data;
         public Node<T> parent;
         public ArrayList<Node<T> > children = new ArrayList<Node<T> >();
+        public int depth;
+
+        private int id;
 
         public Node(T data)
         {
@@ -30,11 +34,28 @@ public class Tree<T>
         {
             this.data = data;
             this.parent = parent;
+            this.depth = 0;
+            this.id = nodeID++;
         }
 
-        public void addChild(T data)
+        public Node<T> addChild(T data)
         {
-            children.add(new Node(data, this));
+            Node<T> n = new Node(data, this);
+            n.depth = depth+1;
+            children.add(n);
+            return n;
+        }
+
+        public void removeChild(Node<T> child)
+        {
+            for (int i = 0; i < children.size(); i++) {
+                Node<T> n = children.get(i);
+                if (n.id == child.id) {
+                    children.remove(n);
+                    child.parent = null;
+                    return;
+                }
+            }
         }
 
         public String toString()
@@ -43,6 +64,39 @@ public class Tree<T>
             f.format("data: [%s], %d children\n", data, children.size());
             return f.toString();
         }
+
+        public int size()
+        {
+            int s = 1;
+            for (Node<T> child: children) {
+                s += child.size();
+            }
+            return s;
+        }
+    }
+
+    public int size()
+    {
+        return root.size();
+    }
+
+    /** Return a list of all of the leaves in the tree */
+    public ArrayList<Node<T> > getLeaves()
+    {
+        ArrayList<Node<T> > leaves = new ArrayList<Node<T> >();
+        leafHelper(root, leaves);
+        return leaves;
+    }
+
+    private void leafHelper(Node<T> node, ArrayList<Node<T> > leaves)
+    {
+        if (node.children.size() < 1) {
+            leaves.add(node);
+            return;
+        }
+
+        for (Node<T> child: node.children)
+            leafHelper(child, leaves);
     }
 
     /** Return a list of the nodes of this tree for in-order traversal */
@@ -55,9 +109,6 @@ public class Tree<T>
 
     private void traversalHelper(Node<T> node, ArrayList<Node<T> > nodes)
     {
-        if (node.children.size() < 1)
-            return;
-
         for (Node<T> n: node.children)
             traversalHelper(n, nodes);
 

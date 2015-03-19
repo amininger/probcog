@@ -6,11 +6,12 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
-import april.lcmtypes.*;
 import april.util.*;
 
 import probcog.commands.*;
+
 import probcog.lcmtypes.*;
+import magic2.lcmtypes.*;
 
 public class DistanceTest implements ConditionTest, LCMSubscriber
 {
@@ -66,6 +67,11 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
 
         LCM.getSingleton().subscribe("POSE", this);
         (new UpdateTask()).start();
+    }
+
+    public ConditionTest copyCondition()
+    {
+        return null;
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
