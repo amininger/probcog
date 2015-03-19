@@ -125,14 +125,14 @@ public class CommandCoordinator
 
                     sl.statuses[idx++] = s;
                 }
-                lcm.publish("CONTROL_LAW_STATUS_TX", sl);
+                lcm.publish("CONTROL_LAW_STATUS", sl);
             }
         }
     }
 
     public CommandCoordinator()
     {
-        int hz = 100;
+        int hz = 40;
         tasks.addFixedRate(new UpdateTask(), 1.0/hz);
         tasks.setRunning(true);
     }

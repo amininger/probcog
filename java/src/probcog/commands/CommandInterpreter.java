@@ -160,7 +160,7 @@ public class CommandInterpreter
 		clStatus.id = activeCommand.commandID;
 		clStatus.status = activeCommand.status.toString();
 		clStatus.name = controlLaw.name;
-		lcm.publish("SOAR_COMMAND_STATUS", clStatus);
+		lcm.publish("SOAR_COMMAND_STATUS_TX", clStatus);
 	}
 
 	protected void update()
@@ -235,6 +235,7 @@ public class CommandInterpreter
 						}
 					}
 				}
+			}
 		}
 	}
 
