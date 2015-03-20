@@ -2,6 +2,7 @@ package probcog.classify;
 
 import java.util.*;
 
+import april.jmat.*;
 import april.util.*;
 
 import probcog.lcmtypes.*;
@@ -23,10 +24,12 @@ public class TagHistory
     HashMap<Integer, Record> history;
     private class Record
     {
-        public long utime = 0;          // Last utime of a recorded message
-        public String label;            // Label we committed to for our observation
-        public double range;            // Range at which we should first see tag
-        public boolean observed = false;// Have we ACTUALLY sighted the tag yet?
+        public long utime = 0;            // Last utime of a recorded message
+        //public String label;            // Label we committed to for our observation
+        //public double range;            // Range at which we should first see tag
+        public ArrayList<String> labels = new ArrayList<String>();
+        public ArrayList<Double> ranges = new ArrayList<Double>();
+        public boolean observed = false;  // Have we ACTUALLY sighted the tag yet?
     }
 
 
@@ -35,63 +38,48 @@ public class TagHistory
         history = new HashMap<Integer, Record>();
     }
 
-    public boolean addObservation(classification_t classy)
+    public void addObservations(ArrayList<classification_t> classies)
     {
-        return addObservation(classy, classy.utime);
+        if (classies.size() < 1)
+            return;
+        addObservations(classies, classies.get(0).utime);
     }
 
     /** Insert a classification into the history. Returns TRUE if this is
      *  the first observation ever/since expiry, else false. Either way, updates
      *  timestamp of last observation from classy.
      */
-    public boolean addObservation(classification_t classy, long utime)
+    public void addObservations(ArrayList<classification_t> classies, long utime)
     {
-        if (!history.containsKey(classy.id))
-            history.put(classy.id, new Record());
-
-        Record r = history.get(classy.id);
-        long diff = utime - r.utime;
-        r.utime = utime;
-        if (diff > MAX_AGE_MS*1000) {
-            r.label = classy.name;
-            r.range = classy.range;
-            r.observed = false;
-            return true;
+        HashMap<Integer, ArrayList<String> > labelMap = new HashMap<Integer, ArrayList<String> >();
+        HashMap<Integer, ArrayList<Double> > rangeMap = new HashMap<Integer, ArrayList<Double> >();
+        for (classification_t classy: classies) {
+            if (!labelMap.containsKey(classy.id)) {
+                labelMap.put(classy.id, new ArrayList<String>());
+                rangeMap.put(classy.id, new ArrayList<Double>());
+            }
+            labelMap.get(classy.id).add(classy.name);
+            rangeMap.get(classy.id).add(classy.range);
         }
 
-        return false;
+        for (int id: labelMap.keySet()) {
+            if (!history.containsKey(id))
+                history.put(id, new Record());
+
+            Record r = history.get(id);
+            long diff = utime - r.utime;
+            r.utime = utime;
+            if (diff > MAX_AGE_MS*1000) {
+                r.labels = labelMap.get(id);
+                r.ranges = rangeMap.get(id);
+                r.observed = false;
+            }
+        }
     }
 
-    public boolean isVisible(int id, double range)
+    public ArrayList<classification_t> getLabels(int id, double[] xyzrpy)
     {
-        return isVisible(id, range, TimeUtil.utime());
-    }
-
-    public boolean isVisible(int id, double range, long utime)
-    {
-        Record r = history.get(id);
-        if (r == null)
-            return false;
-        if (utime > r.utime + MAX_AGE_MS*1000)
-            return false;
-        if (range > r.range)
-            return false;
-        if (r.observed)
-            return false;
-        return true;
-    }
-
-    public void markTagObserved(int id)
-    {
-        Record r = history.get(id);
-        if (r == null)
-            return;
-        r.observed = true;
-    }
-
-    public String getLabel(int id)
-    {
-        return getLabel(id, TimeUtil.utime());
+        return getLabels(id, xyzrpy, TimeUtil.utime());
     }
 
     /** Get the label of a given tag at time utime. If any previous observations
@@ -99,13 +87,32 @@ public class TagHistory
      *  empty string, which we take to be the same as the object not having any
      *  label.
      **/
-    public String getLabel(int id, long utime)
+    public ArrayList<classification_t> getLabels(int id, double[] xyzrpy, long utime)
     {
+        double range = LinAlg.magnitude(LinAlg.resize(xyzrpy, 2));
+
+        ArrayList<classification_t> classies = new ArrayList<classification_t>();
         Record r = history.get(id);
         if (r == null)
-            return "";
+            return classies;
         if (utime > r.utime + MAX_AGE_MS*1000)
-            return "";
-        return r.label;
+            return classies;
+
+        // Populate list
+        for (int i = 0; i < r.labels.size(); i++) {
+            if (range > r.ranges.get(i))
+                continue;
+            classification_t classy = new classification_t();
+            classy.utime = utime;
+            classy.id = id;
+            classy.name = r.labels.get(i);
+            classy.range = range;       // XXX This really shouldn't exist...
+            classy.xyzrpy = xyzrpy;
+            classy.confidence = 1.0;    // XXX
+
+            classies.add(classy);
+        }
+
+        return classies;
     }
 }

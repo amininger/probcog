@@ -300,16 +300,19 @@ public class TagClassifier
 
             double[][] T2B = TagUtil.getTagToPose(tag, tagSize_m);
             double[] xyzrpy = LinAlg.matrixToXyzrpy(T2B);
-            classification_t classy = (classifyTag(tag.id, xyzrpy)).get(0);
+
+
+            ArrayList<classification_t> cs = classifyTag(tag.id, xyzrpy);
 
             // Incorporate tag history stuff
-            history.addObservation(classy, tagList.utime);
-            double dist = LinAlg.magnitude(LinAlg.resize(xyzrpy, 2));
-            if (history.isVisible(tag.id, dist, tagList.utime)) {
-                classy.name = history.getLabel(tag.id, tagList.utime);
-                classy.range = dist;
-                classies.add(classy);
-            }
+            history.addObservations(cs, tagList.utime);
+            cs = history.getLabels(tag.id, xyzrpy, tagList.utime);
+            classies.addAll(cs);
+            //if (history.isVisible(tag.id, dist, tagList.utime)) {
+            //    classy.name = history.getLabel(tag.id, tagList.utime);
+            //    classy.range = dist;
+            //    classies.add(classy);
+            //}
         }
 
         classification_list_t classy_list = new classification_list_t();
