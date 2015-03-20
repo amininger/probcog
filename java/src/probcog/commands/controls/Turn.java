@@ -120,7 +120,7 @@ public class Turn implements ControlLaw, LCMSubscriber
         
         // Needs a direction to turn, currently
         if (parameters.containsKey("direction")){
-        	byte direction = parameters.get("direction").getByte();
+        	int direction = parameters.get("direction").getInt();
             if (direction > 0) // CW
                 dir = Direction.LEFT;
             else // CCW
@@ -169,8 +169,8 @@ public class Turn implements ControlLaw, LCMSubscriber
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         ArrayList<TypedValue> options = new ArrayList<TypedValue>();
-        options.add(new TypedValue((byte)-1));
-        options.add(new TypedValue((byte)1));
+        options.add(new TypedValue(-1));
+        options.add(new TypedValue(1));
         params.add(new TypedParameter("direction",
                                       TypedValue.TYPE_BYTE,
                                       options,
@@ -207,7 +207,7 @@ public class Turn implements ControlLaw, LCMSubscriber
         cl.param_names = new String[cl.num_params];
         cl.param_values = new typed_value_t[cl.num_params];
         cl.param_names[0] = "direction";
-        cl.param_values[0] = new TypedValue(dir == Direction.LEFT ? (byte)1 : (byte)-1).toLCM();
+        cl.param_values[0] = new TypedValue(dir == Direction.LEFT ? 1 : -1).toLCM();
         cl.param_names[1] = "yaw";
         cl.param_values[1] = new TypedValue(goalYaw).toLCM();
 

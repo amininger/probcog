@@ -269,7 +269,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         //System.out.println("FOLLOW WALL");
 
         assert (parameters.containsKey("side"));
-        if (parameters.get("side").getByte() < 0)
+        if (parameters.get("side").getInt() < 0)
             dir = Direction.RIGHT;
         else
             dir = Direction.LEFT;
@@ -360,8 +360,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
         ArrayList<TypedValue> options = new ArrayList<TypedValue>();
-        options.add(new TypedValue((byte)-1));
-        options.add(new TypedValue((byte)1));
+        options.add(new TypedValue(-1));
+        options.add(new TypedValue(1));
         params.add(new TypedParameter("side",
                                       TypedValue.TYPE_BYTE,
                                       options,
@@ -388,7 +388,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         cl.param_names = new String[cl.num_params];
         cl.param_values = new typed_value_t[cl.num_params];
         cl.param_names[0] = "side";
-        cl.param_values[0] = new TypedValue((byte)(dir == Direction.LEFT ? 1 : -1)).toLCM();
+        cl.param_values[0] = new TypedValue((dir == Direction.LEFT ? 1 : -1)).toLCM();
         cl.param_names[1] = "distance";
         cl.param_values[1] = new TypedValue(goalDistance).toLCM();
         cl.param_names[2] = "heading";
