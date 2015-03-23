@@ -444,11 +444,6 @@ public class SimRobot implements SimObject, LCMSubscriber
         private void detectApriltags(Collection<SimObject> sos, double[] xyzrpyBot)
         {
             ArrayList<classification_t> classies = new ArrayList<classification_t>();
-            classification_t empty_classy = new classification_t();
-            empty_classy.utime = TimeUtil.utime();
-            empty_classy.name = "";
-            empty_classy.confidence = 1.0;
-
             classification_list_t classy_list = new classification_list_t();
             classy_list.utime = TimeUtil.utime();
 
@@ -466,25 +461,11 @@ public class SimRobot implements SimObject, LCMSubscriber
                 // Position relative to robot. For now, tossing away orientation data,
                 // but may be relevant later.
                 double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
-                empty_classy.xyzrpy = relXyzrpy;
-                empty_classy.id = tag.getID();
 
+                long now = TimeUtil.utime();
                 ArrayList<classification_t> temp = tc.classifyTag(tag.getID(), relXyzrpy);
-                if (temp.size() < 1)
-                    continue;
-
-                // XXX This means that the first observations can be lost to UDP. :(
-                // XXX This also means that we need to fix this for range checks
-                classification_t classy = temp.get(0);
-                tagHistory.addObservation(classy, TimeUtil.utime());
-                //if (tagHistory.isVisible(tag.getID(), sensingThreshold)) {
-                empty_classy.name = tagHistory.getLabel(tag.getID());
-                classies.add(empty_classy.copy());
-                //}
-                //else {
-                //    classies.add(empty_classy.copy());
-                //}
-
+                tagHistory.addObservations(temp, now);
+                classies.addAll(tagHistory.getLabels(tag.getID(), relXyzrpy, now));
             }
             classy_list.num_classifications = classies.size();
             classy_list.classifications = classies.toArray(new classification_t[0]);
