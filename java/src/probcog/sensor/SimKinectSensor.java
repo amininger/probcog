@@ -11,6 +11,7 @@ import java.util.List;
 
 import javax.swing.JFrame;
 
+import probcog.sim.SimFlatSurface;
 import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
 import april.jmat.LinAlg;
@@ -287,6 +288,9 @@ public class SimKinectSensor implements Sensor
     		// Ray didn't hit anything
     		//pixels[i].point = new double[4];
     		return false;
+    	} else if(pixels[i].target instanceof SimFlatSurface){
+    		pixels[i].target = null;
+    		return false;
     	}
 
 		return true;
@@ -341,7 +345,7 @@ public class SimKinectSensor implements Sensor
             }
         }
         
-        if(minDist >= 8.0){
+        if(minDist >= 8.0 || (minObj != null && minObj instanceof SimFlatSurface)){
         	// Ray didn't hit anything, compute intersection w/ table plane
         	pixel.point = new double[4];
         	double[] dir = ray.getDir();
@@ -354,7 +358,7 @@ public class SimKinectSensor implements Sensor
         	return pixel;
         }
         
-        if(minObj != null){
+        if(minObj != null && !(minObj instanceof SimLocation)){
         	// We hit something
         	pixel.target = minObj;
         }

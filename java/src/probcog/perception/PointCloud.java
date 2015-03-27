@@ -4,7 +4,7 @@ import java.awt.*;
 import java.util.*;
 
 import april.jmat.*;
-
+import april.util.TimeUtil;
 import probcog.util.*;
 
 public class PointCloud
@@ -112,9 +112,11 @@ public class PointCloud
     }
     
     public static ArrayList<double[]> getCanonical(ArrayList<double[]> points){
+    	long time = TimeUtil.utime();
         double theta = getBBoxTheta(points);
         ArrayList<double[]> rotated = rotateAtOrigin(points, theta);
         double[] cxyz = getCentroidXY(rotated);
+
 
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
@@ -139,7 +141,6 @@ public class PointCloud
         double sy = ty < by ? -1 : 1;
         ArrayList<double[]> scaled =
              LinAlg.transform(LinAlg.scale(sx, sy, 1), rotated);
-
         return scaled;
     }
 
@@ -205,7 +206,7 @@ public class PointCloud
         // x-axis
         double minArea = Double.MAX_VALUE;
         double theta = 0;
-        for (double r = 0; r < 180.0; r += .1)
+        for (double r = 0; r < 180.0; r += 1)
         {
             ArrayList<double[]> rotated = LinAlg.transform(LinAlg.rotateZ(Math.toRadians(r)),
                                                            centered);

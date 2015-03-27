@@ -67,6 +67,9 @@ public class Features
 	public static ArrayList<Double> getFeatures(FeatureCategory cat,
 			PointCloud cloud)
     {
+		if(cloud.getPoints().size() == 0){
+			return null;
+		}
 		switch (cat) {
 		case COLOR:
 			return ColorFeatureExtractor.getFeatures(cloud);

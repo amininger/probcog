@@ -33,70 +33,35 @@ public class Obj
     // Labels and attributes of the object
     private HashMap<FeatureCategory, Classifications> labels;
     private HashMap<FeatureCategory, ArrayList<Double>> features;
-    private String[][] states;
+    private ArrayList<String[]> states;
 
     // Visualization information
 	private Shape shape;
 	private VisObject model;
     private double[] pose;
 
-    private boolean confirmed = false;
-
-    
     // If the object was created from a simulated object,
     //   This is the backwards pointer
     private SimObject sourceSimObj = null;
     private boolean visible = true; // XXX I think an object is always visible when first made?
     
-    public Obj(boolean assignID)
+    public Obj(PointCloud ptCloud)
     {
-        if(assignID)
-            id = nextID();
-
-        labels = new HashMap<FeatureCategory, Classifications>();
-        features = new HashMap<FeatureCategory, ArrayList<Double>>();
-        states = new String[0][0];
-        bbox = new BoundingBox();
-        centroid = new double[3];
-        ptCloud = new PointCloud();
-        visible = true;
-    }
-
-    public Obj(boolean assignID, PointCloud ptCloud)
-    {
-        if(assignID)
-            id = nextID();
-
-        this.ptCloud = ptCloud;
-
-        labels = new HashMap<FeatureCategory, Classifications>();
-        features = new HashMap<FeatureCategory, ArrayList<Double>>();
-        states = new String[0][0];
-
-        bbox = ptCloud.getBoundingBox();
-        centroid = ptCloud.getCentroid();
-        pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
-        visible = true;
-
-        //double maxDim = Math.max(bbox[1][0]-bbox[0][0],
-        //                         Math.max(bbox[1][1]-bbox[0][1], bbox[1][2]-bbox[0][2]));
-        //shape = new SphereShape(maxDim);
-        shape = new BoxShape(bbox.lenxyz[0],
-                             bbox.lenxyz[1],
-                             bbox.lenxyz[2]);
-
-        int[] avgRGB = ptCloud.getAvgRGB();
-        Color color = new Color(avgRGB[0], avgRGB[1], avgRGB[2]);
-        model = bbox.getVis(new VzMesh.Style(color));   // XXX outline, instead?
+        id = Obj.NULL_ID; 
+        init();
+        this.setPointCloud(ptCloud);
     }
 
     public Obj(int id)
     {
-        this.id = id;
-
+    	this.id = id;
+        init();
+    }
+    
+    private void init(){
         labels = new HashMap<FeatureCategory, Classifications>();
         features = new HashMap<FeatureCategory, ArrayList<Double>>();
-        states = new String[0][0];
+        states = new ArrayList<String[]>();
 
         bbox = new BoundingBox();
         centroid = new double[3];
@@ -105,13 +70,6 @@ public class Obj
         shape = new BoxShape(.01, .01, .01);
         model = null;
         ptCloud = new PointCloud();
-    }
-
-    public boolean isConfirmed(){
-    	return confirmed;
-    }
-    public void setConfirmed(boolean isConfirmed){
-    	confirmed = isConfirmed;
     }
     
     // SET AND GET CALLS
@@ -232,13 +190,18 @@ public class Obj
     	if(simObj != null){
         	HashMap<FeatureCategory, String> simClassifications = simObj.getSimClassifications();
         	if(simClassifications.containsKey(category)){
-        		cs = new Classifications();
-        		cs.add(simClassifications.get(category), 1.0f);
+        		return;
         	}
     	}
         labels.put(category, cs);
     }
-
+    
+    public void setLabel(FeatureCategory fc, String label){
+    	Classifications cs = new Classifications();
+    	cs.add(label, 1.0);
+    	labels.put(fc, cs);
+    }
+    
     public void addAllClassifications(HashMap<FeatureCategory, Classifications> allCS)
     {
     	for(Map.Entry<FeatureCategory, Classifications> e : allCS.entrySet()){
@@ -299,23 +262,27 @@ public class Obj
         return cat_dat;
     }
     
-    public void setStates(String[][] states){
-    	this.states = states;
+    public void setStates(String[][] newStates){
+    	states.clear();
+    	for(String[] state : newStates){
+    		states.add(state);
+    	}
     }
     
     public String[] getStates(){
     	if(sourceSimObj == null || !(sourceSimObj instanceof ISimStateful)){
     		return new String[0];
     	}
-    	String[] stateVals = new String[states.length]; 
-    	for(int i = 0; i < states.length; i++){
-    		stateVals[i] = states[i][0] + "=" + states[i][1];
+    	String[] stateVals = new String[states.size()];
+    	for(int i = 0; i < states.size(); i++){
+    		stateVals[i] = states.get(i)[0] + "=" + states.get(i)[1];
     	}
         return stateVals;
     }
 
     // Increasing ids
     private static int idGen = 1;
+    public static final int NULL_ID = -1;
     public static int nextID()
     {
         return idGen ++;

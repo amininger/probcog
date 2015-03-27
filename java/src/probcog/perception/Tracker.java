@@ -5,16 +5,13 @@ import java.io.*;
 import java.util.*;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;
-
 import lcm.lcm.*;
-
 import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
@@ -22,6 +19,7 @@ import probcog.lcmtypes.*;
 import probcog.sensor.*;
 import probcog.sim.ISimEffector;
 import probcog.sim.ISimStateful;
+import probcog.sim.SimFlatSurface;
 import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
 import probcog.util.*;
@@ -40,7 +38,7 @@ public class Tracker
     private Object armLock = new Object();
     private robot_command_t robot_cmd;
     
-    private Object locLock = new Object();
+    private Object worldLock = new Object();
     
     private Segmenter segmenter;
     private ArmCommandInterpreter armInterpreter;
@@ -50,36 +48,40 @@ public class Tracker
     public Object stateLock;
     HashMap<Integer, Obj> worldState;
 
-    private boolean perfectSegmentation;
-    public static boolean SHOW_TIMERS = false;//true; //AM: if true then print statements are produced that show timing information
-
     public double fps = 0;
     ArrayList<Double> frameTimes = new ArrayList<Double>();
     int frameIdx = 0;
     final int frameTotal = 10;
     
-    public Tracker(Config config_, Boolean physicalKinect, Boolean perfectSegmentation, SimWorld world) throws IOException{
-
+    public static class TrackerSettings{
+    	public TrackerSettings(){};
+    	public TrackerSettings(boolean useKinect, boolean useSegmenter, boolean usePointClouds){
+    		this.useKinect = useKinect;
+    		this.useSeg = useSegmenter;
+    		this.usePC = usePointClouds;
+    	}
+    	public boolean useKinect = false;
+    	public boolean useSeg = true;
+    	public boolean usePC = true;
+    }
+    private TrackerSettings settings;
+    
+    public Tracker(Config config_, TrackerSettings settings, SimWorld world) throws IOException{
+    	this.settings = settings;
 
         this.world = world;
-        this.perfectSegmentation = perfectSegmentation;
         worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(config_, false);  // Debug off
-
-        if(physicalKinect) {
-            segmenter = new KinectSegment(config_);
-        }
-        else if(perfectSegmentation){
-            segmenter = new SimKinectSegment(config_, world);
-        }
-        else {
+        
+        if(settings.useKinect){
+        	segmenter = new KinectSegment(config_);
+        } else if(settings.useSeg){
         	segmenter = new KinectSegment(config_, world);
-        }
-
-        ArrayList<Obj> locations = createImaginedObjects(world, true);
-        for(Obj ob : locations) {
-            worldState.put(ob.getID(), ob);
+        } else if(settings.usePC){
+        	segmenter = new SimKinectSegment(config_, world);
+        } else {
+        	segmenter = null;
         }
 
         stateLock = new Object();
@@ -105,6 +107,245 @@ public class Tracker
     	}
     }
     
+    /********************************************************************
+     * 
+     * Tracking Thread
+     * This is responsible for running each frame and updating perception by:
+     * 1. Getting objects from the kinect/segmenter
+     * 2. Tracking those objects by assigning id's
+     * 3. Adding simulated objects
+     * 4. Classifying the objects
+     * 5. Applying any simulated environmental dynamics
+     * 6. Notifying the arm command interpreter of the new world state
+     * 
+     ********************************************************************/
+
+    /** Runs in the background, updating our knowledge of the scene */
+    public class TrackingThread extends Thread
+    {
+        public void run()
+        {
+            while (true) {
+            	Tic tic = new Tic();
+            	HashMap<Integer, Obj> newWorldState = new HashMap<Integer, Obj>();
+            	
+            	// 1. Get objects from the kinect/segmenter
+            	ArrayList<Obj> visibleObjects = getSegmentedObjects();
+            	adjustBoundingBoxes(visibleObjects);
+            	
+            	// 2. Track those objects by assigning ids
+           		HashMap<Obj, Integer> trackedObjects = assignObjectIds(visibleObjects);
+            	for(Map.Entry<Obj, Integer> e : trackedObjects.entrySet()){
+            		e.getKey().setID(e.getValue());
+            		newWorldState.put(e.getValue(), e.getKey());
+            	}
+            	
+            	// 3. Get simulated objects
+            	ArrayList<Obj> simObjects = getSimulatedObjects();
+            	for(Obj obj : simObjects){
+            		newWorldState.put(obj.getID(), obj);
+            	}
+            	
+            	// 4. Classify the objects
+            	classifyObjects(newWorldState);
+            	
+            	// 5. Apply Simulated Dynamics
+            	simulateDynamics(newWorldState);
+            	
+            	// 6. Report new info to arm interpreter
+            	synchronized(armLock){
+            		armInterpreter.updateWorld(new ArrayList<Obj>(newWorldState.values()));
+            	}
+            	
+            	synchronized(stateLock){
+            		worldState = newWorldState;
+            	}
+            	
+            	double frameTime = tic.toc();
+            	updateFPS(frameTime);
+
+                TimeUtil.sleep(1000/30);
+            }
+        }
+    }
+    
+    /** Returns a list of objects that the kinect sees on the table. 
+     * The objects are returned as Obj's from the segmenter, 
+     **/
+    private ArrayList<Obj> getSegmentedObjects() {
+    	if(!settings.usePC){
+    		// Not using point clouds, don't return any segmented objects
+    		return new ArrayList<Obj>();
+    	}
+        return segmenter.getSegmentedObjects();
+    }
+    
+    /** Returns a list of objects that are purely simulated
+     *    and not extracted from a kinect point cloud (e.g. locations)
+     */
+    private ArrayList<Obj> getSimulatedObjects(){
+    	ArrayList<Obj> simObjects = new ArrayList<Obj>();
+    	synchronized(worldLock){
+	    	for(SimObject so : world.objects){
+	    		if(!(so instanceof SimObjectPC)){
+	    			continue;
+	    		}
+	    		SimObjectPC obj = (SimObjectPC)so;
+	    		if(obj instanceof SimFlatSurface){
+	    			continue;
+	    		} else if(obj instanceof SimLocation){
+	    			// We always simulate locations
+	    			simObjects.add(obj.getObj());
+	    		} else if(!settings.usePC){
+	    			// We simulate other objects if we are not using point clouds
+	    			simObjects.add(obj.getObj());
+	    		}
+	    	}
+    	}
+    	return simObjects;
+    }
+
+    /** Returns a list of Obj that Soar believes exists in the world based on
+     *  their most recent lcm message. Obj have information such as their center
+     *  and features they were classified with. They do not have point clouds.
+     **/
+    public HashMap<Integer, Obj> getSoarObjects()
+    {
+        HashMap<Integer, Obj> soarObjects = new HashMap<Integer, Obj>();
+
+        synchronized(soarLock) {
+            if(soar_lcm != null) {
+                for(int i=0; i<soar_lcm.num_objects; i++) {
+                    object_data_t odt = soar_lcm.objects[i];
+                    Obj sObj = new Obj(odt.id);
+                    double[] xyzrpy = odt.pos;
+                    sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
+                    sObj.setBoundingBox(new BoundingBox(odt.bbox_dim, odt.bbox_xyzrpy));
+
+                    for(int j=0; j<odt.num_cat; j++) {
+                        categorized_data_t cat = odt.cat_dat[j];
+                        FeatureCategory fc = Features.getFeatureCategory(cat.cat.cat);
+                        Classifications cs = new Classifications();
+                        for(int k=0; k<cat.len; k++)
+                            cs.add(cat.label[k], cat.confidence[k]);
+
+                        sObj.addClassifications(fc, cs);
+                    }
+                    soarObjects.put(sObj.getID(), sObj);
+                }
+            }
+        }
+        return soarObjects;
+    }
+    
+    public void classifyObjects(HashMap<Integer, Obj> objects){
+    	for(Obj obj : objects.values()){
+    		obj.addAllClassifications(classyManager.classifyAll(obj));
+    	}
+    }
+    
+    public void simulateDynamics(HashMap<Integer, Obj> objects){
+    	synchronized(worldLock){
+    		for(SimObject so : world.objects){
+    			if(so instanceof ISimEffector) {
+    				ISimEffector effector = (ISimEffector)so;
+    				for(Obj obj : objects.values()){
+    					effector.checkObject(obj);
+    				}
+    			}
+    		}
+    	}
+    }
+
+    public void updateFPS(double frameTime){
+        if (frameTimes.size() < frameTotal) {
+            frameTimes.add(frameTime);
+        } else {
+            frameTimes.set(frameIdx, frameTime);
+            frameIdx = (frameIdx+1)%frameTotal;
+        }
+        
+        double sum = 0;
+        for (Double time: frameTimes)
+        {
+            sum += time;
+        }
+        sum /= frameTimes.size();
+
+        fps = 1.0/sum;
+    }
+
+    
+    
+    /********************************************************************
+     * 
+     * Object Tracking
+     * Code that does tracking by matching newly segmented objects
+     * against those from the previous frame and those reported by Soar
+     * 
+     ********************************************************************/
+
+    // This is where we do the tracking
+    // This returns a mapping from objects to ids
+    //   for every object given to the function
+    private HashMap<Obj, Integer> assignObjectIds(ArrayList<Obj> objs){
+    	HashMap<Integer, Obj> soarObjects = getSoarObjects();
+    	HashMap<Integer, Obj> prevObjects = new HashMap<Integer, Obj>();
+    	synchronized(stateLock){
+    		for(Obj obj : worldState.values()){
+    			prevObjects.put(obj.getID(), obj);
+    		}
+    	}
+    	
+    	HashMap<Obj, Integer> idMapping = new HashMap<Obj, Integer>();
+    	for(Obj obj : objs){
+        	idMapping.put(obj, Obj.NULL_ID);
+        }
+
+        // Match all visible objects against the previous frame
+        getBestMapping(idMapping, objs, prevObjects);
+
+        // Generate a list of soar objects that haven't been matched yet
+        HashMap<Integer, Obj> unmatchedSoarObjects = (HashMap<Integer, Obj>)soarObjects.clone();
+        
+        // Generate a list of segmented objects that haven't been matched yet
+        ArrayList<Obj> unmatchedObjects = new ArrayList<Obj>();
+
+        for(Map.Entry<Obj, Integer> e : idMapping.entrySet()){
+        	// We check each matched object that also matches a soar object
+        	// If there is a conflict (the new object doens't overlap the soar object)
+        	//   then we throw the match away. 
+        	Obj obj = e.getKey();
+        	Integer objId = e.getValue();
+        	Obj soarObj = soarObjects.get(objId);
+        	if(soarObj != null){
+        		if(BoundingBox.estimateIntersectionVolume(obj.getBoundingBox(), soarObj.getBoundingBox(), 8) < .000000001){
+        			// Not actually a match, doesn't intersect soar object
+        			e.setValue(Obj.NULL_ID);
+        		} else {
+        			// It is a match, remove the soar object from the unmatched list
+        			unmatchedSoarObjects.remove(objId);
+        		}
+        	}
+        	if(e.getValue() == Obj.NULL_ID){
+        		unmatchedObjects.add(e.getKey());
+        	}
+        }
+        
+        // We match any objects not already matched to soar objects against
+        // all the soar objects just to see if there is a match as well
+        getBestMapping(idMapping, unmatchedObjects, unmatchedSoarObjects);	
+        
+        // Any objects that still haven't been matched are given a newly generated id
+        for(Map.Entry<Obj, Integer> e : idMapping.entrySet()){
+        	if(e.getValue() == Obj.NULL_ID){
+        		e.setValue(Obj.nextID());
+        	}
+        }
+        
+    	return idMapping;
+    } 
+        
     private int matchObject(Obj obj, HashMap<Integer, Obj> candidates){
         // Iterate through our existing objects. If there is an object
         // sharing any single label within a fixed distance of an existing
@@ -195,527 +436,13 @@ public class Tracker
     		curMapping.put(objList.get(score.obj1), candList.get(score.obj2).getID());
     	}
     }
-    
 
-    public void compareObjects()
-    {
-        Tic tic = new Tic();
-    	long time = TimeUtil.utime();
-
-
-    	// Get Soar Objects
-        HashMap<Integer, Obj> soarObjects = getSoarObjects();
-        if(SHOW_TIMERS){
-        	System.out.println("  GET SOAR OBJECTS: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        	System.out.println("  GET VISIBLE OBJECTS");
-        }
-
-        ArrayList<Obj> visibleObjects;
-        ArrayList<Obj> imagined;
-        synchronized(locLock){
-        	visibleObjects = getVisibleObjects();
-        	imagined = createImaginedObjects(world, false);
-        }
-        // Get Visible Objects
-        if(SHOW_TIMERS){
-        	System.out.println("  GET VISIBLE OBJECTS: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        }
-
-        HashMap<Integer, Obj> previousFrame = new HashMap<Integer, Obj>();
-//        for(Obj obj : soarObjects.values()){
-//        	previousFrame.put(obj.getID(), obj);
-//        }
-
-        synchronized (stateLock) {
-        	for(Obj obj : worldState.values()){
-                previousFrame.put(obj.getID(), obj);
-        	}
-            worldState = new HashMap<Integer, Obj>();
-
-            // Perfect segmentation, relies on the ID's inherent in the source Sim objects
-            if(perfectSegmentation){
-            	for(Obj obj : visibleObjects){
-            		if(obj.getSourceSimObject() != null && obj.getSourceSimObject() instanceof SimObjectPC){
-            			SimObjectPC simObj = ((SimObjectPC)obj.getSourceSimObject());
-            			obj.setID(simObj.getID());
-            			worldState.put(obj.getID(), obj);
-            		}
-            	}
-
-                for(Obj o : imagined) {
-                    worldState.put(o.getID(), o);
-                }
-
-                if(SHOW_TIMERS){
-                	System.out.println("  TRACKING: " + (TimeUtil.utime() - time));
-                	time = TimeUtil.utime();
-                }
-    			
-                return;
-            }
-
-            // XXX - Need better matching code here.
-            //
-            // Iterate through our existing objects. If there is an object
-            // sharing any single label within a fixed distance of an existing
-            // object, take the existing object's ID. If the ID has already
-            // been taken by another object, take a new ID
-            
-            HashMap<Obj, Integer> idMapping = new HashMap<Obj, Integer>();
-            for(Obj obj : visibleObjects){
-            	idMapping.put(obj, -1);
-            }
-            // Match all visible objects against the previous frame
-            getBestMapping(idMapping, visibleObjects, previousFrame);
-
-            // Any objects that also matched a soar object are removed before the next stage
-            HashMap<Integer, Obj> unmatchedSoarObjects = (HashMap<Integer, Obj>)soarObjects.clone();
-            ArrayList<Obj> unmatchedObjects = new ArrayList<Obj>();
-            for(Map.Entry<Obj, Integer> e : idMapping.entrySet()){
-            	if(e.getValue() != -1 && unmatchedSoarObjects.containsKey(e.getValue())){
-            		Obj obj = e.getKey();
-            		Obj soarObj = unmatchedSoarObjects.get(e.getValue());
-            		if(BoundingBox.estimateIntersectionVolume(obj.getBoundingBox(), soarObj.getBoundingBox(), 8) < .000000001){
-            			// Not actually a match, doesn't intersect soar object
-            			e.setValue(-1);
-            			unmatchedObjects.add(e.getKey());
-            		} else {
-            			unmatchedSoarObjects.remove(e.getValue());
-            		}
-            	} else {
-            		unmatchedObjects.add(e.getKey());
-            	}
-            }
-            
-            // We match any objects not already matched to soar objects against
-            // all the soar objects just to see if there is a match as well
-            getBestMapping(idMapping, unmatchedObjects, unmatchedSoarObjects);
-            
-            for(Map.Entry<Obj, Integer> e : idMapping.entrySet()){
-            	Obj newObj = e.getKey();
-            	Integer id = e.getValue();
-            	if(id == -1){
-            		newObj.setID(Obj.nextID());
-            	} else {
-            		newObj.setID(id);
-            		newObj.setConfirmed(true);
-            	}
-            	worldState.put(newObj.getID(), newObj);
-            }
-            
-
-            
-            
-//            double thresh = 0.02;
-//            double overlapThresh = .04;
-//            for (Obj newObj: visibleObjects) {
-//            	double newObjVol = newObj.getBoundingBox().volume();
-//                boolean matched = false;
-//                double maxOverlapped = -1;   // How much the object is overlapped by a soar object
-//                int maxID = -1;
-//                
-//               // double minDist = Double.MAX_VALUE;
-//                for (Obj soarObj: soarObjects) {
-//                    if (idSet.contains(soarObj.getID()))
-//                        continue;
-//                    
-//                    double soarObjVol = soarObj.getBoundingBox().volume();
-//                    double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), soarObj.getBoundingBox(), 8);
-//                    if(iVol == 0){
-//                    	continue;
-//                    }
-//
-//                    double overlapped = iVol/newObjVol * iVol/soarObjVol;
-//                    if(overlapped > overlapThresh && overlapped >= maxOverlapped){
-//                    	System.out.println("== NEW BEST ==");
-//                    	System.out.println("  NEW VOL:   " + newObjVol);
-//                    	System.out.println("  SOAR VOL:  " + soarObjVol);
-//                    	System.out.println("  INTERSXN:  " + iVol);
-//                    	System.out.println("  OVERLAP:   " + overlapped);
-//                    	matched = true;
-//                    	maxOverlapped = overlapped;
-//                    	maxID = soarObj.getID();
-//                    }
-//
-////                    double dist = LinAlg.distance(newObj.getCentroid(), soarObj.getCentroid());
-////                    if(dist < thresh && dist < minDist){
-////                        matched = true;
-////                        minID = soarObj.getID();
-////                        minDist = dist;
-////                    }
-//                }
-//
-//                if (matched) {
-//                    newObj.setID(maxID);
-//                    newObj.setConfirmed(true);
-//                }
-//                else {
-//                    if(previousFrame.size() > 0){
-//                    	matched = false;
-//                    	maxOverlapped = -1;
-//                    	maxID = -1;
-////
-////                        double threshOld = .01;
-////                        boolean matchedOld = false;
-////                        double minDistOld = Double.MAX_VALUE;
-////                        int minIDOld = -1;
-//
-//                        for (Obj oldObj: previousFrame) {
-//                            if (idSet.contains(oldObj.getID()))
-//                                continue;
-//                            
-//                            double oldObjVol = oldObj.getBoundingBox().volume();
-//                            double iVol = BoundingBox.estimateIntersectionVolume(newObj.getBoundingBox(), oldObj.getBoundingBox(), 8);
-//                            if(iVol == 0){
-//                            	continue;
-//                            }
-//
-//                            double overlapped = newObjVol/iVol * oldObjVol/iVol;
-//                            index            if(overlapped > overlapThresh && overlapped >= maxOverlapped){
-//                            	matched = true;
-//                            	maxOverlapped = overlapped;
-//                            	maxID = oldObj.getID();
-//                            }
-//
-////                            double dist = LinAlg.distance(newObj.getCentroid(), oldObj.getCentroid());
-////                            if(dist < threshOld && dist < minDistOld){
-////                                matchedOld = true;
-////                                minIDOld = oldObj.getID();
-////                                minDistOld = dist;
-////                            }
-//                        }
-//                        if(matched) {
-//                            newObj.setID(maxID);
-//                        }
-//                        else {
-//                            newObj.setID(Obj.nextID());
-//                        }
-//                    }
-//
-//                    else {
-//                        newObj.setID(Obj.nextID());
-//                    }
-//                }
-//                idSet.add(newObj.getID());
-//
-//                worldState.put(newObj.getID(), newObj);
-//            }
-
-            adjustBoundingBoxes(new ArrayList<Obj>(worldState.values()));
-            
-            
-            for(Obj o : imagined) {
-                worldState.put(o.getID(), o);
-            }
-            if(SHOW_TIMERS){
-            	System.out.println("  TRACKING: " + (TimeUtil.utime() - time));
-            	time = TimeUtil.utime();
-            }
-        }
-        
-        double frameTime = tic.toc();
-        if (frameTimes.size() < frameTotal) {
-            frameTimes.add(frameTime);
-        } else {
-            frameTimes.set(frameIdx, frameTime);
-            frameIdx = (frameIdx+1)%frameTotal;
-        }
-        calcFPS();
-    }
-
-    private void calcFPS()
-    {
-        double sum = 0;
-        for (Double time: frameTimes)
-        {
-            sum += time;
-        }
-        sum /= frameTimes.size();
-
-        fps = 1.0/sum;
-    }
-
-
-    /** Returns a list of objects : " + (TimeUtil.utime() - time))that the kinect sees on the table. The objects
-     *  are returned as Obj's from the segmenter, and are passed to the
-     *  classifiers. The resulting point clouds, their locations, and the
-     *  classifications are returned.
-     **/
-    private ArrayList<Obj> getVisibleObjects()
-    {
-    	long time = TimeUtil.utime();
-
-    	// Get points and segment to get visible objects
-    	if(SHOW_TIMERS){
-         	System.out.println("    POINT EXTRACTION + SEG");
-        }
-        ArrayList<Obj> visibleObjects = segmenter.getSegmentedObjects();
-        if(SHOW_TIMERS){
-        	System.out.println("    POINT EXTRACTION + SEG: " + (TimeUtil.utime() - time));
-        	time = TimeUtil.utime();
-        }
-
-        for(SimObject so : world.objects){
-            if(so instanceof ISimEffector) {
-            	ISimEffector effector = (ISimEffector)so;
-            	for(Obj obj : visibleObjects){
-            		effector.checkObject(obj);
-            	}
-            }
-        }
-
-        
-        // Classify all visible objects
-        for(Obj obj : visibleObjects){
-        	obj.addAllClassifications(classyManager.classifyAll(obj));
-        }
-        if(SHOW_TIMERS){
-        	System.out.println("    CLASSIFICATION: " + (TimeUtil.utime() - time));
-        }
-
-        return visibleObjects;
-    }
-
-    /** Returns a list of Obj that Soar believes exists in the world based on
-     *  their most recent lcm message. Obj have information such as their center
-     *  and features they were classified with. They do not have point clouds.
-     **/
-    public HashMap<Integer, Obj> getSoarObjects()
-    {
-        HashMap<Integer, Obj> soarObjects = new HashMap<Integer, Obj>();
-
-        synchronized(soarLock) {
-            if(soar_lcm != null) {
-
-                for(int i=0; i<soar_lcm.num_objects; i++) {
-                    object_data_t odt = soar_lcm.objects[i];
-                    Obj sObj = new Obj(odt.id);
-                    double[] xyzrpy = odt.pos;
-                    sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
-                    sObj.setBoundingBox(new BoundingBox(odt.bbox_dim, odt.bbox_xyzrpy));
-
-                    for(int j=0; j<odt.num_cat; j++) {
-                        categorized_data_t cat = odt.cat_dat[j];
-                        FeatureCategory fc = Features.getFeatureCategory(cat.cat.cat);
-                        Classifications cs = new Classifications();
-                        for(int k=0; k<cat.len; k++)
-                            cs.add(cat.label[k], cat.confidence[k]);
-
-                        sObj.addClassifications(fc, cs);
-                    }
-                    soarObjects.put(sObj.getID(), sObj);
-                }
-            }
-        }
-        return soarObjects;
-    }
-
-
-    //////////////
-    /// Deal with objects that we can't see through the kinect but want to
-    /// pretend are there (like locations)
-    public ArrayList<Obj> createImaginedObjects(SimWorld sw, boolean assignID)
-    {
-        ArrayList<Obj> imagined = new ArrayList<Obj>();
-        for(SimObject so : sw.objects)
-        {
-            if(so instanceof SimLocation) {
-                SimLocation sl = (SimLocation) so;
-                Obj locObj = sl.getObj(assignID);
-                imagined.add(locObj);
-            }
-        }
-        return imagined;
-    }
-    
-    private class CollisionStruct{
-    	public Obj obj;
-    	public double[] lenxyz;
-    	public double[] scaledLenxyz;
-    	public double[][] xyzrpy;
-    	public CollisionStruct(Obj obj){
-    		this.obj = obj;
-    		xyzrpy = LinAlg.xyzrpyToMatrix(obj.getBoundingBox().xyzrpy);
-    		lenxyz = LinAlg.copy(obj.getBoundingBox().lenxyz);
-    		scaledLenxyz = LinAlg.copy(lenxyz);
-    	}
-    	public boolean collidesWith(CollisionStruct col){
-    		return Collisions.collision(new BoxShape(scaledLenxyz), xyzrpy,
-    				new BoxShape(col.scaledLenxyz), col.xyzrpy);
-    	}
-    	public void setScale(double[] scale){
-    		LinAlg.scale(lenxyz, scale, scaledLenxyz);
-    	}
-    	public void updateObj(double[] scale){
-    		obj.setShape(new BoxShape(scaledLenxyz));
-    		LinAlg.copy(scaledLenxyz, obj.getBoundingBox().lenxyz);
-    	}
-    }
-    
-    double[] adjustOnDims(CollisionStruct c1, CollisionStruct c2, int[] dims){
-    	double[] scale = new double[]{1, 1, 1};
-
-    	// Simple binary search, finds it within 1%
-    	double min = 0.001, max = 1.0;
-    	for(int i = 0; i < 8; i++){
-    		double s = (max + min)/2;
-    		for(int dim : dims){
-    			scale[dim] = s;
-    		}
-    		c1.setScale(scale);
-    		c2.setScale(scale);
-    		if(c1.collidesWith(c2)){
-    			max = s;
-    		} else {
-    			min = s;
-    		}
-    	}
-    	
-    	for(int dim : dims){
-    		scale[dim] = min * .98;
-    	}
-    	return scale;
-    }
-    
-    private double adjustBoundingBoxOnAxis(CollisionStruct c1, CollisionStruct c2, int dim){
-    	double[] scale = new double[]{1, 1, 1};
-    	scale[dim] = 0.001;
-    	
-    	c1.setScale(scale);
-    	if(c1.collidesWith(c2)){
-    		// nothing we can do, return 1
-    		return 1;
-    	}
-    	
-    	// Simple binary search, finds it within 1%
-    	double min = 0.001, max = 1.0;
-    	for(int i = 0; i < 8; i++){
-    		double s = (max + min)/2;
-    		scale[dim] = s;
-    		c1.setScale(scale);
-    		if(c1.collidesWith(c2)){
-    			max = s;
-    		} else {
-    			min = s;
-    		}
-    	}
-    	scale[dim] = 1;
-    	c1.setScale(scale);
-    	
-    	return min;
-    }
-    
-    private double[] adjustBoundingBox(CollisionStruct c1, CollisionStruct c2){
-    	double[] xyzrpy1 = c1.obj.getBoundingBox().xyzrpy;
-    	double[] xyzrpy2 = c2.obj.getBoundingBox().xyzrpy;
-    	double[][] rot = LinAlg.rollPitchYawToMatrix(new double[]{xyzrpy1[3], xyzrpy1[4], xyzrpy1[5]});
-    	double[] dp = LinAlg.subtract(LinAlg.resize(xyzrpy2, 3), LinAlg.resize(xyzrpy1, 3));
-    	
-    	double bestScale = 0;
-    	int bestDim = -1; 
-    	for(int dim = 0; dim < 3; dim++){
-    		double dimScale = adjustBoundingBoxOnAxis(c1, c2, dim);
-    		if(dimScale != 1 && dimScale > bestScale){
-    			bestScale = dimScale;
-    			bestDim = dim;
-    		}
-    	}
-    	
-    	if(bestDim == -1){
-    		return null;
-    	}
-    	double[] scaleAxis = LinAlg.resize(rot[bestDim], 3);
-    	if(LinAlg.dotProduct(scaleAxis, dp) < 0){
-    		bestScale *= -1;
-    	}
-    	double[] xyzs = LinAlg.resize(LinAlg.subtract(LinAlg.resize(xyzrpy1, 3), LinAlg.scale(scaleAxis, bestScale * c1.lenxyz[bestDim]/2)), 6);
-    	for(int i = 0; i < 3; i++){
-    		xyzs[3+i] = (i != bestDim ? 1 : (1 + bestScale)/2.0);
-    	}
-    	
-    	return xyzs;
-    }
-    
-//    private void adjustBoundingBoxes(ArrayList<Obj> objs){
-//    	ArrayList<CollisionStruct> structs = new ArrayList<CollisionStruct>();
-//    	for(Obj obj : objs){
-//    		structs.add(new CollisionStruct(obj));
-//    	}
-//    	for(int i = 0; i < structs.size(); i++){
-//    		CollisionStruct col1 = structs.get(i);
-//    		for(int j = i+1; j < structs.size(); j++){
-//    			CollisionStruct col2 = structs.get(j);
-//    			if(!col1.collidesWith(col2)){
-//    				continue;
-//    			}
-//    			
-//    			double[] bestFit1 = adjustBoundingBox(col1, col2);
-//    			double[] bestFit2 = adjustBoundingBox(col2, col1);
-//    			
-//    			boolean use1 = false;
-//    			boolean use2 = false;
-//    			
-//    			if(bestFit1 == null && bestFit2 == null){
-//    				continue;
-//    			} else if(bestFit1 == null){
-//    				use2 = true;
-//    			} else if(bestFit2 == null){
-//    				use1 = true;
-//    			} else {
-//    				double s1 = bestFit1[3] * bestFit1[4] * bestFit1[5];
-//    				double s2 = bestFit2[3] * bestFit2[4] * bestFit2[5];
-//    				if(s1 > s2){
-//    					use1 = true;
-//    				} else {
-//    					use2 = true;
-//    				}
-//    			}
-//    			
-//    			if(use1){
-//    				for(int d = 0; d < 3; d++){
-//    					col1.obj.getBoundingBox().xyzrpy[d] = bestFit1[d];
-//    					col1.obj.getBoundingBox().lenxyz[d] *= bestFit1[3+d];
-//    				}
-//    			} else if(use2) {
-//    				for(int d = 0; d < 3; d++){
-//    					col2.obj.getBoundingBox().xyzrpy[d] = bestFit2[d];
-//    					col2.obj.getBoundingBox().lenxyz[d] *= (1 + bestFit2[3+d])/2.0;
-//    				}
-//    			}
-//    		}
-//    	}
-//    			
-//    			
-//    			
-////    			
-////    			int[][] dimsToTry = new int[][]{
-////    //					new int[]{0},		// x axis only
-////    //					new int[]{1},		// y axis only 
-////    					new int[]{2}, 		// z axis only
-////    //					new int[]{0, 1}, 	// x and y axis
-////    //					new int[]{0, 1, 2}  // x, y, and z axes
-////    			};
-////    			
-////    			double bestScore = 0;
-////    			double[] bestScale = new double[]{ 1, 1, 1};
-////    			for(int[] dims : dimsToTry){
-////    				double[] scale = adjustOnDims(col1, col2, dims);
-////    				double score = scale[0] * scale[1] * scale[2];
-////    				if(score > bestScore){
-////    					bestScore = score;
-////    					bestScale = scale;
-////    				}
-////    			}
-////    			
-////					if(bestScore > .1){
-////    				col1.updateObj(bestScale);
-////    				col2.updateObj(bestScale);
-////					}
-////    		}
-//    }
-    
+    /**************************************************************************
+     * 
+     * Adjust Bounding Boxes
+     * This makes sure no two bounding boxes overlap vertically
+     *
+     *************************************************************************/
     
     private boolean verticallyAligned(double[] pt, BoundingBox bbox){
     	double[] xyz = LinAlg.resize(bbox.xyzrpy, 3);
@@ -797,8 +524,10 @@ public class Tracker
             }
         }
         // =========== END HACK ======================
-    	
-    }
+    }    
+
+
+
     
     //////////////////////////////////////////////////////////////
     // Methods for interacting with the classifierManager (used through guis)
@@ -913,7 +642,11 @@ public class Tracker
     // XXX This is kind of weird
     public ArrayList<Sensor> getSensors()
     {
-        return segmenter.getSensors();
+    	if(settings.useSeg){
+    		return segmenter.getSensors();
+    	} else {
+    		return new ArrayList<Sensor>();
+    	}
     }
 
     // Given a command from soar to set the state for an object,
@@ -927,7 +660,7 @@ public class Tracker
     		}
     	}
     	if(src != null && src instanceof ISimStateful){
-    		synchronized(locLock){
+    		synchronized(worldLock){
     			((ISimStateful)src).setState(setState.state_name, setState.state_val);
     		}
 		}
@@ -984,35 +717,6 @@ public class Tracker
             } else if(channel.equals("PERCEPTION_COMMAND")){
             	perception_command_t command = new perception_command_t(ins);
             	handlePerceptionCommand(command);
-            }
-        }
-    }
-
-    /** Runs in the background, updating our knowledge of the scene */
-    public class TrackingThread extends Thread
-    {
-        public void run()
-        {
-            while (true) {
-            	long startTime = TimeUtil.utime();
-            	if(SHOW_TIMERS){
-            		System.out.println("------------------------------");
-            		System.out.println("TRACKER");
-            	}
-                compareObjects();
-                HashMap<Integer, Obj> objs = getWorldState();
-                ArrayList<Obj> objsList = new ArrayList<Obj>();
-                for(Obj o : objs.values())
-                    objsList.add(o);
-                synchronized (armLock) {
-                    armInterpreter.updateWorld(objsList);
-                }
-    			
-                if(SHOW_TIMERS){
-                    System.out.println("TRACKER: " + (TimeUtil.utime() - startTime));
-                }
-
-                TimeUtil.sleep(1000/30);
             }
         }
     }

@@ -27,15 +27,14 @@ public class SimSteak extends SimBoxPC{
         
         // Boolean for cooked (false = raw)
         this.addNewState("cooked", new String[]{"false", "true"});
-				this.setState("cooked", ins.readString());
+		this.setState("cooked", ins.readString());
     }
 
     /** Write one or more lines that serialize this instance. No line
      * is allowed to consist of just an asterisk. **/
     public void write(StructureWriter outs) throws IOException
     {
-        outs.writeDoubles(LinAlg.matrixToXyzrpy(T));
-        outs.writeDouble(scale);
+    	super.write(outs);
         outs.writeString(isCooked ? "true" : "false");
     }
     
@@ -49,17 +48,18 @@ public class SimSteak extends SimBoxPC{
     	        	super.setState("cooked", "true");
     			}
     		}
-				return;
-    	} else if(stateName.equals("cooked")){
-				isCooked = (stateVal.equals("true"));
-				if(isCooked){
-					temp = 60;
-					color = cookedColor;
-				} else {
-					temp = 0;
-					color = rawColor;
-				}
+			return;
+    	}
+    	if(stateName.equals("cooked")){
+			isCooked = (stateVal.equals("true"));
+			if(isCooked){
+				temp = 60;
+				color = cookedColor;
+			} else {
+				temp = 0;
+				color = rawColor;
 			}
-			super.setState(stateName, stateVal);
+		}
+		super.setState(stateName, stateVal);
     }
 }
