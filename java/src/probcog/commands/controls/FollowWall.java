@@ -22,7 +22,7 @@ import magic2.lcmtypes.*;
  **/
 public class FollowWall implements ControlLaw, LCMSubscriber
 {
-    private static final double FW_HZ = 100;
+    private static final double FW_HZ = 40;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
     private static final double BACK_THETA = 16*Math.PI/36;
@@ -282,7 +282,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         lcm.subscribe(laserChannel, this);
         lcm.subscribe(poseChannel, this);
-        tasks.addFixedDelay(new UpdateTask(), 1.0/FW_HZ);
+        tasks.addFixedRate(new UpdateTask(), 1.0/FW_HZ);
     }
 
     // Ignore heading for now

@@ -35,6 +35,7 @@ public class ControlLawFactory
         registerControlLaw("follow-hall", FollowHall.class.getName());
         registerControlLaw("drive-to-tag", DriveTowardsTag.class.getName());
         registerControlLaw("orient", Orient.class.getName());
+        registerControlLaw("drive-xy", DriveToXY.class.getName());
     }
 
     /** Register control laws with the factory. It is the job of the
