@@ -37,7 +37,7 @@ public class PotentialUtil
 
         // Is this value set correctly in config? Reevaluate for new robot.
         public double robotRadius = Util.getConfig().requireDouble("robot.geometry.radius");
-        public double fieldSize = 10.0;  // [meters];
+        public double fieldSize = 3.0;  // [meters];
         public double fieldRes = 0.1;   // [meters / pixel]
 
         // attractiveThreshold used for combined method, specifying a distance
@@ -194,10 +194,16 @@ public class PotentialUtil
         VisCanvas vc = new VisCanvas(vl);
         jf.add(vc, BorderLayout.CENTER);
 
+        int[] map = new int[] {0xffffff00,
+                               0xffff00ff,
+                               0xff0000ff,
+                               0x0007ffff,
+                               0xff2222ff};
+        ColorMapper cm = new ColorMapper(map, 0, params.repulsiveWeight/5);
 
         VisWorld.Buffer vb = vw.getBuffer("potential-field");
         vb.setDrawOrder(-10);
-        vb.addBack(pf.getVisObject());
+        vb.addBack(pf.getVisObject(cm));
         vb.swap();
 
         vb = vw.getBuffer("grid");

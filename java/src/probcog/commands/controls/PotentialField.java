@@ -157,12 +157,11 @@ public class PotentialField
     public VisChain getVisObject(ColorMapper cm)
     {
         BufferedImage im;
+        double maxValue = getMax();
         if (cm == null) {
-
             im = new BufferedImage(widthPx, heightPx, BufferedImage.TYPE_BYTE_GRAY);
             byte[] buf = ((DataBufferByte)(im.getRaster().getDataBuffer())).getData();
 
-            double maxValue = getMax();
             for (int i = 0; i < data.length; i++) {
                 if (maxValue > 0)
                     buf[i] = (byte)((data[i]/maxValue)*0xff);
