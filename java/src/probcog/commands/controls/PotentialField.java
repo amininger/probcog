@@ -181,7 +181,6 @@ public class PotentialField
                     buf[i] = (byte)((data[i]/maxValue)*0xff);
             }
         } else {
-            cm.setMinMax(minValue, maxValue);
             im = new BufferedImage(widthPx, heightPx, BufferedImage.TYPE_INT_ARGB);
             int[] buf = ((DataBufferInt)(im.getRaster().getDataBuffer())).getData();
 

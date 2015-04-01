@@ -4,6 +4,8 @@ import java.awt.*;
 import javax.swing.*;
 import java.util.*;
 
+import lcm.lcm.*;
+
 import april.jmat.*;
 import april.vis.*;
 
@@ -46,9 +48,8 @@ public class PotentialUtil
         public double attractiveWeight = 1.0;
         public double attractiveThreshold = 1.0;
 
-        //
-        public double repulsiveWeight = 10.0;
-        public double maxObstacleRange = 3*robotRadius; // XXX
+        public double repulsiveWeight = 2.0;
+        public double maxObstacleRange = 4*robotRadius; // XXX
     }
 
     /** Get the gradient of a coordinate relative to the robot for the
@@ -158,48 +159,71 @@ public class PotentialUtil
             points.add(LinAlg.transform(xyt, xy));
         }
 
-        // Determine the distance to the closest point
         for (int y = 0; y < pf.getHeight(); y++) {
             for (int x = 0; x < pf.getWidth(); x++) {
                 double[] xy = pf.indexToMeters(x, y);
-                double d = Double.MAX_VALUE;
+                double v = 0;
+                int cnt = 0;
                 for (double[] pxy: points) {
-                    d = Math.min(d, LinAlg.distance(xy, pxy, 2));
-                }
+                    double d = LinAlg.distance(xy, pxy, 2);
 
-                // No potential added
-                if (d > kr)
-                    continue;
-                pf.addIndex(x, y, 0.5*kw*LinAlg.sq(d-invKr));
+                    // No potential added
+                    if (d > kr)
+                        continue;
+
+                    v += 0.5*LinAlg.sq(1.0/d-invKr);
+                    cnt++;
+                }
+                v /= cnt;
+                pf.addIndex(x, y, kw*v);
             }
         }
+
+        // Determine the distance to the closest point
+        //for (int y = 0; y < pf.getHeight(); y++) {
+        //    for (int x = 0; x < pf.getWidth(); x++) {
+        //        double[] xy = pf.indexToMeters(x, y);
+        //        double d = Double.MAX_VALUE;
+        //        for (double[] pxy: points) {
+        //            d = Math.min(d, LinAlg.distance(xy, pxy, 2));
+        //        }
+
+        //        // No potential added
+        //        if (d > kr)
+        //            continue;
+        //        pf.addIndex(x, y, 0.5*kw*LinAlg.sq(1.0/d-invKr));
+        //    }
+        //}
     }
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {2.0, -3, 0};
+        double[] goal = new double[] {1.5, -3, 0};
         pose_t pose = new pose_t();
-        pose.orientation = new double[] {1, 0, 0, 0};
-        pose.pos = new double[] {1.5, 1, 0};
+        double[] xyt = new double[] {1.5, 1, -Math.PI/4};
+        pose.orientation = LinAlg.rollPitchYawToQuat(new double[] {0, 0, xyt[2]});
+        pose.pos = new double[] {xyt[0], xyt[1], 0};
 
         // Fake a hallway. Wall on right is 1m away, wall on left is 0.5m
         laser_t laser = new laser_t();
-        laser.rad0 = (float)(-3*Math.PI/4);
+        laser.rad0 = (float)(-Math.PI);
         laser.radstep = (float)(Math.toRadians(1));
-        laser.nranges = 270;
+        laser.nranges = 360;
         laser.ranges = new float[laser.nranges];
         for (int i = 0; i < laser.nranges; i++) {
             double t = laser.rad0 + i*laser.radstep;
             double r = -1;
             if (t < 0) {
-                r = -0.5/Math.sin(t);
+                r = (-0.5/Math.sin(t));
             } else if (t > 0) {
-                r = 1.0/Math.sin(t);
+                r = (1.0/Math.sin(t));
             }
             if (r > 30 || r < 0)
                 r = -1;
             laser.ranges[i] = (float)r;
         }
+
+        LCM.getSingleton().publish("TEST_LASER", laser);
 
         // Construct the potential field
         Params params = new Params(laser, pose, goal);
@@ -235,7 +259,8 @@ public class PotentialUtil
                                0xff0000ff,
                                0x0007ffff,
                                0xff2222ff};
-        ColorMapper cm = new ColorMapper(map, 0, 1);
+        double minVal = pf.getMinValue();
+        ColorMapper cm = new ColorMapper(map, minVal, 5*minVal);
 
         VisWorld.Buffer vb = vw.getBuffer("potential-field");
         vb.setDrawOrder(-10);
