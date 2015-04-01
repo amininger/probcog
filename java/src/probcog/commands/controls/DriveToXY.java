@@ -5,6 +5,7 @@ import java.util.*;
 
 import lcm.lcm.*;
 
+import april.jmat.*;
 import april.util.*;
 
 import probcog.commands.*;
@@ -15,7 +16,17 @@ import magic2.lcmtypes.*;
 
 public class DriveToXY implements ControlLaw, LCMSubscriber
 {
+    // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 40;
+    static final double GRAD_RANGE = 0.2;
+    static final double GRAD_STEP = 0.05;
+    static final double MAX_SPEED = 0.5;
+    static final double FORWARD_SPEED = 0.1;
+    static final double TURN_WEIGHT = 5.0;
+
+    // XXX Get this into config
+    double WHEELBASE = 0.46;
+    double WHEEL_DIAMETER = 0.25;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
@@ -142,7 +153,35 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         dd.left_enabled = dd.right_enabled = true;
         dd.left = dd.right = 0.0;
 
+        // Compute gradients in a small region around the robot
+        ArrayList<double[]> rxys = new ArrayList<double[]>();
+        for (double y = -GRAD_RANGE; y <= GRAD_RANGE; y += GRAD_STEP) {
+            for (double x = -GRAD_RANGE; x <= GRAD_RANGE; x += GRAD_STEP) {
+                rxys.add(new double[] {x, y});
+            }
+        }
+        ArrayList<double[]> grads = new ArrayList<double[]>();
+        for (double[] rxy: rxys) {
+            grads.add(PotentialUtil.getGradient(rxy, pf));
+        }
 
+        // First pass, average points to determine best heading
+        double[] u = new double[2];
+        for (double[] grad: grads) {
+            u = LinAlg.add(u, grad);
+        }
+        u = LinAlg.scale(u, 1.0/grads.size());
+
+        // Heading pursuit
+        double theta = Math.atan2(u[1], u[0]);
+        double turnSpeed = TURN_WEIGHT*(theta/Math.PI);
+        double right = (2*FORWARD_SPEED + turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
+        double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
+        double maxMag = Math.max(Math.abs(right), Math.abs(left));
+        if (maxMag > 0) {
+            dd.left = MAX_SPEED*(left/maxMag);
+            dd.right = MAX_SPEED*(right/maxMag);
+        }
 
         return dd;
     }
