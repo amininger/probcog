@@ -18,7 +18,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 40;
-    static final double GRAD_RANGE = 0.2;
     static final double GRAD_STEP = 0.05;
     static final double MAX_SPEED = 0.5;
     static final double FORWARD_SPEED = 0.1;
@@ -112,7 +111,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
-        tasks.setRunning(true);
+        tasks.setRunning(run);
     }
 
     /** Get the name of this control law. Mostly useful for debugging purposes.
@@ -155,9 +154,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         // Compute gradients in a small region around the robot
         ArrayList<double[]> rxys = new ArrayList<double[]>();
-        for (double y = -GRAD_RANGE; y <= GRAD_RANGE; y += GRAD_STEP) {
-            for (double x = -GRAD_RANGE; x <= GRAD_RANGE; x += GRAD_STEP) {
-                rxys.add(new double[] {x, y});
+        for (int y = -2; y <= 2; y++) {
+            for (int x = -2; x <= 2; x++) {
+                rxys.add(new double[] {x*GRAD_STEP, y*GRAD_STEP});
             }
         }
         ArrayList<double[]> grads = new ArrayList<double[]>();
@@ -171,6 +170,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             u = LinAlg.add(u, grad);
         }
         u = LinAlg.scale(u, 1.0/grads.size());
+        LinAlg.print(u);
+        System.out.println(LinAlg.magnitude(u));
 
         // Heading pursuit
         double theta = Math.atan2(u[1], u[0]);

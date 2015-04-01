@@ -66,6 +66,8 @@ public class PotentialUtil
         double dx = 0.5*((v10-v00)+(v11-v01));
         double dy = 0.5*((v01-v00)+(v11-v10));
 
+        if (MathUtil.doubleEquals(Math.abs(dx)+Math.abs(dx), 0))
+            return new double[2];
         return LinAlg.normalize(new double[] {-dx, -dy});
     }
 
