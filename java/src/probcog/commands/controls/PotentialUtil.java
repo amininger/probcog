@@ -38,7 +38,7 @@ public class PotentialUtil
         // Is this value set correctly in config? Reevaluate for new robot.
         public double robotRadius = Util.getConfig().requireDouble("robot.geometry.radius");
         public double fieldSize = 3.0;  // [meters];
-        public double fieldRes = 0.1;   // [meters / pixel]
+        public double fieldRes = 0.025;   // [meters / pixel]
 
         // attractiveThreshold used for combined method, specifying a distance
         // that, when exceeded, will switch to linear potential from quadratic.
@@ -47,8 +47,26 @@ public class PotentialUtil
         public double attractiveThreshold = 1.0;
 
         //
-        public double repulsiveWeight = 100.0;
+        public double repulsiveWeight = 10.0;
         public double maxObstacleRange = 3*robotRadius; // XXX
+    }
+
+    /** Get the gradient of a coordinate relative to the robot for the
+     *  given potential field. Return as a normalized direction (also relative
+     *  to the robot)
+     **/
+    static public double[] getGradient(double[] rxy,
+                                       PotentialField pf)
+    {
+        double v00 = pf.getRelative(rxy[0], rxy[1]);
+        double v10 = pf.getRelative(rxy[0]+pf.getMPP(), rxy[1]);
+        double v01 = pf.getRelative(rxy[0], rxy[1]+pf.getMPP());
+        double v11 = pf.getRelative(rxy[0]+pf.getMPP(), rxy[1]+pf.getMPP());
+
+        double dx = 0.5*((v10-v00)+(v11-v01));
+        double dy = 0.5*((v01-v00)+(v11-v10));
+
+        return LinAlg.normalize(new double[] {-dx, -dy});
     }
 
     /** Given application specific parameters, generate a potential field
@@ -115,6 +133,7 @@ public class PotentialUtil
         double kw = params.repulsiveWeight;
         double kr = params.maxObstacleRange;
         double invKr = 1.0/kr;
+        double invRad = 1.0/params.robotRadius;
 
         double[] xyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                  params.pose.pos));
@@ -149,23 +168,23 @@ public class PotentialUtil
                 // No potential added
                 if (d > kr)
                     continue;
-                pf.addIndex(x, y, 0.5*kw*LinAlg.sq(invKr - d));
+                pf.addIndex(x, y, 0.5*kw*LinAlg.sq(d-invKr));
             }
         }
     }
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {4, 2, 0};
+        double[] goal = new double[] {2.0, -3, 0};
         pose_t pose = new pose_t();
         pose.orientation = new double[] {1, 0, 0, 0};
         pose.pos = new double[] {1.5, 1, 0};
 
         // Fake a hallway. Wall on right is 1m away, wall on left is 0.5m
         laser_t laser = new laser_t();
-        laser.rad0 = (float)(-Math.PI/2);
+        laser.rad0 = (float)(-3*Math.PI/4);
         laser.radstep = (float)(Math.toRadians(1));
-        laser.nranges = 180;
+        laser.nranges = 270;
         laser.ranges = new float[laser.nranges];
         for (int i = 0; i < laser.nranges; i++) {
             double t = laser.rad0 + i*laser.radstep;
@@ -180,9 +199,23 @@ public class PotentialUtil
             laser.ranges[i] = (float)r;
         }
 
+        // Construct the potential field
         Params params = new Params(laser, pose, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
+        params.fieldRes = 0.005;
         PotentialField pf = PotentialUtil.getPotential(params);
+
+        // Evaluate gradients at fixed locations around the robot
+        ArrayList<double[]> rxys = new ArrayList<double[]>();
+        for (double y = -1.5; y <= 1.5; y+= 4*params.fieldRes) {
+            for (double x = -1.5; x <= 1.5; x+= 4*params.fieldRes) {
+                rxys.add(new double[] {x, y});
+            }
+        }
+        ArrayList<double[]> gradients = new ArrayList<double[]>();
+        for (double[] rxy: rxys)
+            gradients.add(getGradient(rxy, pf));
+
 
         JFrame jf = new JFrame("Potential test");
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -194,27 +227,52 @@ public class PotentialUtil
         VisCanvas vc = new VisCanvas(vl);
         jf.add(vc, BorderLayout.CENTER);
 
+        // Render the field
         int[] map = new int[] {0xffffff00,
                                0xffff00ff,
                                0xff0000ff,
                                0x0007ffff,
                                0xff2222ff};
-        ColorMapper cm = new ColorMapper(map, 0, params.repulsiveWeight/5);
+        ColorMapper cm = new ColorMapper(map, 0, 1);
 
         VisWorld.Buffer vb = vw.getBuffer("potential-field");
         vb.setDrawOrder(-10);
         vb.addBack(pf.getVisObject(cm));
         vb.swap();
 
+        // Render a grid
         vb = vw.getBuffer("grid");
         vb.addBack(new VzGrid());
         vb.swap();
 
+        // Render a robot
         vb = vw.getBuffer("robot");
         vb.setDrawOrder(10);
-        vb.addBack(new VisChain(LinAlg.quatPosToMatrix(pose.orientation,
-                                                       pose.pos),
-                                new VzRobot(new VzMesh.Style(Color.green))));
+        double[][] M = LinAlg.quatPosToMatrix(pose.orientation,
+                                              pose.pos);
+        vb.addBack(new VisChain(M, new VzRobot(new VzMesh.Style(Color.green))));
+        vb.swap();
+
+        // Render some local potentials
+        vb = vw.getBuffer("gradients");
+        vb.setDrawOrder(20);
+        ArrayList<double[]> bpoints = new ArrayList<double[]>();
+        ArrayList<double[]> gpoints = new ArrayList<double[]>();
+        for (int i = 0; i < rxys.size(); i++) {
+            double[] rxy = rxys.get(i);
+            double[] u = gradients.get(i);
+
+            double[] p0 = LinAlg.transform(M, rxy);
+            double[] p1 = LinAlg.transform(M, LinAlg.add(LinAlg.scale(u, 3*params.fieldRes), rxy));
+            bpoints.add(p0);
+            gpoints.add(p0);
+            gpoints.add(p1);
+        }
+        vb.addBack(new VzPoints(new VisVertexData(bpoints),
+                                new VzPoints.Style(Color.black, 2)));
+        vb.addBack(new VzLines(new VisVertexData(gpoints),
+                               VzLines.LINES,
+                               new VzLines.Style(Color.gray, 1)));
         vb.swap();
 
         jf.setVisible(true);

@@ -139,12 +139,25 @@ public class PotentialField
         return heightPx;
     }
 
-    public double getMax()
+    public double getMPP()
+    {
+        return metersPerPixel;
+    }
+
+    public double getMaxValue()
     {
         double max = 0;
         for (double v: data)
             max = Math.max(max, v);
         return max;
+    }
+
+    public double getMinValue()
+    {
+        double min = Double.MAX_VALUE;
+        for (double v: data)
+            min = Math.min(min, v);
+        return min;
     }
 
     /** Get a default grayscale image of the potential field */
@@ -157,7 +170,8 @@ public class PotentialField
     public VisChain getVisObject(ColorMapper cm)
     {
         BufferedImage im;
-        double maxValue = getMax();
+        double maxValue = getMaxValue();
+        double minValue = getMinValue();
         if (cm == null) {
             im = new BufferedImage(widthPx, heightPx, BufferedImage.TYPE_BYTE_GRAY);
             byte[] buf = ((DataBufferByte)(im.getRaster().getDataBuffer())).getData();
@@ -167,6 +181,7 @@ public class PotentialField
                     buf[i] = (byte)((data[i]/maxValue)*0xff);
             }
         } else {
+            cm.setMinMax(minValue, maxValue);
             im = new BufferedImage(widthPx, heightPx, BufferedImage.TYPE_INT_ARGB);
             int[] buf = ((DataBufferInt)(im.getRaster().getDataBuffer())).getData();
 
