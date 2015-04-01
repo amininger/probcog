@@ -18,8 +18,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 30;
-    static final double LOOKAHEAD = 0.10;
-    static final double Kd = 1.0;   // D term weight
+    static final double LOOKAHEAD = 0.05;
+    static final int LOOKAHEAD_STEPS = 10;
 
     static final double MAX_SPEED = 0.5;
     static final double FORWARD_SPEED = 0.1;
@@ -161,11 +161,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         // a lookahead point to compute the derivative of the gradient. Note:
         // do we really want normalized gradient values, then?
         double[] g = PotentialUtil.getGradient(new double[2], pf);
-        double[] gl = PotentialUtil.getGradient(LinAlg.scale(g, LOOKAHEAD), pf);
-        double[] dg = LinAlg.subtract(gl, g);
-
-        //g = LinAlg.normalize(LinAlg.add(g, LinAlg.scale(dg, Kd)));
-        g = LinAlg.normalize(LinAlg.add(g, LinAlg.scale(gl, Kd)));
+        for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
+            double[] gl = PotentialUtil.getGradient(LinAlg.scale(g, i*LOOKAHEAD), pf);
+            g = LinAlg.add(g, LinAlg.scale(gl, 1.0/(i+1)));
+        }
 
         // Heading pursuit
         double theta = Math.atan2(g[1], g[0]);

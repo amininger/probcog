@@ -49,7 +49,7 @@ public class PotentialUtil
         public double attractiveThreshold = 1.0;
 
         public double repulsiveWeight = 2.0;
-        public double maxObstacleRange = 4*robotRadius; // XXX
+        public double maxObstacleRange = 3*robotRadius; // XXX
     }
 
     /** Get the gradient of a coordinate relative to the robot for the
@@ -174,8 +174,10 @@ public class PotentialUtil
                     v += 0.5*LinAlg.sq(1.0/d-invKr);
                     cnt++;
                 }
-                v /= cnt;
-                pf.addIndex(x, y, kw*v);
+                if (cnt > 0) {
+                    v /= cnt;
+                    pf.addIndex(x, y, kw*v);
+                }
             }
         }
 
