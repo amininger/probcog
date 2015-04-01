@@ -17,8 +17,10 @@ import magic2.lcmtypes.*;
 public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     // I don't think we can hit this rate. CPU intensive?
-    static final double HZ = 40;
-    static final double GRAD_STEP = 0.05;
+    static final double HZ = 30;
+    static final double LOOKAHEAD = 0.05;
+    static final double Kd = 1/20.0;   // D term weight
+
     static final double MAX_SPEED = 0.5;
     static final double FORWARD_SPEED = 0.1;
     static final double TURN_WEIGHT = 5.0;
@@ -146,35 +148,26 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            params.pose,
                                                            xyt);
+        pp.fieldRes = 0.025;
+        //Tic tic = new Tic();
         PotentialField pf = PotentialUtil.getPotential(pp);
+        //System.out.printf("%f [s]\n", tic.toc());
 
         diff_drive_t dd = new diff_drive_t();
         dd.left_enabled = dd.right_enabled = true;
         dd.left = dd.right = 0.0;
 
-        // Compute gradients in a small region around the robot
-        ArrayList<double[]> rxys = new ArrayList<double[]>();
-        for (int y = -2; y <= 2; y++) {
-            for (int x = -2; x <= 2; x++) {
-                rxys.add(new double[] {x*GRAD_STEP, y*GRAD_STEP});
-            }
-        }
-        ArrayList<double[]> grads = new ArrayList<double[]>();
-        for (double[] rxy: rxys) {
-            grads.add(PotentialUtil.getGradient(rxy, pf));
-        }
+        // Find the gradient at our current location, then project ahead to
+        // a lookahead point to compute the derivative of the gradient. Note:
+        // do we really want normalized gradient values, then?
+        double[] g = PotentialUtil.getGradient(new double[2], pf);
+        double[] gl = PotentialUtil.getGradient(LinAlg.scale(g, LOOKAHEAD), pf);
+        double[] dg = LinAlg.subtract(gl, g);
 
-        // First pass, average points to determine best heading
-        double[] u = new double[2];
-        for (double[] grad: grads) {
-            u = LinAlg.add(u, grad);
-        }
-        u = LinAlg.scale(u, 1.0/grads.size());
-        LinAlg.print(u);
-        System.out.println(LinAlg.magnitude(u));
+        g = LinAlg.normalize(LinAlg.add(g, LinAlg.scale(dg, Kd)));
 
         // Heading pursuit
-        double theta = Math.atan2(u[1], u[0]);
+        double theta = Math.atan2(g[1], g[0]);
         double turnSpeed = TURN_WEIGHT*(theta/Math.PI);
         double right = (2*FORWARD_SPEED + turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
         double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
