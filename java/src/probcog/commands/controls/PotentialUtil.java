@@ -152,8 +152,8 @@ public class PotentialUtil
             if (r < 0)
                 continue;
             // Too far away to contribute potential
-            if (r > kr)
-                continue;
+            //if (r > kr)
+            //    continue;
             double t = params.laser.rad0 + i*params.laser.radstep;
             double[] xy = new double[] { r*Math.cos(t), r*Math.sin(t) };
             points.add(LinAlg.transform(xyt, xy));
@@ -200,7 +200,7 @@ public class PotentialUtil
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {1.5, -3, 0};
+        double[] goal = new double[] {2.0, -0, 0};
         pose_t pose = new pose_t();
         double[] xyt = new double[] {1.5, 1, -Math.PI/4};
         pose.orientation = LinAlg.rollPitchYawToQuat(new double[] {0, 0, xyt[2]});
@@ -258,8 +258,8 @@ public class PotentialUtil
         // Render the field
         int[] map = new int[] {0xffffff00,
                                0xffff00ff,
-                               0xff0000ff,
                                0x0007ffff,
+                               0xff0000ff,
                                0xff2222ff};
         double minVal = pf.getMinValue();
         ColorMapper cm = new ColorMapper(map, minVal, 5*minVal);

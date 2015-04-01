@@ -21,9 +21,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double LOOKAHEAD = 0.05;
     static final int LOOKAHEAD_STEPS = 10;
 
+    static final double DISTANCE_THRESH = 0.2;
     static final double MAX_SPEED = 0.5;
     static final double FORWARD_SPEED = 0.1;
-    static final double TURN_WEIGHT = 1.0;
+    static final double TURN_WEIGHT = 5.0;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -145,6 +146,16 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     /** Get a drive command from the CL. */
     public diff_drive_t drive(DriveParams params)
     {
+        diff_drive_t dd = new diff_drive_t();
+        dd.left_enabled = dd.right_enabled = true;
+        dd.left = dd.right = 0.0;
+
+        // If we're sufficiently close to the goal, STOP.
+        double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
+                                                                      params.pose.pos));
+        if (LinAlg.distance(robotXYT, xyt, 2) < DISTANCE_THRESH)
+            return dd;
+
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            params.pose,
                                                            xyt);
@@ -153,18 +164,17 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         PotentialField pf = PotentialUtil.getPotential(pp);
         //System.out.printf("%f [s]\n", tic.toc());
 
-        diff_drive_t dd = new diff_drive_t();
-        dd.left_enabled = dd.right_enabled = true;
-        dd.left = dd.right = 0.0;
-
         // Find the gradient at our current location, then project ahead to
         // a lookahead point to compute the derivative of the gradient. Note:
         // do we really want normalized gradient values, then?
         double[] g = PotentialUtil.getGradient(new double[2], pf);
+        double[] u = LinAlg.copy(g);
         for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
             double[] gl = PotentialUtil.getGradient(LinAlg.scale(g, i*LOOKAHEAD), pf);
             g = LinAlg.add(g, LinAlg.scale(gl, 1.0/(i+1)));
         }
+
+        // How do we know when we will just be spinning in circles hoping to stop?
 
         // Heading pursuit
         double theta = Math.atan2(g[1], g[0]);
