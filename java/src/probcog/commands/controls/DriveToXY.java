@@ -27,12 +27,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 30;
     static final double LOOKAHEAD = 0.05;
-    static final int LOOKAHEAD_STEPS = 10;  // Tie this to field size?
+    static final int LOOKAHEAD_STEPS = (int)(Math.ceil(1.0/LOOKAHEAD));
 
     static final double DISTANCE_THRESH = 0.2;
     static final double MAX_SPEED = 0.5;
     static final double FORWARD_SPEED = 0.1;
-    static final double TURN_WEIGHT = 2.0;
+    static final double TURN_WEIGHT = 1.0;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;

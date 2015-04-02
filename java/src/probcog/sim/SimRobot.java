@@ -87,19 +87,19 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.rotation_noise = 0.05;
 
         // Motor setup
-        double K_t = 0.7914*2.5;    // torque constant in [Nm / A] * multiplier to speed us up
+        double K_t = 0.7914;    // torque constant in [Nm / A] * multiplier to speed us up
         drive.leftMotor.torque_constant = K_t;
         drive.rightMotor.torque_constant = K_t;
         double K_emf = 1.406; // emf constant [V/(rad/s)]
         drive.leftMotor.emf_constant = K_emf;
         drive.rightMotor.emf_constant = K_emf;
-        double K_wr = 5.5;  // XXX Old winding resistance [ohms]
+        double K_wr = 2.5;  // Winding resistance [ohms]
         drive.leftMotor.winding_resistance = K_wr;
         drive.rightMotor.winding_resistance = K_wr;
         double K_inertia = 0.5; // XXX Hand-picked inertia [kg m^2]
         drive.leftMotor.inertia = K_inertia;
         drive.rightMotor.inertia = K_inertia;
-        double K_drag = 2.0;    // XXX Hand-picked drag [Nm / (rad/s)], always >= 0
+        double K_drag = 1.0;    // XXX Hand-picked drag [Nm / (rad/s)], always >= 0
         drive.leftMotor.drag_constant = K_drag;
         drive.rightMotor.drag_constant = K_drag;
 

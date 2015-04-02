@@ -74,13 +74,13 @@ public class FastDrive
         double K_emf = 1.406; // emf constant [V/(rad/s)]
         leftMotor.emf_constant = K_emf;
         rightMotor.emf_constant = K_emf;
-        double K_wr = 5.5;  // XXX Old winding resistance [ohms]
+        double K_wr = 2.5;  // XXX Old winding resistance [ohms]
         leftMotor.winding_resistance = K_wr;
         rightMotor.winding_resistance = K_wr;
         double K_inertia = 0.5; // XXX Hand picked inertia [kg m^2]
         leftMotor.inertia = K_inertia;
         rightMotor.inertia = K_inertia;
-        double K_drag = 2.0;    // XXX Hand picked drag [Nm / (rad/s)], always >= 0
+        double K_drag = 1.0;    // XXX Hand picked drag [Nm / (rad/s)], always >= 0
         leftMotor.drag_constant = K_drag;
         rightMotor.drag_constant = K_drag;
     }
