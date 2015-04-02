@@ -24,7 +24,7 @@ public class FastDrive
     public pose_t poseOdom = new pose_t();
 
     // The position of the robot's center of rotation w.r.t. the rear axle.
-    public double[] centerOfRotation = new double[] { 0, 0, 0 };
+    public double[] centerOfRotation = new double[] { 0, 0, 0 };    // XXX
 
     // [left, right] where each motor is [-1,1]
     public double[] motorCommands = new double[2];

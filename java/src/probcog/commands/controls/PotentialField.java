@@ -67,6 +67,7 @@ public class PotentialField
     public double getIndex(int ix, int iy)
     {
         if (!inRange(ix, iy)) {
+            System.out.println(ix+ " "+iy);
             System.err.println("ERR: Requested value outside of range");
             return Double.MAX_VALUE;
         }
@@ -190,7 +191,7 @@ public class PotentialField
         }
 
         VzImage vim = new VzImage(im);
-        return new VisChain(LinAlg.xytToMatrix(origin),
+        return new VisChain(//LinAlg.xytToMatrix(origin),
                             LinAlg.translate(-widthPx*0.5*metersPerPixel, -heightPx*0.5*metersPerPixel),
                             LinAlg.scale(metersPerPixel),
                             vim);

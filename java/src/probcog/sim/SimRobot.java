@@ -79,7 +79,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         // Reproduce this in monte-carlo bot
         drive = new DifferentialDrive(sw, this, new double[3]);
-        drive.centerOfRotation = new double[] { 0.23, 0, 0 };
+        drive.centerOfRotation = new double[] { 0.20, 0, 0 };
         drive.voltageScale = 24.0;
         drive.wheelDiameter = 0.25;
         drive.baseline = 0.46;  // As measured to wheel centers

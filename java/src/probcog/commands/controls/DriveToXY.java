@@ -14,21 +14,30 @@ import probcog.util.*;
 
 import magic2.lcmtypes.*;
 
+// XXX DEBUG
+import java.awt.*;
+import java.awt.image.*;
+import javax.swing.*;
+import april.vis.*;
+
 public class DriveToXY implements ControlLaw, LCMSubscriber
 {
+    VisWorld vw;
+
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 30;
     static final double LOOKAHEAD = 0.05;
-    static final int LOOKAHEAD_STEPS = 10;
+    static final int LOOKAHEAD_STEPS = 10;  // Tie this to field size?
 
     static final double DISTANCE_THRESH = 0.2;
     static final double MAX_SPEED = 0.5;
     static final double FORWARD_SPEED = 0.1;
-    static final double TURN_WEIGHT = 5.0;
+    static final double TURN_WEIGHT = 2.0;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
     double WHEEL_DIAMETER = 0.25;
+    double REAR_AXLE_OFFSET = 0.20;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =
@@ -42,6 +51,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     double[] xyt;
+    double lastTheta = Double.MAX_VALUE;
 
     private class UpdateTask implements PeriodicTasks.Task
     {
@@ -84,6 +94,18 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         lcm.subscribe(laserChannel, this);
         lcm.subscribe(poseChannel, this);
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
+
+        // XXX DEBUG
+        JFrame jf = new JFrame("Debug DriveXY");
+        jf.setSize(400, 400);
+        jf.setLayout(new BorderLayout());
+
+        vw = new VisWorld();
+        VisLayer vl = new VisLayer(vw);
+        VisCanvas vc = new VisCanvas(vl);
+        jf.add(vc);
+
+        jf.setVisible(true);
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -150,34 +172,81 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         dd.left_enabled = dd.right_enabled = true;
         dd.left = dd.right = 0.0;
 
-        // If we're sufficiently close to the goal, STOP.
+        // Project pose to robot center. Stop if close to goal.
         double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                       params.pose.pos));
+        //double[] dir = new double[] {Math.cos(robotXYT[2]), Math.sin(robotXYT[2])};
+        //robotXYT[0] += dir[0]*REAR_AXLE_OFFSET;
+        //robotXYT[1] += dir[1]*REAR_AXLE_OFFSET;
+
         if (LinAlg.distance(robotXYT, xyt, 2) < DISTANCE_THRESH)
             return dd;
 
+        pose_t pose = new pose_t();
+        pose.orientation = LinAlg.copy(params.pose.orientation);
+        pose.pos = new double[] {robotXYT[0], robotXYT[1], 0};
+
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
-                                                           params.pose,
+                                                           pose,
                                                            xyt);
         pp.fieldRes = 0.025;
+        pp.maxObstacleRange = 2.0*pp.robotRadius;
         //Tic tic = new Tic();
         PotentialField pf = PotentialUtil.getPotential(pp);
         //System.out.printf("%f [s]\n", tic.toc());
 
-        // Find the gradient at our current location, then project ahead to
-        // a lookahead point to compute the derivative of the gradient. Note:
-        // do we really want normalized gradient values, then?
-        double[] g = PotentialUtil.getGradient(new double[2], pf);
-        double[] u = LinAlg.copy(g);
-        for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
-            double[] gl = PotentialUtil.getGradient(LinAlg.scale(g, i*LOOKAHEAD), pf);
-            g = LinAlg.add(g, LinAlg.scale(gl, 1.0/(i+1)));
+        // Determine the heading to pursue by sampling potentials along various
+        // headings. Choose heading with least total potential.
+        double theta = -Math.PI;
+        double potentialBest = Double.MAX_VALUE;
+        for (double t = -Math.PI; t < Math.PI; t += Math.toRadians(1)) {
+            double potential = 0;
+            for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
+                double rx = Math.cos(t)*(i*LOOKAHEAD);
+                double ry = Math.sin(t)*(i*LOOKAHEAD);
+                potential += pf.getRelative(rx, ry)/LOOKAHEAD_STEPS;
+            }
+
+            if (potential < potentialBest) {
+                theta = t;
+                potentialBest = potential;
+            }
         }
 
-        // How do we know when we will just be spinning in circles hoping to stop?
+        if (true) {
+            // Render the field
+            int[] map = new int[] {0xffffff00,
+                0xffff00ff,
+                0x0007ffff,
+                0xff0000ff,
+                0xff2222ff};
+            double minVal = pf.getMinValue();
+            ColorMapper cm = new ColorMapper(map, minVal, 2.5*minVal);
 
-        // Heading pursuit
-        double theta = Math.atan2(g[1], g[0]);
+            VisWorld.Buffer vb = vw.getBuffer("pf");
+            vb.addBack(pf.getVisObject(cm));
+            vb.swap();
+
+            vb = vw.getBuffer("grad");
+            VisVertexData vvd = new VisVertexData();
+            vvd.add(new double[2]);
+            vvd.add(new double[] {Math.cos(theta), Math.sin(theta)});
+            vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 2)));
+            vb.swap();
+        }
+
+        // No valid heading
+        if (potentialBest == Double.MAX_VALUE)
+            return dd;
+
+        // Determine if we're stuck
+        if (lastTheta != Double.MAX_VALUE) {
+            double dtheta = MathUtil.mod2pi(lastTheta - theta);
+            if (Math.abs(dtheta) > Math.PI/2)
+                return dd;
+        }
+        lastTheta = theta;
+
         double turnSpeed = TURN_WEIGHT*(theta/Math.PI);
         double right = (2*FORWARD_SPEED + turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
         double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;

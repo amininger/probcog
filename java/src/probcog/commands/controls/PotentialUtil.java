@@ -48,7 +48,7 @@ public class PotentialUtil
         public double attractiveWeight = 1.0;
         public double attractiveThreshold = 1.0;
 
-        public double repulsiveWeight = 2.0;
+        public double repulsiveWeight = 10.0;
         public double maxObstacleRange = 3*robotRadius; // XXX
     }
 
@@ -200,7 +200,7 @@ public class PotentialUtil
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {2.0, -0, 0};
+        double[] goal = new double[] {2.0, -5, 0};
         pose_t pose = new pose_t();
         double[] xyt = new double[] {1.5, 1, -Math.PI/4};
         pose.orientation = LinAlg.rollPitchYawToQuat(new double[] {0, 0, xyt[2]});
@@ -230,13 +230,14 @@ public class PotentialUtil
         // Construct the potential field
         Params params = new Params(laser, pose, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
-        params.fieldRes = 0.005;
+        params.fieldRes = 0.01;
+        params.maxObstacleRange = 0.5;
         PotentialField pf = PotentialUtil.getPotential(params);
 
         // Evaluate gradients at fixed locations around the robot
         ArrayList<double[]> rxys = new ArrayList<double[]>();
-        for (double y = -1.5; y <= 1.5; y+= 4*params.fieldRes) {
-            for (double x = -1.5; x <= 1.5; x+= 4*params.fieldRes) {
+        for (double y = -1.5; y <= 1.5; y+= 2*params.fieldRes) {
+            for (double x = -1.5; x <= 1.5; x+= 2*params.fieldRes) {
                 rxys.add(new double[] {x, y});
             }
         }
@@ -264,9 +265,11 @@ public class PotentialUtil
         double minVal = pf.getMinValue();
         ColorMapper cm = new ColorMapper(map, minVal, 5*minVal);
 
+        double[][] M = LinAlg.quatPosToMatrix(pose.orientation,
+                                              pose.pos);
         VisWorld.Buffer vb = vw.getBuffer("potential-field");
         vb.setDrawOrder(-10);
-        vb.addBack(pf.getVisObject(cm));
+        vb.addBack(new VisChain(M, pf.getVisObject(cm)));
         vb.swap();
 
         // Render a grid
@@ -277,8 +280,6 @@ public class PotentialUtil
         // Render a robot
         vb = vw.getBuffer("robot");
         vb.setDrawOrder(10);
-        double[][] M = LinAlg.quatPosToMatrix(pose.orientation,
-                                              pose.pos);
         vb.addBack(new VisChain(M, new VzRobot(new VzMesh.Style(Color.green))));
         vb.swap();
 
@@ -292,7 +293,7 @@ public class PotentialUtil
             double[] u = gradients.get(i);
 
             double[] p0 = LinAlg.transform(M, rxy);
-            double[] p1 = LinAlg.transform(M, LinAlg.add(LinAlg.scale(u, 3*params.fieldRes), rxy));
+            double[] p1 = LinAlg.transform(M, LinAlg.add(LinAlg.scale(u, 1*params.fieldRes), rxy));
             bpoints.add(p0);
             gpoints.add(p0);
             gpoints.add(p1);
