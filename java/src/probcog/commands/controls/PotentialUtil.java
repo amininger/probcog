@@ -48,8 +48,8 @@ public class PotentialUtil
         public double attractiveWeight = 1.0;
         public double attractiveThreshold = 1.0;
 
-        public double repulsiveWeight = 10.0;
-        public double maxObstacleRange = 3*robotRadius; // XXX
+        public double repulsiveWeight = 5.0;
+        public double maxObstacleRange = 1.5*robotRadius;
     }
 
     /** Get the gradient of a coordinate relative to the robot for the

@@ -24,6 +24,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     VisWorld vw;
 
+    private boolean DEBUG = false;
+
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 30;
     static final double LOOKAHEAD = 0.05;
@@ -95,17 +97,18 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         lcm.subscribe(poseChannel, this);
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
-        // XXX DEBUG
-        JFrame jf = new JFrame("Debug DriveXY");
-        jf.setSize(400, 400);
-        jf.setLayout(new BorderLayout());
+        if (DEBUG) {
+            JFrame jf = new JFrame("Debug DriveXY");
+            jf.setSize(400, 400);
+            jf.setLayout(new BorderLayout());
 
-        vw = new VisWorld();
-        VisLayer vl = new VisLayer(vw);
-        VisCanvas vc = new VisCanvas(vl);
-        jf.add(vc);
+            vw = new VisWorld();
+            VisLayer vl = new VisLayer(vw);
+            VisCanvas vc = new VisCanvas(vl);
+            jf.add(vc);
 
-        jf.setVisible(true);
+            jf.setVisible(true);
+        }
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -189,17 +192,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            pose,
                                                            xyt);
-        pp.fieldRes = 0.025;
-        pp.maxObstacleRange = 2.0*pp.robotRadius;
-        //Tic tic = new Tic();
         PotentialField pf = PotentialUtil.getPotential(pp);
-        //System.out.printf("%f [s]\n", tic.toc());
 
         // Determine the heading to pursue by sampling potentials along various
         // headings. Choose heading with least total potential.
         double theta = -Math.PI;
         double potentialBest = Double.MAX_VALUE;
-        for (double t = -Math.PI; t < Math.PI; t += Math.toRadians(1)) {
+        for (double t = -3*Math.PI/2; t <= 3*Math.PI/2; t += Math.toRadians(1)) {
             double potential = 0;
             for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
                 double rx = Math.cos(t)*(i*LOOKAHEAD);
@@ -213,7 +212,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             }
         }
 
-        if (true) {
+        if (DEBUG) {
             // Render the field
             int[] map = new int[] {0xffffff00,
                 0xffff00ff,

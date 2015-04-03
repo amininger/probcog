@@ -9,14 +9,19 @@ import april.jmat.*;
 import april.util.*;
 
 import probcog.commands.*;
+import probcog.util.*;
 
 import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 {
-    private static final double DTT_HZ = 100;
+    private static final double DTT_HZ = 30;
+
     LCM lcm = LCM.getSingleton();
+    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
+    String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
+
     PeriodicTasks tasks = new PeriodicTasks(1);
 
     static final double TURN_THRESH = Math.toRadians(90);
@@ -34,8 +39,10 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     private int targetID;
     private String classType;
     private Object classyLock = new Object();
-    ExpiringMessageCache<classification_t> lastClassification =
+    private ExpiringMessageCache<classification_t> lastClassification =
         new ExpiringMessageCache<classification_t>(0.5);
+    private ExpiringMessageCache<laser_t> laserCache =
+        new ExpiringMessageCache<laser_t>(.2);
 
     private class DriveTask implements PeriodicTasks.Task
     {
@@ -51,8 +58,16 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                 params.classy = lastClassification.get();
                 params.dt = dt;
 
+                laser_t laser = laserCache.get();
+                if (laser == null) {
+                    System.err.println("ERR: No laser data on channel "+laserChannel);
+                    return;
+                }
+                params.laser = laser;
+
                 diff_drive_t dd = drive(params);
-                lcm.publish("DIFF_DRIVE", dd);
+                dd.utime = TimeUtil.utime();
+                lcm.publish(driveChannel, dd);
             }
         }
     }
@@ -94,37 +109,17 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
             return dd;
 
         double dist = LinAlg.magnitude(LinAlg.resize(classy.xyzrpy, 2));
-        double theta = Math.atan2(classy.xyzrpy[1],
-                                  classy.xyzrpy[0]);
+        pose_t pose = new pose_t();
+        pose.orientation = new double[] {1,0,0,0};
+        pose.pos = new double[3];
+        params.pose = pose;
 
-        if (Math.abs(theta) > TURN_THRESH) {
-            if (theta > 0) {
-                dd.left = -MAX_TURN;
-                dd.right = MAX_TURN;
-            } else {
-                dd.left = MAX_TURN;
-                dd.right = -MAX_TURN;
-            }
-        } else {
-            //double mag = MathUtil.clamp(MAX_SPEED*(dist/DIST_THRESH), MIN_SPEED, MAX_SPEED);
+        HashMap<String, TypedValue> typedParams = new HashMap<String, TypedValue>();
+        typedParams.put("x", new TypedValue(classy.xyzrpy[0]));
+        typedParams.put("y", new TypedValue(classy.xyzrpy[1]));
+        DriveToXY driveXY = new DriveToXY(typedParams);
 
-            //dd.left = 0.3 + 0.6*(theta/(-Math.PI/2));
-            //dd.right = 0.3 + 0.6*(theta/(Math.PI/2));
-            double turn_speed = TURN_WEIGHT*(theta/Math.PI);
-            dd.right = (2*FORWARD_SPEED + turn_speed*WHEELBASE)/WHEEL_DIAMETER;
-            dd.left = (2*FORWARD_SPEED - turn_speed*WHEELBASE)/WHEEL_DIAMETER;
-            double max_mag = Math.max(Math.abs(dd.left), Math.abs(dd.right));
-
-            if (max_mag > 0) {
-                dd.left = MAX_SPEED*dd.left/max_mag;
-                dd.right = MAX_SPEED*dd.right/max_mag;
-            }
-        }
-
-        if (dist <= 0.2)
-            dd.left = dd.right = 0;
-
-
+        dd = driveXY.drive(params);
         return dd;
     }
 
@@ -149,6 +144,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         assert (parameters.containsKey("class"));
         classType = parameters.get("class").toString();
 
+        lcm.subscribe(laserChannel, this);
         lcm.subscribe("CLASSIFICATIONS", this);
         tasks.addFixedDelay(new DriveTask(), 1.0/DTT_HZ);
         //tasks.setRunning(true);
@@ -164,6 +160,9 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                     classification_t curr = cl.classifications[i];
                     handleClassification(curr, cl.utime);
                 }
+            } else if (laserChannel.equals(channel)) {
+                laser_t laser = new laser_t(ins);
+                laserCache.put(laser, laser.utime);
             }
         } catch (IOException ex) {
             System.out.println("ERR: Couldn't handle message on channel - "+channel);
