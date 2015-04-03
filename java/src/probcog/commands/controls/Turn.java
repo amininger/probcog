@@ -128,9 +128,6 @@ public class Turn implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("yaw"))
             goalYaw = Math.abs(parameters.get("yaw").getDouble());
 
-        if (!parameters.containsKey("no-lcm"))
-            lcm.subscribe("POSE", this);
-
         tasks.addFixedDelay(new TurnTask(), 1.0/DD_HZ);
     }
 
@@ -140,6 +137,12 @@ public class Turn implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            // no-lcm?
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
         tasks.setRunning(run);
     }
 

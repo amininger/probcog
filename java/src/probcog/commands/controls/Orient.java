@@ -61,9 +61,6 @@ public class Orient implements ControlLaw, LCMSubscriber
         assert (parameters.containsKey("yaw"));
         goalYaw = parameters.get("yaw").getDouble();
 
-        if (!parameters.containsKey("no-lcm"))
-            lcm.subscribe("POSE", this);
-
         tasks.addFixedDelay(new OrientTask(), 1.0/HZ);
     }
 
@@ -93,6 +90,12 @@ public class Orient implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            // No-lcm?
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
         tasks.setRunning(run);
     }
 

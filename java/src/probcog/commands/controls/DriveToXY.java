@@ -31,7 +31,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double LOOKAHEAD = 0.05;
     static final int LOOKAHEAD_STEPS = (int)(Math.ceil(1.0/LOOKAHEAD));
 
-    static final double DISTANCE_THRESH = 0.2;
+    static final double DISTANCE_THRESH = 0.25;
     static final double MAX_SPEED = 0.5;
     static final double FORWARD_SPEED = 0.1;
     static final double TURN_WEIGHT = 1.0;
@@ -61,13 +61,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         {
             laser_t laser = laserCache.get();
             if (laser == null) {
-                System.out.println("ERR: No laser_t detected on channel "+laserChannel);
+                System.err.println("ERR: No laser_t detected on channel "+laserChannel);
                 return;
             }
 
             pose_t pose = poseCache.get();
             if (pose == null) {
-                System.out.println("ERR: No pose_t detected on channel "+poseChannel);
+                System.err.println("ERR: No pose_t detected on channel "+poseChannel);
                 return;
             }
 
@@ -93,8 +93,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                              parameters.get("y").getDouble(),
                              0.0 };
 
-        lcm.subscribe(laserChannel, this);
-        lcm.subscribe(poseChannel, this);
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
         if (DEBUG) {
@@ -139,6 +137,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            lcm.subscribe(laserChannel, this);
+            lcm.subscribe(poseChannel, this);
+        } else {
+            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe(poseChannel, this);
+        }
         tasks.setRunning(run);
     }
 

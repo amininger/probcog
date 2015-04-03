@@ -280,8 +280,6 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("heading"))
             targetHeading = parameters.get("heading").getDouble();
 
-        lcm.subscribe(laserChannel, this);
-        lcm.subscribe(poseChannel, this);
         tasks.addFixedRate(new UpdateTask(), 1.0/FW_HZ);
     }
 
@@ -328,6 +326,13 @@ public class FollowWall implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            lcm.subscribe(laserChannel, this);
+            lcm.subscribe(poseChannel, this);
+        } else {
+            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe(poseChannel, this);
+        }
         tasks.setRunning(run);
     }
 

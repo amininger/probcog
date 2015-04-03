@@ -24,7 +24,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
     PeriodicTasks tasks = new PeriodicTasks(1);
 
-    static final double TURN_THRESH = Math.toRadians(90);
+    static final double TURN_THRESH = Math.toRadians(25);
     static final double DIST_THRESH = 2.0;
     static final double MIN_SPEED = 0.35;    // Avoid deadband
     static final double MAX_SPEED = 0.5;
@@ -109,6 +109,8 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
             return dd;
 
         double dist = LinAlg.magnitude(LinAlg.resize(classy.xyzrpy, 2));
+        double theta = Math.atan2(classy.xyzrpy[1], classy.xyzrpy[0]);
+
         pose_t pose = new pose_t();
         pose.orientation = new double[] {1,0,0,0};
         pose.pos = new double[3];
@@ -120,6 +122,16 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         DriveToXY driveXY = new DriveToXY(typedParams);
 
         dd = driveXY.drive(params);
+
+        if (dd.left == 0 && dd.right == 0)
+            return dd;
+
+        if (Math.abs(theta) > TURN_THRESH) {
+            int sign = theta > 0 ? 1 : -1;
+            dd.left = -sign*MAX_TURN;
+            dd.right = sign*MAX_TURN;
+        }
+
         return dd;
     }
 
@@ -144,8 +156,6 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         assert (parameters.containsKey("class"));
         classType = parameters.get("class").toString();
 
-        lcm.subscribe(laserChannel, this);
-        lcm.subscribe("CLASSIFICATIONS", this);
         tasks.addFixedDelay(new DriveTask(), 1.0/DTT_HZ);
         //tasks.setRunning(true);
     }
@@ -176,6 +186,13 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            lcm.subscribe(laserChannel, this);
+            lcm.subscribe("CLASSIFICATIONS", this);
+        } else {
+            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe("CLASSIFICATIONS", this);
+        }
         tasks.setRunning(run);
     }
 

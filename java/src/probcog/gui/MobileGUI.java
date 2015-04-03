@@ -39,6 +39,7 @@ import probcog.vis.*;
 public class MobileGUI extends JFrame implements VisConsole.Listener
 {
     private ProbCogSimulator simulator;
+    LCM lcm = LCM.getSingleton();
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
@@ -117,8 +118,8 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 
         public RenderThread()
         {
-            LCM.getSingleton().subscribe("CLASSIFICATIONS", this);
-            LCM.getSingleton().subscribe("POSE_TRUTH", this);
+            lcm.subscribe("CLASSIFICATIONS", this);
+            lcm.subscribe("POSE_TRUTH", this);
         }
 
 
@@ -129,6 +130,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             while (true) {
                 double dt = tic.toctic();
                 //drawWorld();
+                System.out.println(lcm.getNumSubscriptions());
                 drawTrajectory(dt);
                 drawClassifications();
                 drawGraph(graph);
@@ -144,9 +146,9 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                     poseCache.put(pose, pose.utime);
                 } else if ("CLASSIFICATIONS".equals(channel)) {
                     classification_list_t classy_list = new classification_list_t(ins);
-                    for(int i=0; i<classy_list.num_classifications; i++) {
-                        classification_t classy = classy_list.classifications[i];
-                        synchronized (classyLock) {
+                    synchronized (classyLock) {
+                        for (int i = 0; i < classy_list.num_classifications; i++) {
+                            classification_t classy = classy_list.classifications[i];
                             classifications.put(classy.id, classy);
                         }
                     }
