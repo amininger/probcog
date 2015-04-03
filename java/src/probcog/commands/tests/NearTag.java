@@ -34,7 +34,6 @@ public class NearTag implements ConditionTest, LCMSubscriber
         if (parameters.containsKey("distance"))
             stoppingDistance = parameters.get("distance").getDouble();
 
-        lcm.subscribe("CLASSIFICATIONS", this);
     }
 
     public ConditionTest copyCondition()
@@ -52,6 +51,16 @@ public class NearTag implements ConditionTest, LCMSubscriber
 
         closestDistance = LinAlg.magnitude(LinAlg.resize(c.xyzrpy, 2));
     }
+
+    public void setRunning(boolean run)
+    {
+        if (run) {
+            lcm.subscribe("CLASSIFICATIONS", this);
+        } else {
+            lcm.unsubscribe("CLASSIFICATIONS", this);
+        }
+    }
+
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {

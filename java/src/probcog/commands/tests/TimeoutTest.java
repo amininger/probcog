@@ -11,6 +11,7 @@ import probcog.lcmtypes.*;
 // elapsed is initialized on creation.
 public class TimeoutTest implements ConditionTest
 {
+    double timeSofar = 0;
     double timeout;
     Tic elapsed;
 
@@ -26,13 +27,22 @@ public class TimeoutTest implements ConditionTest
         elapsed = new Tic();
     }
 
+    public void setRunning(boolean run)
+    {
+        if (run) {
+            elapsed = new Tic();
+        } else {
+            timeSofar += elapsed.toctic();
+        }
+    }
+
     /** Query whether or not the condition being tested for is currently true.
      *
      *  @return True if condition test is currently satisfied, else false
      **/
     public boolean conditionMet()
     {
-        return elapsed.toc() > timeout;
+        return timeSofar+elapsed.toc() > timeout;
     }
 
     /** Get the parameters that can be set for this condition test.

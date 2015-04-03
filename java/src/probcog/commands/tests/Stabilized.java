@@ -32,8 +32,17 @@ public class Stabilized implements ConditionTest, LCMSubscriber
 
     public Stabilized(HashMap<String, TypedValue> parameters)
     {
-        if (!parameters.containsKey("no-lcm"))
+    }
+
+    /** Activate or turn off this condition test */
+    public void setRunning(boolean run)
+    {
+        if (run) {
+            // XXX LCM Subscription explosion
             lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)

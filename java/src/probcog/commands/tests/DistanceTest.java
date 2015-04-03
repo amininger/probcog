@@ -15,6 +15,8 @@ import magic2.lcmtypes.*;
 
 public class DistanceTest implements ConditionTest, LCMSubscriber
 {
+    LCM lcm = LCM.getSingleton();
+
     static final int DT_HZ = 30;
 
     Object poseLock = new Object();
@@ -65,13 +67,21 @@ public class DistanceTest implements ConditionTest, LCMSubscriber
         assert (parameters.containsKey("distance"));
         goalDistance = parameters.get("distance").getDouble();
 
-        LCM.getSingleton().subscribe("POSE", this);
         (new UpdateTask()).start();
     }
 
     public ConditionTest copyCondition()
     {
         return null;
+    }
+
+    public void setRunning(boolean run)
+    {
+        if (run) {
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)

@@ -130,7 +130,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             while (true) {
                 double dt = tic.toctic();
                 //drawWorld();
-                System.out.println(lcm.getNumSubscriptions());
+                //System.out.println(lcm.getNumSubscriptions());
                 drawTrajectory(dt);
                 drawClassifications();
                 drawGraph(graph);
