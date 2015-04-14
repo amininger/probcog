@@ -20,7 +20,7 @@ import magic2.lcmtypes.*;
 public class Stabilized implements ConditionTest, LCMSubscriber
 {
     LCM lcm = LCM.getSingleton();
-    static final double PERIOD_S = 1.0;
+    private double PERIOD_S = 1.0;
     static final double THETA_THRESH_RAD = Math.toRadians(3);
     static final double DIST_THRESH_M = 0.05;
 
@@ -32,6 +32,8 @@ public class Stabilized implements ConditionTest, LCMSubscriber
 
     public Stabilized(HashMap<String, TypedValue> parameters)
     {
+        if (parameters.containsKey("timeout"))
+            PERIOD_S = Math.abs(parameters.get("timeout").getDouble());
     }
 
     /** Activate or turn off this condition test */
@@ -130,6 +132,9 @@ public class Stabilized implements ConditionTest, LCMSubscriber
     public Collection<TypedParameter> getParameters()
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+        params.add(new TypedParameter("timeout",
+                                      TypedValue.TYPE_DOUBLE,
+                                      false));
 
         return params;
     }
