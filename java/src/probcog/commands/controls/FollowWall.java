@@ -163,6 +163,42 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     //public diff_drive_t drive(laser_t laser, double dt)
     public diff_drive_t drive(DriveParams params)
     {
+        if (true) {
+            return handTunedFollow(params);
+        } else {
+            return xyFollow(params);
+        }
+    }
+
+    private diff_drive_t xyFollow(DriveParams params)
+    {
+        // Tell the robot to goto an XY position. Modify potential field
+        // based on wall following distance. As a result, can't follow a wall
+        // at greater than 1/2 hallwidth distance.
+
+        // Construct a goal 45 degrees ahead of robot.
+        double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
+                                                                      params.pose.pos));
+        double projDist = (2*goalDistance)/Math.cos(Math.PI/2);
+        double[] goalXYT = new double[3];
+        goalXYT[0] = robotXYT[0] + projDist*Math.cos(robotXYT[2]);
+        goalXYT[1] = robotXYT[1] + projDist*Math.sin(robotXYT[2]);
+
+        params.pp = new PotentialUtil.Params(params.laser,
+                                             params.pose,
+                                             goalXYT);
+
+        // XXX XY are wasteful. Better reuse?
+        HashMap<String, TypedValue> typedParams = new HashMap<String, TypedValue>();
+        typedParams.put("x", new TypedValue(goalXYT[0]));
+        typedParams.put("y", new TypedValue(goalXYT[1]));
+        DriveToXY driveXY = new DriveToXY(typedParams);
+
+        return driveXY.drive(params);
+    }
+
+    private diff_drive_t handTunedFollow(DriveParams params)
+    {
         laser_t laser = params.laser;
         double dt = params.dt;
 

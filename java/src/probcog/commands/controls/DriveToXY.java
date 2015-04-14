@@ -199,6 +199,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            pose,
                                                            xyt);
+        if (params.pp != null)
+            pp = params.pp;
         PotentialField pf = PotentialUtil.getPotential(pp);
 
         // Determine the heading to pursue by sampling potentials along various
