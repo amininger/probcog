@@ -181,8 +181,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
                                                                       params.pose.pos));
         double projDist = (2*goalDistance)/Math.cos(Math.PI/2);
         double[] goalXYT = new double[3];
+        int sign = dir == Direction.LEFT ? 1 : -1;
         goalXYT[0] = robotXYT[0] + projDist*Math.cos(robotXYT[2]);
-        goalXYT[1] = robotXYT[1] + projDist*Math.sin(robotXYT[2]);
+        goalXYT[1] = robotXYT[1] + sign*projDist*Math.sin(robotXYT[2]);
 
         params.pp = new PotentialUtil.Params(params.laser,
                                              params.pose,
