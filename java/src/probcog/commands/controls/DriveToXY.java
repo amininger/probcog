@@ -24,7 +24,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     VisWorld vw;
 
-    private boolean DEBUG = true;
+    private boolean DEBUG = false;
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 30;
