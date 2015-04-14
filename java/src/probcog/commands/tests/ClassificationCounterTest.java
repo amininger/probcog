@@ -110,11 +110,6 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 
         // Initialize
         // XXX - Here we need to spin up a classifier and tell it what to look for
-
-        if (!parameters.containsKey("no-lcm")) {
-            System.out.println("SUBSCRIBING");
-            lcm.subscribe("CLASSIFICATIONS", this);
-        }
     }
 
     //public ClassificationCounterTest clone()
@@ -130,6 +125,15 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
             test.ignore.add(i);
 
         return test;
+    }
+
+    public void setRunning(boolean run)
+    {
+        if (run) {
+            lcm.subscribe("CLASSIFICATIONS", this);
+        } else {
+            lcm.unsubscribe("CLASSIFICATIONS", this);
+        }
     }
 
     /** Query whether or not the condition being tested for is currently true.

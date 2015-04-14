@@ -32,7 +32,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final int LOOKAHEAD_STEPS = (int)(Math.ceil(1.0/LOOKAHEAD));
 
     static final double DISTANCE_THRESH = 0.25;
+    static final double TURN_THRESH = Math.toRadians(45);
     static final double MAX_SPEED = 0.5;
+    static final double TURN_SPEED = 0.4;
     static final double FORWARD_SPEED = 0.1;
     static final double TURN_WEIGHT = 1.0;
 
@@ -61,13 +63,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         {
             laser_t laser = laserCache.get();
             if (laser == null) {
-                System.err.println("ERR: No laser_t detected on channel "+laserChannel);
+                //System.err.println("ERR: No laser_t detected on channel "+laserChannel);
                 return;
             }
 
             pose_t pose = poseCache.get();
             if (pose == null) {
-                System.err.println("ERR: No pose_t detected on channel "+poseChannel);
+                //System.err.println("ERR: No pose_t detected on channel "+poseChannel);
                 return;
             }
 
@@ -251,13 +253,23 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         }
         lastTheta = theta;
 
-        double turnSpeed = TURN_WEIGHT*(theta/Math.PI);
-        double right = (2*FORWARD_SPEED + turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
-        double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
-        double maxMag = Math.max(Math.abs(right), Math.abs(left));
-        if (maxMag > 0) {
-            dd.left = MAX_SPEED*(left/maxMag);
-            dd.right = MAX_SPEED*(right/maxMag);
+        if (Math.abs(theta) > TURN_THRESH) {
+            if (theta > 0) {
+                dd.left = -TURN_SPEED;
+                dd.right = TURN_SPEED;
+            } else {
+                dd.left = TURN_SPEED;
+                dd.right = -TURN_SPEED;
+            }
+        } else {
+            double turnSpeed = TURN_WEIGHT*(theta/Math.PI);
+            double right = (2*FORWARD_SPEED + turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
+            double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
+            double maxMag = Math.max(Math.abs(right), Math.abs(left));
+            if (maxMag > 0) {
+                dd.left = MAX_SPEED*(left/maxMag);
+                dd.right = MAX_SPEED*(right/maxMag);
+            }
         }
 
         return dd;
