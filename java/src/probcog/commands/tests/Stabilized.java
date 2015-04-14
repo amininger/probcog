@@ -34,6 +34,8 @@ public class Stabilized implements ConditionTest, LCMSubscriber
     {
         if (parameters.containsKey("timeout"))
             PERIOD_S = Math.abs(parameters.get("timeout").getDouble());
+        else
+            PERIOD_S = 1.0;
     }
 
     /** Activate or turn off this condition test */

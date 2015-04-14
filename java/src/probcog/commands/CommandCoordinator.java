@@ -228,9 +228,9 @@ public class CommandCoordinator
         synchronized (conditionTests) {
             synchronized (terminationConditions) {
                 ConditionTest conditionTest = conditionTests.remove(id);
-                conditionTest.setRunning(false);
                 terminationConditions.remove(id);
                 if (conditionTest != null) {
+                    conditionTest.setRunning(false);
                     System.out.printf("Destroyed Test <%d>\n", id);
                 }
                 return conditionTest != null;

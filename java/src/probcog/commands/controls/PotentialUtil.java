@@ -2,6 +2,7 @@ package probcog.commands.controls;
 
 import java.awt.*;
 import javax.swing.*;
+import java.io.*;
 import java.util.*;
 
 import lcm.lcm.*;
@@ -22,6 +23,7 @@ public class PotentialUtil
         LINEAR, QUADRATIC, COMBINED
     }
 
+    // XXX Doorway preservation is slow and not great to use, yet.
     static public enum RepulsivePotential
     {
         CLOSEST_POINT, ALL_POINTS, PRESERVE_DOORS
@@ -240,42 +242,44 @@ public class PotentialUtil
         double invKr = 1.0/kr;
         double invRad = 1.0/params.robotRadius;
 
+        double[] distances = new double[points.size()];
         for (int y = 0; y < pf.getHeight(); y++) {
             for (int x = 0; x < pf.getWidth(); x++) {
                 double[] xy = pf.indexToMeters(x, y);
                 double v = 0;
                 int cnt = 0;
 
-                double min = Double.MAX_VALUE;
                 double[] u = new double[2];
-                for (double[] pxy: points) {
+                for (int i = 0; i < points.size(); i++) {
+                    double[] pxy = points.get(i);
                     double d = LinAlg.distance(xy, pxy, 2);
+                    distances[i] = d;
 
                     // No potential added
-                    if (d > kr)
+                    if (d > 2*kr)
                         continue;
 
-                    u = LinAlg.add(u, LinAlg.normalize(LinAlg.subtract(pxy, xy)));
-                    min = Math.min(min, d);
+                    u[0] += (pxy[0] - xy[0])/d;
+                    u[1] += (pxy[1] - xy[1])/d;
                 }
 
                 boolean aligningForce = false;
                 boolean opposingForce = false;
                 u = LinAlg.normalize(u);
-                for (double[] pxy: points) {
-                    double d = LinAlg.distance(xy, pxy, 2);
+                for (int i = 0; i < points.size(); i++) {
+                    double d = distances[i];
 
-                    if (d > kr)
+                    if (d > 2*kr)
                         continue;
 
-                    double[] dir = LinAlg.normalize(LinAlg.subtract(pxy, xy));
-                    double dp = LinAlg.dotProduct(dir, u);
+                    double[] pxy = points.get(i);
+                    double dp = (u[0]*(pxy[0]-xy[0]) + u[1]*(pxy[1]-xy[1]))/d;
                     if (dp < 0) {
                         opposingForce = true;
                         break;
                     }
 
-                    if (dp > 0.9) {
+                    if (dp > 0.995) {
                         aligningForce = true;
                         break;
                     }
@@ -286,8 +290,8 @@ public class PotentialUtil
                     invKr *= 0.5;
                 }
 
-                for (double[] pxy: points) {
-                    double d = LinAlg.distance(xy, pxy, 2);
+                for (int i = 0; i < points.size(); i++) {
+                    double d = distances[i];
 
                     // No potential added
                     if (d > kr)
@@ -342,8 +346,15 @@ public class PotentialUtil
         Params params = new Params(laser, pose, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
         params.fieldRes = 0.01;
-        params.repulsivePotential = RepulsivePotential.PRESERVE_DOORS;
+        //params.repulsivePotential = RepulsivePotential.PRESERVE_DOORS;
         params.maxObstacleRange = 0.5;
+
+        // Wait for keypress
+        //try {
+        //    System.out.println("Press ENTER to continue:");
+        //    System.in.read();
+        //} catch (IOException ioex) {}
+
         Tic tic = new Tic();
         PotentialField pf = PotentialUtil.getPotential(params);
         System.out.printf("Computation completed in %f [s]\n", tic.toc());
