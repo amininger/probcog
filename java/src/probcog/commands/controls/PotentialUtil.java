@@ -8,6 +8,7 @@ import lcm.lcm.*;
 
 import april.jmat.*;
 import april.vis.*;
+import april.util.*;
 
 import probcog.util.*;
 
@@ -19,6 +20,11 @@ public class PotentialUtil
     static public enum AttractivePotential
     {
         LINEAR, QUADRATIC, COMBINED
+    }
+
+    static public enum RepulsivePotential
+    {
+        CLOSEST_POINT, ALL_POINTS, PRESERVE_DOORS
     }
 
     static public class Params
@@ -48,6 +54,7 @@ public class PotentialUtil
         public double attractiveWeight = 1.0;
         public double attractiveThreshold = 1.0;
 
+        public RepulsivePotential repulsivePotential = RepulsivePotential.ALL_POINTS;
         public double repulsiveWeight = 5.0;
         public double maxObstacleRange = 1.5*robotRadius;
     }
@@ -133,11 +140,6 @@ public class PotentialUtil
     static private void addRepulsivePotential(Params params,
                                               PotentialField pf)
     {
-        double kw = params.repulsiveWeight;
-        double kr = params.maxObstacleRange;
-        double invKr = 1.0/kr;
-        double invRad = 1.0/params.robotRadius;
-
         double[] xyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                  params.pose.pos));
         double[] invXyt = LinAlg.xytInverse(xyt);
@@ -151,13 +153,60 @@ public class PotentialUtil
             // Error value
             if (r < 0)
                 continue;
-            // Too far away to contribute potential
-            //if (r > kr)
-            //    continue;
             double t = params.laser.rad0 + i*params.laser.radstep;
             double[] xy = new double[] { r*Math.cos(t), r*Math.sin(t) };
             points.add(LinAlg.transform(xyt, xy));
         }
+
+        switch (params.repulsivePotential) {
+            case CLOSEST_POINT:
+                repulsiveClosestPoint(pf, points, params);
+                break;
+            case ALL_POINTS:
+                repulsiveAllPoints(pf, points, params);
+                break;
+            case PRESERVE_DOORS:
+                repulsivePreserveDoors(pf, points, params);
+                break;
+            default:
+                System.err.println("ERR: Unknown repulsive potential");
+        }
+    }
+
+    static private void repulsiveClosestPoint(PotentialField pf,
+                                              ArrayList<double[]> points,
+                                              Params params)
+    {
+        double kw = params.repulsiveWeight;
+        double kr = params.maxObstacleRange;
+        double invKr = 1.0/kr;
+        double invRad = 1.0/params.robotRadius;
+
+        // Determine the distance to the closest point
+        for (int y = 0; y < pf.getHeight(); y++) {
+            for (int x = 0; x < pf.getWidth(); x++) {
+                double[] xy = pf.indexToMeters(x, y);
+                double d = Double.MAX_VALUE;
+                for (double[] pxy: points) {
+                    d = Math.min(d, LinAlg.distance(xy, pxy, 2));
+                }
+
+                // No potential added
+                if (d > kr)
+                    continue;
+                pf.addIndex(x, y, 0.5*kw*LinAlg.sq(1.0/d-invKr));
+            }
+        }
+    }
+
+    static private void repulsiveAllPoints(PotentialField pf,
+                                           ArrayList<double[]> points,
+                                           Params params)
+    {
+        double kw = params.repulsiveWeight;
+        double kr = params.maxObstacleRange;
+        double invKr = 1.0/kr;
+        double invRad = 1.0/params.robotRadius;
 
         for (int y = 0; y < pf.getHeight(); y++) {
             for (int x = 0; x < pf.getWidth(); x++) {
@@ -180,22 +229,79 @@ public class PotentialUtil
                 }
             }
         }
+    }
 
-        // Determine the distance to the closest point
-        //for (int y = 0; y < pf.getHeight(); y++) {
-        //    for (int x = 0; x < pf.getWidth(); x++) {
-        //        double[] xy = pf.indexToMeters(x, y);
-        //        double d = Double.MAX_VALUE;
-        //        for (double[] pxy: points) {
-        //            d = Math.min(d, LinAlg.distance(xy, pxy, 2));
-        //        }
+    static private void repulsivePreserveDoors(PotentialField pf,
+                                               ArrayList<double[]> points,
+                                               Params params)
+    {
+        double kw = params.repulsiveWeight;
+        double kr = params.maxObstacleRange;
+        double invKr = 1.0/kr;
+        double invRad = 1.0/params.robotRadius;
 
-        //        // No potential added
-        //        if (d > kr)
-        //            continue;
-        //        pf.addIndex(x, y, 0.5*kw*LinAlg.sq(1.0/d-invKr));
-        //    }
-        //}
+        for (int y = 0; y < pf.getHeight(); y++) {
+            for (int x = 0; x < pf.getWidth(); x++) {
+                double[] xy = pf.indexToMeters(x, y);
+                double v = 0;
+                int cnt = 0;
+
+                double min = Double.MAX_VALUE;
+                double[] u = new double[2];
+                for (double[] pxy: points) {
+                    double d = LinAlg.distance(xy, pxy, 2);
+
+                    // No potential added
+                    if (d > kr)
+                        continue;
+
+                    u = LinAlg.add(u, LinAlg.normalize(LinAlg.subtract(pxy, xy)));
+                    min = Math.min(min, d);
+                }
+
+                boolean aligningForce = false;
+                boolean opposingForce = false;
+                u = LinAlg.normalize(u);
+                for (double[] pxy: points) {
+                    double d = LinAlg.distance(xy, pxy, 2);
+
+                    if (d > kr)
+                        continue;
+
+                    double[] dir = LinAlg.normalize(LinAlg.subtract(pxy, xy));
+                    double dp = LinAlg.dotProduct(dir, u);
+                    if (dp < 0) {
+                        opposingForce = true;
+                        break;
+                    }
+
+                    if (dp > 0.9) {
+                        aligningForce = true;
+                        break;
+                    }
+                }
+
+                if (aligningForce || !opposingForce) {
+                    kr *= 2;
+                    invKr *= 0.5;
+                }
+
+                for (double[] pxy: points) {
+                    double d = LinAlg.distance(xy, pxy, 2);
+
+                    // No potential added
+                    if (d > kr)
+                        continue;
+
+                    v += 0.5*LinAlg.sq(1.0/d-invKr);
+                    cnt++;
+                }
+                if (cnt > 0) {
+                    v /= cnt;
+                    pf.addIndex(x, y, kw*v);
+                }
+            }
+        }
     }
 
     static public void main(String[] args)
@@ -212,16 +318,21 @@ public class PotentialUtil
         laser.radstep = (float)(Math.toRadians(1));
         laser.nranges = 360;
         laser.ranges = new float[laser.nranges];
+        double doorOffset = -0.5;
+        double doorSize = 0.9;
         for (int i = 0; i < laser.nranges; i++) {
             double t = laser.rad0 + i*laser.radstep;
             double r = -1;
             if (t < 0) {
                 r = (-0.5/Math.sin(t));
+                if (r*Math.cos(t) > doorOffset && r*Math.cos(t) < doorOffset+doorSize)
+                    r = -1;
             } else if (t > 0) {
                 r = (1.0/Math.sin(t));
             }
             if (r > 30 || r < 0)
                 r = -1;
+
             laser.ranges[i] = (float)r;
         }
 
@@ -231,8 +342,11 @@ public class PotentialUtil
         Params params = new Params(laser, pose, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
         params.fieldRes = 0.01;
+        params.repulsivePotential = RepulsivePotential.PRESERVE_DOORS;
         params.maxObstacleRange = 0.5;
+        Tic tic = new Tic();
         PotentialField pf = PotentialUtil.getPotential(params);
+        System.out.printf("Computation completed in %f [s]\n", tic.toc());
 
         // Evaluate gradients at fixed locations around the robot
         ArrayList<double[]> rxys = new ArrayList<double[]>();
