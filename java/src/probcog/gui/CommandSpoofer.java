@@ -407,19 +407,25 @@ public class CommandSpoofer extends JFrame
 
     private void publishStop()
     {
-        control_law_status_t status = new control_law_status_t();
-        status.id = id - 1;
-        status.name = lastControl;
-        status.status = "DESTROY";
-
-        control_law_status_list_t status_list = new control_law_status_list_t();
-        status_list.utime = TimeUtil.utime();
-        status_list.nstatuses = 1;
-        status_list.statuses = new control_law_status_t[status_list.nstatuses];
-        status_list.statuses[0] = status;
-
-        // Radio breaks this, currently. XXX
-        lcm.publish("CONTROL_LAW_STATUS_TX", status_list);
+        control_law_t cl = new control_law_t();
+        cl.utime = TimeUtil.utime();
+        cl.name = "STOP";
+        cl.id = id++;
+        cl.num_params = 0;
+        cl.param_names = new String[0];
+        cl.param_values = new typed_value_t[0];
+        
+        
+        condition_test_t ct = new condition_test_t();
+        ct.name = "NONE";
+        ct.num_params = 0;
+        ct.param_names = new String[0];
+        ct.param_values = new typed_value_t[0];
+        ct.compare_type = condition_test_t.CMP_EQ;
+        ct.compared_value = (new TypedValue(0)).toLCM();
+        
+        cl.termination_condition = ct;
+        currentMessage = cl;
     }
 
     // No longer used
