@@ -103,7 +103,7 @@ public class DriveForward implements ControlLaw, LCMSubscriber
                                       pose.orientation,
                                       path,
                                       storedParams,
-                                      1.0,
+                                      0.5,
                                       dt);
 
         return dd;
