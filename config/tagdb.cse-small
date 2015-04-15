@@ -3,7 +3,7 @@ classes {
         labels = ["t-intersection", ""];
         //probs = [0.999, 0.001];
         probs = [1.0, 0.0];
-        ids = [47,39,21,12,7,69];
+        ids = [46,39,21,12,7,69];
         mean = 1.0;
         stddev = 0.0;
         minRange = 1.0;

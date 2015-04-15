@@ -14,32 +14,32 @@ import sml.Agent.PrintEventInterface;
 import sml.Agent.RunEventInterface;
 
 public class SoarAgent implements RunEventInterface, PrintEventInterface {
-	
+
 	private PerceptionConnector perceptionConn;
 	private ActuationConnector actuationConn;
 	private LanguageConnector languageConn;
-	
+
 	private Kernel kernel;
 	private Agent agent;
-	
+
 	private RosieGUI.RosieConfig config;
-	
+
 	private boolean isRunning = false;
-	
+
 	private boolean queueStop = false;
-	
+
 	private PrintWriter logWriter;
 
 	public SoarAgent(RosieGUI.RosieConfig config){
 		this.config = config;
-		
+
 		initSoar();
 
 		perceptionConn = new PerceptionConnector(this);
 		actuationConn = new ActuationConnector(this);
 		languageConn = new LanguageConnector(this);
 	}
-	
+
 	private void initSoar(){
     	kernel = Kernel.CreateKernelInNewThread();
         if (kernel == null){
@@ -51,13 +51,13 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
         // for the RunEvent right before the next Input Phase
         // Otherwise the system would apparently hang on a commit
         kernel.SetAutoCommit(false);
-        
+
 		// Initialize Soar Agent
         agent = kernel.CreateAgent(config.agentName);
         if (agent == null){
            throw new IllegalStateException("Kernel created null agent");
         }
-        
+
         if (config.spawnDebugger){
         	boolean success = agent.SpawnDebugger(kernel.GetListenerPort());
         	System.out.println("Spawn Debugger: " + (success ? "SUCCESS" : "FAIL"));
@@ -80,15 +80,15 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
 
         sourceAgent();
     }
-	
+
 	public Agent getAgent(){
 		return agent;
 	}
-	
+
 	public boolean isRunning(){
 		return isRunning;
 	}
-	
+
 	/**
      * Spawns a new thread that invokes a run command on the agent
      */
@@ -106,11 +106,11 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
     	Thread agentThread = new Thread(new AgentThread());
     	agentThread.start();
 	}
-	
+
 	public void stop(){
 		queueStop = true;
 	}
-	
+
 	public void kill(){
 		agent.KillDebugger();
 		//kernel.DestroyAgent(agent);
@@ -119,10 +119,10 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
     	// I don't think there's any consequence to simply exiting instead.
 	}
 
-	
+
 	public String sendCommand(String command){
 		return agent.ExecuteCommandLine(command);
-	}	
+	}
 	public void resetAgent(){
 		if(isRunning){
 			return;
@@ -137,7 +137,7 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
 			return;
 		}
     	System.out.println("---- Performing Backup [" + sessionName + "] ----");
-    	
+
     	String storeEpmem = String.format("epmem --backup saved-agents/%s_epmem.db", sessionName);
     	System.out.println("  epmem: " + agent.ExecuteCommandLine(storeEpmem));
 
@@ -149,7 +149,7 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
 
     	System.out.println("---- Completed Backup -----");
 	}
-	
+
 	public void restore(String sessionName){
 		if(isRunning){
 			return;
@@ -174,8 +174,8 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
     		System.out.println("  rules: " + agent.ExecuteCommandLine(sourceRules));
     	}
     	System.out.println("---- Completed Restore ----");
-	}	
-	
+	}
+
 	private void reinitAgent(){
 		System.out.println("------- RESET AGENT -------");
 		System.out.println("  excise --all: " + agent.ExecuteCommandLine("excise --all"));
@@ -217,7 +217,7 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
 			}
 			break;
 		case smlEVENT_AFTER_INPUT_PHASE:
-			// Commit any changes made to input link 
+			// Commit any changes made to input link
 		case smlEVENT_AFTER_OUTPUT_PHASE:
 			// Commit any changes made to the output link
 			if(agent.IsCommitRequired()){
@@ -226,7 +226,7 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
 			break;
 		}
 	}
-	    
+
 	@Override
 	public void printEventHandler(int eventID, Object data, Agent agent, String message) {
 		synchronized(logWriter) {

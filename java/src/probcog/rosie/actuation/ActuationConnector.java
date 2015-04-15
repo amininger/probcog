@@ -58,10 +58,10 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
         {
         	agent.getAgent().AddOutputHandler(outputHandlerString, this, null);
         }
-        
+
         activeCommand = SoarCommandParser.createEmptyControlLaw("NONE");
         activeCommand.id = nextControlLawId++;
-        
+
         (new ControlLawThread()).start();
     }
 
@@ -147,7 +147,7 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
         	System.out.println(e.getMessage());
         }
     }
-    
+
     public void processDoControlLawCommand(Identifier id){
     	control_law_t controlLaw = SoarCommandParser.parseControlLaw(id);
     	if(controlLaw == null){
@@ -161,7 +161,7 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
     		activeCommandId = id;
     	}
     }
-    
+
     public void processStopCommand(Identifier id){
 		synchronized(commandLock){
 			if(activeCommandId != null){

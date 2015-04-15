@@ -62,11 +62,13 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         {
             laser_t laser = laserCache.get();
             if (laser == null) {
+                System.out.println("WRN: No lasers on channel "+laserChannel);
                 return;
             }
 
             pose_t pose = poseCache.get();
             if (pose == null) {
+                System.out.println("WRN: No poses on channel "+poseChannel);
                 return;
             }
 
