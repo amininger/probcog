@@ -407,7 +407,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         options.add(new TypedValue(-1));
         options.add(new TypedValue(1));
         params.add(new TypedParameter("side",
-                                      TypedValue.TYPE_BYTE,
+                                      TypedValue.TYPE_INT,
                                       options,
                                       true));
 

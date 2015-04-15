@@ -117,7 +117,6 @@ public class Turn implements ControlLaw, LCMSubscriber
 
     public Turn(Map<String, TypedValue> parameters)
     {
-        
         // Needs a direction to turn, currently
         if (parameters.containsKey("direction")){
         	int direction = parameters.get("direction").getInt();
@@ -175,7 +174,7 @@ public class Turn implements ControlLaw, LCMSubscriber
         options.add(new TypedValue(-1));
         options.add(new TypedValue(1));
         params.add(new TypedParameter("direction",
-                                      TypedValue.TYPE_BYTE,
+                                      TypedValue.TYPE_INT,
                                       options,
                                       true));
         params.add(new TypedParameter("yaw",

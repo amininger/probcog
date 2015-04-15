@@ -58,7 +58,7 @@ public class PotentialUtil
 
         public RepulsivePotential repulsivePotential = RepulsivePotential.ALL_POINTS;
         public double repulsiveWeight = 5.0;
-        public double maxObstacleRange = 1.5*robotRadius;
+        public double maxObstacleRange = 2*robotRadius;
     }
 
     /** Get the gradient of a coordinate relative to the robot for the
@@ -345,9 +345,9 @@ public class PotentialUtil
         // Construct the potential field
         Params params = new Params(laser, pose, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
-        params.fieldRes = 0.01;
+        //params.fieldRes = 0.01;
         //params.repulsivePotential = RepulsivePotential.PRESERVE_DOORS;
-        params.maxObstacleRange = 0.5;
+        //params.maxObstacleRange = 0.5;
 
         // Wait for keypress
         //try {
