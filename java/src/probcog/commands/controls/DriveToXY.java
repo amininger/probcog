@@ -36,7 +36,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double MAX_SPEED = 0.5;
     static final double TURN_SPEED = 0.4;
     static final double FORWARD_SPEED = 0.1;
-    static final double TURN_WEIGHT = 1.0;
+    static final double TURN_WEIGHT = 5.0;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;

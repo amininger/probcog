@@ -48,7 +48,7 @@ public class PotentialUtil
         // Is this value set correctly in config? Reevaluate for new robot.
         public double robotRadius = Util.getConfig().requireDouble("robot.geometry.radius");
         public double fieldSize = 3.0;  // [meters];
-        public double fieldRes = 0.025;   // [meters / pixel]
+        public double fieldRes = 0.05;   // [meters / pixel]
 
         // attractiveThreshold used for combined method, specifying a distance
         // that, when exceeded, will switch to linear potential from quadratic.
