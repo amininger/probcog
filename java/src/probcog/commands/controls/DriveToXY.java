@@ -24,12 +24,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     VisWorld vw;
 
-    private boolean DEBUG = false;
+    private boolean DEBUG = true;
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 30;
     static final double LOOKAHEAD = 0.1;
-    static final int LOOKAHEAD_STEPS = (int)(Math.ceil(0.75/LOOKAHEAD));
+    static final int LOOKAHEAD_STEPS = (int)(Math.ceil(1.00/LOOKAHEAD));
 
     static final double DISTANCE_THRESH = 0.25;
     static final double TURN_THRESH = Math.toRadians(90);
@@ -199,34 +199,51 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            pose,
                                                            xyt);
+        pp.fieldRes = 0.025;
+        pp.repulsivePotential = PotentialUtil.RepulsivePotential.CLOSEST_POINT;
         if (params.pp != null)
             pp = params.pp;
         PotentialField pf = PotentialUtil.getPotential(pp);
 
-        // Determine the heading to pursue by sampling potentials along various
-        // headings. Choose heading with least total potential.
+        ArrayList<double[]> samplePoints = new ArrayList<double[]>();
         double theta = -Math.PI;
         double potentialBest = Double.MAX_VALUE;
-        for (double t = -3*Math.PI/2; t <= 3*Math.PI/2; t += Math.toRadians(1)) {
-            double potential = 0;
-            for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
-                double rx = Math.cos(t)*(i*LOOKAHEAD);
-                double ry = Math.sin(t)*(i*LOOKAHEAD);
-                potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
+        if (false) {
+            // Determine the heading to pursue by sampling potentials along various
+            // headings. Choose heading with least total potential.
+            for (double t = -3*Math.PI/2; t <= 3*Math.PI/2; t += Math.toRadians(1)) {
+                double potential = 0;
+                for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
+                    double rx = Math.cos(t)*(i*LOOKAHEAD);
+                    double ry = Math.sin(t)*(i*LOOKAHEAD);
+                    potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
+                }
 
-                rx = Math.cos(t+Math.PI/8)*(i*LOOKAHEAD/2);
-                ry = Math.sin(t+Math.PI/8)*(i*LOOKAHEAD/2);
-                potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
+                if (potential < potentialBest) {
+                    theta = t;
+                    potentialBest = potential;
+                }
+            }
+        } else {
+            // Try gradient sampling approach again. Will want to rewrite
+            // this to be more efficient.
 
-                rx = Math.cos(t-Math.PI/8)*(i*LOOKAHEAD/2);
-                ry = Math.sin(t-Math.PI/8)*(i*LOOKAHEAD/2);
-                potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
+            double[] grad = new double[2];
+
+            double[] ys = new double[] {-.3, -.1, .1, .3,};
+            double[] xs = new double[] {.2, .4, .6, .8, 1.0};
+            for (double y: ys) {
+                for (double x: xs) {
+                    double[] rxy = new double[] {x, y};
+                    samplePoints.add(rxy);
+                    double[] g0 = PotentialUtil.getGradient(rxy, pf);
+                    double s = Math.max(1-x, 0.1);
+                    LinAlg.plusEquals(grad, LinAlg.scale(g0, s));
+                }
             }
 
-            if (potential < potentialBest) {
-                theta = t;
-                potentialBest = potential;
-            }
+            theta = Math.atan2(grad[1], grad[0]);
+            potentialBest = 0;
         }
 
         if (DEBUG) {
@@ -248,6 +265,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             vvd.add(new double[2]);
             vvd.add(new double[] {Math.cos(theta), Math.sin(theta)});
             vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 2)));
+            vb.swap();
+
+            vb = vw.getBuffer("samples");
+            if (samplePoints.size() > 0) {
+                vb.addBack(new VzPoints(new VisVertexData(samplePoints),
+                                        new VzPoints.Style(Color.green, 3)));
+            }
             vb.swap();
         }
 

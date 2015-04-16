@@ -18,6 +18,8 @@ import magic2.lcmtypes.*;
 /** A utility class for generating and debugging potential functions */
 public class PotentialUtil
 {
+    static final boolean DEBUG = false;
+
     static public enum AttractivePotential
     {
         LINEAR, QUADRATIC, COMBINED
@@ -91,7 +93,7 @@ public class PotentialUtil
         double v00 = pf.getRelative(rxy[0], rxy[1]);
         double v10 = pf.getRelative(rxy[0]+pf.getMPP(), rxy[1]);
         double v01 = pf.getRelative(rxy[0], rxy[1]+pf.getMPP());
-            double v11 = pf.getRelative(rxy[0]+pf.getMPP(), rxy[1]+pf.getMPP());
+        double v11 = pf.getRelative(rxy[0]+pf.getMPP(), rxy[1]+pf.getMPP());
 
         double dx = 0.5*((v10-v00)+(v11-v01));
         double dy = 0.5*((v01-v00)+(v11-v10));
@@ -113,8 +115,13 @@ public class PotentialUtil
                                                params.fieldSize,
                                                params.fieldRes);
 
+        Tic tic = new Tic();
         addAttractivePotential(params, pf);
+        if (DEBUG)
+            System.out.printf("\tattractive: %f [s]\n", tic.toctic());
         addRepulsivePotential(params, pf);
+        if (DEBUG)
+            System.out.printf("\trepulsive: %f [s]\n", tic.toctic());
 
         return pf;
     }
@@ -137,16 +144,16 @@ public class PotentialUtil
 
                 switch (params.attractivePotential) {
                     case LINEAR:
-                        pf.addIndex(x, y, d*kw);
+                        pf.addIndexUnsafe(x, y, d*kw);
                         break;
                     case QUADRATIC:
-                        pf.addIndex(x, y, 0.5*d*d*kw);
+                        pf.addIndexUnsafe(x, y, 0.5*d*d*kw);
                         break;
                     case COMBINED:
                         if (d > kt) {
-                            pf.addIndex(x, y, kt*kw*(d-0.5*kt));
+                            pf.addIndexUnsafe(x, y, kt*kw*(d-0.5*kt));
                         } else {
-                            pf.addIndex(x, y, 0.5*d*d*kw);
+                            pf.addIndexUnsafe(x, y, 0.5*d*d*kw);
                         }
                         break;
                     default:
@@ -165,6 +172,8 @@ public class PotentialUtil
         double[] xyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                  params.pose.pos));
         double[] invXyt = LinAlg.xytInverse(xyt);
+        double sz = params.fieldSize/2;
+        double maxRange = params.maxObstacleRange;
 
         // Convert laser_t measurements to global coordinates. Ignore ranges
         // that cannot contribute to our potential.
@@ -175,6 +184,10 @@ public class PotentialUtil
             // Error value
             if (r < 0)
                 continue;
+
+            if (r > maxRange + sz)
+                continue;
+
             double t = params.laser.rad0 + i*params.laser.radstep;
             double[] xy = new double[] { r*Math.cos(t), r*Math.sin(t) };
             points.add(LinAlg.transform(xyt, xy));
@@ -201,22 +214,24 @@ public class PotentialUtil
     {
         double kw = params.repulsiveWeight;
         double kr = params.maxObstacleRange;
+        double kr2 = kr*kr;
         double invKr = 1.0/kr;
-        double invRad = 1.0/params.robotRadius;
 
         // Determine the distance to the closest point
-        for (int y = 0; y < pf.getHeight(); y++) {
-            for (int x = 0; x < pf.getWidth(); x++) {
+        int h = pf.getHeight();
+        int w = pf.getWidth();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
                 double[] xy = pf.indexToMeters(x, y);
-                double d = Double.MAX_VALUE;
+                double d2 = Double.MAX_VALUE;
                 for (double[] pxy: points) {
-                    d = Math.min(d, LinAlg.distance(xy, pxy, 2));
+                    d2 = Math.min(d2, LinAlg.squaredDistance(xy, pxy, 2));
                 }
 
                 // No potential added
-                if (d > kr)
+                if (d2 > kr2)
                     continue;
-                pf.addIndex(x, y, 0.5*kw*LinAlg.sq(1.0/d-invKr));
+                pf.addIndexUnsafe(x, y, 0.5*kw*LinAlg.sq(1.0/Math.sqrt(d2)-invKr));
             }
         }
     }
@@ -227,27 +242,29 @@ public class PotentialUtil
     {
         double kw = params.repulsiveWeight;
         double kr = params.maxObstacleRange;
+        double kr2 = kr*kr;
         double invKr = 1.0/kr;
-        double invRad = 1.0/params.robotRadius;
 
-        for (int y = 0; y < pf.getHeight(); y++) {
-            for (int x = 0; x < pf.getWidth(); x++) {
+        int h = pf.getHeight();
+        int w = pf.getWidth();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
                 double[] xy = pf.indexToMeters(x, y);
                 double v = 0;
                 int cnt = 0;
                 for (double[] pxy: points) {
-                    double d = LinAlg.distance(xy, pxy, 2);
+                    double d2 = LinAlg.squaredDistance(xy, pxy, 2);
 
                     // No potential added
-                    if (d > kr)
+                    if (d2 > kr2)
                         continue;
 
-                    v += 0.5*LinAlg.sq(1.0/d-invKr);
+                    v += 0.5*LinAlg.sq(1.0/Math.sqrt(d2)-invKr);
                     cnt++;
                 }
                 if (cnt > 0) {
                     v /= cnt;
-                    pf.addIndex(x, y, kw*v);
+                    pf.addIndexUnsafe(x, y, kw*v);
                 }
             }
         }
@@ -316,7 +333,7 @@ public class PotentialUtil
                 //}
 
                 v = 0.5*LinAlg.sq(1.0/min-invKr);
-                pf.addIndex(x, y, kw*v);
+                pf.addIndexUnsafe(x, y, kw*v);
                 //for (int i = 0; i < points.size(); i++) {
                 //    double d = distances[i];
 
@@ -372,24 +389,26 @@ public class PotentialUtil
         // Construct the potential field
         Params params = new Params(laser, pose, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
-        //params.fieldRes = 0.01;
+        params.fieldSize = 2.0;
+        //params.fieldRes = 0.1;
         //params.repulsivePotential = RepulsivePotential.PRESERVE_DOORS;
         //params.maxObstacleRange = 0.1;
 
         // Wait for keypress
-        //try {
-        //    System.out.println("Press ENTER to continue:");
-        //    System.in.read();
-        //} catch (IOException ioex) {}
+        try {
+            System.out.println("Press ENTER to continue:");
+            System.in.read();
+        } catch (IOException ioex) {}
 
         Tic tic = new Tic();
         PotentialField pf = PotentialUtil.getPotential(params);
         System.out.printf("Computation completed in %f [s]\n", tic.toc());
 
         // Evaluate gradients at fixed locations around the robot
+        double sz = params.fieldSize/2 - 2*params.fieldRes;
         ArrayList<double[]> rxys = new ArrayList<double[]>();
-        for (double y = -1.5; y <= 1.5; y+= 2*params.fieldRes) {
-            for (double x = -1.5; x <= 1.5; x+= 2*params.fieldRes) {
+        for (double y = -sz; y <= sz; y+= 2*params.fieldRes) {
+            for (double x = -sz; x <= sz; x+= 2*params.fieldRes) {
                 rxys.add(new double[] {x, y});
             }
         }
@@ -474,15 +493,15 @@ public class PotentialUtil
                                              new VzPoints.Style(Color.orange, 3))));
         vb.swap();
 
-        vb = vw.getBuffer("path");
-        vb.setDrawOrder(50);
-        ArrayList<double[]> path = getMinPath(new double[2], pf);
-        vb.addBack(new VisChain(M,
-                                new VzLines(new VisVertexData(path),
-                                           VzLines.LINE_STRIP,
-                                           new VzLines.Style(Color.green, 2))));
+        //vb = vw.getBuffer("path");
+        //vb.setDrawOrder(50);
+        //ArrayList<double[]> path = getMinPath(new double[2], pf);
+        //vb.addBack(new VisChain(M,
+        //                        new VzLines(new VisVertexData(path),
+        //                                   VzLines.LINE_STRIP,
+        //                                   new VzLines.Style(Color.green, 2))));
 
-        vb.swap();
+        //vb.swap();
 
         jf.setVisible(true);
     }

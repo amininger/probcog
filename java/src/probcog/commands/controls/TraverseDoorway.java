@@ -105,7 +105,7 @@ public class TraverseDoorway implements ControlLaw, LCMSubscriber
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            params.pose,
                                                            xyt);
-        pp.maxObstacleRange = Util.getConfig().requireDouble("robot.geometry.width")/2 + 0.05;
+        pp.maxObstacleRange = Util.getConfig().requireDouble("robot.geometry.width")/2 + 0.10;
         params.pp = pp;
 
         diff_drive_t dd = driveXY.drive(params);

@@ -121,6 +121,16 @@ public class PotentialField
         setIndex(ix, iy, nv);
     }
 
+    public void addIndexUnsafe(int ix, int iy, double v)
+    {
+        double pv = data[iy*widthPx + ix];
+        double nv = pv+v;
+        if (Double.isInfinite(nv))
+            nv = Double.MAX_VALUE;
+
+        data[iy*widthPx + ix] = nv;
+    }
+
     /** Convert an index value to global coordinates in meters */
     public double[] indexToMeters(int ix, int iy)
     {
