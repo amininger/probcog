@@ -28,8 +28,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 30;
-    static final double LOOKAHEAD = 0.05;
-    static final int LOOKAHEAD_STEPS = (int)(Math.ceil(1.0/LOOKAHEAD));
+    static final double LOOKAHEAD = 0.1;
+    static final int LOOKAHEAD_STEPS = (int)(Math.ceil(0.75/LOOKAHEAD));
 
     static final double DISTANCE_THRESH = 0.25;
     static final double TURN_THRESH = Math.toRadians(90);
@@ -212,6 +212,14 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
                 double rx = Math.cos(t)*(i*LOOKAHEAD);
                 double ry = Math.sin(t)*(i*LOOKAHEAD);
+                potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
+
+                rx = Math.cos(t+Math.PI/8)*(i*LOOKAHEAD/2);
+                ry = Math.sin(t+Math.PI/8)*(i*LOOKAHEAD/2);
+                potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
+
+                rx = Math.cos(t-Math.PI/8)*(i*LOOKAHEAD/2);
+                ry = Math.sin(t-Math.PI/8)*(i*LOOKAHEAD/2);
                 potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
             }
 

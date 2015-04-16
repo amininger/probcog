@@ -61,6 +61,26 @@ public class PotentialUtil
         public double maxObstacleRange = 2*robotRadius;
     }
 
+    static public ArrayList<double[]> getMinPath(double[] rxy_start,
+                                                 PotentialField pf)
+    {
+        ArrayList<double[]> path = new ArrayList<double[]>();
+
+        double[] currXY = LinAlg.copy(rxy_start);
+        int iters = 300;
+        while (pf.inRange(currXY[0], currXY[1])) {
+            path.add(LinAlg.copy(currXY));
+            double[] g = getGradient(currXY, pf);
+            currXY[0] += g[0]*pf.getMPP()/4;
+            currXY[1] += g[1]*pf.getMPP()/4;
+
+            if (iters-- <= 0)
+                break;
+        }
+
+        return path;
+    }
+
     /** Get the gradient of a coordinate relative to the robot for the
      *  given potential field. Return as a normalized direction (also relative
      *  to the robot)
@@ -71,7 +91,7 @@ public class PotentialUtil
         double v00 = pf.getRelative(rxy[0], rxy[1]);
         double v10 = pf.getRelative(rxy[0]+pf.getMPP(), rxy[1]);
         double v01 = pf.getRelative(rxy[0], rxy[1]+pf.getMPP());
-        double v11 = pf.getRelative(rxy[0]+pf.getMPP(), rxy[1]+pf.getMPP());
+            double v11 = pf.getRelative(rxy[0]+pf.getMPP(), rxy[1]+pf.getMPP());
 
         double dx = 0.5*((v10-v00)+(v11-v01));
         double dy = 0.5*((v01-v00)+(v11-v10));
@@ -240,7 +260,7 @@ public class PotentialUtil
         double kw = params.repulsiveWeight;
         double kr = params.maxObstacleRange;
         double invKr = 1.0/kr;
-        double invRad = 1.0/params.robotRadius;
+        double maxRange = 2*params.robotRadius;
 
         double[] distances = new double[points.size()];
         for (int y = 0; y < pf.getHeight(); y++) {
@@ -250,17 +270,19 @@ public class PotentialUtil
                 int cnt = 0;
 
                 double[] u = new double[2];
+                double min = Double.MAX_VALUE;
                 for (int i = 0; i < points.size(); i++) {
                     double[] pxy = points.get(i);
                     double d = LinAlg.distance(xy, pxy, 2);
                     distances[i] = d;
 
                     // No potential added
-                    if (d > 2*kr)
+                    if (d > maxRange)
                         continue;
 
                     u[0] += (pxy[0] - xy[0])/d;
                     u[1] += (pxy[1] - xy[1])/d;
+                    min = Math.min(min, d);
                 }
 
                 boolean aligningForce = false;
@@ -269,7 +291,7 @@ public class PotentialUtil
                 for (int i = 0; i < points.size(); i++) {
                     double d = distances[i];
 
-                    if (d > 2*kr)
+                    if (d > maxRange)
                         continue;
 
                     double[] pxy = points.get(i);
@@ -285,34 +307,39 @@ public class PotentialUtil
                     }
                 }
 
-                if (aligningForce || !opposingForce) {
-                    kr *= 2;
-                    invKr *= 0.5;
-                }
+                //if (aligningForce || !opposingForce) {
+                //    kr = 2*params.robotRadius;
+                //    invKr = 1.0/kr;
+                //} else {
+                    kr = params.maxObstacleRange;
+                    invKr = 1.0/kr;
+                //}
 
-                for (int i = 0; i < points.size(); i++) {
-                    double d = distances[i];
+                v = 0.5*LinAlg.sq(1.0/min-invKr);
+                pf.addIndex(x, y, kw*v);
+                //for (int i = 0; i < points.size(); i++) {
+                //    double d = distances[i];
 
-                    // No potential added
-                    if (d > kr)
-                        continue;
+                //    // No potential added
+                //    if (d > kr)
+                //        continue;
 
-                    v += 0.5*LinAlg.sq(1.0/d-invKr);
-                    cnt++;
-                }
-                if (cnt > 0) {
-                    v /= cnt;
-                    pf.addIndex(x, y, kw*v);
-                }
+                //    v += 0.5*LinAlg.sq(1.0/d-invKr);
+                //    cnt++;
+                //}
+                //if (cnt > 0) {
+                //    v /= cnt;
+                //    pf.addIndex(x, y, kw*v);
+                //}
             }
         }
     }
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {2.0, -5, 0};
+        double[] goal = new double[] {3.0, 0, 0};
         pose_t pose = new pose_t();
-        double[] xyt = new double[] {1.5, 1, -Math.PI/4};
+        double[] xyt = new double[] {1.5, 1, 0};
         pose.orientation = LinAlg.rollPitchYawToQuat(new double[] {0, 0, xyt[2]});
         pose.pos = new double[] {xyt[0], xyt[1], 0};
 
@@ -322,7 +349,7 @@ public class PotentialUtil
         laser.radstep = (float)(Math.toRadians(1));
         laser.nranges = 360;
         laser.ranges = new float[laser.nranges];
-        double doorOffset = -0.5;
+        double doorOffset = 0.5;
         double doorSize = 0.9;
         for (int i = 0; i < laser.nranges; i++) {
             double t = laser.rad0 + i*laser.radstep;
@@ -347,7 +374,7 @@ public class PotentialUtil
         params.attractivePotential = AttractivePotential.COMBINED;
         //params.fieldRes = 0.01;
         //params.repulsivePotential = RepulsivePotential.PRESERVE_DOORS;
-        //params.maxObstacleRange = 0.5;
+        //params.maxObstacleRange = 0.1;
 
         // Wait for keypress
         //try {
@@ -388,7 +415,8 @@ public class PotentialUtil
                                0xff0000ff,
                                0xff2222ff};
         double minVal = pf.getMinValue();
-        ColorMapper cm = new ColorMapper(map, minVal, 5*minVal);
+        double maxVal = Math.max(5*minVal, params.repulsiveWeight);
+        ColorMapper cm = new ColorMapper(map, minVal, maxVal);
 
         double[][] M = LinAlg.quatPosToMatrix(pose.orientation,
                                               pose.pos);
@@ -428,6 +456,32 @@ public class PotentialUtil
         vb.addBack(new VzLines(new VisVertexData(gpoints),
                                VzLines.LINES,
                                new VzLines.Style(Color.gray, 1)));
+        vb.swap();
+
+        vb = vw.getBuffer("laser");
+        vb.setDrawOrder(100);
+        ArrayList<double[]> lpoints = new ArrayList<double[]>();
+        for (int i = 0; i < laser.nranges; i++) {
+            double r = laser.ranges[i];
+            if (r < 0)
+                continue;
+
+            double t = laser.rad0 + i*laser.radstep;
+            lpoints.add(new double[] {r*Math.cos(t), r*Math.sin(t)});
+        }
+        vb.addBack(new VisChain(M,
+                                new VzPoints(new VisVertexData(lpoints),
+                                             new VzPoints.Style(Color.orange, 3))));
+        vb.swap();
+
+        vb = vw.getBuffer("path");
+        vb.setDrawOrder(50);
+        ArrayList<double[]> path = getMinPath(new double[2], pf);
+        vb.addBack(new VisChain(M,
+                                new VzLines(new VisVertexData(path),
+                                           VzLines.LINE_STRIP,
+                                           new VzLines.Style(Color.green, 2))));
+
         vb.swap();
 
         jf.setVisible(true);
