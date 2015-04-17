@@ -172,7 +172,7 @@ public class PotentialUtil
             min[0] = Math.min(min[0], d0);
             if (line != null) {
                 double d1 = line.distanceTo(xy);
-                min[1] = Math.min(min[1], d1);
+                min[1] = Math.min(min[1], d1); // XXX THIS WON'T WORK
             }
         }
 

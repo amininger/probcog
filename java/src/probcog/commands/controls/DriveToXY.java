@@ -184,6 +184,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                       params.pose.pos));
         double[] rgoal = LinAlg.xytInvMul31(robotXYT, xyt);
+        double dgoal = Math.sqrt(rgoal[0]*rgoal[0] + rgoal[1]*rgoal[1]);
 
         if (LinAlg.distance(robotXYT, xyt, 2) < DISTANCE_THRESH)
             return dd;
@@ -211,6 +212,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         for (double y: ys) {
             for (double x: xs) {
                 double[] rxy = new double[] {x, y};
+                if (LinAlg.magnitude(rxy) > dgoal)
+                    continue;
                 double[] g0 = PotentialUtil.getGradient(rxy, rgoal, pp);
                 if (LinAlg.magnitude(g0) == 0)
                     continue;
@@ -244,7 +247,21 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             double minVal = pf.getMinValue();
             ColorMapper cm = new ColorMapper(map, minVal, 2.5*minVal);
 
-            VisWorld.Buffer vb = vw.getBuffer("pf");
+            VisWorld.Buffer vb = vw.getBuffer("laser");
+            vb.setDrawOrder(100);
+            ArrayList<double[]> plaser = new ArrayList<double[]>();
+            for (int i = 0; i < params.laser.nranges; i++) {
+                double r = params.laser.ranges[i];
+                if (r < 0)
+                    continue;
+                double t = params.laser.rad0 + i*params.laser.radstep;
+                plaser.add(new double[]{r*Math.cos(t), r*Math.sin(t)});
+            }
+            vb.addBack(new VzPoints(new VisVertexData(plaser),
+                                    new VzPoints.Style(Color.yellow, 3)));
+            vb.swap();
+
+            vb = vw.getBuffer("pf");
             vb.addBack(pf.getVisObject(cm));
             vb.swap();
 
