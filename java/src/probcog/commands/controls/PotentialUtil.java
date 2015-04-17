@@ -8,6 +8,7 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
+import april.jmat.geom.*;
 import april.vis.*;
 import april.util.*;
 
@@ -58,7 +59,7 @@ public class PotentialUtil
         public double attractiveWeight = 1.0;
         public double attractiveThreshold = 1.0;
 
-        public RepulsivePotential repulsivePotential = RepulsivePotential.ALL_POINTS;
+        public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
         public double repulsiveWeight = 5.0;
         public double maxObstacleRange = 2*robotRadius;
     }
@@ -81,6 +82,107 @@ public class PotentialUtil
         }
 
         return path;
+    }
+
+    /** Get a point gradient for a point relative to the robot. No precomputation
+     *  of the potential field.
+     *
+     *  @param rxy      Robot relative coordinate
+     *  @param goal     Goal relative to robot
+     *  @param params   Potential field params
+     */
+    static public double[] getGradient(double[] rxy,
+                                       double[] goal,
+                                       Params params)
+    {
+        double eps = 0.001;
+        double v00 = getRelative(rxy[0], rxy[1], goal, params);
+        double v10 = getRelative(rxy[0]+eps, rxy[1], goal, params);
+        double v01 = getRelative(rxy[0], rxy[1]+eps, goal, params);
+        double v11 = getRelative(rxy[0]+eps, rxy[1]+eps, goal, params);
+
+        if (v00 == Double.MAX_VALUE || v10 == Double.MAX_VALUE ||
+            v01 == Double.MAX_VALUE || v11 == Double.MAX_VALUE)
+            return new double[2];
+
+        double dx = 0.5*((v10-v00)+(v11-v01))/eps;
+        double dy = 0.5*((v01-v00)+(v11-v10))/eps;
+
+        return new double[] {-dx, -dy};
+    }
+
+    static public double getRelative(double rx, double ry, double[] goal, Params params)
+    {
+        double dist = Math.sqrt(LinAlg.sq(rx-goal[0]) + LinAlg.sq(ry-goal[1]));
+
+        double p_att = getAttractivePotential(dist, params);
+        double p_rep = getRepulsivePotential(rx, ry, params);
+
+        double p = p_att + p_rep;
+        if (Double.isInfinite(p))
+            p = Double.MAX_VALUE;
+
+        return p;
+    }
+
+    static private double getAttractivePotential(double dist, Params params)
+    {
+        double kw = params.attractiveWeight;
+        double kt = params.attractiveThreshold;
+
+        switch (params.attractivePotential) {
+            case LINEAR:
+                return dist*kw;
+            case QUADRATIC:
+                return 0.5*dist*dist*kw;
+            case COMBINED:
+                if (dist > kt) {
+                    return kt*kw*(dist-0.5*kt);
+                } else {
+                    return 0.5*dist*dist*kw;
+                }
+            default:
+                System.err.println("ERR: Unknown attractive potential");
+                return 0;
+        }
+    }
+
+    static private double getRepulsivePotential(double rx, double ry, Params params)
+    {
+        double kw = params.repulsiveWeight;
+        double kr = params.maxObstacleRange;
+
+        GLineSegment2D line = null;
+        if (rx != 0 && ry != 0)
+            line = new GLineSegment2D(new double[2], new double[] {rx, ry});
+
+        double[] min = new double[] {Double.MAX_VALUE, Double.MAX_VALUE};
+        double acc = 0;
+        for (int i = 0; i < params.laser.nranges; i++) {
+            double r = params.laser.ranges[i];
+
+            // Error value
+            if (r < 0)
+                continue;
+
+            double t = params.laser.rad0 + i*params.laser.radstep;
+            double[] xy = new double[] { r*Math.cos(t), r*Math.sin(t) };
+
+            double d0 = Math.sqrt(LinAlg.sq(rx-xy[0]) + LinAlg.sq(ry-xy[1]));
+            min[0] = Math.min(min[0], d0);
+            if (line != null) {
+                double d1 = line.distanceTo(xy);
+                min[1] = Math.min(min[1], d1);
+            }
+        }
+
+        min[0] = Math.min(min[0], min[1]);
+        if (min[0] == 0)
+            return Double.MAX_VALUE;
+
+        if (min[0] > kr)
+            return 0;
+        return 0.5*kw*LinAlg.sq(1.0/min[0] - 1.0/kr);
     }
 
     /** Get the gradient of a coordinate relative to the robot for the
@@ -201,8 +303,6 @@ public class PotentialUtil
                 repulsiveAllPoints(pf, points, params);
                 break;
             case PRESERVE_DOORS:
-                repulsivePreserveDoors(pf, points, params);
-                break;
             default:
                 System.err.println("ERR: Unknown repulsive potential");
         }
@@ -223,9 +323,23 @@ public class PotentialUtil
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 double[] xy = pf.indexToMeters(x, y);
+                GLineSegment2D line = null;
+                if (xy[0] != 0 && xy[1] != 0)
+                    line = new GLineSegment2D(new double[2], xy);
+
                 double d2 = Double.MAX_VALUE;
+                double d2_line = Double.MAX_VALUE;
                 for (double[] pxy: points) {
                     d2 = Math.min(d2, LinAlg.squaredDistance(xy, pxy, 2));
+                    if (line != null)
+                        d2_line = Math.min(d2_line, line.squaredDistanceTo(pxy));
+                }
+
+                d2 = Math.min(d2, d2_line);
+
+                if (d2 == 0) {
+                    pf.addIndexUnsafe(x, y, Double.MAX_VALUE);
+                    continue;
                 }
 
                 // No potential added
@@ -266,88 +380,6 @@ public class PotentialUtil
                     v /= cnt;
                     pf.addIndexUnsafe(x, y, kw*v);
                 }
-            }
-        }
-    }
-
-    static private void repulsivePreserveDoors(PotentialField pf,
-                                               ArrayList<double[]> points,
-                                               Params params)
-    {
-        double kw = params.repulsiveWeight;
-        double kr = params.maxObstacleRange;
-        double invKr = 1.0/kr;
-        double maxRange = 2*params.robotRadius;
-
-        double[] distances = new double[points.size()];
-        for (int y = 0; y < pf.getHeight(); y++) {
-            for (int x = 0; x < pf.getWidth(); x++) {
-                double[] xy = pf.indexToMeters(x, y);
-                double v = 0;
-                int cnt = 0;
-
-                double[] u = new double[2];
-                double min = Double.MAX_VALUE;
-                for (int i = 0; i < points.size(); i++) {
-                    double[] pxy = points.get(i);
-                    double d = LinAlg.distance(xy, pxy, 2);
-                    distances[i] = d;
-
-                    // No potential added
-                    if (d > maxRange)
-                        continue;
-
-                    u[0] += (pxy[0] - xy[0])/d;
-                    u[1] += (pxy[1] - xy[1])/d;
-                    min = Math.min(min, d);
-                }
-
-                boolean aligningForce = false;
-                boolean opposingForce = false;
-                u = LinAlg.normalize(u);
-                for (int i = 0; i < points.size(); i++) {
-                    double d = distances[i];
-
-                    if (d > maxRange)
-                        continue;
-
-                    double[] pxy = points.get(i);
-                    double dp = (u[0]*(pxy[0]-xy[0]) + u[1]*(pxy[1]-xy[1]))/d;
-                    if (dp < 0) {
-                        opposingForce = true;
-                        break;
-                    }
-
-                    if (dp > 0.995) {
-                        aligningForce = true;
-                        break;
-                    }
-                }
-
-                //if (aligningForce || !opposingForce) {
-                //    kr = 2*params.robotRadius;
-                //    invKr = 1.0/kr;
-                //} else {
-                    kr = params.maxObstacleRange;
-                    invKr = 1.0/kr;
-                //}
-
-                v = 0.5*LinAlg.sq(1.0/min-invKr);
-                pf.addIndexUnsafe(x, y, kw*v);
-                //for (int i = 0; i < points.size(); i++) {
-                //    double d = distances[i];
-
-                //    // No potential added
-                //    if (d > kr)
-                //        continue;
-
-                //    v += 0.5*LinAlg.sq(1.0/d-invKr);
-                //    cnt++;
-                //}
-                //if (cnt > 0) {
-                //    v /= cnt;
-                //    pf.addIndex(x, y, kw*v);
-                //}
             }
         }
     }

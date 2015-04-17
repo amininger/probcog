@@ -28,15 +28,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 30;
-    static final double LOOKAHEAD = 0.1;
-    static final int LOOKAHEAD_STEPS = (int)(Math.ceil(1.00/LOOKAHEAD));
 
     static final double DISTANCE_THRESH = 0.25;
     static final double TURN_THRESH = Math.toRadians(90);
     static final double MAX_SPEED = 0.5;
     static final double TURN_SPEED = 0.4;
     static final double FORWARD_SPEED = 0.1;
-    static final double TURN_WEIGHT = 5.0;
+    static final double TURN_WEIGHT = 1.0;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -185,9 +183,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         // Project pose to robot center. Stop if close to goal.
         double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                       params.pose.pos));
-        //double[] dir = new double[] {Math.cos(robotXYT[2]), Math.sin(robotXYT[2])};
-        //robotXYT[0] += dir[0]*REAR_AXLE_OFFSET;
-        //robotXYT[1] += dir[1]*REAR_AXLE_OFFSET;
+        double[] rgoal = LinAlg.xytInvMul31(robotXYT, xyt);
 
         if (LinAlg.distance(robotXYT, xyt, 2) < DISTANCE_THRESH)
             return dd;
@@ -199,55 +195,47 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            pose,
                                                            xyt);
-        pp.fieldRes = 0.025;
-        pp.repulsivePotential = PotentialUtil.RepulsivePotential.CLOSEST_POINT;
+        pp.fieldRes = 0.1;
         if (params.pp != null)
             pp = params.pp;
-        PotentialField pf = PotentialUtil.getPotential(pp);
 
+        ArrayList<double[]> sampleGrads = new ArrayList<double[]>();
         ArrayList<double[]> samplePoints = new ArrayList<double[]>();
         double theta = -Math.PI;
-        double potentialBest = Double.MAX_VALUE;
-        if (false) {
-            // Determine the heading to pursue by sampling potentials along various
-            // headings. Choose heading with least total potential.
-            for (double t = -3*Math.PI/2; t <= 3*Math.PI/2; t += Math.toRadians(1)) {
-                double potential = 0;
-                for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
-                    double rx = Math.cos(t)*(i*LOOKAHEAD);
-                    double ry = Math.sin(t)*(i*LOOKAHEAD);
-                    potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
-                }
 
-                if (potential < potentialBest) {
-                    theta = t;
-                    potentialBest = potential;
-                }
-            }
-        } else {
-            // Try gradient sampling approach again. Will want to rewrite
-            // this to be more efficient.
+        double[] grad = new double[2];
 
-            double[] grad = new double[2];
+        //Tic tic = new Tic();
+        double[] ys = new double[] {-.4, -.3, -.2, -.1, 0, .1, .2, .3, .4};
+        double[] xs = new double[] {0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5};
+        for (double y: ys) {
+            for (double x: xs) {
+                double[] rxy = new double[] {x, y};
+                double[] g0 = PotentialUtil.getGradient(rxy, rgoal, pp);
+                if (LinAlg.magnitude(g0) == 0)
+                    continue;
+                g0 = LinAlg.normalize(g0);
+                //g0 = LinAlg.scale(g0, Math.abs(y)+.2/x);
 
-            double[] ys = new double[] {-.3, -.1, .1, .3,};
-            double[] xs = new double[] {.2, .4, .6, .8, 1.0};
-            for (double y: ys) {
-                for (double x: xs) {
-                    double[] rxy = new double[] {x, y};
+                if (DEBUG) {
                     samplePoints.add(rxy);
-                    double[] g0 = PotentialUtil.getGradient(rxy, pf);
-                    double s = Math.max(1-x, 0.1);
-                    LinAlg.plusEquals(grad, LinAlg.scale(g0, s));
+                    sampleGrads.add(rxy);
+                    sampleGrads.add(LinAlg.add(rxy, LinAlg.scale(g0, 0.1)));
                 }
+                LinAlg.plusEquals(grad, g0);
             }
-
-            theta = Math.atan2(grad[1], grad[0]);
-            potentialBest = 0;
         }
+        //System.out.printf("%f [s]\n", tic.toc());
+
+        if (MathUtil.doubleEquals(grad[0], 0) && MathUtil.doubleEquals(grad[1], 0)) {
+            return dd;
+        }
+        theta = Math.atan2(grad[1], grad[0]);
+        grad = LinAlg.normalize(grad);
 
         if (DEBUG) {
             // Render the field
+            PotentialField pf = PotentialUtil.getPotential(pp);
             int[] map = new int[] {0xffffff00,
                 0xffff00ff,
                 0x0007ffff,
@@ -260,26 +248,22 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             vb.addBack(pf.getVisObject(cm));
             vb.swap();
 
-            vb = vw.getBuffer("grad");
-            VisVertexData vvd = new VisVertexData();
-            vvd.add(new double[2]);
-            vvd.add(new double[] {Math.cos(theta), Math.sin(theta)});
-            vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 2)));
-            vb.swap();
-
             vb = vw.getBuffer("samples");
             if (samplePoints.size() > 0) {
+                VisVertexData vvd = new VisVertexData();
+                vvd.add(new double[2]);
+                vvd.add(grad);
+                vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 3)));
                 vb.addBack(new VzPoints(new VisVertexData(samplePoints),
                                         new VzPoints.Style(Color.green, 3)));
+                vb.addBack(new VzLines(new VisVertexData(sampleGrads),
+                                       VzLines.LINES,
+                                       new VzLines.Style(Color.gray, 1)));
             }
             vb.swap();
         }
 
-        // No valid heading
-        if (potentialBest == Double.MAX_VALUE)
-            return dd;
-
-        // Determine if we're stuck
+        // Determine if we're stuck. Not perfect...we can still end up oscillating
         if (lastTheta != Double.MAX_VALUE) {
             double dtheta = MathUtil.mod2pi(lastTheta - theta);
             if (Math.abs(dtheta) > Math.PI/2)
