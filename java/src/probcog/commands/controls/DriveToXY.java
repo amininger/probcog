@@ -30,10 +30,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double HZ = 30;
 
     static final double DISTANCE_THRESH = 0.25;
-    static final double TURN_THRESH = Math.toRadians(90);
+    static final double TURN_THRESH = Math.toRadians(45);
+    static final double STOP_THRESH = Math.toRadians(90);
     static final double MAX_SPEED = 0.5;
     static final double TURN_SPEED = 0.4;
-    static final double FORWARD_SPEED = 0.1;
+    static final double FORWARD_SPEED = 0.3;
     static final double TURN_WEIGHT = 1.0;
 
     // XXX Get this into config
@@ -207,19 +208,24 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         double[] grad = new double[2];
 
         //Tic tic = new Tic();
-        double[] ys = new double[] {-.4, -.3, -.2, -.1, 0, .1, .2, .3, .4};
-        double[] xs = new double[] {0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3};
+        double[] ys = new double[] {-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5};
+        double[] xs = new double[] {.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5};
         for (double y: ys) {
             for (double x: xs) {
+                //if (x+Math.abs(y) > 1.55)
+                //    continue;
+
                 double[] rxy = new double[] {x, y};
-                if (LinAlg.magnitude(rxy) > dgoal)
+                double rmag = LinAlg.magnitude(rxy);
+                if (rmag > dgoal)
                     continue;
                 double[] g0 = PotentialUtil.getGradient(rxy, rgoal, pp);
-                double mag = LinAlg.magnitude(g0);
-                if (mag == 0)
+                double gmag = LinAlg.magnitude(g0);
+                if (gmag == 0)
                     continue;
-                g0[0] /= mag;
-                g0[1] /= mag;
+                g0[0] /= gmag;
+                g0[1] /= gmag;
+                g0 = LinAlg.scale(g0, Math.pow(.1/Math.max(0.1, rmag), .3));
 
                 if (DEBUG) {
                     samplePoints.add(rxy);
@@ -284,7 +290,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         // Determine if we're stuck. Not perfect...we can still end up oscillating
         if (lastTheta != Double.MAX_VALUE) {
             double dtheta = MathUtil.mod2pi(lastTheta - theta);
-            if (Math.abs(dtheta) > Math.PI/2)
+            if (Math.abs(dtheta) > STOP_THRESH)
                 return dd;
         }
         lastTheta = theta;

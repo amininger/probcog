@@ -60,8 +60,8 @@ public class PotentialUtil
         public double attractiveThreshold = 1.0;
 
         public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
-        public double repulsiveWeight = 5.0;
-        public double maxObstacleRange = 2*robotRadius;
+        public double repulsiveWeight = 2.0;
+        public double maxObstacleRange = 2.0*robotRadius;
     }
 
     static public ArrayList<double[]> getMinPath(double[] rxy_start,
@@ -157,6 +157,7 @@ public class PotentialUtil
             line = new GLineSegment2D(new double[2], new double[] {rx, ry});
 
         double[] min = new double[] {Double.MAX_VALUE, Double.MAX_VALUE};
+        double sum = 0;
         double acc = 0;
         for (int i = 0; i < params.laser.nranges; i++) {
             double r = params.laser.ranges[i];
@@ -183,6 +184,7 @@ public class PotentialUtil
         if (min[0] > kr)
             return 0;
         return 0.5*kw*LinAlg.sq(1.0/min[0] - 1.0/kr);
+        //return kw*(1.0*(kr-min[0])/kr);
     }
 
     /** Get the gradient of a coordinate relative to the robot for the
@@ -347,6 +349,7 @@ public class PotentialUtil
                 if (d2 > kr2)
                     continue;
                 pf.addIndexUnsafe(x, y, 0.5*kw*LinAlg.sq(1.0/Math.sqrt(d2)-invKr));
+                //pf.addIndexUnsafe(x, y, kw*(1.0*(kr-Math.sqrt(d2))/kr));
             }
         }
     }
