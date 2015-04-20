@@ -61,7 +61,7 @@ public class PotentialUtil
 
         public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
         public double repulsiveWeight = 2.0;
-        public double maxObstacleRange = 2.0*robotRadius;
+        public double maxObstacleRange = 3.0*robotRadius;
     }
 
     static public ArrayList<double[]> getMinPath(double[] rxy_start,
