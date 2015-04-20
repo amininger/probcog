@@ -323,9 +323,10 @@ public class PotentialUtil
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 double[] xy = pf.indexToMeters(x, y);
+                double[] origin = pf.getOrigin();
                 GLineSegment2D line = null;
-                if (xy[0] != 0 && xy[1] != 0)
-                    line = new GLineSegment2D(new double[2], xy);
+                if (!Arrays.equals(xy, origin))
+                    line = new GLineSegment2D(origin, xy);
 
                 double d2 = Double.MAX_VALUE;
                 double d2_line = Double.MAX_VALUE;
