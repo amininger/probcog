@@ -208,17 +208,18 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         //Tic tic = new Tic();
         double[] ys = new double[] {-.4, -.3, -.2, -.1, 0, .1, .2, .3, .4};
-        double[] xs = new double[] {0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5};
+        double[] xs = new double[] {0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3};
         for (double y: ys) {
             for (double x: xs) {
                 double[] rxy = new double[] {x, y};
                 if (LinAlg.magnitude(rxy) > dgoal)
                     continue;
                 double[] g0 = PotentialUtil.getGradient(rxy, rgoal, pp);
-                if (LinAlg.magnitude(g0) == 0)
+                double mag = LinAlg.magnitude(g0);
+                if (mag == 0)
                     continue;
-                g0 = LinAlg.normalize(g0);
-                //g0 = LinAlg.scale(g0, Math.abs(y)+.2/x);
+                g0[0] /= mag;
+                g0[1] /= mag;
 
                 if (DEBUG) {
                     samplePoints.add(rxy);
