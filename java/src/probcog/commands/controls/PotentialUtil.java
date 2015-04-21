@@ -60,7 +60,7 @@ public class PotentialUtil
         public double attractiveThreshold = 1.0;
 
         public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
-        public double repulsiveWeight = 2.0;
+        public double repulsiveWeight = 1.0;
         public double maxObstacleRange = 3.0*robotRadius;
     }
 
@@ -171,13 +171,19 @@ public class PotentialUtil
 
             double d0 = Math.sqrt(LinAlg.sq(rx-xy[0]) + LinAlg.sq(ry-xy[1]));
             min[0] = Math.min(min[0], d0);
+
+            // This attempts to do some line-of-sight based stuff. Result is
+            // not optimal, though...we want points beyond walls to not
+            // contribute, but instead, they drag us in random directions
             if (line != null) {
                 double d1 = line.distanceTo(xy);
-                min[1] = Math.min(min[1], d1); // XXX THIS WON'T WORK
+                min[1] = Math.min(min[1], d1);
             }
         }
 
-        min[0] = Math.min(min[0], min[1]);
+        if (min[1] < min[0])
+            min[0] = min[1];
+
         if (min[0] == 0)
             return Double.MAX_VALUE;
 
@@ -185,6 +191,28 @@ public class PotentialUtil
             return 0;
         return 0.5*kw*LinAlg.sq(1.0/min[0] - 1.0/kr);
         //return kw*(1.0*(kr-min[0])/kr);
+    }
+
+    static private double getSmoothRepulsivePotential(double rx, double ry, Params params)
+    {
+        double kw = params.repulsiveWeight;
+        double kr = params.maxObstacleRange;
+
+        double p_rep = 0;
+        for (int i = 0; i < params.laser.nranges; i++) {
+            double r = params.laser.ranges[i];
+            if (r < 0)
+                continue;
+
+            double t = params.laser.rad0 + i*params.laser.radstep;
+            double[] xy = new double[] { r*Math.cos(t), r*Math.sin(t) };
+
+            double d0 = Math.sqrt(LinAlg.sq(rx-xy[0]) + LinAlg.sq(ry-xy[1]));
+            if (d0 < kr)
+                p_rep += 0.5*kw*LinAlg.sq(1.0/d0 - 1.0/kr);
+        }
+
+        return p_rep;
     }
 
     /** Get the gradient of a coordinate relative to the robot for the
@@ -380,10 +408,7 @@ public class PotentialUtil
                     v += 0.5*LinAlg.sq(1.0/Math.sqrt(d2)-invKr);
                     cnt++;
                 }
-                if (cnt > 0) {
-                    v /= cnt;
-                    pf.addIndexUnsafe(x, y, kw*v);
-                }
+                pf.addIndexUnsafe(x, y, kw*v);
             }
         }
     }
@@ -426,9 +451,10 @@ public class PotentialUtil
         Params params = new Params(laser, pose, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
         params.fieldSize = 2.0;
-        //params.fieldRes = 0.1;
-        //params.repulsivePotential = RepulsivePotential.PRESERVE_DOORS;
-        //params.maxObstacleRange = 0.1;
+        params.fieldRes = 0.01;
+        params.repulsiveWeight = .1;
+        //params.repulsivePotential = RepulsivePotential.ALL_POINTS;
+        params.maxObstacleRange = 2.0;
 
         // Wait for keypress
         try {

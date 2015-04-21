@@ -16,7 +16,7 @@ import magic2.lcmtypes.*;
 
 public class TraverseDoorway implements ControlLaw, LCMSubscriber
 {
-    static final double HZ = 30;
+    static final double HZ = 40;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
     private ExpiringMessageCache<laser_t> laserCache =

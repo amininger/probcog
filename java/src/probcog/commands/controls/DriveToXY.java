@@ -24,18 +24,25 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     VisWorld vw;
 
-    private boolean DEBUG = true;
+    private boolean DEBUG = false;
 
     // I don't think we can hit this rate. CPU intensive?
-    static final double HZ = 30;
+    static final double HZ = 40;
+
+    // Integration method parameters
+    static final double LOOKAHEAD_M = 1.0;
+    static final double LOOKAHEAD_STEP_M = 0.1;
+    static final double THETA_RANGE_RAD = Math.abs(3*Math.PI/4);
+    static final double THETA_STEP = Math.toRadians(5);
+
 
     static final double DISTANCE_THRESH = 0.25;
     static final double TURN_THRESH = Math.toRadians(45);
     static final double STOP_THRESH = Math.toRadians(90);
     static final double MAX_SPEED = 0.5;
-    static final double TURN_SPEED = 0.4;
-    static final double FORWARD_SPEED = 0.3;
-    static final double TURN_WEIGHT = 1.0;
+    static final double TURN_SPEED = 0.3;
+    static final double FORWARD_SPEED = 1.0;
+    static final double TURN_WEIGHT = 30.0;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -197,6 +204,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            pose,
                                                            xyt);
+        pp.repulsivePotential = PotentialUtil.RepulsivePotential.ALL_POINTS;
         pp.fieldRes = 0.1;
         if (params.pp != null)
             pp = params.pp;
@@ -204,44 +212,57 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         ArrayList<double[]> sampleGrads = new ArrayList<double[]>();
         ArrayList<double[]> samplePoints = new ArrayList<double[]>();
         double theta = -Math.PI;
+        double minIntegral = Double.MAX_VALUE;
 
-        double[] grad = new double[2];
+        for (double t = -THETA_RANGE_RAD; t <= THETA_RANGE_RAD; t += THETA_STEP) {
+            double integral = 0;
+            for (int i = 1; i < Math.ceil(LOOKAHEAD_M/LOOKAHEAD_STEP_M); i++) {
+                double rx = Math.cos(t)*i*LOOKAHEAD_STEP_M;
+                double ry = Math.sin(t)*i*LOOKAHEAD_STEP_M;
+                integral += PotentialUtil.getRelative(rx, ry, rgoal, pp);
+            }
 
-        //Tic tic = new Tic();
-        double[] ys = new double[] {-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5};
-        double[] xs = new double[] {.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5};
-        for (double y: ys) {
-            for (double x: xs) {
-                //if (x+Math.abs(y) > 1.55)
-                //    continue;
-
-                double[] rxy = new double[] {x, y};
-                double rmag = LinAlg.magnitude(rxy);
-                if (rmag > dgoal)
-                    continue;
-                double[] g0 = PotentialUtil.getGradient(rxy, rgoal, pp);
-                double gmag = LinAlg.magnitude(g0);
-                if (gmag == 0)
-                    continue;
-                g0[0] /= gmag;
-                g0[1] /= gmag;
-                g0 = LinAlg.scale(g0, Math.pow(.1/Math.max(0.1, rmag), .3));
-
-                if (DEBUG) {
-                    samplePoints.add(rxy);
-                    sampleGrads.add(rxy);
-                    sampleGrads.add(LinAlg.add(rxy, LinAlg.scale(g0, 0.1)));
-                }
-                LinAlg.plusEquals(grad, g0);
+            if (integral < minIntegral) {
+                theta = t;
+                minIntegral = integral;
             }
         }
+        //double[] grad = new double[2];
+        //Tic tic = new Tic();
+        //double[] ys = new double[] {-.4, -.3, -.2, -.1, 0, .1, .2, .3, .4};
+        //double[] xs = new double[] {0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2};
+        //for (double y: ys) {
+        //    for (double x: xs) {
+        //        double[] rxy = new double[] {x, y};
+        //        double rmag = LinAlg.magnitude(rxy);
+        //        if (rmag > 1.25)
+        //            continue;
+
+        //        if (rmag > dgoal)
+        //            continue;
+        //        double[] g0 = PotentialUtil.getGradient(rxy, rgoal, pp);
+        //        double gmag = LinAlg.magnitude(g0);
+        //        if (gmag == 0)
+        //            continue;
+        //        g0[0] /= gmag;
+        //        g0[1] /= gmag;
+        //        //g0 = LinAlg.scale(g0, Math.pow(.1/Math.max(0.1, rmag), .5));
+
+        //        if (DEBUG) {
+        //            samplePoints.add(rxy);
+        //            sampleGrads.add(rxy);
+        //            sampleGrads.add(LinAlg.add(rxy, LinAlg.scale(g0, 0.1)));
+        //        }
+        //        LinAlg.plusEquals(grad, g0);
+        //    }
+        //}
         //System.out.printf("%f [s]\n", tic.toc());
 
-        if (MathUtil.doubleEquals(grad[0], 0) && MathUtil.doubleEquals(grad[1], 0)) {
-            return dd;
-        }
-        theta = Math.atan2(grad[1], grad[0]);
-        grad = LinAlg.normalize(grad);
+        //if (MathUtil.doubleEquals(grad[0], 0) && MathUtil.doubleEquals(grad[1], 0)) {
+        //    return dd;
+        //}
+        //theta = Math.atan2(grad[1], grad[0]);
+        //grad = LinAlg.normalize(grad);
 
         if (DEBUG) {
             // Render the field
@@ -252,7 +273,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                 0xff0000ff,
                 0xff2222ff};
             double minVal = pf.getMinValue();
-            ColorMapper cm = new ColorMapper(map, minVal, 2.5*minVal);
+            double maxVal = pf.getMaxValue();
+            maxVal = Math.max(5.0, 2.5*minVal);
+            ColorMapper cm = new ColorMapper(map, minVal, maxVal);
 
             VisWorld.Buffer vb = vw.getBuffer("laser");
             vb.setDrawOrder(100);
@@ -273,11 +296,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             vb.swap();
 
             vb = vw.getBuffer("samples");
+            VisVertexData vvd = new VisVertexData();
+            vvd.add(new double[2]);
+            vvd.add(new double[] {LOOKAHEAD_M*Math.cos(theta), LOOKAHEAD_M*Math.sin(theta)});
+            vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 3)));
             if (samplePoints.size() > 0) {
-                VisVertexData vvd = new VisVertexData();
-                vvd.add(new double[2]);
-                vvd.add(grad);
-                vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 3)));
                 vb.addBack(new VzPoints(new VisVertexData(samplePoints),
                                         new VzPoints.Style(Color.green, 3)));
                 vb.addBack(new VzLines(new VisVertexData(sampleGrads),
@@ -286,6 +309,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             }
             vb.swap();
         }
+
+        if (theta == -Math.PI)
+            return dd;
 
         // Determine if we're stuck. Not perfect...we can still end up oscillating
         if (lastTheta != Double.MAX_VALUE) {
