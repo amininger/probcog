@@ -24,25 +24,23 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     VisWorld vw;
 
-    private boolean DEBUG = false;
+    private boolean DEBUG = true;
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 40;
 
     // Integration method parameters
     static final double LOOKAHEAD_M = 1.0;
-    static final double LOOKAHEAD_STEP_M = 0.1;
+    static final double LOOKAHEAD_STEP_M = 0.2;
     static final double THETA_RANGE_RAD = Math.abs(3*Math.PI/4);
-    static final double THETA_STEP = Math.toRadians(5);
+    static final double THETA_STEP = Math.toRadians(2.5);
 
 
     static final double DISTANCE_THRESH = 0.25;
     static final double TURN_THRESH = Math.toRadians(45);
     static final double STOP_THRESH = Math.toRadians(90);
-    static final double MAX_SPEED = 0.5;
-    static final double TURN_SPEED = 0.3;
     static final double FORWARD_SPEED = 1.0;
-    static final double TURN_WEIGHT = 30.0;
+    static final double TURN_WEIGHT = 100.0;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -322,12 +320,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         lastTheta = theta;
 
         if (Math.abs(theta) > TURN_THRESH) {
+            double turnSpeed = Math.max(0.3, params.maxSpeed);
             if (theta > 0) {
-                dd.left = -TURN_SPEED;
-                dd.right = TURN_SPEED;
+                dd.left = -turnSpeed;
+                dd.right = turnSpeed;
             } else {
-                dd.left = TURN_SPEED;
-                dd.right = -TURN_SPEED;
+                dd.left = turnSpeed;
+                dd.right = -turnSpeed;
             }
         } else {
             double turnSpeed = TURN_WEIGHT*(theta/Math.PI);
@@ -335,8 +334,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
             double maxMag = Math.max(Math.abs(right), Math.abs(left));
             if (maxMag > 0) {
-                dd.left = MAX_SPEED*(left/maxMag);
-                dd.right = MAX_SPEED*(right/maxMag);
+                dd.left = params.maxSpeed*(left/maxMag);
+                dd.right = params.maxSpeed*(right/maxMag);
             }
         }
 

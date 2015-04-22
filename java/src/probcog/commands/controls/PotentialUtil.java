@@ -60,7 +60,7 @@ public class PotentialUtil
         public double attractiveThreshold = 1.0;
 
         public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
-        public double repulsiveWeight = 1.0;
+        public double repulsiveWeight = 5.0;
         public double maxObstacleRange = 3.0*robotRadius;
     }
 
