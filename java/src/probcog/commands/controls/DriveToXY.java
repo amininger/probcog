@@ -202,7 +202,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
                                                            pose,
                                                            xyt);
-        pp.repulsivePotential = PotentialUtil.RepulsivePotential.ALL_POINTS;
         pp.fieldRes = 0.1;
         if (params.pp != null)
             pp = params.pp;
@@ -272,7 +271,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                 0xff2222ff};
             double minVal = pf.getMinValue();
             double maxVal = pf.getMaxValue();
-            maxVal = Math.max(5.0, 2.5*minVal);
+            maxVal = Math.max(5.0, 5*minVal);
             ColorMapper cm = new ColorMapper(map, minVal, maxVal);
 
             VisWorld.Buffer vb = vw.getBuffer("laser");

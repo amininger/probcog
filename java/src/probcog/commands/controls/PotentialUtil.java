@@ -19,6 +19,7 @@ import magic2.lcmtypes.*;
 /** A utility class for generating and debugging potential functions */
 public class PotentialUtil
 {
+    static final double SAFETY_WEIGHT = 0.25;
     static final boolean DEBUG = false;
 
     static public enum AttractivePotential
@@ -147,6 +148,7 @@ public class PotentialUtil
         }
     }
 
+    // XXX Room for savings...preprocess lasers
     static private double getRepulsivePotential(double rx, double ry, Params params)
     {
         double kw = params.repulsiveWeight;
@@ -187,10 +189,16 @@ public class PotentialUtil
         if (min[0] == 0)
             return Double.MAX_VALUE;
 
-        if (min[0] > kr)
-            return 0;
-        return 0.5*kw*LinAlg.sq(1.0/min[0] - 1.0/kr);
-        //return kw*(1.0*(kr-min[0])/kr);
+        // Add up to two weights. One weak "safety" field and one stronger one
+        // that we define.
+        double potential = 0;
+        double kr_2 = 2*params.robotRadius;
+        if (min[0] < kr_2)
+            potential += SAFETY_WEIGHT*0.5*LinAlg.sq(1.0/min[0] - 1.0/(kr_2));
+        if (min[0] < kr)
+            potential += 0.5*kw*LinAlg.sq(1.0/min[0] - 1.0/kr);
+
+        return potential;
     }
 
     static private double getSmoothRepulsivePotential(double rx, double ry, Params params)
@@ -374,10 +382,17 @@ public class PotentialUtil
                 }
 
                 // No potential added
-                if (d2 > kr2)
-                    continue;
-                pf.addIndexUnsafe(x, y, 0.5*kw*LinAlg.sq(1.0/Math.sqrt(d2)-invKr));
-                //pf.addIndexUnsafe(x, y, kw*(1.0*(kr-Math.sqrt(d2))/kr));
+                double potential = 0;
+                double kr_2 = 2*params.robotRadius;
+                double d = Math.sqrt(d2);
+                if (d < kr_2)
+                    potential += SAFETY_WEIGHT*0.5*LinAlg.sq(1.0/d-1.0/kr_2);
+
+                if (d < kr)
+                    potential += 0.5*kw*LinAlg.sq(1.0/d-invKr);
+
+                if (potential > 0)
+                    pf.addIndexUnsafe(x, y, potential);
             }
         }
     }
@@ -415,7 +430,7 @@ public class PotentialUtil
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {3.0, 0, 0};
+        double[] goal = new double[] {4.0, -3, 0};
         pose_t pose = new pose_t();
         double[] xyt = new double[] {1.5, 1, 0};
         pose.orientation = LinAlg.rollPitchYawToQuat(new double[] {0, 0, xyt[2]});
@@ -427,7 +442,7 @@ public class PotentialUtil
         laser.radstep = (float)(Math.toRadians(1));
         laser.nranges = 360;
         laser.ranges = new float[laser.nranges];
-        double doorOffset = 0.5;
+        double doorOffset = 0.0;
         double doorSize = 0.9;
         for (int i = 0; i < laser.nranges; i++) {
             double t = laser.rad0 + i*laser.radstep;
@@ -450,11 +465,11 @@ public class PotentialUtil
         // Construct the potential field
         Params params = new Params(laser, pose, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
-        params.fieldSize = 2.0;
+        params.fieldSize = 4.0;
         params.fieldRes = 0.01;
-        params.repulsiveWeight = .1;
+        params.repulsiveWeight = 5.0;
         //params.repulsivePotential = RepulsivePotential.ALL_POINTS;
-        params.maxObstacleRange = 2.0;
+        params.maxObstacleRange = 0.4;
 
         // Wait for keypress
         try {
