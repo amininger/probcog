@@ -27,7 +27,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     private boolean DEBUG = true;
 
     // I don't think we can hit this rate. CPU intensive?
-    static final double HZ = 40;
+    static final double HZ = 100;
 
     static final double EPS = 0.0001;
 
@@ -216,10 +216,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         pp.maxObstacleRange = dist;
         pp.fieldRes = 0.1;
 
-        double[] g00 = LinAlg.normalize(PotentialUtil.getGradient(new double[2], rgoal, pp));
-        double[] g10 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {EPS,0}, rgoal, pp));
-
-        double[] grad = LinAlg.add(g00, LinAlg.scale(g10, 0.5));
+        double[] grad = new double[2];
+        double[][] pts = new double[][] {{0,0}, {0.3, 0}};
+        double[] offset = new double[] {EPS, 0};
+        for (double[] pt: pts) {
+            double[] g0 = LinAlg.normalize(PotentialUtil.getGradient(pt, rgoal, pp));
+            grad = LinAlg.add(grad, g0);
+        }
 
         ArrayList<double[]> sampleGrads = new ArrayList<double[]>();
         ArrayList<double[]> samplePoints = new ArrayList<double[]>();
@@ -287,7 +290,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                 0xff2222ff};
             double minVal = pf.getMinValue();
             double maxVal = pf.getMaxValue();
-            maxVal = Math.max(5.0, 5*minVal);
+            maxVal = Math.max(minVal+pp.repulsiveWeight+pp.attractiveWeight, 5*minVal);
             ColorMapper cm = new ColorMapper(map, minVal, maxVal);
 
             VisWorld.Buffer vb = vw.getBuffer("laser");

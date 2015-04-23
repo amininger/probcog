@@ -108,7 +108,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         tasks.addFixedDelay(new ImageTask(), 0.04);
         tasks.addFixedDelay(new PoseTask(), 0.04);
-        tasks.addFixedDelay(new ControlTask(), 0.04);
+        tasks.addFixedDelay(new ControlTask(), 0.01);
         tasks.addFixedDelay(new ClassifyTask(), 0.04);
     }
 

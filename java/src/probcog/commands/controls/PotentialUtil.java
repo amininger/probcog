@@ -58,13 +58,13 @@ public class PotentialUtil
         // attractiveThreshold used for combined method, specifying a distance
         // that, when exceeded, will switch to linear potential from quadratic.
         public AttractivePotential attractivePotential = AttractivePotential.LINEAR;
-        public double attractiveWeight = 1.0;
+        public double attractiveWeight = 2.0;
         public double attractiveThreshold = 1.0;
 
         public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
         public double repulsiveWeight = 1.0;
         public double maxObstacleRange = 2.0*robotRadius;
-        public double safetyRange = .5*Util.getConfig().requireDouble("robot.geometry.width");
+        public double safetyRange = .5*Util.getConfig().requireDouble("robot.geometry.width")+.05;
     }
 
     static public ArrayList<double[]> getMinPath(double[] rxy_start,
@@ -180,7 +180,7 @@ public class PotentialUtil
         double kw = params.repulsiveWeight*.5;
         double kr = params.maxObstacleRange;
         double kmin = params.safetyRange;
-        double maxAtTransition = kw*(1/(kr*kr));
+        double maxAtTransition = Math.max(kw, params.attractiveWeight)*(1/(kr*kr));
 
         double p = 0;
         if (d < kmin) {
@@ -475,7 +475,7 @@ public class PotentialUtil
         laser.radstep = (float)(Math.toRadians(1));
         laser.nranges = 360;
         laser.ranges = new float[laser.nranges];
-        double doorOffset = 2.0;
+        double doorOffset = 1.0;
         double doorSize = 0.9;
         for (int i = 0; i < laser.nranges; i++) {
             double t = laser.rad0 + i*laser.radstep;
