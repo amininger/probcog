@@ -217,11 +217,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         pp.fieldRes = 0.1;
 
         double[] grad = new double[2];
-        double[][] pts = new double[][] {{0,0}, {0.3, 0}};
-        double[] offset = new double[] {EPS, 0};
+        double[][] pts = new double[][] {{0,00}, {0, 0.05}, {0, -0.05}, {0.3, 0}, {0.3, 0.05}, {0.3, -0.05}};
         for (double[] pt: pts) {
             double[] g0 = LinAlg.normalize(PotentialUtil.getGradient(pt, rgoal, pp));
-            grad = LinAlg.add(grad, g0);
+            double w = 1;
+            if (Math.abs(pt[1]) == 0.05)
+                w = 0.1;
+            grad = LinAlg.add(grad, LinAlg.scale(g0, w));
         }
 
         ArrayList<double[]> sampleGrads = new ArrayList<double[]>();
@@ -373,13 +375,15 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     {
         control_law_t cl = new control_law_t();
         cl.name = "drive-xy";
-        cl.num_params = 2;
+        cl.num_params = 3;
         cl.param_names = new String[cl.num_params];
         cl.param_values = new typed_value_t[cl.num_params];
         cl.param_names[0] = "x";
         cl.param_values[0] = (new TypedValue(xyt[0])).toLCM();
         cl.param_names[1] = "y";
         cl.param_values[1] = (new TypedValue(xyt[1])).toLCM();
+        cl.param_names[2] = "distance";
+        cl.param_values[2] = (new TypedValue(dist)).toLCM();
 
         return cl;
     }
