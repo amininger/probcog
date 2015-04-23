@@ -187,10 +187,6 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         goalXYT[0] = robotXYT[0] + projDist*Math.cos(robotXYT[2]);
         goalXYT[1] = robotXYT[1] + sign*projDist*Math.sin(robotXYT[2]);
 
-        params.pp = new PotentialUtil.Params(params.laser,
-                                             params.pose,
-                                             goalXYT);
-
         // XXX XY are wasteful. Better reuse?
         HashMap<String, TypedValue> typedParams = new HashMap<String, TypedValue>();
         typedParams.put("x", new TypedValue(goalXYT[0]));

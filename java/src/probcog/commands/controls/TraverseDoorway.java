@@ -70,6 +70,8 @@ public class TraverseDoorway implements ControlLaw, LCMSubscriber
                              parameters.get("y").getDouble(),
                              0.0 };
 
+        parameters.put("distance", new TypedValue(Util.getConfig().requireDouble("robot.geometry.width")/2 + 0.10));
+
         driveXY = new DriveToXY(parameters);
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
@@ -101,14 +103,7 @@ public class TraverseDoorway implements ControlLaw, LCMSubscriber
     /** Get a drive command from the CL. */
     public diff_drive_t drive(DriveParams params)
     {
-        // Tweak parameters to accomodate door navigation needs.
-        PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
-                                                           params.pose,
-                                                           xyt);
-        pp.maxObstacleRange = Util.getConfig().requireDouble("robot.geometry.width")/2 + 0.10;
-        params.pp = pp;
         params.maxSpeed = 0.3;
-
         diff_drive_t dd = driveXY.drive(params);
 
         return dd;

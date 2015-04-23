@@ -29,9 +29,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 40;
 
+    static final double EPS = 0.0001;
+
     // Integration method parameters
     static final double LOOKAHEAD_M = 1.0;
-    static final double LOOKAHEAD_STEP_M = 0.2;
+    static final double LOOKAHEAD_STEP_M = 0.5;
     static final double THETA_RANGE_RAD = Math.abs(3*Math.PI/4);
     static final double THETA_STEP = Math.toRadians(2.5);
 
@@ -39,8 +41,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double DISTANCE_THRESH = 0.25;
     static final double TURN_THRESH = Math.toRadians(45);
     static final double STOP_THRESH = Math.toRadians(90);
-    static final double FORWARD_SPEED = 1.0;
-    static final double TURN_WEIGHT = 100.0;
+    static final double FORWARD_SPEED = 0.1;
+    static final double TURN_WEIGHT = FORWARD_SPEED*20;
+    static final double STALL_SPEED = 0.2;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -59,6 +62,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     double[] xyt;
+    double dist = 2*Util.getConfig().requireDouble("robot.geometry.radius");
     double lastTheta = Double.MAX_VALUE;
 
     private class UpdateTask implements PeriodicTasks.Task
@@ -98,6 +102,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         xyt = new double[] { parameters.get("x").getDouble(),
                              parameters.get("y").getDouble(),
                              0.0 };
+
+        if (parameters.containsKey("distance"))
+            dist = parameters.get("distance").getDouble();
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
@@ -175,6 +182,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         params.add(new TypedParameter("y",
                                       TypedValue.TYPE_DOUBLE,
                                       true));
+        params.add(new TypedParameter("distance",
+                                      TypedValue.TYPE_DOUBLE,
+                                      false));
 
         return params;
     }
@@ -189,41 +199,47 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         // Project pose to robot center. Stop if close to goal.
         double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                       params.pose.pos));
+        robotXYT[0] += MagicRobot.CENTER_X_OFFSET*Math.cos(robotXYT[2]);
+        robotXYT[1] += MagicRobot.CENTER_X_OFFSET*Math.sin(robotXYT[2]);
+
+
         double[] rgoal = LinAlg.xytInvMul31(robotXYT, xyt);
         double dgoal = Math.sqrt(rgoal[0]*rgoal[0] + rgoal[1]*rgoal[1]);
 
-        if (LinAlg.distance(robotXYT, xyt, 2) < DISTANCE_THRESH)
+        if (dgoal < DISTANCE_THRESH)
             return dd;
 
-        pose_t pose = new pose_t();
-        pose.orientation = LinAlg.copy(params.pose.orientation);
-        pose.pos = new double[] {robotXYT[0], robotXYT[1], 0};
-
         PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
-                                                           pose,
+                                                           robotXYT,
                                                            xyt);
+        pp.repulsivePotential = PotentialUtil.RepulsivePotential.ALL_POINTS;
+        pp.maxObstacleRange = dist;
         pp.fieldRes = 0.1;
-        if (params.pp != null)
-            pp = params.pp;
+
+        double[] g00 = LinAlg.normalize(PotentialUtil.getGradient(new double[2], rgoal, pp));
+        double[] g10 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {EPS,0}, rgoal, pp));
+
+        double[] grad = LinAlg.add(g00, LinAlg.scale(g10, 0.5));
 
         ArrayList<double[]> sampleGrads = new ArrayList<double[]>();
         ArrayList<double[]> samplePoints = new ArrayList<double[]>();
+
         double theta = -Math.PI;
-        double minIntegral = Double.MAX_VALUE;
+        //double minIntegral = Double.MAX_VALUE;
 
-        for (double t = -THETA_RANGE_RAD; t <= THETA_RANGE_RAD; t += THETA_STEP) {
-            double integral = 0;
-            for (int i = 1; i < Math.ceil(LOOKAHEAD_M/LOOKAHEAD_STEP_M); i++) {
-                double rx = Math.cos(t)*i*LOOKAHEAD_STEP_M;
-                double ry = Math.sin(t)*i*LOOKAHEAD_STEP_M;
-                integral += PotentialUtil.getRelative(rx, ry, rgoal, pp);
-            }
+        //for (double t = -THETA_RANGE_RAD; t <= THETA_RANGE_RAD; t += THETA_STEP) {
+        //    double integral = 0;
+        //    for (int i = 1; i < Math.ceil(LOOKAHEAD_M/LOOKAHEAD_STEP_M); i++) {
+        //        double rx = Math.cos(t)*i*LOOKAHEAD_STEP_M;
+        //        double ry = Math.sin(t)*i*LOOKAHEAD_STEP_M;
+        //        integral += PotentialUtil.getRelative(rx, ry, rgoal, pp);
+        //    }
 
-            if (integral < minIntegral) {
-                theta = t;
-                minIntegral = integral;
-            }
-        }
+        //    if (integral < minIntegral) {
+        //        theta = t;
+        //        minIntegral = integral;
+        //    }
+        //}
         //double[] grad = new double[2];
         //Tic tic = new Tic();
         //double[] ys = new double[] {-.4, -.3, -.2, -.1, 0, .1, .2, .3, .4};
@@ -258,7 +274,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         //if (MathUtil.doubleEquals(grad[0], 0) && MathUtil.doubleEquals(grad[1], 0)) {
         //    return dd;
         //}
-        //theta = Math.atan2(grad[1], grad[0]);
+        theta = Math.atan2(grad[1], grad[0]);
         //grad = LinAlg.normalize(grad);
 
         if (DEBUG) {
@@ -332,10 +348,14 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             double right = (2*FORWARD_SPEED + turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
             double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
             double maxMag = Math.max(Math.abs(right), Math.abs(left));
-            if (maxMag > 0) {
+            if (maxMag > params.maxSpeed) {
                 dd.left = params.maxSpeed*(left/maxMag);
                 dd.right = params.maxSpeed*(right/maxMag);
             }
+            if (Math.abs(dd.left) < STALL_SPEED)
+                dd.left = 0;
+            if (Math.abs(dd.right) < STALL_SPEED)
+                dd.right = 0;
         }
 
         return dd;

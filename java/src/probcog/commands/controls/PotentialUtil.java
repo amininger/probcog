@@ -19,6 +19,7 @@ import magic2.lcmtypes.*;
 /** A utility class for generating and debugging potential functions */
 public class PotentialUtil
 {
+    static final double PENALTY_WEIGHT = 10000;
     static final double SAFETY_WEIGHT = 0.25;
     static final boolean DEBUG = false;
 
@@ -36,13 +37,13 @@ public class PotentialUtil
     static public class Params
     {
         public laser_t laser;
-        public pose_t pose;
+        public double[] robotXYT;
         public double[] goalXYT;
 
-        public Params(laser_t laser, pose_t pose, double[] goalXYT)
+        public Params(laser_t laser, double[] robotXYT, double[] goalXYT)
         {
             this.laser = laser;
-            this.pose = pose;
+            this.robotXYT = robotXYT;
             this.goalXYT = goalXYT;
         }
 
@@ -61,8 +62,9 @@ public class PotentialUtil
         public double attractiveThreshold = 1.0;
 
         public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
-        public double repulsiveWeight = 5.0;
-        public double maxObstacleRange = 3.0*robotRadius;
+        public double repulsiveWeight = 1.0;
+        public double maxObstacleRange = 2.0*robotRadius;
+        public double safetyRange = .5*Util.getConfig().requireDouble("robot.geometry.width");
     }
 
     static public ArrayList<double[]> getMinPath(double[] rxy_start,
@@ -96,7 +98,7 @@ public class PotentialUtil
                                        double[] goal,
                                        Params params)
     {
-        double eps = 0.001;
+        double eps = 0.00001;
         double v00 = getRelative(rxy[0], rxy[1], goal, params);
         double v10 = getRelative(rxy[0]+eps, rxy[1], goal, params);
         double v01 = getRelative(rxy[0], rxy[1]+eps, goal, params);
@@ -117,7 +119,8 @@ public class PotentialUtil
         double dist = Math.sqrt(LinAlg.sq(rx-goal[0]) + LinAlg.sq(ry-goal[1]));
 
         double p_att = getAttractivePotential(dist, params);
-        double p_rep = getRepulsivePotential(rx, ry, params);
+        //double p_rep = getRepulsivePotential(rx, ry, params);
+        double p_rep = getRepulsiveAllPoints(rx, ry, params);
 
         double p = p_att + p_rep;
         if (Double.isInfinite(p))
@@ -146,6 +149,47 @@ public class PotentialUtil
                 System.err.println("ERR: Unknown attractive potential");
                 return 0;
         }
+    }
+
+    static private double getRepulsiveAllPoints(double rx, double ry, Params params)
+    {
+        double sum = 0;
+        int count = 0;
+        for (int i = 0; i < params.laser.nranges; i++) {
+            double r = params.laser.ranges[i];
+            if (r < 0)
+                continue;
+            double t = params.laser.rad0 + i*params.laser.radstep;
+            double d = Math.sqrt(LinAlg.sq(rx-r*Math.cos(t)) + LinAlg.sq(ry-r*Math.sin(t)));
+
+            double p = repulsiveForce(d, params);
+            if (p == 0)
+                continue;
+            sum += p;
+
+            count++;
+        }
+
+        if (count <= 0)
+            return 0;
+        return sum/count;
+    }
+
+    static private double repulsiveForce(double d, Params params)
+    {
+        double kw = params.repulsiveWeight*.5;
+        double kr = params.maxObstacleRange;
+        double kmin = params.safetyRange;
+        double maxAtTransition = kw*(1/(kr*kr));
+
+        double p = 0;
+        if (d < kmin) {
+            p += PENALTY_WEIGHT * (kmin-d)/kmin + maxAtTransition;
+        }
+        if (d < kr) {
+            p +=  kw*LinAlg.sq(1/d - 1/kr);
+        }
+        return p;
     }
 
     // XXX Room for savings...preprocess lasers
@@ -248,9 +292,7 @@ public class PotentialUtil
      **/
     static public PotentialField getPotential(Params params)
     {
-        double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
-                                                                      params.pose.pos));
-        PotentialField pf = new PotentialField(robotXYT,
+        PotentialField pf = new PotentialField(params.robotXYT,
                                                params.fieldSize,
                                                params.fieldSize,
                                                params.fieldRes);
@@ -309,8 +351,7 @@ public class PotentialUtil
     static private void addRepulsivePotential(Params params,
                                               PotentialField pf)
     {
-        double[] xyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
-                                                                 params.pose.pos));
+        double[] xyt = params.robotXYT;
         double[] invXyt = LinAlg.xytInverse(xyt);
         double sz = params.fieldSize/2;
         double maxRange = params.maxObstacleRange;
@@ -401,11 +442,6 @@ public class PotentialUtil
                                            ArrayList<double[]> points,
                                            Params params)
     {
-        double kw = params.repulsiveWeight;
-        double kr = params.maxObstacleRange;
-        double kr2 = kr*kr;
-        double invKr = 1.0/kr;
-
         int h = pf.getHeight();
         int w = pf.getWidth();
         for (int y = 0; y < h; y++) {
@@ -414,27 +450,24 @@ public class PotentialUtil
                 double v = 0;
                 int cnt = 0;
                 for (double[] pxy: points) {
-                    double d2 = LinAlg.squaredDistance(xy, pxy, 2);
+                    double d = LinAlg.distance(xy, pxy, 2);
+                    double p = repulsiveForce(d, params);
 
-                    // No potential added
-                    if (d2 > kr2)
+                    if (p == 0)
                         continue;
-
-                    v += 0.5*LinAlg.sq(1.0/Math.sqrt(d2)-invKr);
+                    v += p;
                     cnt++;
                 }
-                pf.addIndexUnsafe(x, y, kw*v);
+                if (cnt > 0)
+                    pf.addIndexUnsafe(x, y, v/cnt);
             }
         }
     }
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {4.0, -3, 0};
-        pose_t pose = new pose_t();
-        double[] xyt = new double[] {1.5, 1, 0};
-        pose.orientation = LinAlg.rollPitchYawToQuat(new double[] {0, 0, xyt[2]});
-        pose.pos = new double[] {xyt[0], xyt[1], 0};
+        double[] goal = new double[] {12, -20, 0};
+        double[] xyt = new double[] {0, 0, 0};
 
         // Fake a hallway. Wall on right is 1m away, wall on left is 0.5m
         laser_t laser = new laser_t();
@@ -442,7 +475,7 @@ public class PotentialUtil
         laser.radstep = (float)(Math.toRadians(1));
         laser.nranges = 360;
         laser.ranges = new float[laser.nranges];
-        double doorOffset = 0.0;
+        double doorOffset = 2.0;
         double doorSize = 0.9;
         for (int i = 0; i < laser.nranges; i++) {
             double t = laser.rad0 + i*laser.radstep;
@@ -463,13 +496,13 @@ public class PotentialUtil
         LCM.getSingleton().publish("TEST_LASER", laser);
 
         // Construct the potential field
-        Params params = new Params(laser, pose, goal);
+        Params params = new Params(laser, xyt, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
         params.fieldSize = 4.0;
         params.fieldRes = 0.01;
         params.repulsiveWeight = 5.0;
-        //params.repulsivePotential = RepulsivePotential.ALL_POINTS;
-        params.maxObstacleRange = 0.4;
+        params.repulsivePotential = RepulsivePotential.ALL_POINTS;
+        //params.maxObstacleRange = 0.4;
 
         // Wait for keypress
         try {
@@ -514,8 +547,7 @@ public class PotentialUtil
         double maxVal = Math.max(5*minVal, params.repulsiveWeight);
         ColorMapper cm = new ColorMapper(map, minVal, maxVal);
 
-        double[][] M = LinAlg.quatPosToMatrix(pose.orientation,
-                                              pose.pos);
+        double[][] M = LinAlg.xytToMatrix(xyt);
         VisWorld.Buffer vb = vw.getBuffer("potential-field");
         vb.setDrawOrder(-10);
         vb.addBack(new VisChain(M, pf.getVisObject(cm)));
