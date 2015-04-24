@@ -19,7 +19,7 @@ import magic2.lcmtypes.*;
 /** A utility class for generating and debugging potential functions */
 public class PotentialUtil
 {
-    static final double PENALTY_WEIGHT = 10000;
+    static final double PENALTY_WEIGHT = 10;
     static final double SAFETY_WEIGHT = 0.25;
     static final boolean DEBUG = false;
 
@@ -177,8 +177,8 @@ public class PotentialUtil
 
     static private double repulsiveForce(double d, Params params)
     {
-        double kw = params.repulsiveWeight*.5;
         double kr = params.maxObstacleRange;
+        double kw = params.repulsiveWeight/(1/kr);
         double kmin = params.safetyRange;
         double maxAtTransition = Math.max(kw, params.attractiveWeight)*(1/(kr*kr));
 

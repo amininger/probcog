@@ -29,21 +29,14 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 100;
 
-    static final double EPS = 0.0001;
-
-    // Integration method parameters
-    static final double LOOKAHEAD_M = 1.0;
-    static final double LOOKAHEAD_STEP_M = 0.5;
-    static final double THETA_RANGE_RAD = Math.abs(3*Math.PI/4);
-    static final double THETA_STEP = Math.toRadians(2.5);
-
+    static final double EPS = 0.05;
 
     static final double DISTANCE_THRESH = 0.25;
     static final double TURN_THRESH = Math.toRadians(45);
     static final double STOP_THRESH = Math.toRadians(90);
     static final double FORWARD_SPEED = 0.1;
     static final double TURN_WEIGHT = FORWARD_SPEED*20;
-    static final double STALL_SPEED = 0.2;
+    static final double STALL_SPEED = 0.2; // XXX Needs some love/tuning
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -62,8 +55,16 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     double[] xyt;
-    double dist = 2*Util.getConfig().requireDouble("robot.geometry.radius");
+    double dist = 3*Util.getConfig().requireDouble("robot.geometry.radius");
     double lastTheta = Double.MAX_VALUE;
+
+    // Determining stopping conditions, beyond just arriving near goal
+    static final double MIN_RATE_TO_GOAL = 0.1; // [m/s]
+    static final double GOAL_TIMEOUT = 0.5;     // [s]
+    double lastDistanceToGoal = Double.MAX_VALUE;
+    long lastUtime;
+    Tic goalTic = new Tic();
+
 
     private class UpdateTask implements PeriodicTasks.Task
     {
@@ -71,13 +72,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         {
             laser_t laser = laserCache.get();
             if (laser == null) {
-                //System.err.println("ERR: No laser_t detected on channel "+laserChannel);
                 return;
             }
 
             pose_t pose = poseCache.get();
             if (pose == null) {
-                //System.err.println("ERR: No pose_t detected on channel "+poseChannel);
                 return;
             }
 
@@ -103,8 +102,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                              parameters.get("y").getDouble(),
                              0.0 };
 
-        if (parameters.containsKey("distance"))
+        if (parameters.containsKey("distance")) {
             dist = parameters.get("distance").getDouble();
+        }
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
@@ -216,72 +216,25 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         pp.maxObstacleRange = dist;
         pp.fieldRes = 0.1;
 
+        double lookahead = 0.5;
+
         double[] grad = new double[2];
-        double[][] pts = new double[][] {{0,00}, {0, 0.05}, {0, -0.05}, {0.3, 0}, {0.3, 0.05}, {0.3, -0.05}};
-        for (double[] pt: pts) {
-            double[] g0 = LinAlg.normalize(PotentialUtil.getGradient(pt, rgoal, pp));
-            double w = 1;
-            if (Math.abs(pt[1]) == 0.05)
-                w = 0.1;
-            grad = LinAlg.add(grad, LinAlg.scale(g0, w));
+        double[] g0 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {0.2,0}, rgoal, pp));
+        grad = LinAlg.add(grad, g0);
+
+        if (dgoal > lookahead) {
+            double[] g01 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead,0}, rgoal, pp));
+            double[] g11 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead+EPS,0}, rgoal, pp));
+            grad = LinAlg.add(grad, LinAlg.scale(g01, 0.7));
+            grad = LinAlg.add(grad, LinAlg.scale(g11, 0.6));
         }
+
+
 
         ArrayList<double[]> sampleGrads = new ArrayList<double[]>();
         ArrayList<double[]> samplePoints = new ArrayList<double[]>();
 
-        double theta = -Math.PI;
-        //double minIntegral = Double.MAX_VALUE;
-
-        //for (double t = -THETA_RANGE_RAD; t <= THETA_RANGE_RAD; t += THETA_STEP) {
-        //    double integral = 0;
-        //    for (int i = 1; i < Math.ceil(LOOKAHEAD_M/LOOKAHEAD_STEP_M); i++) {
-        //        double rx = Math.cos(t)*i*LOOKAHEAD_STEP_M;
-        //        double ry = Math.sin(t)*i*LOOKAHEAD_STEP_M;
-        //        integral += PotentialUtil.getRelative(rx, ry, rgoal, pp);
-        //    }
-
-        //    if (integral < minIntegral) {
-        //        theta = t;
-        //        minIntegral = integral;
-        //    }
-        //}
-        //double[] grad = new double[2];
-        //Tic tic = new Tic();
-        //double[] ys = new double[] {-.4, -.3, -.2, -.1, 0, .1, .2, .3, .4};
-        //double[] xs = new double[] {0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2};
-        //for (double y: ys) {
-        //    for (double x: xs) {
-        //        double[] rxy = new double[] {x, y};
-        //        double rmag = LinAlg.magnitude(rxy);
-        //        if (rmag > 1.25)
-        //            continue;
-
-        //        if (rmag > dgoal)
-        //            continue;
-        //        double[] g0 = PotentialUtil.getGradient(rxy, rgoal, pp);
-        //        double gmag = LinAlg.magnitude(g0);
-        //        if (gmag == 0)
-        //            continue;
-        //        g0[0] /= gmag;
-        //        g0[1] /= gmag;
-        //        //g0 = LinAlg.scale(g0, Math.pow(.1/Math.max(0.1, rmag), .5));
-
-        //        if (DEBUG) {
-        //            samplePoints.add(rxy);
-        //            sampleGrads.add(rxy);
-        //            sampleGrads.add(LinAlg.add(rxy, LinAlg.scale(g0, 0.1)));
-        //        }
-        //        LinAlg.plusEquals(grad, g0);
-        //    }
-        //}
-        //System.out.printf("%f [s]\n", tic.toc());
-
-        //if (MathUtil.doubleEquals(grad[0], 0) && MathUtil.doubleEquals(grad[1], 0)) {
-        //    return dd;
-        //}
-        theta = Math.atan2(grad[1], grad[0]);
-        //grad = LinAlg.normalize(grad);
-
+        double theta = Math.atan2(grad[1], grad[0]);
         if (DEBUG) {
             // Render the field
             PotentialField pf = PotentialUtil.getPotential(pp);
@@ -292,7 +245,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                 0xff2222ff};
             double minVal = pf.getMinValue();
             double maxVal = pf.getMaxValue();
-            maxVal = Math.max(minVal+pp.repulsiveWeight+pp.attractiveWeight, 5*minVal);
+            maxVal = minVal+1.5*pp.repulsiveWeight+1.5*pp.attractiveWeight;
             ColorMapper cm = new ColorMapper(map, minVal, maxVal);
 
             VisWorld.Buffer vb = vw.getBuffer("laser");
@@ -316,7 +269,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             vb = vw.getBuffer("samples");
             VisVertexData vvd = new VisVertexData();
             vvd.add(new double[2]);
-            vvd.add(new double[] {LOOKAHEAD_M*Math.cos(theta), LOOKAHEAD_M*Math.sin(theta)});
+            vvd.add(new double[] {Math.cos(theta), Math.sin(theta)});
             vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 3)));
             if (samplePoints.size() > 0) {
                 vb.addBack(new VzPoints(new VisVertexData(samplePoints),
@@ -328,11 +281,54 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             vb.swap();
         }
 
-        if (theta == -Math.PI)
-            return dd;
+        // Stopping conditions
+        if (lastDistanceToGoal == Double.MAX_VALUE) {
+            lastDistanceToGoal = dgoal;
+            lastUtime = TimeUtil.utime();
+        } else {
+            long now = TimeUtil.utime();
+            double dt = (now-lastUtime)/1000000.0;
+            double dg = dgoal-lastDistanceToGoal;
+            lastDistanceToGoal = dgoal;
+            lastUtime = now;
+
+            assert (dt != 0);
+            double rate = dg/dt;
+
+            if (Math.abs(rate) > MIN_RATE_TO_GOAL) {
+                goalTic.tic();
+            }
+
+            if (goalTic.toc() > GOAL_TIMEOUT) {
+                return dd;
+            }
+
+            // XXX This will surely trigger too easily
+            if (rate > 0) {
+                return dd;
+            }
+
+        }
+
+        // First pass at direct PWM control
+        grad = LinAlg.normalize(grad);
+        double speed = grad[0];
+        double turn = grad[1];
+
+        dd.left = speed - turn;
+        dd.right = speed + turn;
+
+        // Handle deadband better XXX
+        double maxMag = Math.max(dd.left, dd.right);
+        if (maxMag > params.maxSpeed) {
+            dd.left = params.maxSpeed*(dd.left/maxMag);
+            dd.right = params.maxSpeed*(dd.right/maxMag);
+        }
+
+
 
         // Determine if we're stuck. Not perfect...we can still end up oscillating
-        if (lastTheta != Double.MAX_VALUE) {
+        /*if (lastTheta != Double.MAX_VALUE) {
             double dtheta = MathUtil.mod2pi(lastTheta - theta);
             if (Math.abs(dtheta) > STOP_THRESH)
                 return dd;
@@ -361,7 +357,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                 dd.left = 0;
             if (Math.abs(dd.right) < STALL_SPEED)
                 dd.right = 0;
-        }
+        }*/
 
         return dd;
     }
