@@ -1,6 +1,0 @@
-sp {dialog-event*elaborate*purpose
-   (state <s> ^name dialog-event
-              ^superstate.purpose <p>)
--->
-   (<s> ^purpose <p>)
-}

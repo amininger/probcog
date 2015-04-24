@@ -1,7 +1,0 @@
-sp {query-relation*elaborate*copy-down-attrs*
-   (state <s> ^name query-relation
-              ^superstate.operator <o>)
-   (<o> ^descriptions <d>)
--->
-   (<s> ^descriptions <d>)
-}
