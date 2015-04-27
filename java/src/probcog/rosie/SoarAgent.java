@@ -188,12 +188,12 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
 	private void sourceAgent(){
         agent.ExecuteCommandLine("smem --set database memory");
         agent.ExecuteCommandLine("epmem --set database memory");
-		if(config.agentSource != null){
-			String res = agent.ExecuteCommandLine("source " + config.agentSource + " -v");
-			System.out.println(res);
-		}
 		if(config.smemSource != null){
 			String res = agent.ExecuteCommandLine("source " + config.smemSource);
+			System.out.println(res);
+		}
+		if(config.agentSource != null){
+			String res = agent.ExecuteCommandLine("source " + config.agentSource + " -v");
 			System.out.println(res);
 		}
 	}

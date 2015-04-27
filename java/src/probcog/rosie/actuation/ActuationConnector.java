@@ -103,7 +103,14 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
 
     private void initIL(){
     	Identifier inputLink = agent.getAgent().GetInputLink();
-    	inputLink.CreateIdWME("self");
+    	selfId = inputLink.CreateIdWME("self");
+    	if(activeCommand == null){
+    		WMUtil.updateStringWME(selfId, "moving-state", "stopped");
+    	} else if(activeCommand.name.equals("NONE")){
+    		WMUtil.updateStringWME(selfId, "moving-state", "stopped");
+    	} else {
+    		WMUtil.updateStringWME(selfId, "moving-state", "moving");
+    	}
     }
 
     private void updateIL(){

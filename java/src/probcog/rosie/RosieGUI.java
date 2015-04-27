@@ -92,6 +92,7 @@ public class RosieGUI extends JFrame
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     	setupMenu();
+    	this.add(new CommandPanel(soarAgent));
     	
     	this.setVisible(true);
     }
