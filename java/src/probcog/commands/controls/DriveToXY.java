@@ -137,10 +137,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     {
         if (laserChannel.equals(channel)) {
             laser_t laser = new laser_t(ins);
-            laserCache.put(laser, laser.utime);
+            laserCache.put(laser, TimeUtil.utime());
         } else if (poseChannel.equals(channel)) {
             pose_t pose = new pose_t(ins);
-            poseCache.put(pose, pose.utime);
+            poseCache.put(pose, TimeUtil.utime());
         }
     }
 
@@ -402,4 +402,14 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         return cl;
     }
 
+    static public void main(String[] args)
+    {
+        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+        params.put("x", new TypedValue(new Double(args[0])));
+        params.put("y", new TypedValue(new Double(args[1])));
+        if (args.length > 2)
+            params.put("distance", new TypedValue(new Double(args[2])));
+        DriveToXY drive = new DriveToXY(params);
+        drive.setRunning(true);
+    }
 }
