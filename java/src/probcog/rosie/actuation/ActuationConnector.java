@@ -36,7 +36,8 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
 	private Identifier activeCommandId = null;
 	private int nextControlLawId = 1;
 
-	private boolean gotUpdate = false;
+	private boolean gotStatus = false;
+	private control_law_status_t curStatus = null;
 
     private LCM lcm;
 
@@ -69,19 +70,21 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
 		try {
 			if(channel.startsWith("SOAR_COMMAND_STATUS")){
-				control_law_status_t status = new control_law_status_t(ins);
-				newControlLawStatus(status);
+				synchronized(commandLock){
+					curStatus = new control_law_status_t(ins);
+					gotStatus = true;
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
     }
 
-	public void newControlLawStatus(control_law_status_t status){
+	public void updateControlLawStatus(){
 		synchronized(commandLock){
-			if(activeCommand != null && activeCommand.id == status.id){
-				WMUtil.updateStringWME(activeCommandId, "status", status.status.toLowerCase());
-				Status newStatus = Status.valueOf(status.status);
+			if(activeCommand != null && activeCommand.id == curStatus.id){
+				WMUtil.updateStringWME(activeCommandId, "status", curStatus.status.toLowerCase());
+				Status newStatus = Status.valueOf(curStatus.status);
 				if(newStatus == Status.FAILURE || newStatus == Status.SUCCESS || newStatus == Status.UNKNOWN){
 					activeCommand = SoarCommandParser.createEmptyControlLaw("NONE");
 					activeCommand.id = nextControlLawId++;
@@ -95,26 +98,31 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
 	public synchronized void runEventHandler(int eventID, Object data, Agent agent, int phase){
 		if(selfId == null){
 			initIL();
-		} else if(gotUpdate){
-			updateIL();
-			gotUpdate = false;
+		} 
+		if (gotStatus){
+			updateControlLawStatus();
+			gotStatus = false;
 		}
+		updateIL(agent.GetInputLink());
+		agent.Commit();
 	}
 
     private void initIL(){
     	Identifier inputLink = agent.getAgent().GetInputLink();
     	selfId = inputLink.CreateIdWME("self");
-    	if(activeCommand == null){
-    		WMUtil.updateStringWME(selfId, "moving-state", "stopped");
-    	} else if(activeCommand.name.equals("NONE")){
-    		WMUtil.updateStringWME(selfId, "moving-state", "stopped");
-    	} else {
-    		WMUtil.updateStringWME(selfId, "moving-state", "moving");
-    	}
+    	selfId.CreateStringWME("moving-state", "stopped");
     }
 
-    private void updateIL(){
-    	Identifier inputLink = agent.getAgent().GetInputLink();
+    private void updateIL(Identifier inputLink){
+    	synchronized(commandLock){
+    		if(activeCommand == null){
+    			WMUtil.updateStringWME(selfId, "moving-state", "stopped");
+    		} else if(activeCommand.name.equals("NONE")){
+    			WMUtil.updateStringWME(selfId, "moving-state", "stopped");
+    		} else {
+    			WMUtil.updateStringWME(selfId, "moving-state", "moving");
+    		}
+		}
     }
 
 	class ControlLawThread extends Thread{
@@ -163,7 +171,11 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
     		return;
     	}
     	controlLaw.id = nextControlLawId++;
+    	id.CreateStringWME("status", "sent");
     	synchronized(commandLock){
+    		if (activeCommandId != null){
+    			WMUtil.updateStringWME(activeCommandId, "status", "interrupted");
+    		}
     		activeCommand = controlLaw;
     		activeCommandId = id;
     	}

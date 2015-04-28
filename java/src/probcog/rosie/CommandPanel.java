@@ -30,6 +30,7 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 	String commandType = null;
 	String objectType = null;
 	Integer objectCount = null;
+	String direction = null;
 	
 
 	public CommandPanel(SoarAgent agent){
@@ -107,7 +108,7 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 		this.add(turnRight);
 		
 		/*
-		 * Row 3: Blank, Turn-Around, Blank
+		 * Row 3: Blank, Turn-Around, Compass
 		*/
 		this.add(new JPanel());
 			
@@ -121,7 +122,7 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 		turnAround.setBackground(new Color(150, 150, 255));
 		this.add(turnAround);	
 		
-		this.add(new JPanel());
+		this.add(setupCompassPanel());
 		
 		/*
 		 * Row 4: Object Label, Blank, Count Label 
@@ -142,9 +143,77 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 		this.add(countText);
 	}
 	
+	private JPanel setupCompassPanel(){
+		JPanel compassPanel = new JPanel();
+
+		compassPanel.setLayout(new GridLayout(0, 3));
+
+		/*
+		 * Row 1: Blank, North, Blank
+		*/
+		compassPanel.add(new JPanel());
+			
+		JButton north = new JButton("North");
+		north.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				sendOrientCommand("north");
+			}
+		});
+		north.setBackground(new Color(150, 150, 255));
+		compassPanel.add(north);	
+		
+		compassPanel.add(new JPanel());
+
+		/*
+		 * Row 2: West, Text, East
+		*/
+		JButton west = new JButton("East");
+		west.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				sendOrientCommand("west");
+			}
+		});
+		west.setBackground(new Color(150, 150, 255));
+		compassPanel.add(west);	
+		
+		compassPanel.add(new JLabel("Orient"));
+
+		JButton east = new JButton("East");
+		east.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				sendOrientCommand("east");
+			}
+		});
+		east.setBackground(new Color(150, 150, 255));
+		compassPanel.add(east);	
+
+		/*
+		 * Row 3: Blank, South, Blank
+		*/
+		compassPanel.add(new JPanel());
+			
+		JButton south = new JButton("South");
+		south.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				sendOrientCommand("south");
+			}
+		});
+		south.setBackground(new Color(150, 150, 255));
+		compassPanel.add(south);	
+		
+		compassPanel.add(new JPanel());
+		
+		return compassPanel;
+	}
+	
 	public synchronized void sendCommand(String commandType, boolean includeObjectInfo){
 		System.out.println("SENDING COMMAND: " + commandType);
 		this.commandType = commandType;
+		this.direction = null;
 		if (includeObjectInfo){
 			objectType = objectText.getText();
 			try{
@@ -156,6 +225,15 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 			objectType = null;
 			objectCount = null;
 		}
+		newCommand = true;
+	}
+	
+	public synchronized void sendOrientCommand(String direction){
+		System.out.println("SENDING COMMAND: orient1");
+		this.commandType = "orient1";
+		this.objectType = null;
+		this.objectCount = null;
+		this.direction = direction;
 		newCommand = true;
 	}
 	
@@ -172,6 +250,9 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 			if (objectType != null){
 				curCommand.CreateStringWME("object-type", objectType);
 				curCommand.CreateIntWME("object-count", objectCount);
+			}
+			if (direction != null){
+				curCommand.CreateStringWME("direction", direction);
 			}
 			agent.Commit();
 			newCommand = false;
