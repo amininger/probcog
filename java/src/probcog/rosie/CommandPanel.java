@@ -168,7 +168,7 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 		/*
 		 * Row 2: West, Text, East
 		*/
-		JButton west = new JButton("East");
+		JButton west = new JButton("West");
 		west.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent arg0) {

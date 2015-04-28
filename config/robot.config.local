@@ -1,6 +1,6 @@
 // This file holds ALL constants, configurations probcog needs
 
-tag_config = "config/tags_cse.config";
+tag_config = "config/tags_hallway.config";
 
 proc_config = "procman/proc.config";
 

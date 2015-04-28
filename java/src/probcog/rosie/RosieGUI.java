@@ -28,6 +28,7 @@ import sml.smlRunEventId;
 import probcog.lcmtypes.*;
 import april.util.GetOpt;
 import april.util.TimeUtil;
+import april.util.StringUtil;
 
 public class RosieGUI extends JFrame
 {
@@ -124,7 +125,6 @@ public class RosieGUI extends JFrame
         GetOpt opts = new GetOpt();
 
         opts.addBoolean('h', "help", false, "Show this help screen");
-        opts.addString('c', "config", "config/rosie.config", "Rosie configuration file");
         opts.addBoolean('d', "debug", true, "Show the soar debugger");
 
         if (!opts.parse(args)) {
@@ -135,10 +135,16 @@ public class RosieGUI extends JFrame
             opts.doHelp();
             System.exit(0);
         }
+
+        String configFile = StringUtil.replaceEnvironmentVariables("$ROSIE_CONFIG");
+        if(configFile.equals("")){
+          System.err.println("ERR: No $ROSIE_CONFIG environment variable set");
+          System.exit(1);
+        }
        
         RosieConfig config;
         try{
-        	config = new RosieConfig(opts.getString("config"), opts.getBoolean("debug"));
+        	config = new RosieConfig(configFile, opts.getBoolean("debug"));
         } catch (IOException e){
 			e.printStackTrace();
 			return;
