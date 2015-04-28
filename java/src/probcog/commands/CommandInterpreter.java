@@ -23,8 +23,8 @@ public class CommandInterpreter
 		public Status status;
 		public boolean running;
 		public CommandInfo(int lawID_, int testID_, int commandID_, Status status_){
-			lawID = lawID_; 
-			testID = testID_; 
+			lawID = lawID_;
+			testID = testID_;
 			commandID = commandID_;
 			setStatus(status_);
 		}
@@ -33,7 +33,7 @@ public class CommandInterpreter
 			status = newStatus;
 		}
 	}
-	
+
 	protected static LCM lcm = LCM.getSingleton();
 	private static int LCM_FPS = 60;
 	private static int CMD_FPS = 20;
@@ -64,7 +64,7 @@ public class CommandInterpreter
 	protected void interpretCommand(control_law_t controlLaw)
 	{
 		synchronized(commandLock){
-			if(activeCommand != null && controlLaw.id <= highestCommandID){
+			if(controlLaw.id <= highestCommandID){
 				return;
 			}
 			highestCommandID = controlLaw.id;
@@ -88,19 +88,19 @@ public class CommandInterpreter
 			}
 		}
 	}
-	
+
 	protected void executeNewCommand(control_law_t newCommand){
 		synchronized(commandLock){
 			stopActiveCommand();
 			activeCommand = null;
-			
+
 			// Get control law parameters
 			Map<String, TypedValue> paramsControl = new HashMap<String, TypedValue>();
 			for(int i=0; i<newCommand.num_params; i++) {
 				paramsControl.put(newCommand.param_names[i],
 								  new TypedValue(newCommand.param_values[i]));
 			}
-	
+
 			// Get test condition parameters
 			Map<String, TypedValue> paramsTest = new HashMap<String, TypedValue>();
 			for(int i=0; i<newCommand.termination_condition.num_params; i++) {
@@ -129,7 +129,7 @@ public class CommandInterpreter
 			}
 		}
 	}
-	
+
 	protected void stopActiveCommand(){
 		synchronized(commandLock){
 			if (activeCommand == null){
@@ -172,7 +172,7 @@ public class CommandInterpreter
 
 	protected void update()
 	{
-		// AM: Removed because for now we only assume 1 control law at a time, 
+		// AM: Removed because for now we only assume 1 control law at a time,
 		//	 so there is no queuing, if a new one arrives we kill the old one
 //		control_law_status_list_t sl = statusCache.get();
 //		if (sl == null)

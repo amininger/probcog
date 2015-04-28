@@ -117,7 +117,6 @@ public class Turn implements ControlLaw, LCMSubscriber
 
     public Turn(Map<String, TypedValue> parameters)
     {
-        
         // Needs a direction to turn, currently
         if (parameters.containsKey("direction")){
         	int direction = parameters.get("direction").getInt();
@@ -132,9 +131,6 @@ public class Turn implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("yaw"))
             goalYaw = Math.abs(parameters.get("yaw").getDouble());
 
-        if (!parameters.containsKey("no-lcm"))
-            lcm.subscribe("POSE", this);
-
         tasks.addFixedDelay(new TurnTask(), 1.0/DD_HZ);
     }
 
@@ -144,6 +140,12 @@ public class Turn implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            // no-lcm?
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
         tasks.setRunning(run);
     }
 
@@ -172,7 +174,7 @@ public class Turn implements ControlLaw, LCMSubscriber
         options.add(new TypedValue(-1));
         options.add(new TypedValue(1));
         params.add(new TypedParameter("direction",
-                                      TypedValue.TYPE_BYTE,
+                                      TypedValue.TYPE_INT,
                                       options,
                                       true));
         params.add(new TypedParameter("yaw",

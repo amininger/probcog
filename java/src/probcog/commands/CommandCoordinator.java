@@ -211,8 +211,8 @@ public class CommandCoordinator
         synchronized (conditionTests) {
             int id = conditionTestIDCounter++;
             conditionTests.put(id, conditionTest);
+            conditionTest.setRunning(true);
             System.out.printf("Registered Test <%d>\n", id);
-            //conditionTest.setRunning(true);
             return id;
         }
     }
@@ -230,6 +230,7 @@ public class CommandCoordinator
                 ConditionTest conditionTest = conditionTests.remove(id);
                 terminationConditions.remove(id);
                 if (conditionTest != null) {
+                    conditionTest.setRunning(false);
                     System.out.printf("Destroyed Test <%d>\n", id);
                 }
                 return conditionTest != null;

@@ -214,8 +214,6 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
             distance = Math.abs(parameters.get("distance").getDouble());
         }
 
-        lcm.subscribe(poseChannel, this);
-        lcm.subscribe(laserChannel, this);
         tasks.addFixedDelay(new UpdateTask(), 1.0/FH_HZ);
     }
 
@@ -246,6 +244,13 @@ public class FollowHeading implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            lcm.subscribe(poseChannel, this);
+            lcm.subscribe(laserChannel, this);
+        } else  {
+            lcm.unsubscribe(poseChannel, this);
+            lcm.unsubscribe(laserChannel, this);
+        }
         tasks.setRunning(run);
     }
 

@@ -22,7 +22,7 @@ import magic2.lcmtypes.*;
  **/
 public class FollowWall implements ControlLaw, LCMSubscriber
 {
-    private static final double FW_HZ = 100;
+    private static final double FW_HZ = 40;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
     private static final double BACK_THETA = 16*Math.PI/36;
@@ -62,11 +62,13 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         {
             laser_t laser = laserCache.get();
             if (laser == null) {
+                System.out.println("WRN: No lasers on channel "+laserChannel);
                 return;
             }
 
             pose_t pose = poseCache.get();
             if (pose == null) {
+                System.out.println("WRN: No poses on channel "+poseChannel);
                 return;
             }
 
@@ -162,6 +164,43 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     // after initialized once
     //public diff_drive_t drive(laser_t laser, double dt)
     public diff_drive_t drive(DriveParams params)
+    {
+        if (true) {
+            return handTunedFollow(params);
+        } else {
+            return xyFollow(params);
+        }
+    }
+
+    private diff_drive_t xyFollow(DriveParams params)
+    {
+        // Tell the robot to goto an XY position. Modify potential field
+        // based on wall following distance. As a result, can't follow a wall
+        // at greater than 1/2 hallwidth distance.
+
+        // Construct a goal 45 degrees ahead of robot.
+        double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
+                                                                      params.pose.pos));
+        double projDist = (2*goalDistance)/Math.cos(Math.PI/2);
+        double[] goalXYT = new double[3];
+        int sign = dir == Direction.LEFT ? 1 : -1;
+        goalXYT[0] = robotXYT[0] + projDist*Math.cos(robotXYT[2]);
+        goalXYT[1] = robotXYT[1] + sign*projDist*Math.sin(robotXYT[2]);
+
+        params.pp = new PotentialUtil.Params(params.laser,
+                                             params.pose,
+                                             goalXYT);
+
+        // XXX XY are wasteful. Better reuse?
+        HashMap<String, TypedValue> typedParams = new HashMap<String, TypedValue>();
+        typedParams.put("x", new TypedValue(goalXYT[0]));
+        typedParams.put("y", new TypedValue(goalXYT[1]));
+        DriveToXY driveXY = new DriveToXY(typedParams);
+
+        return driveXY.drive(params);
+    }
+
+    private diff_drive_t handTunedFollow(DriveParams params)
     {
         laser_t laser = params.laser;
         double dt = params.dt;
@@ -280,9 +319,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("heading"))
             targetHeading = parameters.get("heading").getDouble();
 
-        lcm.subscribe(laserChannel, this);
-        lcm.subscribe(poseChannel, this);
-        tasks.addFixedDelay(new UpdateTask(), 1.0/FW_HZ);
+        tasks.addFixedRate(new UpdateTask(), 1.0/FW_HZ);
     }
 
     // Ignore heading for now
@@ -328,6 +365,13 @@ public class FollowWall implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            lcm.subscribe(laserChannel, this);
+            lcm.subscribe(poseChannel, this);
+        } else {
+            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe(poseChannel, this);
+        }
         tasks.setRunning(run);
     }
 
@@ -363,7 +407,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         options.add(new TypedValue(-1));
         options.add(new TypedValue(1));
         params.add(new TypedParameter("side",
-                                      TypedValue.TYPE_BYTE,
+                                      TypedValue.TYPE_INT,
                                       options,
                                       true));
 

@@ -68,9 +68,15 @@ public class TagClassifier
             if (labels == null)
                 break;
 
+            // The first label detected is assumed to be the ground truth
+            // labeling of this object. This is used to map ground truth
+            // classes to IDs in tagClassToIDs. If this is the first such
+            // labeling we've seen, create the ID first.
             if (!tagClassToIDs.containsKey(labels[0]))
                 tagClassToIDs.put(labels[0], new HashSet<Integer>());
 
+            // Get all possible classes we *might* see, ignoring the empty
+            // string NULL label.
             for (String label: labels) {
                 if (label.equals(""))
                     continue;
@@ -84,6 +90,12 @@ public class TagClassifier
             for (double prob: probs)
                 probList.add(prob);
 
+            // Populate a tag class, which is used to sample detections in the
+            // on future tag observations. idToTag contains mappings of IDs to
+            // more than one possible tag class, meaning that some ID can map
+            // to multiple classes (e.g. color and shape in blocks world). Also
+            // remember to add all the IDs to the ground truth class-to-IDs
+            // structure.
             TagClass tag = new TagClass(labelList, probList, mean, stddev, minRange, maxRange);
             for(int id : ids) {
                 ArrayList<TagClass> allTags;
@@ -102,7 +114,8 @@ public class TagClassifier
             new ListenerThread().start();
     }
 
-    /** Get an exhaustive list of all of the tag IDs matching a particular class */
+    /** Get an exhaustive list of all of the tag IDs matching a particular class.
+     *  Only reports IDs matching ground-truth labelings. */
     public Set<Integer> getIDsForClass(String tagClass)
     {
         if (tagClassToIDs.containsKey(tagClass))
@@ -116,7 +129,8 @@ public class TagClassifier
         return tagClasses;  // Not data safe. READ ONLY USE PLEASE
     }
 
-    /** Get the classes associated with a particular tag */
+    /** Get the classes associated with a particular tag. Really, we mean
+     *  labels here. LANGUAGE CONSISTENCY, PLEASE. */
     public Set<String> getClasses(int id)
     {
         HashSet<String> classes = new HashSet<String>();
@@ -130,6 +144,7 @@ public class TagClassifier
         return classes;
     }
 
+    // XXX This will break for multi-label cases.
     /** Expose the probability that a tag is CORRECTLY labeled. Assumes you
      *  only care about the first class (since we only ever have one class
      *  right now.
@@ -144,9 +159,17 @@ public class TagClassifier
             return 0;
 
         TagClass tc = tcs.get(0);
+        return correctProbability(tc);
+    }
+
+    private double correctProbability(TagClass tc)
+    {
         return tc.probs.get(0);
     }
 
+    /** Expose the ground-truth labeling of a particular tag, again, assuming
+     *  you don't have multiple classes. Just grabs the first one it can find.
+     **/
     public String correctClass(int tagID)
     {
         if (!idToTag.containsKey(tagID))
@@ -157,9 +180,17 @@ public class TagClassifier
             return "";
 
         TagClass tc = tcs.get(0);
+        return correctClass(tc);
+    }
+
+    private String correctClass(TagClass tc)
+    {
         return tc.labels.get(0);
     }
 
+    /** Sample a detection range for a given tag ID. Only works properly for
+     *  single-label-per-object setups.
+     **/
     public double sampleRange(int tagID)
     {
         if (!idToTag.containsKey(tagID))
@@ -170,14 +201,18 @@ public class TagClassifier
             return -1;
 
         TagClass tc = tcs.get(0);
+        return sampleRange(tc);
+    }
 
+    private double sampleRange(TagClass tc)
+    {
         double v = MathUtil.clamp(classifierRandom.nextGaussian(), -3, 3);
         double diff = tc.maxRange - tc.minRange;
         double range = (tc.minRange+diff/2) + v*(diff/6);
         return range;
     }
 
-    /** Get the max range we are capable of sensing this tag */
+    /** Get the max range we are capable of sensing this tag. Single-label only*/
     public double getMaxRange(int tagID)
     {
         if (!idToTag.containsKey(tagID))
@@ -197,7 +232,8 @@ public class TagClassifier
     }
 
     /** Return a list of classifications for a tag of a given ID and xyzrpy
-     *  relative to the robot
+     *  relative to the robot. This actually supports multiple detections,
+     *  to some extent.
      **/
     public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy, boolean perfect)
     {
@@ -212,7 +248,7 @@ public class TagClassifier
                 v = 0.0;
 
             double sum = 0.0;
-            String label = tc.labels.get(0);
+            String label = correctClass(tc);
             for (int i = 0; i < tc.labels.size(); i++) {
                 sum += tc.probs.get(i);
                 if (sum >= v) {
@@ -223,7 +259,7 @@ public class TagClassifier
 
             classification_t classy = new classification_t();
             classy.name = label;
-            classy.range = sampleRange(id); // When perfect, what should this do?
+            classy.range = sampleRange(tc); // When perfect, what should this do?
             classy.id = id;
             classy.xyzrpy = xyzrpy;
             classy.confidence = sampleConfidence(tc.mean, tc.stddev);
@@ -264,16 +300,19 @@ public class TagClassifier
 
             double[][] T2B = TagUtil.getTagToPose(tag, tagSize_m);
             double[] xyzrpy = LinAlg.matrixToXyzrpy(T2B);
-            classification_t classy = (classifyTag(tag.id, xyzrpy)).get(0);
+
+
+            ArrayList<classification_t> cs = classifyTag(tag.id, xyzrpy);
 
             // Incorporate tag history stuff
-            history.addObservation(classy, tagList.utime);
-            double dist = LinAlg.magnitude(LinAlg.resize(xyzrpy, 2));
-            if (history.isVisible(tag.id, dist, tagList.utime)) {
-                classy.name = history.getLabel(tag.id, tagList.utime);
-                classy.range = dist;
-                classies.add(classy);
-            }
+            history.addObservations(cs, tagList.utime);
+            cs = history.getLabels(tag.id, xyzrpy, tagList.utime);
+            classies.addAll(cs);
+            //if (history.isVisible(tag.id, dist, tagList.utime)) {
+            //    classy.name = history.getLabel(tag.id, tagList.utime);
+            //    classy.range = dist;
+            //    classies.add(classy);
+            //}
         }
 
         classification_list_t classy_list = new classification_list_t();

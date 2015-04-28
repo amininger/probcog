@@ -34,8 +34,6 @@ public class ObstacleTest implements ConditionTest, LCMSubscriber
     {
         if (parameters.containsKey("distance"))
             hazardDistance = parameters.get("distance").getDouble();
-
-        lcm.subscribe(laserChannel, this);
     }
 
     public ConditionTest copyCondition()
@@ -66,6 +64,15 @@ public class ObstacleTest implements ConditionTest, LCMSubscriber
                                       false));
 
         return params;
+    }
+
+    public void setRunning(boolean run)
+    {
+        if (run) {
+            lcm.subscribe(laserChannel, this);
+        } else {
+            lcm.unsubscribe(laserChannel, this);
+        }
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)

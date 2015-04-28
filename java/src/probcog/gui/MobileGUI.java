@@ -39,6 +39,7 @@ import probcog.vis.*;
 public class MobileGUI extends JFrame implements VisConsole.Listener
 {
     private ProbCogSimulator simulator;
+    LCM lcm = LCM.getSingleton();
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
@@ -117,8 +118,8 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 
         public RenderThread()
         {
-            LCM.getSingleton().subscribe("CLASSIFICATIONS", this);
-            LCM.getSingleton().subscribe("POSE_TRUTH", this);
+            lcm.subscribe("CLASSIFICATIONS", this);
+            lcm.subscribe("POSE_TRUTH", this);
         }
 
 
@@ -129,6 +130,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             while (true) {
                 double dt = tic.toctic();
                 //drawWorld();
+                //System.out.println(lcm.getNumSubscriptions());
                 drawTrajectory(dt);
                 drawClassifications();
                 drawGraph(graph);
@@ -144,9 +146,9 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                     poseCache.put(pose, pose.utime);
                 } else if ("CLASSIFICATIONS".equals(channel)) {
                     classification_list_t classy_list = new classification_list_t(ins);
-                    for(int i=0; i<classy_list.num_classifications; i++) {
-                        classification_t classy = classy_list.classifications[i];
-                        synchronized (classyLock) {
+                    synchronized (classyLock) {
+                        for (int i = 0; i < classy_list.num_classifications; i++) {
+                            classification_t classy = classy_list.classifications[i];
                             classifications.put(classy.id, classy);
                         }
                     }
@@ -162,23 +164,46 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             synchronized (classyLock) {
                 pose_t pose = poseCache.get();
 
+                // Text rendering of labels.
+                HashMap<Integer, String> labels = new HashMap<Integer, String>();
+                HashMap<Integer, double[]> poses = new HashMap<Integer, double[]>();
+
                 VisWorld.Buffer vb = vw.getBuffer("classifications");
                 if (pose == null || classifications.size() < 1) {
                     vb.swap();
+                    vw.getBuffer("classifications-labels").swap();
                     return;
                 }
                 VisVertexData vvd = new VisVertexData();
                 VisColorData vcd = new VisColorData();
                 for (classification_t classy: classifications.values()) {
+
                     double yaw = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
                     double[] rel_xyz = LinAlg.transform(LinAlg.rotateZ(yaw), LinAlg.resize(classy.xyzrpy, 3));
                     double[] xyz = LinAlg.add(pose.pos, rel_xyz);
+                    if (labels.get(classy.id) == null) {
+                        labels.put(classy.id, "");
+                        poses.put(classy.id, xyz);
+                    }
+                    labels.put(classy.id, labels.get(classy.id)+classy.name+"\n");
+
                     vvd.add(xyz);
                     vcd.add(ColorUtil.swapRedBlue(ColorUtil.seededColor(classy.name.hashCode()).getRGB()));
                 }
                 classifications.clear();
 
                 vb.addBack(new VzPoints(vvd, new VzPoints.Style(vcd, 10)));
+                vb.swap();
+
+                vb = vw.getBuffer("classifications-labels");
+                for (int id: labels.keySet()) {
+                    String text = "<<monospaced-128>>"+labels.get(id);
+                    double[] xyz = poses.get(id);
+                    vb.addBack(new VisChain(LinAlg.translate(xyz),
+                                            LinAlg.scale(0.005),
+                                            new VzText(VzText.ANCHOR.TOP_LEFT,
+                                                       text)));
+                }
                 vb.swap();
             }
         }
@@ -366,11 +391,12 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
     }
 
     // XXX Should be updated to not draw forever/draw noisy data
+    private static final double MAX_POINTS = 500;
     private static double dtAcc = 0;
     ArrayList<double[]> poseList = new ArrayList<double[]>();
     private void drawTrajectory(double dt)
     {
-        if (dtAcc + dt < .1) {
+        if (dtAcc + dt < .5) {
             dtAcc += dt;
             return;
         }
@@ -378,6 +404,9 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         pose_t pose = poseCache.get();
         if (pose != null)
             poseList.add(pose.pos);
+
+        while (poseList.size() > MAX_POINTS)
+            poseList.remove(0);
 
         vw.getBuffer("trajectory").addBack(new VzPoints(new VisVertexData(poseList),
                                                         new VzPoints.Style(Color.cyan, 4)));

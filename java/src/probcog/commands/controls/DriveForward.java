@@ -103,7 +103,7 @@ public class DriveForward implements ControlLaw, LCMSubscriber
                                       pose.orientation,
                                       path,
                                       storedParams,
-                                      1.0,
+                                      0.5,
                                       dt);
 
         return dd;
@@ -118,7 +118,6 @@ public class DriveForward implements ControlLaw, LCMSubscriber
     {
         System.out.println("DRIVE FORWARD");
 
-        lcm.subscribe("POSE", this);
         tasks.addFixedRate(new DriveTask(), 1.0/DB_HZ);
     }
 
@@ -160,6 +159,11 @@ public class DriveForward implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
         tasks.setRunning(run);
     }
 
