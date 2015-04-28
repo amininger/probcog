@@ -216,19 +216,27 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         pp.maxObstacleRange = dist;
         pp.fieldRes = 0.1;
 
-        double lookahead = Math.min(1.0, dgoal);
+        // Tie this to our speed
+        double maxVelocity = 2.5;   // [m/s]
+        double lookaheadTime = 1.5; // [s]
+        double lookahead = Math.min(maxVelocity*params.maxSpeed*lookaheadTime, dgoal);
 
+
+        // What is the right sampling pattern? You need to look ahead to
+        // maneuver early enough. You need to be careful, though, since this
+        // lookahead point, once beyond your portal, will instead drag you
+        // towards a wall (thus, our point just ahead of the robot).
         double[] grad = new double[2];
-        double[] g00 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {0.2,0}, rgoal, pp));
-        double[] g01 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {0.2+EPS,0}, rgoal, pp));
+        double[] g00 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {MagicRobot.CHASSIS_MAIN_SIZE[0]/2,0}, rgoal, pp));
+        double[] g01 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {MagicRobot.CHASSIS_MAIN_SIZE[0]/2+EPS,0}, rgoal, pp));
         grad = LinAlg.add(grad, g00);
         grad = LinAlg.add(grad, LinAlg.scale(g01,0.99));
 
         if (dgoal > lookahead) {
             double[] g10 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead,0}, rgoal, pp));
             double[] g11 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead+EPS,0}, rgoal, pp));
-            //grad = LinAlg.add(grad, LinAlg.scale(g10, 0.1));
-            //grad = LinAlg.add(grad, LinAlg.scale(g11, 0.1));
+            grad = LinAlg.add(grad, LinAlg.scale(g10, 0.1));
+            grad = LinAlg.add(grad, LinAlg.scale(g11, 0.1));
         }
 
 
@@ -307,13 +315,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             if (goalTic.toc() > GOAL_TIMEOUT) {
                 return dd;
             }
-
-            // If we start moving away from the goal, stop as well.
-            //if (rate > 0) {
-            //    System.out.println(rate);
-            //    return dd;
-            //}
-
         }
 
         // First pass at direct PWM control
@@ -326,11 +327,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             turn = Math.min(.3, speedLimit);
             speedLimit = turn;
         }
+        double gain = 1.0;
 
-        dd.left = speed - turn;
-        dd.right = speed + turn;
+        dd.left = speed - gain*turn;
+        dd.right = speed + gain*turn;
 
-        // Handle deadband better XXX
+        // Handle deadband better OR let speed controller deal with it. XXX
         double maxMag = Math.max(Math.abs(dd.left), Math.abs(dd.right));
         if (maxMag > speedLimit) {
             dd.left = speedLimit*(dd.left/maxMag);
