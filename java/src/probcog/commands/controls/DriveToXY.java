@@ -55,12 +55,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     double[] xyt;
-    double dist = 3*Util.getConfig().requireDouble("robot.geometry.radius");
+    double dist = 5*Util.getConfig().requireDouble("robot.geometry.radius");
     double lastTheta = Double.MAX_VALUE;
 
     // Determining stopping conditions, beyond just arriving near goal
-    static final double MIN_RATE_TO_GOAL = 0.1; // [m/s]
-    static final double GOAL_TIMEOUT = 0.5;     // [s]
+    static final double MIN_RATE_TO_GOAL = 0.2; // [m/s]
+    static final double GOAL_TIMEOUT = 1.0;     // [s]
     double lastDistanceToGoal = Double.MAX_VALUE;
     long lastUtime;
     Tic goalTic = new Tic();
@@ -216,17 +216,19 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         pp.maxObstacleRange = dist;
         pp.fieldRes = 0.1;
 
-        double lookahead = 0.5;
+        double lookahead = Math.min(1.0, dgoal);
 
         double[] grad = new double[2];
-        double[] g0 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {0.2,0}, rgoal, pp));
-        grad = LinAlg.add(grad, g0);
+        double[] g00 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {0.2,0}, rgoal, pp));
+        double[] g01 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {0.2+EPS,0}, rgoal, pp));
+        grad = LinAlg.add(grad, g00);
+        grad = LinAlg.add(grad, LinAlg.scale(g01,0.99));
 
         if (dgoal > lookahead) {
-            double[] g01 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead,0}, rgoal, pp));
+            double[] g10 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead,0}, rgoal, pp));
             double[] g11 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead+EPS,0}, rgoal, pp));
-            grad = LinAlg.add(grad, LinAlg.scale(g01, 0.7));
-            grad = LinAlg.add(grad, LinAlg.scale(g11, 0.6));
+            //grad = LinAlg.add(grad, LinAlg.scale(g10, 0.1));
+            //grad = LinAlg.add(grad, LinAlg.scale(g11, 0.1));
         }
 
 
@@ -295,18 +297,22 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             assert (dt != 0);
             double rate = dg/dt;
 
-            if (Math.abs(rate) > MIN_RATE_TO_GOAL) {
+            // Make sure we're still moving towards the goal at an acctable rate
+            // If not, try to stop by sending a 0 command.
+            // Note that this is problematic when turning in place is necessary
+            // early on.
+            if (-rate > MIN_RATE_TO_GOAL) {
                 goalTic.tic();
             }
-
             if (goalTic.toc() > GOAL_TIMEOUT) {
                 return dd;
             }
 
-            // XXX This will surely trigger too easily
-            if (rate > 0) {
-                return dd;
-            }
+            // If we start moving away from the goal, stop as well.
+            //if (rate > 0) {
+            //    System.out.println(rate);
+            //    return dd;
+            //}
 
         }
 
@@ -314,17 +320,27 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         grad = LinAlg.normalize(grad);
         double speed = grad[0];
         double turn = grad[1];
+        double speedLimit = params.maxSpeed;
+        if (speed < 0) {
+            speed = 0;
+            turn = Math.min(.3, speedLimit);
+            speedLimit = turn;
+        }
 
         dd.left = speed - turn;
         dd.right = speed + turn;
 
         // Handle deadband better XXX
-        double maxMag = Math.max(dd.left, dd.right);
-        if (maxMag > params.maxSpeed) {
-            dd.left = params.maxSpeed*(dd.left/maxMag);
-            dd.right = params.maxSpeed*(dd.right/maxMag);
+        double maxMag = Math.max(Math.abs(dd.left), Math.abs(dd.right));
+        if (maxMag > speedLimit) {
+            dd.left = speedLimit*(dd.left/maxMag);
+            dd.right = speedLimit*(dd.right/maxMag);
         }
 
+        // Refuse to drive backwards
+        if (dd.left < 0 && dd.right < 0) {
+            dd.left = dd.right = 0;
+        }
 
 
         // Determine if we're stuck. Not perfect...we can still end up oscillating

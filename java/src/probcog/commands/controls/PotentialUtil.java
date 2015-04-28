@@ -120,6 +120,7 @@ public class PotentialUtil
 
         double p_att = getAttractivePotential(dist, params);
         //double p_rep = getRepulsivePotential(rx, ry, params);
+        // Can't really get away with closest point...not smooth enough
         double p_rep = getRepulsiveAllPoints(rx, ry, params);
 
         double p = p_att + p_rep;
@@ -151,6 +152,24 @@ public class PotentialUtil
         }
     }
 
+    // XXX Room for savings...preprocess lasers
+    static private double getRepulsivePotential(double rx, double ry, Params params)
+    {
+        double max = 0;
+        for (int i = 0; i < params.laser.nranges; i++) {
+            double r = params.laser.ranges[i];
+            if (r < 0)
+                continue;
+            double t = params.laser.rad0 + i*params.laser.radstep;
+            double d = Math.sqrt(LinAlg.sq(rx-r*Math.cos(t)) + LinAlg.sq(ry-r*Math.sin(t)));
+
+            double p = repulsiveForce(d, params);
+            max = Math.max(p, max);
+        }
+
+        return max;
+    }
+
     static private double getRepulsiveAllPoints(double rx, double ry, Params params)
     {
         double sum = 0;
@@ -180,91 +199,15 @@ public class PotentialUtil
         double kr = params.maxObstacleRange;
         double kw = params.repulsiveWeight/(1/kr);
         double kmin = params.safetyRange;
-        double maxAtTransition = Math.max(kw, params.attractiveWeight)*(1/(kr*kr));
 
         double p = 0;
         if (d < kmin) {
-            p += PENALTY_WEIGHT * (kmin-d)/kmin + maxAtTransition;
+            //p += PENALTY_WEIGHT * (kmin-d)/kmin + maxAtTransition;
         }
         if (d < kr) {
             p +=  kw*LinAlg.sq(1/d - 1/kr);
         }
         return p;
-    }
-
-    // XXX Room for savings...preprocess lasers
-    static private double getRepulsivePotential(double rx, double ry, Params params)
-    {
-        double kw = params.repulsiveWeight;
-        double kr = params.maxObstacleRange;
-
-        GLineSegment2D line = null;
-        if (rx != 0 && ry != 0)
-            line = new GLineSegment2D(new double[2], new double[] {rx, ry});
-
-        double[] min = new double[] {Double.MAX_VALUE, Double.MAX_VALUE};
-        double sum = 0;
-        double acc = 0;
-        for (int i = 0; i < params.laser.nranges; i++) {
-            double r = params.laser.ranges[i];
-
-            // Error value
-            if (r < 0)
-                continue;
-
-            double t = params.laser.rad0 + i*params.laser.radstep;
-            double[] xy = new double[] { r*Math.cos(t), r*Math.sin(t) };
-
-            double d0 = Math.sqrt(LinAlg.sq(rx-xy[0]) + LinAlg.sq(ry-xy[1]));
-            min[0] = Math.min(min[0], d0);
-
-            // This attempts to do some line-of-sight based stuff. Result is
-            // not optimal, though...we want points beyond walls to not
-            // contribute, but instead, they drag us in random directions
-            if (line != null) {
-                double d1 = line.distanceTo(xy);
-                min[1] = Math.min(min[1], d1);
-            }
-        }
-
-        if (min[1] < min[0])
-            min[0] = min[1];
-
-        if (min[0] == 0)
-            return Double.MAX_VALUE;
-
-        // Add up to two weights. One weak "safety" field and one stronger one
-        // that we define.
-        double potential = 0;
-        double kr_2 = 2*params.robotRadius;
-        if (min[0] < kr_2)
-            potential += SAFETY_WEIGHT*0.5*LinAlg.sq(1.0/min[0] - 1.0/(kr_2));
-        if (min[0] < kr)
-            potential += 0.5*kw*LinAlg.sq(1.0/min[0] - 1.0/kr);
-
-        return potential;
-    }
-
-    static private double getSmoothRepulsivePotential(double rx, double ry, Params params)
-    {
-        double kw = params.repulsiveWeight;
-        double kr = params.maxObstacleRange;
-
-        double p_rep = 0;
-        for (int i = 0; i < params.laser.nranges; i++) {
-            double r = params.laser.ranges[i];
-            if (r < 0)
-                continue;
-
-            double t = params.laser.rad0 + i*params.laser.radstep;
-            double[] xy = new double[] { r*Math.cos(t), r*Math.sin(t) };
-
-            double d0 = Math.sqrt(LinAlg.sq(rx-xy[0]) + LinAlg.sq(ry-xy[1]));
-            if (d0 < kr)
-                p_rep += 0.5*kw*LinAlg.sq(1.0/d0 - 1.0/kr);
-        }
-
-        return p_rep;
     }
 
     /** Get the gradient of a coordinate relative to the robot for the
@@ -391,49 +334,21 @@ public class PotentialUtil
                                               ArrayList<double[]> points,
                                               Params params)
     {
-        double kw = params.repulsiveWeight;
-        double kr = params.maxObstacleRange;
-        double kr2 = kr*kr;
-        double invKr = 1.0/kr;
-
-        // Determine the distance to the closest point
         int h = pf.getHeight();
         int w = pf.getWidth();
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 double[] xy = pf.indexToMeters(x, y);
-                double[] origin = pf.getOrigin();
-                GLineSegment2D line = null;
-                if (!Arrays.equals(xy, origin))
-                    line = new GLineSegment2D(origin, xy);
-
-                double d2 = Double.MAX_VALUE;
-                double d2_line = Double.MAX_VALUE;
+                double max = 0;
                 for (double[] pxy: points) {
-                    d2 = Math.min(d2, LinAlg.squaredDistance(xy, pxy, 2));
-                    if (line != null)
-                        d2_line = Math.min(d2_line, line.squaredDistanceTo(pxy));
+                    double d = LinAlg.distance(xy, pxy, 2);
+                    double p = repulsiveForce(d, params);
+
+                    if (p == 0)
+                        continue;
+                    p = Math.max(p, max);
                 }
-
-                d2 = Math.min(d2, d2_line);
-
-                if (d2 == 0) {
-                    pf.addIndexUnsafe(x, y, Double.MAX_VALUE);
-                    continue;
-                }
-
-                // No potential added
-                double potential = 0;
-                double kr_2 = 2*params.robotRadius;
-                double d = Math.sqrt(d2);
-                if (d < kr_2)
-                    potential += SAFETY_WEIGHT*0.5*LinAlg.sq(1.0/d-1.0/kr_2);
-
-                if (d < kr)
-                    potential += 0.5*kw*LinAlg.sq(1.0/d-invKr);
-
-                if (potential > 0)
-                    pf.addIndexUnsafe(x, y, potential);
+                pf.addIndexUnsafe(x, y, max);
             }
         }
     }

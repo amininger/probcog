@@ -70,7 +70,7 @@ public class TraverseDoorway implements ControlLaw, LCMSubscriber
                              parameters.get("y").getDouble(),
                              0.0 };
 
-        parameters.put("distance", new TypedValue(Util.getConfig().requireDouble("robot.geometry.width")+.1));
+        parameters.put("distance", new TypedValue(Util.getConfig().requireDouble("robot.geometry.width")*3.5));
 
         driveXY = new DriveToXY(parameters);
 
