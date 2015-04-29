@@ -219,25 +219,24 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         // Tie this to our speed
         double maxVelocity = 2.5;   // [m/s]
         double lookaheadTime = 1.5; // [s]
-        double lookahead = Math.min(maxVelocity*params.maxSpeed*lookaheadTime, dgoal);
-
+        double maxLookahead = maxVelocity*params.maxSpeed*lookaheadTime;
+        double shortLookahead = dgoal < maxLookahead ? 0 : MagicRobot.CHASSIS_MAIN_SIZE[0]/2;
+        double longLookahead = Math.min(maxLookahead, dgoal);
 
         // What is the right sampling pattern? You need to look ahead to
         // maneuver early enough. You need to be careful, though, since this
         // lookahead point, once beyond your portal, will instead drag you
         // towards a wall (thus, our point just ahead of the robot).
         double[] grad = new double[2];
-        double[] g00 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {MagicRobot.CHASSIS_MAIN_SIZE[0]/2,0}, rgoal, pp));
-        double[] g01 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {MagicRobot.CHASSIS_MAIN_SIZE[0]/2+EPS,0}, rgoal, pp));
+        double[] g00 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {shortLookahead, 0}, rgoal, pp));
+        double[] g01 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {shortLookahead+EPS,0}, rgoal, pp));
         grad = LinAlg.add(grad, g00);
         grad = LinAlg.add(grad, LinAlg.scale(g01,0.99));
 
-        if (dgoal > lookahead) {
-            double[] g10 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead,0}, rgoal, pp));
-            double[] g11 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {lookahead+EPS,0}, rgoal, pp));
-            grad = LinAlg.add(grad, LinAlg.scale(g10, 0.1));
-            grad = LinAlg.add(grad, LinAlg.scale(g11, 0.1));
-        }
+        double[] g10 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {longLookahead,0}, rgoal, pp));
+        double[] g11 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {longLookahead+EPS,0}, rgoal, pp));
+        grad = LinAlg.add(grad, LinAlg.scale(g10, 0.1));
+        grad = LinAlg.add(grad, LinAlg.scale(g11, 0.099));
 
 
 
@@ -279,7 +278,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             vb = vw.getBuffer("samples");
             VisVertexData vvd = new VisVertexData();
             vvd.add(new double[2]);
-            vvd.add(new double[] {Math.cos(theta), Math.sin(theta)});
+            vvd.add(new double[] {longLookahead*Math.cos(theta), longLookahead*Math.sin(theta)});
             vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 3)));
             if (samplePoints.size() > 0) {
                 vb.addBack(new VzPoints(new VisVertexData(samplePoints),
