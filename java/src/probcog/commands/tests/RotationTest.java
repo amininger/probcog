@@ -59,10 +59,6 @@ public class RotationTest implements ConditionTest, LCMSubscriber
 
         assert (parameters.containsKey("yaw"));
         goalYaw = parameters.get("yaw").getDouble();
-
-        // Hidden parameter to turn off LCM
-        if (!parameters.containsKey("no-lcm"))
-            lcm.subscribe("POSE", this);
     }
 
     public ConditionTest copyCondition()
@@ -73,6 +69,15 @@ public class RotationTest implements ConditionTest, LCMSubscriber
         test.lcm.subscribe("POSE", test);
 
         return test;
+    }
+
+    public void setRunning(boolean run)
+    {
+        if (run) {
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)

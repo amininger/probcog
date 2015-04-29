@@ -160,11 +160,8 @@ public class MonteCarloBot implements SimObject
             double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
             double[] relXyzrpy = relativePose(getPose(), xyzrpy);
             ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy, perfect);
-            if (classies.size() < 1)
-                continue;
-            classification_t classy = classies.get(0);
-            tagHistory.addObservation(classy, currentUtime);
-            tagHistory.markTagObserved(tag.getID());
+            tagHistory.addObservations(classies, currentUtime);
+            //tagHistory.markTagObserved(tag.getID());
         }
 
         // XXX Can we incorporate more noise here in terms of what ACTUALLY
@@ -278,9 +275,6 @@ public class MonteCarloBot implements SimObject
             //  it does lead to the question: why not just use our obviously known
             //  distributions that we have already? Mehh.....) We then will use
             //  this to generate potential behaviors to try executing.
-            //
-            // HANDLE TAG CLASSIFICATIONS
-            // XXX Seen tag stuff
             HashSet<SimAprilTag> seenTags = getSeenTags();
             for (SimAprilTag tag: seenTags) {
                 double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
@@ -301,17 +295,16 @@ public class MonteCarloBot implements SimObject
                 // here. It will only ever get a new classification added for
                 // a given tag ONCE, unless we reobserve it. XXX
                 double range = Math.sqrt(LinAlg.sq(relXyzrpy[0]) + LinAlg.sq(relXyzrpy[1]));
-                tagHistory.addObservation(classies.get(0), currentUtime);
-                if (!tagHistory.isVisible(tag.getID(), range)) {
+                tagHistory.addObservations(classies, currentUtime);
+                //if (!tagHistory.isVisible(tag.getID(), range)) {
+                //    continue;
+                //}
+                //tagHistory.markTagObserved(tag.getID());
+                //
+                ArrayList<classification_t> cs = tagHistory.getLabels(tag.getID(), relXyzrpy, currentUtime);
+                if (cs.size() < 1)
                     continue;
-                }
-
-                tagHistory.markTagObserved(tag.getID());
-                String label = tagHistory.getLabel(tag.getID(), currentUtime);
-
-                // XXX Classification entry point. Store the classification to
-                // a list that chronologically tracks what we've seen, for now.
-                //observations.add(classies.get(0));
+                String label = cs.get(0).name;
 
                 // Handle one of the two cases. Case 1) We're just navigating
                 // normally! Pass off the information to the condition test.

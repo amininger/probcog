@@ -212,9 +212,6 @@ public class FollowHall implements ControlLaw, LCMSubscriber
     /** Strictly for use in parameter checking */
     public FollowHall()
     {
-        // Temporary
-        LCM.getSingleton().subscribe("HOKUYO_LIDAR", this);
-        LCM.getSingleton().subscribe("POSE", this);
     }
 
     public FollowHall(Map<String, TypedValue> parameters)
@@ -223,9 +220,6 @@ public class FollowHall implements ControlLaw, LCMSubscriber
         // XXX Are there any?
 
         tasks.addFixedDelay(new UpdateTask(), 1.0/FH_HZ);
-
-        lcm.subscribe(laserChannel, this);
-        lcm.subscribe(poseChannel, this);
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -255,6 +249,13 @@ public class FollowHall implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        if (run) {
+            lcm.subscribe(laserChannel, this);
+            lcm.subscribe(poseChannel, this);
+        } else {
+            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe(poseChannel, this);
+        }
         tasks.setRunning(run);
     }
 

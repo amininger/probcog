@@ -79,7 +79,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         // Reproduce this in monte-carlo bot
         drive = new DifferentialDrive(sw, this, new double[3]);
-        drive.centerOfRotation = new double[] { 0.23, 0, 0 };
+        drive.centerOfRotation = new double[] { 0.20, 0, 0 };
         drive.voltageScale = 24.0;
         drive.wheelDiameter = 0.25;
         drive.baseline = 0.46;  // As measured to wheel centers
@@ -87,19 +87,19 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.rotation_noise = 0.05;
 
         // Motor setup
-        double K_t = 0.7914*2.5;    // torque constant in [Nm / A] * multiplier to speed us up
+        double K_t = 0.7914;    // torque constant in [Nm / A] * multiplier to speed us up
         drive.leftMotor.torque_constant = K_t;
         drive.rightMotor.torque_constant = K_t;
         double K_emf = 1.406; // emf constant [V/(rad/s)]
         drive.leftMotor.emf_constant = K_emf;
         drive.rightMotor.emf_constant = K_emf;
-        double K_wr = 5.5;  // XXX Old winding resistance [ohms]
+        double K_wr = 2.5;  // Winding resistance [ohms]
         drive.leftMotor.winding_resistance = K_wr;
         drive.rightMotor.winding_resistance = K_wr;
         double K_inertia = 0.5; // XXX Hand-picked inertia [kg m^2]
         drive.leftMotor.inertia = K_inertia;
         drive.rightMotor.inertia = K_inertia;
-        double K_drag = 2.0;    // XXX Hand-picked drag [Nm / (rad/s)], always >= 0
+        double K_drag = 1.0;    // XXX Hand-picked drag [Nm / (rad/s)], always >= 0
         drive.leftMotor.drag_constant = K_drag;
         drive.rightMotor.drag_constant = K_drag;
 
@@ -444,11 +444,6 @@ public class SimRobot implements SimObject, LCMSubscriber
         private void detectApriltags(Collection<SimObject> sos, double[] xyzrpyBot)
         {
             ArrayList<classification_t> classies = new ArrayList<classification_t>();
-            classification_t empty_classy = new classification_t();
-            empty_classy.utime = TimeUtil.utime();
-            empty_classy.name = "";
-            empty_classy.confidence = 1.0;
-
             classification_list_t classy_list = new classification_list_t();
             classy_list.utime = TimeUtil.utime();
 
@@ -466,25 +461,11 @@ public class SimRobot implements SimObject, LCMSubscriber
                 // Position relative to robot. For now, tossing away orientation data,
                 // but may be relevant later.
                 double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
-                empty_classy.xyzrpy = relXyzrpy;
-                empty_classy.id = tag.getID();
 
+                long now = TimeUtil.utime();
                 ArrayList<classification_t> temp = tc.classifyTag(tag.getID(), relXyzrpy);
-                if (temp.size() < 1)
-                    continue;
-
-                // XXX This means that the first observations can be lost to UDP. :(
-                // XXX This also means that we need to fix this for range checks
-                classification_t classy = temp.get(0);
-                tagHistory.addObservation(classy, TimeUtil.utime());
-                //if (tagHistory.isVisible(tag.getID(), sensingThreshold)) {
-                empty_classy.name = tagHistory.getLabel(tag.getID());
-                classies.add(empty_classy.copy());
-                //}
-                //else {
-                //    classies.add(empty_classy.copy());
-                //}
-
+                tagHistory.addObservations(temp, now);
+                classies.addAll(tagHistory.getLabels(tag.getID(), relXyzrpy, now));
             }
             classy_list.num_classifications = classies.size();
             classy_list.classifications = classies.toArray(new classification_t[0]);
