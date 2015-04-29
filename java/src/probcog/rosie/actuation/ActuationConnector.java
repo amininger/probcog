@@ -12,10 +12,12 @@ import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
 import probcog.commands.CommandCoordinator;
 import probcog.commands.CommandCoordinator.Status;
+import probcog.commands.TypedValue;
 //import probcog.lcmtypes.control_law_list_t;
 import probcog.lcmtypes.control_law_status_list_t;
 import probcog.lcmtypes.control_law_status_t;
 import probcog.lcmtypes.control_law_t;
+import probcog.lcmtypes.typed_value_t;
 import probcog.rosie.SoarAgent;
 import probcog.rosie.WMUtil;
 import sml.Agent;
@@ -54,7 +56,7 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
         agent.getAgent().RegisterForRunEvent(smlRunEventId.smlEVENT_BEFORE_INPUT_PHASE, this, null);
 
         // Setup Output Link Events
-        String[] outputHandlerStrings = { "do-control-law", "stop"};
+        String[] outputHandlerStrings = { "do-control-law", "stop", "face-point"};
         for (String outputHandlerString : outputHandlerStrings)
         {
         	agent.getAgent().AddOutputHandler(outputHandlerString, this, null);
@@ -157,6 +159,8 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
 				processDoControlLawCommand(id);
 			} else if(wme.GetAttribute().equals("stop")){
 				processStopCommand(id);
+			} else if(wme.GetAttribute().equals("face-point")){
+				processFacePoint(id);
 			}
         } catch (IllegalStateException e){
         	System.out.println(e.getMessage());
@@ -190,5 +194,27 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
 			activeCommand.id = nextControlLawId++;
 			activeCommandId = id;
 		}
+    }
+    
+    public void processFacePoint(Identifier id){
+		synchronized(commandLock){
+			if(activeCommandId != null){
+				WMUtil.updateStringWME(activeCommandId, "status", "interrupted");
+			}
+			double cx = Double.parseDouble(WMUtil.getValueOfAttribute(id, "cur-x"));
+			double cy = Double.parseDouble(WMUtil.getValueOfAttribute(id, "cur-y"));
+			double dx = Double.parseDouble(WMUtil.getValueOfAttribute(id, "x"));
+			double dy = Double.parseDouble(WMUtil.getValueOfAttribute(id, "y"));
+			double yaw = Math.atan2(dy-cy, dx-cx);
+
+			activeCommandId = id;
+			activeCommand = SoarCommandParser.createEmptyControlLaw("orient");
+			activeCommand.id = nextControlLawId++;
+			activeCommand.num_params = 1;
+			activeCommand.param_names = new String[]{ "yaw" };
+			activeCommand.param_values = new typed_value_t[]{ (new TypedValue(yaw)).toLCM() };
+			activeCommand.termination_condition.name = "stabilized";
+		}
+			
     }
 }

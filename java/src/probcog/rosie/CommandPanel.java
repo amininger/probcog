@@ -17,11 +17,11 @@ import sml.Identifier;
 import sml.smlRunEventId;
 
 public class CommandPanel extends JPanel implements RunEventInterface{
-	
 	private ArrayList<JButton> buttons;
 	
 	private JTextField objectText;
 	private JTextField countText;
+	private JTextField wpIdText;
 	
 	Identifier commandLink;
 	Identifier curCommand;
@@ -31,6 +31,7 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 	String objectType = null;
 	Integer objectCount = null;
 	String direction = null;
+	Integer waypointId = -1;
 	
 
 	public CommandPanel(SoarAgent agent){
@@ -122,25 +123,46 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 		turnAround.setBackground(new Color(150, 150, 255));
 		this.add(turnAround);	
 		
-		this.add(setupCompassPanel());
-		
-		/*
-		 * Row 4: Object Label, Blank, Count Label 
-		*/
-		this.add(new JLabel("Object to Count"));
 		this.add(new JPanel());
-		this.add(new JLabel("Count"));
 		
 		/*
-		 * Row 4: Object TextField, Blank, Count TextField 
+		 * Row 4: Object Detection, Compass, Waypoint Driving
 		*/
+		JPanel objPanel = new JPanel();
+		objPanel.setLayout(new GridLayout(0, 2));
+		objPanel.add(new JLabel("obj-type"));
+		objPanel.add(new JLabel("obj-count"));
+
 		objectText = new JTextField("door");
-		this.add(objectText);
-		
-		this.add(new JPanel());
+		objPanel.add(objectText);
 		
 		countText = new JTextField("1");
-		this.add(countText);
+		objPanel.add(countText);
+		
+		this.add(objPanel);
+		
+		this.add(setupCompassPanel());
+		
+		JPanel wpPanel = new JPanel();
+		wpPanel.setLayout(new GridLayout(0, 1));
+		
+		JButton gotoWaypoint = new JButton("Go To Waypoint");
+		gotoWaypoint.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				sendWaypointCommand();
+			}
+		});
+		gotoWaypoint.setBackground(new Color(150, 255, 150));
+		wpPanel.add(gotoWaypoint);	
+		
+		JPanel wpIdPanel = new JPanel();
+		wpIdPanel.setLayout(new GridLayout(0, 2));
+		wpIdPanel.add(new JLabel("ID:"));
+		wpIdText = new JTextField("10");
+		wpIdPanel.add(wpIdText);
+		wpPanel.add(wpIdPanel);
+		this.add(wpPanel);
 	}
 	
 	private JPanel setupCompassPanel(){
@@ -213,7 +235,6 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 	public synchronized void sendCommand(String commandType, boolean includeObjectInfo){
 		System.out.println("SENDING COMMAND: " + commandType);
 		this.commandType = commandType;
-		this.direction = null;
 		if (includeObjectInfo){
 			objectType = objectText.getText();
 			try{
@@ -231,9 +252,19 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 	public synchronized void sendOrientCommand(String direction){
 		System.out.println("SENDING COMMAND: orient1");
 		this.commandType = "orient1";
-		this.objectType = null;
-		this.objectCount = null;
 		this.direction = direction;
+		newCommand = true;
+	}
+	
+	public synchronized void sendWaypointCommand(){
+		try{
+			waypointId = Integer.parseInt(wpIdText.getText());
+		} catch(NumberFormatException e){
+			System.err.println("Error parsing waypoint id " + wpIdText.getText());
+			return;
+		}
+		System.out.println("SENDING COMMAND: go-to-waypoint1 " + waypointId);
+		this.commandType = "go-to-waypoint1";
 		newCommand = true;
 	}
 	
@@ -247,12 +278,13 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 			}
 			curCommand = commandLink.CreateIdWME("command");
 			curCommand.CreateStringWME("type", commandType);
-			if (objectType != null){
+			if (commandType.equals("orient1")){
+				curCommand.CreateStringWME("direction", direction);
+			} else if (commandType.equals("go-to-waypoint1")){
+				curCommand.CreateStringWME("waypoint-id", "wp" + waypointId);
+			} else if (objectType != null){
 				curCommand.CreateStringWME("object-type", objectType);
 				curCommand.CreateIntWME("object-count", objectCount);
-			}
-			if (direction != null){
-				curCommand.CreateStringWME("direction", direction);
 			}
 			agent.Commit();
 			newCommand = false;
