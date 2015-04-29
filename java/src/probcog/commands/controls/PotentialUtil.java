@@ -19,7 +19,7 @@ import magic2.lcmtypes.*;
 /** A utility class for generating and debugging potential functions */
 public class PotentialUtil
 {
-    static final double PENALTY_WEIGHT = 10;
+    static final double PENALTY_WEIGHT = 100;
     static final double SAFETY_WEIGHT = 0.25;
     static final boolean DEBUG = false;
 
@@ -202,7 +202,7 @@ public class PotentialUtil
 
         double p = 0;
         if (d < kmin) {
-            //p += PENALTY_WEIGHT * (kmin-d)/kmin + maxAtTransition;
+            p += PENALTY_WEIGHT * (kmin-d)/kmin;
         }
         if (d < kr) {
             p +=  kw*LinAlg.sq(1/d - 1/kr);

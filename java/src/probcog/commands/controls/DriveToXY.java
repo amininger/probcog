@@ -56,7 +56,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
     double[] xyt;
     String mode = "default";
-    double dist = 5*Util.getConfig().requireDouble("robot.geometry.radius");
+    double dist = 5.0*Util.getConfig().requireDouble("robot.geometry.radius");
     double gain = 1.0;          // Affects turn rate
     double maxSpeed = 0.4;      // Affects drive speed
     double lastTheta = Double.MAX_VALUE;
@@ -110,7 +110,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         } else if (parameters.containsKey("mode")) {
             String mode = parameters.get("mode").toString();
             if (mode.equals("door"))
-                dist = Util.getConfig().requireDouble("robot.geometry.width")*3.5;
+                dist = 3.5*Util.getConfig().requireDouble("robot.geometry.width");
             else if (!mode.equals("default"))
                 System.out.println("Unknown mode - "+mode);
         }
@@ -121,6 +121,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         if (parameters.containsKey("max-speed")) {
             maxSpeed = parameters.get("max-speed").getDouble();
+        } else if (parameters.containsKey("mode")) {
+            String mode = parameters.get("mode").toString();
+            if (mode.equals("door"))
+                maxSpeed = 0.25;
+            else if (!mode.equals("default"))
+                System.out.println("Unknown mode - "+mode);
         }
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
