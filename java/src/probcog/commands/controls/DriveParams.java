@@ -10,8 +10,6 @@ import magic2.lcmtypes.*;
  **/
 public class DriveParams
 {
-    public double maxSpeed = 0.4;
-
     public classification_t classy; // XXX
     public laser_t laser;
     public pose_t pose;

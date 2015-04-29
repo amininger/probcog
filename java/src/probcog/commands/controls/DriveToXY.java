@@ -55,7 +55,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     double[] xyt;
+    String mode = "default";
     double dist = 5*Util.getConfig().requireDouble("robot.geometry.radius");
+    double gain = 1.0;          // Affects turn rate
+    double maxSpeed = 0.4;      // Affects drive speed
     double lastTheta = Double.MAX_VALUE;
 
     // Determining stopping conditions, beyond just arriving near goal
@@ -104,6 +107,20 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         if (parameters.containsKey("distance")) {
             dist = parameters.get("distance").getDouble();
+        } else if (parameters.containsKey("mode")) {
+            String mode = parameters.get("mode").toString();
+            if (mode.equals("door"))
+                dist = Util.getConfig().requireDouble("robot.geometry.width")*3.5;
+            else if (!mode.equals("default"))
+                System.out.println("Unknown mode - "+mode);
+        }
+
+        if (parameters.containsKey("gain")) {
+            gain = parameters.get("gain").getDouble();
+        }
+
+        if (parameters.containsKey("max-speed")) {
+            maxSpeed = parameters.get("max-speed").getDouble();
         }
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
@@ -185,6 +202,24 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         params.add(new TypedParameter("distance",
                                       TypedValue.TYPE_DOUBLE,
                                       false));
+        params.add(new TypedParameter("gain",
+                                      TypedValue.TYPE_DOUBLE,
+                                      new TypedValue(0.0),
+                                      new TypedValue(Double.MAX_VALUE),
+                                      false));
+        params.add(new TypedParameter("max-speed",
+                                      TypedValue.TYPE_DOUBLE,
+                                      new TypedValue(0.0),
+                                      new TypedValue(1.0),
+                                      false));
+        HashSet<TypedValue> valid = new HashSet<TypedValue>();
+        valid.add(new TypedValue("default"));
+        valid.add(new TypedValue("door"));
+        params.add(new TypedParameter("mode",
+                                      TypedValue.TYPE_STRING,
+                                      valid,
+                                      false));
+
 
         return params;
     }
@@ -216,10 +251,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         pp.maxObstacleRange = dist;
         pp.fieldRes = 0.1;
 
-        // Tie this to our speed
+        // Tie lookahead distance to speed traveled
         double maxVelocity = 2.5;   // [m/s]
         double lookaheadTime = 1.5; // [s]
-        double maxLookahead = maxVelocity*params.maxSpeed*lookaheadTime;
+        double maxLookahead = Math.max(maxVelocity*maxSpeed*lookaheadTime, 0.5);
         double shortLookahead = dgoal < maxLookahead ? 0 : MagicRobot.CHASSIS_MAIN_SIZE[0]/2;
         double longLookahead = Math.min(maxLookahead, dgoal);
 
@@ -320,13 +355,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         grad = LinAlg.normalize(grad);
         double speed = grad[0];
         double turn = grad[1];
-        double speedLimit = params.maxSpeed;
+        double speedLimit = maxSpeed;
         if (speed < 0) {
             speed = 0;
             turn = Math.min(.3, speedLimit);
             speedLimit = turn;
         }
-        double gain = 1.0;
 
         dd.left = speed - gain*turn;
         dd.right = speed + gain*turn;
@@ -343,39 +377,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             dd.left = dd.right = 0;
         }
 
-
-        // Determine if we're stuck. Not perfect...we can still end up oscillating
-        /*if (lastTheta != Double.MAX_VALUE) {
-            double dtheta = MathUtil.mod2pi(lastTheta - theta);
-            if (Math.abs(dtheta) > STOP_THRESH)
-                return dd;
-        }
-        lastTheta = theta;
-
-        if (Math.abs(theta) > TURN_THRESH) {
-            double turnSpeed = Math.max(0.3, params.maxSpeed);
-            if (theta > 0) {
-                dd.left = -turnSpeed;
-                dd.right = turnSpeed;
-            } else {
-                dd.left = turnSpeed;
-                dd.right = -turnSpeed;
-            }
-        } else {
-            double turnSpeed = TURN_WEIGHT*(theta/Math.PI);
-            double right = (2*FORWARD_SPEED + turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
-            double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
-            double maxMag = Math.max(Math.abs(right), Math.abs(left));
-            if (maxMag > params.maxSpeed) {
-                dd.left = params.maxSpeed*(left/maxMag);
-                dd.right = params.maxSpeed*(right/maxMag);
-            }
-            if (Math.abs(dd.left) < STALL_SPEED)
-                dd.left = 0;
-            if (Math.abs(dd.right) < STALL_SPEED)
-                dd.right = 0;
-        }*/
-
         return dd;
     }
 
@@ -388,7 +389,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     {
         control_law_t cl = new control_law_t();
         cl.name = "drive-xy";
-        cl.num_params = 3;
+        cl.num_params = 5;
         cl.param_names = new String[cl.num_params];
         cl.param_values = new typed_value_t[cl.num_params];
         cl.param_names[0] = "x";
@@ -397,6 +398,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         cl.param_values[1] = (new TypedValue(xyt[1])).toLCM();
         cl.param_names[2] = "distance";
         cl.param_values[2] = (new TypedValue(dist)).toLCM();
+        cl.param_names[3] = "gain";
+        cl.param_values[3] = (new TypedValue(gain)).toLCM();
+        cl.param_names[4] = "max-speed";
+        cl.param_values[4] = (new TypedValue(maxSpeed)).toLCM();
+        cl.param_names[5] = "mode";
+        cl.param_values[5] = (new TypedValue(mode)).toLCM();
+
 
         return cl;
     }

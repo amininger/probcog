@@ -63,7 +63,7 @@ public class PotentialUtil
 
         public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
         public double repulsiveWeight = 1.0;
-        public double maxObstacleRange = 2.0*robotRadius;
+        public double maxObstacleRange = 5.0*robotRadius;
         public double safetyRange = .5*Util.getConfig().requireDouble("robot.geometry.width")+.05;
     }
 
@@ -386,9 +386,9 @@ public class PotentialUtil
 
         // Fake a hallway. Wall on right is 1m away, wall on left is 0.5m
         laser_t laser = new laser_t();
-        laser.rad0 = (float)(-Math.PI);
-        laser.radstep = (float)(Math.toRadians(1));
-        laser.nranges = 360;
+        laser.rad0 = (float)(-3*Math.PI/4);
+        laser.radstep = (float)(Math.toRadians(.25));
+        laser.nranges = (int)(Math.ceil(2*Math.abs(laser.rad0)/laser.radstep));
         laser.ranges = new float[laser.nranges];
         double doorOffset = 1.0;
         double doorSize = 0.9;
@@ -415,7 +415,7 @@ public class PotentialUtil
         params.attractivePotential = AttractivePotential.COMBINED;
         params.fieldSize = 4.0;
         params.fieldRes = 0.01;
-        params.repulsiveWeight = 5.0;
+        //params.repulsiveWeight = 5.0;
         params.repulsivePotential = RepulsivePotential.ALL_POINTS;
         //params.maxObstacleRange = 0.4;
 
@@ -459,7 +459,7 @@ public class PotentialUtil
                                0xff0000ff,
                                0xff2222ff};
         double minVal = pf.getMinValue();
-        double maxVal = Math.max(5*minVal, params.repulsiveWeight);
+        double maxVal = minVal+1.5*params.repulsiveWeight+params.fieldSize*params.attractiveWeight;
         ColorMapper cm = new ColorMapper(map, minVal, maxVal);
 
         double[][] M = LinAlg.xytToMatrix(xyt);
