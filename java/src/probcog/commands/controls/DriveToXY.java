@@ -24,7 +24,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     VisWorld vw;
 
-    private boolean DEBUG = true;
+    private boolean DEBUG = false;
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 100;
@@ -110,7 +110,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         } else if (parameters.containsKey("mode")) {
             String mode = parameters.get("mode").toString();
             if (mode.equals("door"))
-                dist = 3.5*Util.getConfig().requireDouble("robot.geometry.width");
+                dist = Util.getConfig().requireDouble("robot.geometry.width");
             else if (!mode.equals("default"))
                 System.out.println("Unknown mode - "+mode);
         }
@@ -254,6 +254,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                                                            robotXYT,
                                                            xyt);
         pp.repulsivePotential = PotentialUtil.RepulsivePotential.ALL_POINTS;
+        //pp.repulsivePotential = PotentialUtil.RepulsivePotential.CLOSEST_POINT;
         pp.maxObstacleRange = dist;
         pp.fieldRes = 0.1;
 
@@ -268,16 +269,16 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         // maneuver early enough. You need to be careful, though, since this
         // lookahead point, once beyond your portal, will instead drag you
         // towards a wall (thus, our point just ahead of the robot).
-        double[] grad = new double[2];
+        double[] grad = LinAlg.normalize(PotentialUtil.getGradient(new double[2], rgoal, pp));
         double[] g00 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {shortLookahead, 0}, rgoal, pp));
         double[] g01 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {shortLookahead+EPS,0}, rgoal, pp));
-        grad = LinAlg.add(grad, g00);
+        grad = LinAlg.add(grad, LinAlg.scale(g00,1.00));
         grad = LinAlg.add(grad, LinAlg.scale(g01,0.99));
 
         double[] g10 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {longLookahead,0}, rgoal, pp));
         double[] g11 = LinAlg.normalize(PotentialUtil.getGradient(new double[] {longLookahead+EPS,0}, rgoal, pp));
-        grad = LinAlg.add(grad, LinAlg.scale(g10, 0.1));
-        grad = LinAlg.add(grad, LinAlg.scale(g11, 0.099));
+        grad = LinAlg.add(grad, LinAlg.scale(g10, 0.200));
+        grad = LinAlg.add(grad, LinAlg.scale(g11, 0.199));
 
 
 

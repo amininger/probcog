@@ -19,8 +19,7 @@ import magic2.lcmtypes.*;
 /** A utility class for generating and debugging potential functions */
 public class PotentialUtil
 {
-    static final double PENALTY_WEIGHT = 100;
-    static final double SAFETY_WEIGHT = 0.25;
+    static final double PENALTY_WEIGHT = 1000;
     static final boolean DEBUG = false;
 
     static public enum AttractivePotential
@@ -119,9 +118,15 @@ public class PotentialUtil
         double dist = Math.sqrt(LinAlg.sq(rx-goal[0]) + LinAlg.sq(ry-goal[1]));
 
         double p_att = getAttractivePotential(dist, params);
-        //double p_rep = getRepulsivePotential(rx, ry, params);
-        // Can't really get away with closest point...not smooth enough
-        double p_rep = getRepulsiveAllPoints(rx, ry, params);
+        double p_rep = 0;
+        switch (params.repulsivePotential) {
+            case CLOSEST_POINT:
+                p_rep = getRepulsivePotential(rx, ry, params);
+                break;
+            case ALL_POINTS:
+                p_rep = getRepulsiveAllPoints(rx, ry, params);
+                break;
+        }
 
         double p = p_att + p_rep;
         if (Double.isInfinite(p))
@@ -202,8 +207,9 @@ public class PotentialUtil
 
         double p = 0;
         if (d < kmin) {
-            p += PENALTY_WEIGHT * (kmin-d)/kmin;
+            //p += PENALTY_WEIGHT*Math.min(d, 0.000001);
         }
+
         if (d < kr) {
             p +=  kw*LinAlg.sq(1/d - 1/kr);
         }
@@ -343,10 +349,7 @@ public class PotentialUtil
                 for (double[] pxy: points) {
                     double d = LinAlg.distance(xy, pxy, 2);
                     double p = repulsiveForce(d, params);
-
-                    if (p == 0)
-                        continue;
-                    p = Math.max(p, max);
+                    max = Math.max(p, max);
                 }
                 pf.addIndexUnsafe(x, y, max);
             }
@@ -413,8 +416,8 @@ public class PotentialUtil
         // Construct the potential field
         Params params = new Params(laser, xyt, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
-        params.fieldSize = 4.0;
-        params.fieldRes = 0.01;
+        params.fieldSize = 10.0;
+        params.fieldRes = 0.05;
         //params.repulsiveWeight = 5.0;
         params.repulsivePotential = RepulsivePotential.ALL_POINTS;
         //params.maxObstacleRange = 0.4;
