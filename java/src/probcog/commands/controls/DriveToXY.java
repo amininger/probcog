@@ -117,6 +117,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         if (parameters.containsKey("gain")) {
             gain = parameters.get("gain").getDouble();
+        } else if (parameters.containsKey("mode")) {
+            String mode = parameters.get("mode").toString();
+            if (mode.equals("door"))
+                gain = 4.0;
+            else if (!mode.equals("default"))
+                System.out.println("Unknown mode - "+mode);
         }
 
         if (parameters.containsKey("max-speed")) {
@@ -365,8 +371,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         double speedLimit = maxSpeed;
         if (speed < 0) {
             speed = 0;
-            turn = Math.min(.3, speedLimit);
-            speedLimit = turn;
+            int sign = turn > 0 ? 1 : -1;
+            turn = sign*Math.min(.3, speedLimit);
+            speedLimit = Math.abs(turn);
         }
 
         dd.left = speed - gain*turn;
