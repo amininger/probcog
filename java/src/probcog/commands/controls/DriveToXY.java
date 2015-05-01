@@ -28,15 +28,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 100;
-
     static final double EPS = 0.05;
-
     static final double DISTANCE_THRESH = 0.25;
-    static final double TURN_THRESH = Math.toRadians(45);
-    static final double STOP_THRESH = Math.toRadians(90);
-    static final double FORWARD_SPEED = 0.1;
-    static final double TURN_WEIGHT = FORWARD_SPEED*20;
-    static final double STALL_SPEED = 0.2; // XXX Needs some love/tuning
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -63,11 +56,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     double lastTheta = Double.MAX_VALUE;
 
     // Determining stopping conditions, beyond just arriving near goal
-    static final double MIN_RATE_TO_GOAL = 0.2; // [m/s]
-    static final double GOAL_TIMEOUT = 1.0;     // [s]
+    boolean terminated = false;
+    static final int WINDOW_SIZE = (int)(2*HZ);
+    LinkedList<Double> rateWindow = new LinkedList<Double>();
     double lastDistanceToGoal = Double.MAX_VALUE;
     long lastUtime;
-    Tic goalTic = new Tic();
 
 
     private class UpdateTask implements PeriodicTasks.Task
@@ -342,7 +335,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             vb.swap();
         }
 
-        // Stopping conditions
+        // Stopping conditions. When these trigger, refuse to continue moving
         if (lastDistanceToGoal == Double.MAX_VALUE) {
             lastDistanceToGoal = dgoal;
             lastUtime = TimeUtil.utime();
@@ -356,17 +349,26 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             assert (dt != 0);
             double rate = dg/dt;
 
-            // Make sure we're still moving towards the goal at an acctable rate
-            // If not, try to stop by sending a 0 command.
-            // Note that this is problematic when turning in place is necessary
-            // early on.
-            if (-rate > MIN_RATE_TO_GOAL) {
-                goalTic.tic();
-            }
-            if (goalTic.toc() > GOAL_TIMEOUT) {
-                return dd;
+            if (rate > 0)
+                terminated = true;
+
+            rateWindow.add(rate);
+            if (rateWindow.size() > WINDOW_SIZE)
+                rateWindow.pop();
+
+            if (rateWindow.size() ==  WINDOW_SIZE) {
+                double avgRate = 0;
+                for (double r: rateWindow)
+                    avgRate += r;
+
+                rate = avgRate/WINDOW_SIZE;
+                if (rate > -maxSpeed/5)
+                    terminated = true;
             }
         }
+
+        if (terminated)
+            return dd;
 
         // First pass at direct PWM control
         grad = LinAlg.normalize(grad);
