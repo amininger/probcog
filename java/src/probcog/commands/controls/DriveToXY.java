@@ -54,7 +54,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
-    double[] xyt;
+    double[] relativeXyt;
+    double[] xyt = null;
     String mode = "default";
     double dist = 5.0*Util.getConfig().requireDouble("robot.geometry.radius");
     double gain = 1.0;          // Affects turn rate
@@ -101,9 +102,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     public DriveToXY(HashMap<String, TypedValue> parameters)
     {
         assert (parameters.containsKey("x") && parameters.containsKey("y"));
-        xyt = new double[] { parameters.get("x").getDouble(),
-                             parameters.get("y").getDouble(),
-                             0.0 };
+        relativeXyt = new double[] { parameters.get("x").getDouble(),
+                                     parameters.get("y").getDouble(),
+                                     0.0 };
 
         if (parameters.containsKey("distance")) {
             dist = parameters.get("distance").getDouble();
@@ -249,6 +250,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         robotXYT[0] += MagicRobot.CENTER_X_OFFSET*Math.cos(robotXYT[2]);
         robotXYT[1] += MagicRobot.CENTER_X_OFFSET*Math.sin(robotXYT[2]);
 
+        if (xyt == null) {
+            xyt = LinAlg.xytMultiply(robotXYT, relativeXyt);
+        }
 
         double[] rgoal = LinAlg.xytInvMul31(robotXYT, xyt);
         double dgoal = Math.sqrt(rgoal[0]*rgoal[0] + rgoal[1]*rgoal[1]);
