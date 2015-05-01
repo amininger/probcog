@@ -28,7 +28,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 100;
-    static final double EPS = 0.05;
+    static final double EPS = 0.10;
     static final double DISTANCE_THRESH = 0.25;
 
     // XXX Get this into config
@@ -50,8 +50,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     double[] relativeXyt;
     double[] xyt = null;
     String mode = "default";
-    double dist = 5.0*Util.getConfig().requireDouble("robot.geometry.radius");
-    double gain = 1.0;          // Affects turn rate
+    double dist = 6.0*Util.getConfig().requireDouble("robot.geometry.radius");
+    double gain = 0.3;          // Affects turn rate
     double maxSpeed = 0.4;      // Affects drive speed
     double lastTheta = Double.MAX_VALUE;
 
@@ -349,8 +349,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             assert (dt != 0);
             double rate = dg/dt;
 
-            if (rate > 0)
-                terminated = true;
+            //if (rate > 0)
+            //    terminated = true;
 
             rateWindow.add(rate);
             if (rateWindow.size() > WINDOW_SIZE)
@@ -362,7 +362,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                     avgRate += r;
 
                 rate = avgRate/WINDOW_SIZE;
-                if (rate > -maxSpeed/5)
+                if (rate > -maxSpeed/20)
                     terminated = true;
             }
         }
