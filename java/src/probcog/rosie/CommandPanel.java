@@ -281,7 +281,11 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 			if (commandType.equals("orient1")){
 				curCommand.CreateStringWME("direction", direction);
 			} else if (commandType.equals("go-to-waypoint1")){
-				curCommand.CreateStringWME("waypoint-id", "wp" + waypointId);
+				if (waypointId < 10){
+					curCommand.CreateStringWME("waypoint-id", "wp0" + waypointId);
+				} else {
+					curCommand.CreateStringWME("waypoint-id", "wp" + waypointId);
+				}
 			} else if (objectType != null){
 				curCommand.CreateStringWME("object-type", objectType);
 				curCommand.CreateIntWME("object-count", objectCount);

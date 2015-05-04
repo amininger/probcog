@@ -94,26 +94,25 @@ public class PerceptionConnector implements LCMSubscriber, RunEventInterface{
     			closestDistance = c.range;
     		}
     	}
-    	if (closestWaypoint == curWaypoint){
-    		return;
-    	}
-   		if (waypointId != null){
+   		if (closestWaypoint != curWaypoint && waypointId != null){
    			waypointId.DestroyWME();
    			waypointId = null;
-   			curWaypoint = -1;
    		}
-   		if (closestWaypoint != -1){
+   		curWaypoint = closestWaypoint;
+   		if (curWaypoint == -1){
+   			return;
+   		}
+   		if (waypointId == null){
     		waypointId = inputLink.CreateIdWME("current-waypoint");
-    		curWaypoint = closestWaypoint;
-    		for (classification_t c : curClassifications.classifications){
-    			if (c.id == closestWaypoint){
-    				if (c.name.startsWith("wp")){
-    					waypointId.CreateStringWME("id", c.name);
-    				} else {
-    					waypointId.CreateStringWME("classification", c.name);
-    				}
-    			}
-    		}
+   		}
+   		for (classification_t c : curClassifications.classifications){
+   			if (c.id == closestWaypoint){
+   				if (c.name.startsWith("wp")){
+   					WMUtil.updateStringWME(waypointId, "id", c.name);
+   				} else {
+   					WMUtil.updateStringWME(waypointId, "classification", c.name);
+   				}
+   			}
    		}
     }
 }
