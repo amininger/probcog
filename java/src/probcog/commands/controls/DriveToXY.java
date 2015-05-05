@@ -51,7 +51,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     double[] xyt = null;
     String mode = "default";
     double dist = 6.0*Util.getConfig().requireDouble("robot.geometry.radius");
-    double gain = 0.3;          // Affects turn rate
+    double gain = 1.0;          // Affects turn rate
     double maxSpeed = 0.4;      // Affects drive speed
     double lastTheta = Double.MAX_VALUE;
 
@@ -378,7 +378,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         if (speed < 0) {
             speed = 0;
             int sign = turn > 0 ? 1 : -1;
-            turn = sign*Math.min(.3, speedLimit);
+            turn = sign*Math.min(.4, speedLimit);
             speedLimit = Math.abs(turn);
         }
 
@@ -387,7 +387,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         // Handle deadband better OR let speed controller deal with it. XXX
         double maxMag = Math.max(Math.abs(dd.left), Math.abs(dd.right));
-        if (maxMag > speedLimit) {
+        if (maxMag > 0) {
             dd.left = speedLimit*(dd.left/maxMag);
             dd.right = speedLimit*(dd.right/maxMag);
         }
