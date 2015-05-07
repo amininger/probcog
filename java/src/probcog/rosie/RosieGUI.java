@@ -2,6 +2,8 @@ package probcog.rosie;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.FileNotFoundException;
@@ -26,6 +28,7 @@ import sml.Kernel;
 import sml.smlPrintEventId;
 import sml.smlRunEventId;
 import probcog.lcmtypes.*;
+import probcog.rosie.language.ChatPanel;
 import april.util.GetOpt;
 import april.util.TimeUtil;
 import april.util.StringUtil;
@@ -41,6 +44,8 @@ public class RosieGUI extends JFrame
 		public boolean spawnDebugger;
 		public int watchLevel;
 		public int throttleMS;
+		
+		public String speechFile;
 
 		public Boolean writeLog;
 
@@ -68,6 +73,8 @@ public class RosieGUI extends JFrame
 	        	throttleMS = 0;
 	        }
 
+			speechFile = props.getProperty("speech-file", "audio_files/sample");
+
 	        writeLog = props.getProperty("enable-log", "false").equals("true");
 		}
 	}
@@ -94,7 +101,10 @@ public class RosieGUI extends JFrame
 
     	setupMenu();
 
-    	this.add(new CommandPanel(soarAgent));
+    	ChatPanel chat = new ChatPanel(soarAgent, this);
+    	this.add(chat);
+    	soarAgent.getLanguageConnector().setChat(chat);
+//    	this.add(new CommandPanel(soarAgent));
     	
     	this.setVisible(true);
     }
@@ -120,6 +130,7 @@ public class RosieGUI extends JFrame
 
     	this.setJMenuBar(menuBar);
     }
+
 
     public static void main(String[] args) {
 

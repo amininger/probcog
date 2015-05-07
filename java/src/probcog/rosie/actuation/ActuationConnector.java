@@ -19,7 +19,7 @@ import probcog.lcmtypes.control_law_status_t;
 import probcog.lcmtypes.control_law_t;
 import probcog.lcmtypes.typed_value_t;
 import probcog.rosie.SoarAgent;
-import probcog.rosie.WMUtil;
+import probcog.util.SoarUtil;
 import sml.Agent;
 import sml.Agent.OutputEventInterface;
 import sml.Agent.RunEventInterface;
@@ -85,7 +85,7 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
 	public void updateControlLawStatus(){
 		synchronized(commandLock){
 			if(activeCommand != null && activeCommand.id == curStatus.id){
-				WMUtil.updateStringWME(activeCommandId, "status", curStatus.status.toLowerCase());
+				SoarUtil.updateStringWME(activeCommandId, "status", curStatus.status.toLowerCase());
 				Status newStatus = Status.valueOf(curStatus.status);
 				if(newStatus == Status.FAILURE || newStatus == Status.SUCCESS || newStatus == Status.UNKNOWN){
 					activeCommand = SoarCommandParser.createEmptyControlLaw("NONE");
@@ -118,11 +118,11 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
     private void updateIL(Identifier inputLink){
     	synchronized(commandLock){
     		if(activeCommand == null){
-    			WMUtil.updateStringWME(selfId, "moving-state", "stopped");
+    			SoarUtil.updateStringWME(selfId, "moving-state", "stopped");
     		} else if(activeCommand.name.equals("NONE")){
-    			WMUtil.updateStringWME(selfId, "moving-state", "stopped");
+    			SoarUtil.updateStringWME(selfId, "moving-state", "stopped");
     		} else {
-    			WMUtil.updateStringWME(selfId, "moving-state", "moving");
+    			SoarUtil.updateStringWME(selfId, "moving-state", "moving");
     		}
 		}
     }
@@ -178,7 +178,7 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
     	id.CreateStringWME("status", "sent");
     	synchronized(commandLock){
     		if (activeCommandId != null){
-    			WMUtil.updateStringWME(activeCommandId, "status", "interrupted");
+    			SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
     		}
     		activeCommand = controlLaw;
     		activeCommandId = id;
@@ -188,7 +188,7 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
     public void processStopCommand(Identifier id){
 		synchronized(commandLock){
 			if(activeCommandId != null){
-				WMUtil.updateStringWME(activeCommandId, "status", "interrupted");
+				SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
 			}
 			activeCommand = SoarCommandParser.createEmptyControlLaw("STOP");
 			activeCommand.id = nextControlLawId++;
@@ -199,12 +199,12 @@ public class ActuationConnector implements LCMSubscriber, RunEventInterface, Out
     public void processFacePoint(Identifier id){
 		synchronized(commandLock){
 			if(activeCommandId != null){
-				WMUtil.updateStringWME(activeCommandId, "status", "interrupted");
+				SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
 			}
-			double cx = Double.parseDouble(WMUtil.getValueOfAttribute(id, "cur-x"));
-			double cy = Double.parseDouble(WMUtil.getValueOfAttribute(id, "cur-y"));
-			double dx = Double.parseDouble(WMUtil.getValueOfAttribute(id, "x"));
-			double dy = Double.parseDouble(WMUtil.getValueOfAttribute(id, "y"));
+			double cx = Double.parseDouble(SoarUtil.getValueOfAttribute(id, "cur-x"));
+			double cy = Double.parseDouble(SoarUtil.getValueOfAttribute(id, "cur-y"));
+			double dx = Double.parseDouble(SoarUtil.getValueOfAttribute(id, "x"));
+			double dy = Double.parseDouble(SoarUtil.getValueOfAttribute(id, "y"));
 			double yaw = Math.atan2(dy-cy, dx-cx);
 
 			activeCommandId = id;

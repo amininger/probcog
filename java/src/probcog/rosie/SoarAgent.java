@@ -37,9 +37,21 @@ public class SoarAgent implements RunEventInterface, PrintEventInterface {
 
 		perceptionConn = new PerceptionConnector(this);
 		actuationConn = new ActuationConnector(this);
-		languageConn = new LanguageConnector(this);
+		languageConn = new LanguageConnector(this, config.speechFile);
 	}
-
+	
+	public PerceptionConnector getPerceptionConnector(){
+		return perceptionConn;
+	}
+	
+	public ActuationConnector getActuationConnector(){
+		return actuationConn;
+	}
+	
+	public LanguageConnector getLanguageConnector(){
+		return languageConn;
+	}
+	
 	private void initSoar(){
     	kernel = Kernel.CreateKernelInNewThread();
         if (kernel == null){

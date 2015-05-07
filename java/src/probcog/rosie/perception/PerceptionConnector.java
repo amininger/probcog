@@ -20,7 +20,7 @@ import probcog.lcmtypes.control_law_status_list_t;
 import probcog.lcmtypes.control_law_status_t;
 import probcog.lcmtypes.control_law_t;
 import probcog.rosie.SoarAgent;
-import probcog.rosie.WMUtil;
+import probcog.util.SoarUtil;
 import sml.Agent;
 import sml.Agent.OutputEventInterface;
 import sml.Agent.RunEventInterface;
@@ -74,8 +74,8 @@ public class PerceptionConnector implements LCMSubscriber, RunEventInterface{
 	// Happens during an input phase
 	public synchronized void runEventHandler(int eventID, Object data, Agent agent, int phase){
 		if (gotPose){
-			WMUtil.updateFloatWME(agent.GetInputLink(), "x", pose.pos[0]);
-			WMUtil.updateFloatWME(agent.GetInputLink(), "y", pose.pos[1]);
+			SoarUtil.updateFloatWME(agent.GetInputLink(), "x", pose.pos[0]);
+			SoarUtil.updateFloatWME(agent.GetInputLink(), "y", pose.pos[1]);
 			gotPose = false;
 		}
 		if (gotUpdate){
@@ -108,9 +108,9 @@ public class PerceptionConnector implements LCMSubscriber, RunEventInterface{
    		for (classification_t c : curClassifications.classifications){
    			if (c.id == closestWaypoint){
    				if (c.name.startsWith("wp")){
-   					WMUtil.updateStringWME(waypointId, "id", c.name);
+   					SoarUtil.updateStringWME(waypointId, "id", c.name);
    				} else {
-   					WMUtil.updateStringWME(waypointId, "classification", c.name);
+   					SoarUtil.updateStringWME(waypointId, "classification", c.name);
    				}
    			}
    		}

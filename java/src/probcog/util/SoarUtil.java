@@ -1,4 +1,4 @@
-package probcog.rosie; 
+package probcog.util; 
 
 import java.util.HashSet;
 import java.util.Set;
@@ -13,7 +13,7 @@ import probcog.lcmtypes.typed_value_t;
  * @author mininger
  * 
  */
-public class WMUtil
+public class SoarUtil
 {
 
     // These are the three types that a WME can be, conform to Soar
