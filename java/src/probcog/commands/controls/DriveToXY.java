@@ -6,6 +6,7 @@ import java.util.*;
 import lcm.lcm.*;
 
 import april.jmat.*;
+import april.jmat.geom.*;
 import april.util.*;
 
 import probcog.commands.*;
@@ -47,6 +48,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
+    // XXX Reorganize or rename things so this is easier to understand
+    double[] startXYT = null;
     double[] relativeXyt;
     double[] xyt = null;
     String mode = "default";
@@ -61,7 +64,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     LinkedList<Double> rateWindow = new LinkedList<Double>();
     double lastDistanceToGoal = Double.MAX_VALUE;
     long lastUtime;
-
 
     private class UpdateTask implements PeriodicTasks.Task
     {
@@ -99,10 +101,13 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                                      parameters.get("y").getDouble(),
                                      0.0 };
 
+        if (parameters.containsKey("mode")) {
+            mode = parameters.get("mode").toString();
+        }
+
         if (parameters.containsKey("distance")) {
             dist = parameters.get("distance").getDouble();
-        } else if (parameters.containsKey("mode")) {
-            String mode = parameters.get("mode").toString();
+        } else {
             if (mode.equals("door"))
                 dist = Util.getConfig().requireDouble("robot.geometry.width");
             else if (!mode.equals("default"))
@@ -111,20 +116,18 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         if (parameters.containsKey("gain")) {
             gain = parameters.get("gain").getDouble();
-        } else if (parameters.containsKey("mode")) {
-            String mode = parameters.get("mode").toString();
+        } else {
             if (mode.equals("door"))
-                gain = 4.0;
+                gain = 1.0; // 2
             else if (!mode.equals("default"))
                 System.out.println("Unknown mode - "+mode);
         }
 
         if (parameters.containsKey("max-speed")) {
             maxSpeed = parameters.get("max-speed").getDouble();
-        } else if (parameters.containsKey("mode")) {
-            String mode = parameters.get("mode").toString();
+        } else {
             if (mode.equals("door"))
-                maxSpeed = 0.25;
+                maxSpeed = 0.4; // .25
             else if (!mode.equals("default"))
                 System.out.println("Unknown mode - "+mode);
         }
@@ -243,6 +246,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         robotXYT[0] += MagicRobot.CENTER_X_OFFSET*Math.cos(robotXYT[2]);
         robotXYT[1] += MagicRobot.CENTER_X_OFFSET*Math.sin(robotXYT[2]);
 
+        if (startXYT == null) {
+            startXYT = LinAlg.copy(robotXYT);
+        }
+
         if (xyt == null) {
             xyt = LinAlg.xytMultiply(robotXYT, relativeXyt);
         }
@@ -257,9 +264,17 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                                                            robotXYT,
                                                            xyt);
         pp.repulsivePotential = PotentialUtil.RepulsivePotential.ALL_POINTS;
-        //pp.repulsivePotential = PotentialUtil.RepulsivePotential.CLOSEST_POINT;
+        if (mode.equals("door")) {
+            pp.repulsivePotential = PotentialUtil.RepulsivePotential.PRESERVE_DOORS;
+
+            // Relative start position
+            double[] rstart = LinAlg.xytInvMul31(robotXYT, startXYT);
+            pp.doorTrough = new GLineSegment2D(LinAlg.resize(rstart, 2),
+                                               LinAlg.resize(rgoal, 2));
+        }
+
         pp.maxObstacleRange = dist;
-        pp.fieldRes = 0.1;
+        pp.fieldRes = 0.05;
 
         // Tie lookahead distance to speed traveled
         double maxVelocity = 2.5;   // [m/s]

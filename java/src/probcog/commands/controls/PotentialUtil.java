@@ -21,6 +21,9 @@ public class PotentialUtil
 {
     static final double PENALTY_WEIGHT = 1000;
     static final boolean DEBUG = false;
+    static final double DOOR_WEIGHT = 1.0;
+    static final double LINEAR_DOOR_WEIGHT = 1.0;
+    static final double DOOR_DIST_M = 0.4;
 
     static public enum AttractivePotential
     {
@@ -208,8 +211,8 @@ public class PotentialUtil
      **/
     static private double getRepulsivePreservingDoors(double rx, double ry, Params params)
     {
-        double kr = 0.5;
-        double kw = 1.0/2000.0;//params.repulsiveWeight;
+        double kr = DOOR_DIST_M;
+        double kw = DOOR_WEIGHT;
 
         // We know where a point is relative to the robot...how about relative
         // to the line? Our line initially starts in robot local coordinates. Do
@@ -218,8 +221,10 @@ public class PotentialUtil
         double p = 0;
         if (params.doorTrough != null) {
             double d = params.doorTrough.distanceTo(new double[] {rx, ry});
-            d = Math.max(0, kr-d);
-            p = repulsiveForce(d, kr, kw, params.safetyRange);
+            double newd = Math.max(0, kr-d);
+            p = repulsiveForce(newd, kr, kw, params.safetyRange);
+            if (newd == 0)
+                p += LINEAR_DOOR_WEIGHT*d;
         }
 
         return p;
@@ -431,17 +436,19 @@ public class PotentialUtil
         if (params.doorTrough == null)
             return;
 
-        double kr = 0.5;
-        double kw = 1.0/2000.0;
+        double kr = DOOR_DIST_M;
+        double kw = DOOR_WEIGHT;
 
         int h = pf.getHeight();
         int w = pf.getWidth();
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                double[] xy = pf.indexToMeters(x, y);
-                double d = params.doorTrough.distanceTo(xy);
-                d = Math.max(0, kr-d);
-                double p = repulsiveForce(d, kr, kw, params.safetyRange);
+                double[] rxy = pf.indexToRelative(x, y);
+                double d = params.doorTrough.distanceTo(rxy);
+                double newd = Math.max(0, kr-d);
+                double p = repulsiveForce(newd, kr, kw, params.safetyRange);
+                if (newd == 0)
+                    p += LINEAR_DOOR_WEIGHT*d;
 
                 pf.addIndexUnsafe(x, y, p); // XXX Huge outside of trough
             }
