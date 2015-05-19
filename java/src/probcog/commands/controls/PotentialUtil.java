@@ -46,8 +46,8 @@ public class PotentialUtil
             this.goalXYT = goalXYT;
         }
 
-        // XXX Other parameters to affect search here. Set to sane default
-        // values for normal goto XY operation.
+        // Optional line set by user?
+        public GLineSegment2D doorTrough = null;
 
         // Is this value set correctly in config? Reevaluate for new robot.
         public double robotRadius = Util.getConfig().requireDouble("robot.geometry.radius");
@@ -126,6 +126,10 @@ public class PotentialUtil
             case ALL_POINTS:
                 p_rep = getRepulsiveAllPoints(rx, ry, params);
                 break;
+            case PRESERVE_DOORS:
+                p_rep = getRepulsiveAllPoints(rx, ry, params);
+                p_rep += getRepulsivePreservingDoors(rx, ry, params);
+                break;
         }
 
         double p = p_att + p_rep;
@@ -199,19 +203,53 @@ public class PotentialUtil
         return sum/count;
     }
 
+    /** Use the line provided by the user (between the start point and end
+     *  point) to define a trough guiding the robot towards the portal
+     **/
+    static private double getRepulsivePreservingDoors(double rx, double ry, Params params)
+    {
+        double kr = 0.5;
+        double kw = 1.0/2000.0;//params.repulsiveWeight;
+
+        // We know where a point is relative to the robot...how about relative
+        // to the line? Our line initially starts in robot local coordinates. Do
+        // we assume we convert the start/end points to robot relative? Let's say
+        // we do for now...
+        double p = 0;
+        if (params.doorTrough != null) {
+            double d = params.doorTrough.distanceTo(new double[] {rx, ry});
+            d = Math.max(0, kr-d);
+            p = repulsiveForce(d, kr, kw, params.safetyRange);
+        }
+
+        return p;
+    }
+
     static private double repulsiveForce(double d, Params params)
     {
         double kr = params.maxObstacleRange;
-        double kw = params.repulsiveWeight/(1/kr);
+        double kw = params.repulsiveWeight;
         double kmin = params.safetyRange;
 
+        return repulsiveForce(d, kr, kw, kmin);
+    }
+
+    static private double repulsiveForce(double d, double kr, double kw, double kmin)
+    {
         double p = 0;
         if (d < kmin) {
             //p += PENALTY_WEIGHT*Math.min(d, 0.000001);
         }
 
-        if (d < kr) {
-            p +=  kw*LinAlg.sq(1/d - 1/kr);
+        // XXX maxValue is incorrect, but is what we tuned with. :/
+        double eps = 0.01;
+        double maxValue = 1/kr;
+        double weight = kw / maxValue;
+        if (d < eps) {
+            p += weight*LinAlg.sq(1/eps - 1/kr);
+        } else if (d < kr) {
+            p += weight*LinAlg.sq(1/d - 1/kr);
+            //System.out.println(maxValue + " " + p);
         }
         return p;
     }
@@ -331,6 +369,8 @@ public class PotentialUtil
                 repulsiveAllPoints(pf, points, params);
                 break;
             case PRESERVE_DOORS:
+                repulsivePreserveDoors(pf, points, params);
+                break;
             default:
                 System.err.println("ERR: Unknown repulsive potential");
         }
@@ -382,9 +422,35 @@ public class PotentialUtil
         }
     }
 
+    static private void repulsivePreserveDoors(PotentialField pf,
+                                               ArrayList<double[]> points,
+                                               Params params)
+    {
+        repulsiveAllPoints(pf, points, params);
+
+        if (params.doorTrough == null)
+            return;
+
+        double kr = 0.5;
+        double kw = 1.0/2000.0;
+
+        int h = pf.getHeight();
+        int w = pf.getWidth();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                double[] xy = pf.indexToMeters(x, y);
+                double d = params.doorTrough.distanceTo(xy);
+                d = Math.max(0, kr-d);
+                double p = repulsiveForce(d, kr, kw, params.safetyRange);
+
+                pf.addIndexUnsafe(x, y, p); // XXX Huge outside of trough
+            }
+        }
+    }
+
     static public void main(String[] args)
     {
-        double[] goal = new double[] {12, -20, 0};
+        double[] goal = new double[] {0, -10, 0};
         double[] xyt = new double[] {0, 0, 0};
 
         // Fake a hallway. Wall on right is 1m away, wall on left is 0.5m
@@ -393,7 +459,7 @@ public class PotentialUtil
         laser.radstep = (float)(Math.toRadians(.25));
         laser.nranges = (int)(Math.ceil(2*Math.abs(laser.rad0)/laser.radstep));
         laser.ranges = new float[laser.nranges];
-        double doorOffset = 1.0;
+        double doorOffset = 0.0;
         double doorSize = 0.9;
         for (int i = 0; i < laser.nranges; i++) {
             double t = laser.rad0 + i*laser.radstep;
@@ -418,8 +484,9 @@ public class PotentialUtil
         params.attractivePotential = AttractivePotential.COMBINED;
         params.fieldSize = 10.0;
         params.fieldRes = 0.05;
-        //params.repulsiveWeight = 5.0;
-        params.repulsivePotential = RepulsivePotential.ALL_POINTS;
+        //params.repulsiveWeight = 100.0;
+        params.repulsivePotential = RepulsivePotential.PRESERVE_DOORS;
+        params.doorTrough = new GLineSegment2D(new double[] {doorOffset+.5*doorSize,0}, new double[] {goal[0], goal[1]});
         //params.maxObstacleRange = 0.4;
 
         // Wait for keypress
