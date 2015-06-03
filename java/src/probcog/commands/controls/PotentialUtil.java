@@ -622,7 +622,7 @@ public class PotentialUtil
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {5, 0, 0};
+        double[] goal = new double[] {3, -0, 0};
         double[] xyt = new double[] {0, 0, 0};
 
         // Fake a hallway. Wall on right is 1m away, wall on left is 0.5m
@@ -658,8 +658,8 @@ public class PotentialUtil
         Params params = new Params(laser, xyt, goal);
         params.attractivePotential = AttractivePotential.COMBINED;
         params.fieldSize = 10.0;
-        params.fieldRes = 0.25;
-        params.repulsiveWeight = 1.0;
+        params.fieldRes = 0.10;
+        params.repulsiveWeight = 3.0;
         params.repulsivePotential = RepulsivePotential.ALL_POINTS;
         params.doorTrough = new GLineSegment2D(new double[] {doorOffset+.5*doorSize,0}, new double[] {goal[0], goal[1]});
         params.maxObstacleRange = 1.0;
@@ -690,8 +690,8 @@ public class PotentialUtil
             double[] grad = getGradientSoftmax(rxy, LinAlg.resize(goal, 2), points, params);
             assert (!(Double.isNaN(grad[0]) || Double.isNaN(grad[1])));
             assert (!(Double.isInfinite(grad[0]) || Double.isInfinite(grad[1])));
-            //gradients.add(LinAlg.scale(grad, 0.01));
-            gradients.add(LinAlg.normalize(grad));
+            gradients.add(LinAlg.scale(grad, 1));
+            //gradients.add(LinAlg.normalize(grad));
         }
 
 
