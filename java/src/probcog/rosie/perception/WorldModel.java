@@ -13,42 +13,37 @@ import sml.Identifier;
 import sml.smlRunEventId;
 import probcog.lcmtypes.*;
 import april.util.TimeUtil;
-import edu.umich.rosie.SVSCommands;
-import edu.umich.rosie.SoarAgent;
+import edu.umich.rosie.soar.ISoarObject;
+import edu.umich.rosie.soar.SVSCommands;
+import edu.umich.rosie.soar.SoarAgent;
 
-public class WorldModel implements RunEventInterface
+public class WorldModel implements ISoarObject
 {    
+    private SoarAgent soarAgent;
     
     // Mapping from object ids to objects
 	private Identifier objectsId;
     private Map<Integer, WorldObject> objects;
+    private HashSet<WorldObject> objsToRemove;
     
-    private observations_t newObservation = null;
-    
-    private SoarAgent soarAgent;
-    
-    private long inputPhaseCallbackId;
+    private double[] eyePos;
     
     private HashMap<Integer, Integer> objectLinks;
+    
+    private boolean needsUpdate = false;
     
     public WorldModel(SoarAgent soarAgent){
     	this.soarAgent = soarAgent;
     	
         objects = new HashMap<Integer, WorldObject>();
+        objsToRemove = new HashSet<WorldObject>();
         objectLinks = new HashMap<Integer, Integer>();
+        
+        eyePos = new double[6];
     }    
     
-    public void connect(){
-        // Setup Input Link Events
-        inputPhaseCallbackId = soarAgent.getAgent().RegisterForRunEvent(smlRunEventId.smlEVENT_BEFORE_INPUT_PHASE, this, null);
-
-        StringBuilder svsCommands = new StringBuilder();
-        svsCommands.append("add eye world b .01 p 0 0 0\n");
-        soarAgent.getAgent().SendSVSInput(svsCommands.toString());
-    }
-    
-    public void disconnect(){
-    	soarAgent.getAgent().UnregisterForRunEvent(inputPhaseCallbackId);
+    public Agent getAgent(){
+    	return soarAgent.getAgent();
     }
     
     public void reset(){
@@ -60,11 +55,26 @@ public class WorldModel implements RunEventInterface
     	objects.clear();
     }
     
+    
+    public synchronized Integer getPerceptionId(Integer id){
+    	if(objects.containsKey(id)){
+    		return objects.get(id).getPerceptionId();
+    	}
+    	return null;
+    }	
+    
+    public synchronized Integer getSoarId(Integer id){
+    	if(objectLinks.containsKey(id)){
+    		return objectLinks.get(id);
+    	}
+    	return id;
+    }
+
+    
     public synchronized void linkObjects(Set<String> sourceIds, String destId){
     	Integer dId = Integer.parseInt(destId);
     	
     	ArrayList<object_data_t> objData = new ArrayList<object_data_t>();
-    	StringBuilder svsCommands = new StringBuilder();
     	
     	for(String sourceId : sourceIds){
     		Integer sId = Integer.parseInt(sourceId);
@@ -72,45 +82,30 @@ public class WorldModel implements RunEventInterface
     		if(objects.containsKey(sId)){
     			WorldObject wobj = objects.get(sId);
     			objData.addAll(wobj.getLastDatas());
-            	svsCommands.append(SVSCommands.delete(sId.toString()));
-            	wobj.destroy();
-            	objects.remove(sId);
+    			objsToRemove.add(wobj);
+    			objects.remove(sId);
     		}
     	}
     	
-        String commands = svsCommands.toString();
-        if(!commands.isEmpty()){
-        	soarAgent.getAgent().SendSVSInput(commands);
-        }
-        
         if(objData.size() > 0){
-        	WorldObject object = new WorldObject(objectsId, dId, objData);
-        	object.updateSVS(soarAgent.getAgent());
+        	WorldObject object = new WorldObject(this, dId, objData);
         	objects.put(dId, object);
         }
+        needsUpdate = true;
     }
     
 
-    long time = 0;
-    public synchronized void runEventHandler(int eventID, Object data, Agent agent, int phase)
-    {
-    	if(newObservation == null){
-    		return;
-    	}
-    	if(objectsId == null){
-    		objectsId = agent.GetInputLink().CreateIdWME("objects");
-    	}
-
-    	double[] eye = newObservation.eye;
-    	agent.SendSVSInput(String.format("change eye p %f %f %f", eye[0], eye[1], eye[2]));
+    public synchronized void newObservation(observations_t observation){
+    	eyePos = observation.eye;
     	
     	Set<Integer> staleObjects = new HashSet<Integer>();
     	for(WorldObject object : objects.values()){
     		staleObjects.add(object.getId());
     	}
     	
+    	// Combine multiple observations that correspond to the same object into a list per id
     	HashMap<Integer, ArrayList<object_data_t>> newData = new HashMap<Integer, ArrayList<object_data_t>>();
-    	for(object_data_t objData : newObservation.observations){
+    	for(object_data_t objData : observation.observations){
     		Integer id = objData.id;
     		if(objectLinks.containsKey(id)){
     			id = objectLinks.get(id);
@@ -121,13 +116,12 @@ public class WorldModel implements RunEventInterface
     		newData.get(id).add(objData);
     	}
     	
+    	// For each object, either update existing or create if new
     	for(Map.Entry<Integer, ArrayList<object_data_t>> e : newData.entrySet()){
     		Integer id = e.getKey();
-    		if(staleObjects.contains(id)){
-    		}
     		WorldObject object = objects.get(id);
     		if(object == null){
-    			object = new WorldObject(objectsId, id, e.getValue());
+    			object = new WorldObject(this, id, e.getValue());
     			objects.put(id, object);
     		} else {
     			staleObjects.remove(id);
@@ -135,32 +129,17 @@ public class WorldModel implements RunEventInterface
     		}
     	}
 
-        StringBuilder svsCommands = new StringBuilder();
+    	// Remove all stale objects from WM
         for(Integer id : staleObjects){
         	WorldObject object = objects.get(id);
-        	svsCommands.append(SVSCommands.delete(object.getIdString()));
-        	object.destroy();
+        	objsToRemove.add(object);
         	objects.remove(id);
         }
-        String commands = svsCommands.toString();
-        if(!commands.isEmpty()){
-        	agent.SendSVSInput(commands);
-        }
 
-        // Update the SVS link with the new information
-        for(WorldObject object : objects.values()){
-        	object.updateSVS(agent);
-        }
-        
-        newObservation = null;
-        sendObservation();
+        needsUpdate = true;
     }
     
-    public synchronized void newObservation(observations_t observation){
-    	this.newObservation = observation;
-    }
-    
-    public synchronized void sendObservation(){
+    private void sendObservation(){
     	ArrayList<object_data_t> objDatas = new ArrayList<object_data_t>();
     	
     	String[] beliefObjects = soarAgent.getAgent().SVSQuery("objs-with-flag object-source belief\n").split(" ");
@@ -258,17 +237,68 @@ public class WorldModel implements RunEventInterface
     	return catDat;
     }
     
-    public synchronized Integer getPerceptionId(Integer id){
-    	if(objects.containsKey(id)){
-    		return objects.get(id).getPerceptionId();
-    	}
-    	return null;
-    }	
+    /**********************************************************
+     * Methods to update working memroy
+     **********************************************************/
     
-    public synchronized Integer getSoarId(Integer id){
-    	if(objectLinks.containsKey(id)){
-    		return objectLinks.get(id);
+    private boolean added = false;
+    
+    public boolean isAdded(){
+    	return added;
+    }
+    
+    public synchronized void addToWM(Identifier parentId){
+    	if(added){
+    		removeFromWM();
     	}
-    	return id;
+		objectsId = parentId.CreateIdWME("objects");	
+		for(WorldObject obj : objects.values()){
+			obj.addToWM(objectsId);
+		}
+
+    	StringBuilder svsCommands = new StringBuilder();
+        svsCommands.append("add eye world b .01 p 0 0 0\n");
+        soarAgent.getAgent().SendSVSInput(svsCommands.toString());
+    	
+    	added = true;
+    }
+    
+    public synchronized void updateWM(){
+    	if(!added || !needsUpdate){
+    		return;
+    	}
+    	
+    	for(WorldObject obj : objects.values()){
+    		if(obj.isAdded()){
+    			obj.updateWM();
+    		} else {
+    			obj.addToWM(objectsId);
+    		}
+    	}
+    	
+    	for(WorldObject obj : objsToRemove){
+    		obj.removeFromWM();
+    	}
+    	objsToRemove.clear();
+
+    	StringBuilder svsCommands = new StringBuilder();
+        svsCommands.append(SVSCommands.changePos("eye", eyePos));
+        soarAgent.getAgent().SendSVSInput(svsCommands.toString());
+        
+        sendObservation();
+        
+        needsUpdate = false;
+    }
+    
+    public synchronized void removeFromWM(){
+    	if(!added){
+    		return;
+    	}
+
+    	StringBuilder svsCommands = new StringBuilder();
+        svsCommands.append("delete eye\n");
+        soarAgent.getAgent().SendSVSInput(svsCommands.toString());
+    	
+    	added = false;
     }
 }

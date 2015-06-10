@@ -1,100 +1,96 @@
 package probcog.rosie.perception;
 
+import edu.umich.rosie.soar.FloatWME;
+import edu.umich.rosie.soar.ISoarObject;
 import sml.FloatElement;
 import sml.Identifier;
 
-public class BBox implements IInputLinkElement
+public class BBox implements ISoarObject
 {
 	private static String[] wmeStrings = {"x", "y", "z"};
 	private static String[] typeStrings = {"min", "max"};
     private enum ElementIndex{X, Y, Z};
     private enum TypeIndex{MIN, MAX};
-    private double[][] bounds;
-    private Identifier[] typeIDs;
-    private FloatElement[][] wmes;
-    private Identifier bboxID;
-    
+    private FloatWME[][] bounds;
+
     public BBox(){     
-        initBBox();
-    	for(int i = 0; i < 2; i++){
-    		for(int j = 0; j < 3; j++){
-    			bounds[i][j] = 0;
-    		}
-    	}
+    	initBBox();
     }
     
     public BBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ){     
-        initBBox();
-    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.X.ordinal()] = minX;
-    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.Y.ordinal()] = minY;
-    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.Z.ordinal()] = minZ;
-    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.X.ordinal()] = maxX;
-    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.Y.ordinal()] = maxY;
-    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.Z.ordinal()] = maxZ;
+    	initBBox();
+    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.X.ordinal()].setValue(minX);
+    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.Y.ordinal()].setValue(minY);
+    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.Z.ordinal()].setValue(minZ);
+    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.X.ordinal()].setValue(maxX);
+    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.Y.ordinal()].setValue(maxY);
+    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.Z.ordinal()].setValue(maxZ);
     }
     
     public BBox(double[][] boundsValues){     
-        initBBox();
+    	initBBox();
         updateWithArray(boundsValues);
     }
     
     public BBox(String s){      
-        initBBox();
+    	initBBox();
         updateWithString(s);            
     }
     
     private void initBBox(){
-    	wmes = null;
-    	typeIDs = null;
-    	bboxID = null;
-    	bounds = new double[2][3];
+    	bounds = new FloatWME[2][3];
+    	for(int i = 0; i < 2; i++){
+    		for(int j = 0; j < 3; j++){
+    			bounds[i][j] = new FloatWME(wmeStrings[j], 0.0);
+    		}
+    	}
     }
     
     public double getMinX(){
-        return bounds[TypeIndex.MIN.ordinal()][ElementIndex.X.ordinal()];
+        return bounds[TypeIndex.MIN.ordinal()][ElementIndex.X.ordinal()].getValue();
     }
     public void setMinX(double minX){
-    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.X.ordinal()] = minX;
+    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.X.ordinal()].setValue(minX);
     }
     
 
     public double getMinY(){
-        return bounds[TypeIndex.MIN.ordinal()][ElementIndex.Y.ordinal()];
+        return bounds[TypeIndex.MIN.ordinal()][ElementIndex.Y.ordinal()].getValue();
     }
     public void setMinY(double minY){
-    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.Y.ordinal()] = minY;
+    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.Y.ordinal()].setValue(minY);
     }
     
 
     public double getMinZ(){
-        return bounds[TypeIndex.MIN.ordinal()][ElementIndex.Z.ordinal()];
+        return bounds[TypeIndex.MIN.ordinal()][ElementIndex.Z.ordinal()].getValue();
     }
     public void setMinZ(double minZ){
-    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.Z.ordinal()] = minZ;
+    	bounds[TypeIndex.MIN.ordinal()][ElementIndex.Z.ordinal()].setValue(minZ);
     }
     
 
     public double getMaxX(){
-        return bounds[TypeIndex.MAX.ordinal()][ElementIndex.X.ordinal()];
+        return bounds[TypeIndex.MAX.ordinal()][ElementIndex.X.ordinal()].getValue();
     }
-    public void setMaxX(double MaxX){
-    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.X.ordinal()] = MaxX;
+    public void setMaxX(double maxX){
+    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.X.ordinal()].setValue(maxX);
     }
     
 
     public double getMaxY(){
-        return bounds[TypeIndex.MAX.ordinal()][ElementIndex.Y.ordinal()];
+        return bounds[TypeIndex.MAX.ordinal()][ElementIndex.Y.ordinal()].getValue();
     }
-    public void setMaxY(double MaxY){
-    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.Y.ordinal()] = MaxY;
+    public void setMaxY(double maxY){
+    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.Y.ordinal()].setValue(maxY);
     }
     
 
     public double getMaxZ(){
-        return bounds[TypeIndex.MAX.ordinal()][ElementIndex.Z.ordinal()];
+        return bounds[TypeIndex.MAX.ordinal()][ElementIndex.Z.ordinal()].getValue();
     }
-    public void setMaxZ(double MaxZ){
-    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.Z.ordinal()] = MaxZ;
+    public void setMaxZ(double maxZ){
+    	bounds[TypeIndex.MAX.ordinal()][ElementIndex.Z.ordinal()].setValue(maxZ);
     }
     
     
@@ -108,9 +104,9 @@ public class BBox implements IInputLinkElement
         
         for(int i = 0; i < 6; i++){
             if(poseInfo.length <= i){
-                bounds[i/3][i%3] = 0;
+                bounds[i/3][i%3].setValue(0.0);
             } else {
-            	bounds[i/3][i%3] = Double.parseDouble(poseInfo[i].trim());
+            	bounds[i/3][i%3].setValue(Double.parseDouble(poseInfo[i].trim()));
             }
         }         
     }
@@ -119,9 +115,9 @@ public class BBox implements IInputLinkElement
     	for(int i = 0; i < 2; i++){
     		for(int j = 0; j < 3; j++){
     			if(boundsInfo.length <= i || boundsInfo[i].length <= j){
-    				bounds[i][j] = 0;
+    				bounds[i][j].setValue(0.0);
     			} else {
-    				bounds[i][j] = boundsInfo[i][j];
+    				bounds[i][j].setValue(boundsInfo[i][j]);
     			}
     		}
     	}    
@@ -145,55 +141,58 @@ public class BBox implements IInputLinkElement
         return String.format("[%f %f %f %f %f %f]", getMinX(), getMinY(), getMinZ(), getMaxX(), getMaxY(), getMaxZ());
     }
     
+    
+    /******************************************************************
+     * Methods for Modifying Working Memory
+     *****************************************************************/
+    private Identifier[] typeIDs = null;
+    private Identifier bboxID = null; 
+    private boolean added = false;
+    
+    public boolean isAdded(){
+    	return added;
+    }
 
-    // update the input-link appropriately
-    @Override
-    public synchronized void updateInputLink(Identifier parentIdentifier){
-        if(bboxID == null){
-            // Create the pose on the input link
-            bboxID = parentIdentifier.CreateIdWME("bbox");
-            typeIDs = new Identifier[2];
-            wmes = new FloatElement[2][3];
-            for(int i = 0; i < 2; i++){
-            	typeIDs[i] = bboxID.CreateIdWME(typeStrings[i]);
-            	for(int j = 0; j < 3; j++){
-            		wmes[i][j] = typeIDs[i].CreateFloatWME(wmeStrings[j], bounds[i][j]);
-            	}
-            }
-        } else {
-            // Update the pose on the input link
-        	for(int i = 0; i < 2; i++){
-        		for(int j = 0; j < 3; j++){
-        			if(wmes[i][j].GetValue() != bounds[i][j]){
-                        wmes[i][j].Update(bounds[i][j]);
-                    }
-        		}
+    public void addToWM(Identifier parentID){
+    	if(added){
+    		removeFromWM();
+    	}
+        bboxID = parentID.CreateIdWME("bbox");
+        typeIDs = new Identifier[2];
+        for(int i = 0; i < 2; i++){
+        	typeIDs[i] = bboxID.CreateIdWME(typeStrings[i]);
+        	for(int j = 0; j < 3; j++){
+        		bounds[i][j].addToWM(typeIDs[i]);
         	}
         }
+        added = true;
     }
     
-    @Override
-    public synchronized void onInitSoar(){
-    	wmes = null;
-    	typeIDs = null;
+    public void updateWM(){
+    	if(!added){
+    		return;
+    	}
+        // Update the pose on the input link
+    	for(int i = 0; i < 2; i++){
+    		for(int j = 0; j < 3; j++){
+    			bounds[i][j].updateWM();
+    		}
+    	}
+    }
+    
+    public void removeFromWM(){
+    	if(!added){
+    		return;
+    	}
+        // Remove the pose from the input link
+    	for(int i = 0; i < 2; i++){
+    		for(int j = 0; j < 3; j++){
+    			bounds[i][j].removeFromWM();
+    		}
+    	}
+    	bboxID.DestroyWME();
     	bboxID = null;
-    }
-    
-    // remove the object from the input-link
-    @Override
-    public synchronized void destroy(){
-        if(wmes != null){
-        	for(int i = 0; i < 2; i++){
-        		for(int j = 0; j < 3; j++){
-        			wmes[i][j].DestroyWME();
-        		}
-        		typeIDs[i].DestroyWME();
-        	}
-        	bboxID.DestroyWME();
-        	
-        	wmes = null;
-        	typeIDs = null;
-        	bboxID = null;
-        }
+    	typeIDs = null;
+    	added = false;
     }
 }

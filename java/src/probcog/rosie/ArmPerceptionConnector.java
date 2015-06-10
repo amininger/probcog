@@ -31,8 +31,8 @@ import probcog.lcmtypes.*;
 import april.util.PeriodicTasks;
 import april.util.TimeUtil;
 import edu.umich.rosie.AgentConnector;
-import edu.umich.rosie.SoarAgent;
-import edu.umich.rosie.SoarUtil;
+import edu.umich.rosie.soar.SoarAgent;
+import edu.umich.rosie.soar.SoarUtil;
 import probcog.rosie.perception.*;
 
 public class ArmPerceptionConnector extends AgentConnector implements LCMSubscriber {
@@ -85,8 +85,6 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
         	}
         }, 1000, 1000/SEND_TRAINING_FPS);
         
-        world.connect();
-        
         lcm.subscribe("OBSERVATIONS", this);
     }
     
@@ -94,7 +92,7 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
     public void disconnect(){
     	super.disconnect();
     	
-    	world.disconnect();
+    	world.removeFromWM();
     	sendTrainingTimer.cancel();
     	
         lcm.unsubscribe("OBSERVATIONS", this);
@@ -157,7 +155,7 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
     long time = 0;
 
 	@Override
-    public void onInputPhase(Identifier inputLink){
+    public synchronized void onInputPhase(Identifier inputLink){
     	time = TimeUtil.utime();
     	
     	if(timeId == null){
@@ -165,6 +163,12 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
         }
         
         stepNumber++;
+        
+        if(world.isAdded()){
+        	world.updateWM();
+        } else {
+        	world.addToWM(inputLink);
+        }
         
         SoarUtil.updateIntWME(timeId, "steps", stepNumber);
         SoarUtil.updateIntWME(timeId, "seconds", TimeUtil.utime() / 1000000);
@@ -186,7 +190,7 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
      *************************************************/
 
 	@Override
-	protected void onOutputEvent(String attName, Identifier id) {
+	protected synchronized void onOutputEvent(String attName, Identifier id) {
 		if(attName.equals("send-training-label")){
 			processSendTrainingLabelCommand(id);
 		} else if(attName.equals("modify-scene")){
@@ -237,7 +241,7 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
      * messageReceived
      * Gets a new observations_t message from LCM and sends it to the world
      ****************************************************/
-    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+    public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
     	if(channel.equals("OBSERVATIONS")){
             observations_t obs = null;
@@ -329,6 +333,7 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
 
 	@Override
 	protected void onInitSoar() {
+		world.removeFromWM();
 		timeId = null;
 		outstandingTraining.clear();
 	}

@@ -2,6 +2,9 @@ package probcog.rosie.perception;
 
 import java.util.*;
 
+import edu.umich.rosie.soar.FloatWME;
+import edu.umich.rosie.soar.ISoarObject;
+
 import probcog.lcmtypes.*;
 import sml.*;
 
@@ -11,7 +14,7 @@ import sml.*;
  * @author mininger
  * 
  */
-public class PerceptualProperty implements IInputLinkElement
+public class PerceptualProperty implements ISoarObject
 {   
 	protected static HashMap<Integer, String> propertyNames = null;
 	
@@ -64,108 +67,84 @@ public class PerceptualProperty implements IInputLinkElement
 		}
 	}
 	
-	protected Identifier propId;
     
     protected String name;
-    protected StringElement nameWme;
-    
     protected String type;
-    protected StringElement typeWme;
+    protected HashMap<String, FloatWME> values;
+    protected HashSet<FloatWME> wmesToRemove;
+    protected FloatWME featureVal;
     
-    protected Identifier valuesId;
-    protected HashMap<String, Double> values;
-    protected HashMap<String, FloatElement> valueWmes;
-    
-    protected FloatElement featureValWme;
-    categorized_data_t catDat = null;
-    
+    private boolean gotUpdate = false;
+
     public PerceptualProperty(categorized_data_t catDat){
     	name = getPropertyName(catDat.cat.cat);
-    	nameWme = null;
-    	
     	type = getPropertyType(catDat.cat.cat);
-    	typeWme = null;
-
-    	valuesId = null;
-    	values = new HashMap<String, Double>();
-    	valueWmes = new HashMap<String, FloatElement>();
-
-    	featureValWme = null;
-
-    	this.catDat = catDat;
+    	values = new HashMap<String, FloatWME>();
+    	featureVal = new FloatWME("feature-val", 0.0);
+    	if(type.equals(MEASURABLE_TYPE) && catDat.features.length > 0){
+    		featureVal.setValue(catDat.features[0]);
+    	}
+    	wmesToRemove = new HashSet<FloatWME>();
     }
     
     public String getPropertyName(){
     	return name;
     }
     
-    public void updateProperty(categorized_data_t catDat){
-    	this.catDat = catDat;
-    }
-    
-    public void updateInputLink(Identifier parentId){
-    	if(propId == null){
-    		propId = parentId.CreateIdWME("property");
-    		nameWme = propId.CreateStringWME("name", name);
-    		typeWme = propId.CreateStringWME("type", type);
-    		valuesId = propId.CreateIdWME("values");
-    		if(type.equals(MEASURABLE_TYPE)){
-    			featureValWme = propId.CreateFloatWME("feature-val", 0.0);
-    		}
-    	}
+    public void updateProperty(HashMap<String, Double> valueInfo){
+    	HashSet<String> valuesToRemove = new HashSet<String>(values.keySet());
 
-    	if(catDat == null){
-    		return;
+    	for(Map.Entry<String, Double> e : valueInfo.entrySet()){
+    		String valueName = e.getKey();
+    		Double conf = e.getValue();
+    		
+    		if(values.containsKey(valueName)){
+    			valuesToRemove.remove(valueName);
+    			values.put(valueName, new FloatWME(valueName, conf));
+    		} else {
+    			values.get(valueName).setValue(conf);
+    		}
     	}
     	
-    	if(type.equals(MEASURABLE_TYPE)){
-    		if(Math.abs(featureValWme.GetValue() - catDat.features[0]) > 0){
-    			featureValWme.Update(catDat.features[0]);
-    		}
+    	for(String valueName : valuesToRemove){
+    		wmesToRemove.add(values.get(valueName));
+    		values.remove(valueName);
     	}
-
-    	HashSet<String> valuesToRemove = new HashSet<String>(valueWmes.keySet());
+    	gotUpdate = true;
+    }
+    
+    public void updateProperty(categorized_data_t catDat){
+    	HashSet<String> valuesToRemove = new HashSet<String>(values.keySet());
 
     	for(int i = 0; i < catDat.len; i++){
     		String valueName = catDat.label[i];
     		Double conf = catDat.confidence[i];
     		
-    		if(valueWmes.containsKey(valueName)){
+    		if(values.containsKey(valueName)){
     			valuesToRemove.remove(valueName);
-    			FloatElement el = valueWmes.get(valueName);
-    			if(Math.abs(el.GetValue() - conf) > .01){
-    				el.Update(conf);
-    			}
+    			values.get(valueName).setValue(conf);
     		} else {
-    			valueWmes.put(valueName, valuesId.CreateFloatWME(valueName, conf));
+    			values.put(valueName, new FloatWME(valueName, conf));
     		}
-   			values.put(valueName, conf);
     	}
     	
     	for(String valueName : valuesToRemove){
-    		valueWmes.get(valueName).DestroyWME();
-    		valueWmes.remove(valueName);
+    		wmesToRemove.add(values.get(valueName));
     		values.remove(valueName);
     	}
-    	catDat = null;
-    }
-    
-    public void destroy(){
-    	if(propId != null){
-    		propId.DestroyWME();
-    		propId = null;
-    		nameWme = null;
-    		typeWme = null;
-    		valuesId = null;
-    		valueWmes.clear();
+	    	
+    	// Update feature-val
+    	if(type.equals(MEASURABLE_TYPE)){
+    		featureVal.setValue(catDat.features[0]);
     	}
+    	gotUpdate = true;
     }
     
     public categorized_data_t getCatDat(){
     	return getCatDat(name, values);
     }
     
-    public static categorized_data_t getCatDat(String propName, HashMap<String, Double> values){
+    public static categorized_data_t getCatDat(String propName, HashMap<String, FloatWME> values){
     	categorized_data_t catDat = new categorized_data_t();
 		catDat.cat = new category_t();
 		catDat.cat.cat = PerceptualProperty.getPropertyID(propName);
@@ -174,18 +153,80 @@ public class PerceptualProperty implements IInputLinkElement
 		catDat.confidence = new double[catDat.len];
 		
 		int i = 0;
-		for(Map.Entry<String, Double> val : values.entrySet()){
+		for(Map.Entry<String, FloatWME> val : values.entrySet()){
 			catDat.label[i] = val.getKey();
-			catDat.confidence[i] = val.getValue();
+			catDat.confidence[i] = val.getValue().getValue();
 			i++;
 		}
 		
 		return catDat;
     }
 
-	@Override
-	public void onInitSoar() {
-		destroy();
-		catDat = null;
-	}
+    /**************************************************************
+     * Methods for adding to working memory
+     **************************************************************/
+
+	protected Identifier propId = null;
+    protected Identifier valuesId = null;
+    private boolean added = false;
+    
+    public boolean isAdded(){
+    	return added;
+    }
+    
+    public void addToWM(Identifier parentId){
+    	if(added){
+    		removeFromWM();
+    	}
+
+		propId = parentId.CreateIdWME("property");
+		propId.CreateStringWME("name", name);
+		propId.CreateStringWME("type", type);
+		valuesId = propId.CreateIdWME("values");
+		for(FloatWME wme : values.values()){
+			wme.addToWM(valuesId);
+		}
+		if(type.equals(MEASURABLE_TYPE)){
+			featureVal.addToWM(propId);
+		}
+		added = true;
+    }
+	
+	public void updateWM(){
+		if(!added || !gotUpdate){
+			return;
+		}
+		
+		for(FloatWME wme : values.values()){
+			if(!wme.isAdded()){
+				wme.addToWM(propId);
+			} else {
+				wme.updateWM();
+			}
+		}
+		
+		for(FloatWME wme : wmesToRemove){
+			wme.removeFromWM();
+		}
+		wmesToRemove.clear();
+	    	
+    	// Update feature-val
+    	if(type.equals(MEASURABLE_TYPE)){
+    		featureVal.updateWM();
+    	}
+    	gotUpdate = false;
+    }
+    
+    public void removeFromWM(){
+    	if(!added){
+    		return;
+    	}
+    	for(FloatWME wme : values.values()){
+    		wme.removeFromWM();
+    	}
+    	propId.DestroyWME();
+    	propId = null;
+    	valuesId = null;
+    	added = false;
+    }
 }

@@ -7,7 +7,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import edu.umich.rosie.SVSCommands;
+import edu.umich.rosie.soar.ISoarObject;
+import edu.umich.rosie.soar.SVSCommands;
 import sml.Agent;
 import sml.Identifier;
 import probcog.lcmtypes.*;
@@ -21,7 +22,7 @@ import april.util.TimeUtil;
  * @author mininger
  * 
  */
-public class WorldObject implements IInputLinkElement
+public class WorldObject implements ISoarObject
 {
     public static String getSensableId(String sensable){
         // Matches against id=ID followed by a comma, whitespace, or end of string
@@ -45,7 +46,6 @@ public class WorldObject implements IInputLinkElement
     // Id of the object 
     protected int id;
     
-    protected Identifier objId;
     
     // Information about the bounding box
     // Center of the bounding box (XYZ)
@@ -63,22 +63,30 @@ public class WorldObject implements IInputLinkElement
     
     protected Map<String, PerceptualProperty> perceptualProperties;
     
+    protected HashSet<PerceptualProperty> propsToRemove;
+    
     protected StateProperties stateProperties;
     
-    private StringBuilder svsCommands;
+    private WorldModel world;
     
-    public WorldObject(Identifier parentId, Integer id, ArrayList<object_data_t> objDatas){
+    private boolean gotPropUpdate = false;
+    private boolean gotBboxUpdate = false;
+    private boolean gotPoseUpdate = false;
+    
+    public WorldObject(WorldModel world, Integer id, ArrayList<object_data_t> objDatas){
+    	this.world = world;
         this.id = id;
         bboxPos = new double[3];
         bboxRot = new double[3];
         bboxSize = new double[3];
         centroid = new double[3];
         perceptualProperties = new HashMap<String, PerceptualProperty>();
+        propsToRemove = new HashSet<PerceptualProperty>();
         stateProperties = new StateProperties();
         
-        svsCommands = new StringBuilder();
-        
-        create(parentId, id, objDatas);
+        lastData = objDatas;
+        updateBbox(objDatas);
+        updateProperties(objDatas);
     }
     
     // ID: Get
@@ -112,7 +120,7 @@ public class WorldObject implements IInputLinkElement
     
     public void setPos(double[] pos){
     	this.bboxPos = pos;
-    	svsCommands.append(SVSCommands.changePos(getIdString(), pos));
+    	gotPoseUpdate = true;
     }
     
     // Rot: Get
@@ -142,44 +150,18 @@ public class WorldObject implements IInputLinkElement
     		this.bboxSize[i] = size[i];
     	}
     	
-    	svsCommands.append(SVSCommands.changePos(getIdString(), bboxPos));
-    	svsCommands.append(SVSCommands.changeRot(getIdString(), bboxRot));
-    	svsCommands.append(SVSCommands.changeSize(getIdString(), bboxSize));
+    	gotBboxUpdate = true;
     }
-
-    public void moveObject(double[] newPos){
-    	double[] diff = LinAlg.subtract(newPos, bboxPos);
-    	this.bboxPos = newPos;
-    	this.centroid = LinAlg.add(centroid, diff);
-    	svsCommands.append(SVSCommands.changePos(getIdString(), bboxPos));
-    }
-
+//
+//    public void moveObject(double[] newPos){
+//    	double[] diff = LinAlg.subtract(newPos, bboxPos);
+//    	this.bboxPos = newPos;
+//    	this.centroid = LinAlg.add(centroid, diff);
+//    	gotPoseUpdate = true;
+//    }
     
-    public synchronized void updateSVS(Agent agent){
-    	if(svsCommands.length() > 0){
-        	agent.SendSVSInput(svsCommands.toString());
-        	svsCommands = new StringBuilder();
-    	}
-    }
-    
-    private synchronized void create(Identifier parentId, Integer id, ArrayList<object_data_t> objDatas){ 
-    	objId = parentId.CreateIdWME("object");
-    	objId.CreateIntWME("id", id);
+    public void update(ArrayList<object_data_t> objDatas){   
     	lastData = objDatas;
-    	
-    	svsCommands.append(SVSCommands.add(getIdString()));
-		svsCommands.append(SVSCommands.addTag(getIdString(), "object-source", "perception"));
-		// AM: dont think we need this anymore
-		//svsCommands.append(SVSCommands.addTag(getIdString(), "num-sources", new Integer(objDatas.size()).toString()));
-    	
-    	updateBbox(objDatas);
-		updateProperties(objDatas);
-    }
-    
-    public synchronized void update(ArrayList<object_data_t> objDatas){   
-    	lastData = objDatas;
-		// AM: dont think we need this anymore
-    	//svsCommands.append(SVSCommands.changeTag(getIdString(),  "num-sources",  new Integer(objDatas.size()).toString()));
         updateBbox(objDatas);
         updateProperties(objDatas);
     }
@@ -191,12 +173,10 @@ public class WorldObject implements IInputLinkElement
     		unknownValues.put("unknown", 0.0);
 
     		for(PerceptualProperty p : perceptualProperties.values()){
-    			p.updateProperty(PerceptualProperty.getCatDat(p.getPropertyName(), unknownValues));
-    			p.updateInputLink(objId);
+    			p.updateProperty(unknownValues);
     		}
     		
     		stateProperties.updateProperties(new String[0]);
-    		stateProperties.updateInputLink(objId);
     	} else {
     		// Just one object, update using that
     		object_data_t objectData = objDatas.get(0);
@@ -207,7 +187,6 @@ public class WorldObject implements IInputLinkElement
              	if(perceptualProperties.containsKey(propName)){
              		propsToDelete.remove(propName);
              		perceptualProperties.get(propName).updateProperty(category);
-             		perceptualProperties.get(propName).updateInputLink(objId);
              	} else {
              		PerceptualProperty pp = new PerceptualProperty(category);
              		perceptualProperties.put(propName, pp);
@@ -216,13 +195,13 @@ public class WorldObject implements IInputLinkElement
     		
     		for(String propName : propsToDelete){
     			PerceptualProperty pp = perceptualProperties.get(propName);
-    			pp.destroy();
+    			propsToRemove.add(pp);
     			perceptualProperties.remove(propName);
     		}
 
     		stateProperties.updateProperties(objectData.state_values);
-    		stateProperties.updateInputLink(objId);
     	}
+    	gotPropUpdate = true;
     }
     
     private void updateBbox(ArrayList<object_data_t> objDatas){
@@ -265,7 +244,6 @@ public class WorldObject implements IInputLinkElement
     				}
     			}
     		}
-    		
 			
 			BoundingBox bbox = BoundingBox.getMinimalXY(points);
 			
@@ -276,23 +254,94 @@ public class WorldObject implements IInputLinkElement
     	}
     }
     
-    public void destroy(){
-    	for(PerceptualProperty pp : perceptualProperties.values()){
-    		pp.destroy();
+    /***********************************************************
+     * Methods for managing working memory structures
+     ***********************************************************/
+
+    protected Identifier objId;
+    private boolean added = false;
+    
+    public boolean isAdded(){
+    	return added;
+    }
+    
+    public void addToWM(Identifier parentId){
+    	if(added){
+    		removeFromWM();
     	}
-    	perceptualProperties.clear();
-    	stateProperties.destroy();
+		objId = parentId.CreateIdWME("object");
+    	objId.CreateIntWME("id", id);
+
+    	for(PerceptualProperty pp : perceptualProperties.values()){
+    		pp.addToWM(objId);
+    	}
+    	stateProperties.addToWM(objId);
+
+    	StringBuilder svsCommands = new StringBuilder();
+    	svsCommands.append(SVSCommands.add(getIdString()));
+		svsCommands.append(SVSCommands.addTag(getIdString(), "object-source", "perception"));
+		world.getAgent().SendSVSInput(svsCommands.toString());
+		
+    	added = true;
+    }
+    
+    public void updateWM(){
+    	if(!added){
+    		return;
+    	}
+    	
+    	if(gotPropUpdate){
+	    	// Update Perceptual Properties
+	    	for(PerceptualProperty pp : perceptualProperties.values()){
+	    		if(pp.isAdded()){
+	    			pp.updateWM();
+	    		} else {
+	    			pp.addToWM(objId);
+	    		}
+	    	}
+	    	for(PerceptualProperty pp : propsToRemove){
+	    		pp.removeFromWM();
+	    	}
+	    	propsToRemove.clear();
+	
+	    	// Update State Properties
+	    	stateProperties.updateWM();
+
+	    	gotPropUpdate = false;
+    	}
+    	
+    	// Update SVS
+		StringBuilder svsCommands = new StringBuilder();
+    	if(gotPoseUpdate || gotBboxUpdate){
+    		svsCommands.append(SVSCommands.changePos(getIdString(), bboxPos));
+    		gotPoseUpdate = false;
+    	}
+    	if(gotBboxUpdate){
+    		svsCommands.append(SVSCommands.changeRot(getIdString(), bboxRot));
+    		svsCommands.append(SVSCommands.changeSize(getIdString(), bboxSize));
+    		gotBboxUpdate = false;
+    	}
+    	if(svsCommands.length() > 0){
+        	world.getAgent().SendSVSInput(svsCommands.toString());
+        	svsCommands = new StringBuilder();
+    	}
+    }
+    
+    public void removeFromWM(){
+    	if(!added){
+    		return;
+    	}
+
+    	StringBuilder svsCommands = new StringBuilder();
+    	svsCommands.append(SVSCommands.delete(getIdString()));
+    	world.getAgent().SendSVSInput(svsCommands.toString());
+    	
+    	for(PerceptualProperty pp : perceptualProperties.values()){
+    		pp.removeFromWM();
+    	}
+    	stateProperties.removeFromWM();
     	objId.DestroyWME();
     	objId = null;
+    	added = false;
     }
-
-	@Override
-	public void updateInputLink(Identifier parentIdentifier) {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public void onInitSoar() {
-		destroy();
-	}
 }

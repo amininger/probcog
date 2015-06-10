@@ -1,97 +1,92 @@
 package probcog.rosie.perception;
 
+import edu.umich.rosie.soar.FloatWME;
+import edu.umich.rosie.soar.ISoarObject;
 import sml.FloatElement;
 import sml.Identifier;
 
-public class Pose implements IInputLinkElement
+public class Pose implements ISoarObject
 {
     private static String[] poseStrings = {"x", "y", "z", "roll", "pitch", "yaw"};
     private enum PoseIndex{X, Y, Z, ROLL, PITCH, YAW};
-    private double[] pose;
-    private FloatElement[] wmes;
-    private Identifier poseID;
+    private FloatWME[] pose;
     
     public Pose(){
-        wmes = null;
-        poseID = null;
-        pose = new double[6];
-        for(int i = 0; i < 6; i++){
-            pose[i] = 0;
-        }
+    	initPose();
     }
     
     public Pose(double x, double y, double z, double roll, double pitch, double yaw){
-        wmes = null;
-        poseID = null;
-        pose = new double[6];
-        pose[PoseIndex.X.ordinal()] = x;
-        pose[PoseIndex.Y.ordinal()] = y;
-        pose[PoseIndex.Z.ordinal()] = z;
-        pose[PoseIndex.ROLL.ordinal()] = roll;
-        pose[PoseIndex.PITCH.ordinal()] = pitch;
-        pose[PoseIndex.YAW.ordinal()] = yaw;
+    	initPose();
+        pose[PoseIndex.X.ordinal()].setValue(x); 
+        pose[PoseIndex.Y.ordinal()].setValue(y); 
+        pose[PoseIndex.Z.ordinal()].setValue(z); 
+        pose[PoseIndex.ROLL.ordinal()].setValue(roll); 
+        pose[PoseIndex.PITCH.ordinal()].setValue(pitch);
+        pose[PoseIndex.YAW.ordinal()].setValue(yaw);
     }
     
     public Pose(double[] poseValues){
-        wmes = null;
-        poseID = null;
-        pose = new double[6];
+    	initPose();
         updateWithArray(poseValues);
     }
     
     public Pose(String s){      
-        wmes = null;  
-        poseID = null;
-        pose = new double[6];
-        
+    	initPose();
         updateWithString(s);            
     }
     
+    private void initPose(){
+        pose = new FloatWME[6];
+        for(int i = 0; i < 6; i++){
+            pose[i] = new FloatWME(poseStrings[i], 0.0);
+        }
+    }
+    
     public double getX(){
-        return pose[PoseIndex.X.ordinal()];
+        return pose[PoseIndex.X.ordinal()].getValue();
     }
     public void setX(double x){
-        pose[PoseIndex.X.ordinal()] = x;
+        pose[PoseIndex.X.ordinal()].setValue(x);
     }
     
 
     public double getY(){
-        return pose[PoseIndex.Y.ordinal()];
+        return pose[PoseIndex.Y.ordinal()].getValue();
     }
     public void setY(double y){
-        pose[PoseIndex.Y.ordinal()] = y;
+        pose[PoseIndex.Y.ordinal()].setValue(y);
     }
     
 
     public double getZ(){
-        return pose[PoseIndex.Z.ordinal()];
+        return pose[PoseIndex.Z.ordinal()].getValue();
     }
     public void setZ(double z){
-        pose[PoseIndex.Z.ordinal()] = z;
+        pose[PoseIndex.Z.ordinal()].setValue(z);
     }
     
 
     public double getRoll(){
-        return pose[PoseIndex.ROLL.ordinal()];
+        return pose[PoseIndex.ROLL.ordinal()].getValue();
     }
     public void setRoll(double roll){
-        pose[PoseIndex.ROLL.ordinal()] = roll;
+        pose[PoseIndex.ROLL.ordinal()].setValue(roll);
     }
     
 
     public double getPitch(){
-        return pose[PoseIndex.PITCH.ordinal()];
+        return pose[PoseIndex.PITCH.ordinal()].getValue();
     }
     public void setPitch(double pitch){
-        pose[PoseIndex.PITCH.ordinal()] = pitch;
+        pose[PoseIndex.PITCH.ordinal()].setValue(pitch);
     }
     
 
     public double getYaw(){
-        return pose[PoseIndex.YAW.ordinal()];
+        return pose[PoseIndex.YAW.ordinal()].getValue();
     }
     public void setYaw(double yaw){
-        pose[PoseIndex.YAW.ordinal()] = yaw;
+        pose[PoseIndex.YAW.ordinal()].setValue(yaw);
     }
     
     
@@ -105,9 +100,9 @@ public class Pose implements IInputLinkElement
         
         for(int i = 0; i < 6; i++){
             if(poseInfo.length <= i){
-                pose[i] = 0;
+                pose[i].setValue(0.0);
             } else {
-                pose[i] = Double.parseDouble(poseInfo[i].trim());
+                pose[i].setValue(Double.parseDouble(poseInfo[i].trim()));
             }
         }         
     }
@@ -115,9 +110,9 @@ public class Pose implements IInputLinkElement
     public void updateWithArray(double[] poseInfo){
         for(int i = 0; i < 6; i++){
             if(poseInfo.length <= i){
-                pose[i] = 0;
+                pose[i].setValue(0.0);
             } else {
-                pose[i] = poseInfo[i];
+                pose[i].setValue(poseInfo[i]);
             }
         }      
     }
@@ -127,60 +122,19 @@ public class Pose implements IInputLinkElement
         return String.format("[%f %f %f %f %f %f]", getX(), getY(), getZ(), getRoll(), getPitch(), getYaw());
     }
     
-
-    // update the input-link appropriately
-    @Override
-    public synchronized void updateInputLink(Identifier parentIdentifier){
-        if(poseID == null){
-            // Create the pose on the input link
-            poseID = parentIdentifier.CreateIdWME("pose");
-            wmes = new FloatElement[6];
-            for(int i = 0; i < 6; i++){
-                wmes[i] = poseID.CreateFloatWME(poseStrings[i], pose[i]);
-            }
-        } else {
-            // Update the pose on the input link
-            for(int i = 0; i < 6; i++){
-                if(wmes[i].GetValue() != pose[i]){
-                    wmes[i].Update(pose[i]);
-                }
-            }
-        }
-    }
-    
-    @Override
-    public synchronized void onInitSoar(){
-    	wmes = null;
-    	poseID = null;
-    }
-    
-    // remove the object from the input-link
-    @Override
-    public synchronized void destroy(){
-        if(wmes != null){
-            for(int i = 0; i < 6; i++){
-                wmes[i].DestroyWME();
-            }
-            wmes = null;
-            
-            poseID.DestroyWME();
-            poseID = null;
-        }
-    }
-    
-    
     public boolean equals(double[] poseInfo){
         for(int i = 0; i < 6; i++){
             if(poseInfo.length <= i){
                 return true;
             } 
-            else if (pose[i] != poseInfo[i])
+            else if (pose[i].getValue() != poseInfo[i])
             {
                 return false;
             }
         }
         return true;
     }
+
     public boolean equals(String s){
         String n;
         n = s.replace("[", "");
@@ -194,11 +148,57 @@ public class Pose implements IInputLinkElement
         for(int i = 0; i < 6; i++){
             if(poseInfo.length <= i){
                 return true;
-            } else if (pose[i] != Double.parseDouble(poseInfo[i].trim()))
+            } else if (pose[i].getValue() != Double.parseDouble(poseInfo[i].trim()))
             {
                 return false;
             }
         }
         return true;
+    }
+    
+    /******************************************************
+     * Methods for dealing with working memory
+     ******************************************************/
+
+    private Identifier poseID; 
+    private boolean added = false;
+    
+    public boolean isAdded(){
+    	return added;
+    }
+    
+    public void addToWM(Identifier parentId){
+    	if(added){
+    		removeFromWM();
+    	}
+        // Create the pose on the input link
+        poseID = parentId.CreateIdWME("pose");
+        for(int i = 0; i < 6; i++){
+        	pose[i].addToWM(poseID);
+        }
+        added = true;
+    }
+    
+    public void updateWM(){
+    	if(!added){
+    		return;
+    	}
+        // Update the pose on the input link
+        for(int i = 0; i < 6; i++){
+        	pose[i].updateWM();
+        }	
+    }
+    
+    public void removeFromWM(){
+    	if(!added){
+    		return;
+    	}
+        // Remove the pose from the input link
+        for(int i = 0; i < 6; i++){
+        	pose[i].removeFromWM();
+        }	
+    	poseID.DestroyWME();
+    	poseID = null;
+    	added = false;
     }
 }

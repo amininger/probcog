@@ -30,6 +30,9 @@ import april.jmat.LinAlg;
 import april.jmat.MathUtil;
 import april.util.TimeUtil;
 import edu.umich.rosie.*;
+import edu.umich.rosie.soar.SVSCommands;
+import edu.umich.rosie.soar.SoarAgent;
+import edu.umich.rosie.soar.SoarUtil;
 import probcog.rosie.perception.Pose;
 
 
@@ -94,6 +97,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     @Override
     public void disconnect(){
     	super.disconnect();
+    	pose.removeFromWM();
         lcm.unsubscribe("ROBOT_ACTION", this);
         lcm.unsubscribe("ARM_STATUS", this);
     }
@@ -171,7 +175,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     	selfId.CreateStringWME("holding-obj", "false");
     	selfId.CreateIntWME("grabbed-object", -1);
     	pose.updateWithArray(new double[]{0, 0, 0, 0, 0, 0});
-    	pose.updateInputLink(selfId);
+    	pose.addToWM(selfId);
     	
     	if(armStatus != null){
         	svsCommands.append("add arm world p 0 0 0 r 0 0 0\n");
@@ -228,7 +232,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     	ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
     	SoarUtil.updateIntWME(selfId, "grabbed-object", perception.getWorld().getSoarId(curStatus.obj_id));
     	pose.updateWithArray(curStatus.xyz);
-    	pose.updateInputLink(selfId);
+    	pose.updateWM();
     }
     
     private void updateArmInfo(){
@@ -436,6 +440,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 
 	@Override
 	protected void onInitSoar() {
+		pose.removeFromWM();
 		selfId = null;
 		waitingCommand = null;
 	}

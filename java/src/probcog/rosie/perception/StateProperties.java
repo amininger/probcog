@@ -3,79 +3,32 @@ package probcog.rosie.perception;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import edu.umich.rosie.soar.ISoarObject;
+import edu.umich.rosie.soar.StringWME;
+
 import sml.Identifier;
 import sml.StringElement;
 
-public class StateProperties implements IInputLinkElement{
-	protected class WMStructure implements IInputLinkElement{
-		public Identifier propId = null;
-		
-		public String name;
-
-		public StringElement valueWme;
-		public String value;
-		private boolean changed = true;
-		
-		public WMStructure(String name, String value){
-			this.name = name;
-			this.value = value;
-		}
-		
-		public void setValue(String value){
-			if(!this.value.equals(value)){
-				changed = true;
-				this.value = value;
-			}
-		}
-		public void destroy(){
-			if(propId != null){
-				propId.DestroyWME();
-				propId = null;
-				valueWme = null;
-			}
-		}
-		
-		public void updateInputLink(Identifier parentIdentifier) {
-			if(propId == null){
-				propId = parentIdentifier.CreateIdWME("property");
-				propId.CreateStringWME("name", name);
-				propId.CreateStringWME("type", PerceptualProperty.STATE_TYPE);
-				valueWme = propId.CreateStringWME("value", value);
-			}
-			if(changed){
-				valueWme.Update(value);
-				changed = false;
-			}
-		}
+public class StateProperties implements ISoarObject{
+	private HashMap<String, StringWME> stateProperties;
+	private HashSet<StringWME> wmesToRemove;
 	
-		public void onInitSoar() {
-			destroy();
-		}
-	}
-
-	private HashMap<String, WMStructure> stateProperties;
-	private String[] stateInfo = null;
+	private boolean gotUpdate = false;
 	
     public StateProperties(){
-    	stateProperties = new HashMap<String, WMStructure>();
+    	stateProperties = new HashMap<String, StringWME>();
+    	wmesToRemove = new HashSet<StringWME>();
     }
 
     public String getProperty(String propName){
     	if(stateProperties.containsKey(propName)){
-    		return stateProperties.get(propName).value;
+    		return stateProperties.get(propName).getValue();
     	} else {
     		return null;
     	}
     }   
     
     public void updateProperties(String[] stateInfo){
-    	this.stateInfo = stateInfo;
-    }
-    
-	public void updateInputLink(Identifier parentIdentifier) {
-		if(stateInfo == null){
-			return;
-		}
 		HashSet<String> propsToRemove = new HashSet<String>(stateProperties.keySet());
 		
     	for(String nameValPair : stateInfo){
@@ -90,29 +43,67 @@ public class StateProperties implements IInputLinkElement{
     			propsToRemove.remove(propName);
     			stateProperties.get(propName).setValue(propVal);
     		} else {
-    			stateProperties.put(propName, new WMStructure(propName, propVal));
+    			stateProperties.put(propName, new StringWME(propName, propVal));
     		}
     	}
     	
     	for(String propName : propsToRemove){
-    		stateProperties.get(propName).destroy();
+    		wmesToRemove.add(stateProperties.get(propName));
     		stateProperties.remove(propName);
     	}
-    	for(WMStructure struct : stateProperties.values()){
-    		struct.updateInputLink(parentIdentifier);
-    	}
-    	stateInfo = null;
+    	gotUpdate = true;    
     }
     
-    public void destroy(){
-    	for(WMStructure propStruct : stateProperties.values()){
-    		propStruct.destroy();
-    	}
-    	stateProperties.clear();
+    /**********************************************************
+     * Methods for managing working memory
+     **********************************************************/
+    
+    private Identifier parentId = null;
+    private boolean added = false;
+    
+    public boolean isAdded(){
+    	return added;
     }
+    
+    public void addToWM(Identifier parentId){
+    	if(added){
+    		removeFromWM();
+    	}
+    	this.parentId = parentId;
+    	for(StringWME wme : stateProperties.values()){
+    		wme.addToWM(parentId);
+    	}
+    	added = true;
+    }
+    
+    public void updateWM(){
+    	if(!added || !gotUpdate){
+    		return;
+    	}
+    	for(StringWME wme : stateProperties.values()){
+    		if(!wme.isAdded()){
+    			wme.addToWM(parentId);
+    		} else {
+    			wme.updateWM();
+    		}
+    	}
 
-	@Override
-	public void onInitSoar() {
-		destroy();
-	}
+    	for(StringWME wme : wmesToRemove){
+    		wme.removeFromWM();
+    	}
+    	wmesToRemove.clear();
+    	
+    	gotUpdate = false;
+    }
+    
+    public void removeFromWM(){
+    	if(!added){
+    		return;
+    	}
+    	parentId = null;
+    	for(StringWME wme : stateProperties.values()){
+    		wme.removeFromWM();
+    	}
+    	added = false;
+    }
 }
