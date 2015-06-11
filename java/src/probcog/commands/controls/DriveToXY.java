@@ -1,6 +1,7 @@
 package probcog.commands.controls;
 
 import java.io.*;
+import java.util.zip.*;
 import java.util.*;
 
 import lcm.lcm.*;
@@ -25,13 +26,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 {
     VisWorld vw;
 
-    private boolean DEBUG = true;
+    private boolean DEBUG = false;
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 100;
-    static final double EPS = 0.01;
-    static final double DISTANCE_THRESH = 0.25;
-    static final int EPS_STEPS = 5;
+    static final double LOOKAHEAD_X_M = 0.2;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -39,50 +38,39 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     double REAR_AXLE_OFFSET = 0.20;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
-    private ExpiringMessageCache<laser_t> laserCache =
-        new ExpiringMessageCache<laser_t>(.2);
     private ExpiringMessageCache<pose_t> poseCache =
         new ExpiringMessageCache<pose_t>(.2);
+    private ExpiringMessageCache<grid_map_t> gmCache =
+        new ExpiringMessageCache<grid_map_t>(.5);
 
     LCM lcm = LCM.getSingleton();
-    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
+    String mapChannel = Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA");
     String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
-    // XXX Reorganize or rename things so this is easier to understand
-    double[] startXYT = null;
-    double[] relativeXyt;
-    double[] xyt = null;
-    String mode = "default";
-    double dist = 0.5*Util.getConfig().requireDouble("robot.geometry.radius");
-    double gain = 1.0;          // Affects turn rate
-    double maxSpeed = 0.6;      // Affects drive speed
-    double lastTheta = Double.MAX_VALUE;
+    // The goal target as a global coordinate
+    double[] globalXYT;
 
-    // Determining stopping conditions, beyond just arriving near goal
-    boolean terminated = false;
-    static final int WINDOW_SIZE = (int)(2*HZ);
-    LinkedList<Double> rateWindow = new LinkedList<Double>();
-    double lastDistanceToGoal = Double.MAX_VALUE;
-    long lastUtime;
+    // Alpha-beta filtering for history
+    diff_drive_t lastDrive = new diff_drive_t();
 
     private class UpdateTask implements PeriodicTasks.Task
     {
         public void run(double dt)
         {
-            laser_t laser = laserCache.get();
-            if (laser == null) {
-                return;
-            }
-
             pose_t pose = poseCache.get();
             if (pose == null) {
                 return;
             }
 
+            grid_map_t gm = gmCache.get();
+            if (gm == null) {
+                return;
+            }
+
             DriveParams params = new DriveParams();
             params.pose = pose;
-            params.laser = laser;
+            params.gm = gm;
             diff_drive_t dd = drive(params);
 
             dd.utime = TimeUtil.utime();
@@ -98,40 +86,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     public DriveToXY(HashMap<String, TypedValue> parameters)
     {
         assert (parameters.containsKey("x") && parameters.containsKey("y"));
-        relativeXyt = new double[] { parameters.get("x").getDouble(),
-                                     parameters.get("y").getDouble(),
-                                     0.0 };
-
-        if (parameters.containsKey("mode")) {
-            mode = parameters.get("mode").toString();
-        }
-
-        if (parameters.containsKey("distance")) {
-            dist = parameters.get("distance").getDouble();
-        } else {
-            if (mode.equals("door"))
-                dist = Util.getConfig().requireDouble("robot.geometry.width");
-            else if (!mode.equals("default"))
-                System.out.println("Unknown mode - "+mode);
-        }
-
-        if (parameters.containsKey("gain")) {
-            gain = parameters.get("gain").getDouble();
-        } else {
-            if (mode.equals("door"))
-                gain = 1.0; // 2
-            else if (!mode.equals("default"))
-                System.out.println("Unknown mode - "+mode);
-        }
-
-        if (parameters.containsKey("max-speed")) {
-            maxSpeed = parameters.get("max-speed").getDouble();
-        } else {
-            if (mode.equals("door"))
-                maxSpeed = 0.4; // .25
-            else if (!mode.equals("default"))
-                System.out.println("Unknown mode - "+mode);
-        }
+        globalXYT = new double[] { parameters.get("x").getDouble(),
+                                   parameters.get("y").getDouble(),
+                                   0.0 };
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
@@ -162,12 +119,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if (laserChannel.equals(channel)) {
-            laser_t laser = new laser_t(ins);
-            laserCache.put(laser, TimeUtil.utime());
-        } else if (poseChannel.equals(channel)) {
+        if (poseChannel.equals(channel)) {
             pose_t pose = new pose_t(ins);
             poseCache.put(pose, TimeUtil.utime());
+        } else if (mapChannel.equals(channel)) {
+            robot_map_data_t rmd = new robot_map_data_t(ins);
+            gmCache.put((grid_map_t)rmd.gridmap.copy(), TimeUtil.utime());
         }
     }
 
@@ -178,10 +135,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     public void setRunning(boolean run)
     {
         if (run) {
-            lcm.subscribe(laserChannel, this);
+            lcm.subscribe(mapChannel, this);
             lcm.subscribe(poseChannel, this);
         } else {
-            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe(mapChannel, this);
             lcm.unsubscribe(poseChannel, this);
         }
         tasks.setRunning(run);
@@ -209,27 +166,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         params.add(new TypedParameter("y",
                                       TypedValue.TYPE_DOUBLE,
                                       true));
-        params.add(new TypedParameter("distance",
-                                      TypedValue.TYPE_DOUBLE,
-                                      false));
-        params.add(new TypedParameter("gain",
-                                      TypedValue.TYPE_DOUBLE,
-                                      new TypedValue(0.0),
-                                      new TypedValue(Double.MAX_VALUE),
-                                      false));
-        params.add(new TypedParameter("max-speed",
-                                      TypedValue.TYPE_DOUBLE,
-                                      new TypedValue(0.0),
-                                      new TypedValue(1.0),
-                                      false));
-        HashSet<TypedValue> valid = new HashSet<TypedValue>();
-        valid.add(new TypedValue("default"));
-        valid.add(new TypedValue("door"));
-        params.add(new TypedParameter("mode",
-                                      TypedValue.TYPE_STRING,
-                                      valid,
-                                      false));
-
 
         return params;
     }
@@ -241,195 +177,194 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         dd.left_enabled = dd.right_enabled = true;
         dd.left = dd.right = 0.0;
 
-        // Project pose to robot center. Stop if close to goal.
-        double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
-                                                                      params.pose.pos));
-        robotXYT[0] += MagicRobot.CENTER_X_OFFSET*Math.cos(robotXYT[2]);
-        robotXYT[1] += MagicRobot.CENTER_X_OFFSET*Math.sin(robotXYT[2]);
+        // Decode map data if necessary
+        byte[] gmdata;
+        if (params.gm.encoding == grid_map_t.ENCODING_GZIP) {
+            try {
+                ByteArrayInputStream bytes = new ByteArrayInputStream(params.gm.data);
+                GZIPInputStream gzis = new GZIPInputStream(bytes);
 
-        if (startXYT == null) {
-            startXYT = LinAlg.copy(robotXYT);
-        }
-
-        if (xyt == null) {
-            xyt = LinAlg.xytMultiply(robotXYT, relativeXyt);
-        }
-
-        double[] rgoal = LinAlg.xytInvMul31(robotXYT, xyt);
-        double dgoal = Math.sqrt(rgoal[0]*rgoal[0] + rgoal[1]*rgoal[1]);
-
-        if (dgoal < DISTANCE_THRESH)
-            return dd;
-
-        PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
-                                                           robotXYT,
-                                                           xyt);
-        pp.repulsivePotential = PotentialUtil.RepulsivePotential.ALL_POINTS;
-        if (mode.equals("door")) {
-            pp.repulsivePotential = PotentialUtil.RepulsivePotential.PRESERVE_DOORS;
-
-            // Relative start position
-            double[] rstart = LinAlg.xytInvMul31(robotXYT, startXYT);
-            pp.doorTrough = new GLineSegment2D(LinAlg.resize(rstart, 2),
-                                               LinAlg.resize(rgoal, 2));
-        }
-
-        pp.maxObstacleRange = dist;
-        pp.fieldRes = 0.25;
-
-        // Tie lookahead distance to speed traveled
-        double maxVelocity = 2.5;   // [m/s]
-        double lookaheadTime = .5; // [s]
-        double maxLookahead = Math.max(maxVelocity*maxSpeed*lookaheadTime, 0.5);
-        double shortLookahead = dgoal < maxLookahead ? 0 : MagicRobot.CHASSIS_MAIN_SIZE[0]/2;
-        double longLookahead = Math.min(maxLookahead, dgoal-EPS_STEPS*EPS);
-
-        double ll = longLookahead;
-
-        rgoal = LinAlg.resize(rgoal,2);
-        // What is the right sampling pattern? You need to look ahead to
-        // maneuver early enough. You need to be careful, though, since this
-        // lookahead point, once beyond your portal, will instead drag you
-        // towards a wall (thus, our point just ahead of the robot).
-        double[] grad = PotentialUtil.getGradientSoftmax(new double[] {0,0}, rgoal, pp);
-        double[] g00 = PotentialUtil.getGradientSoftmax(new double[] {ll+EPS,0}, rgoal, pp);
-        double[] g01 = PotentialUtil.getGradientSoftmax(new double[] {ll+2*EPS,0}, rgoal, pp);
-        double[] g10 = PotentialUtil.getGradientSoftmax(new double[] {ll+3*EPS,0}, rgoal, pp);
-        double[] g11 = PotentialUtil.getGradientSoftmax(new double[] {ll+4*EPS,0}, rgoal, pp);
-
-        //System.out.printf("[[%f %f]; [%f %f]; [%f %f]; [%f %f]; [%f %f]];\n",
-        //                  grad[0], grad[1],
-        //                  g00[0], g00[1],
-        //                  g01[0], g01[1],
-        //                  g10[0], g10[1],
-        //                  g11[0], g11[1]);
-
-
-        grad = LinAlg.add(grad, LinAlg.scale(g00, .10));
-        grad = LinAlg.add(grad, LinAlg.scale(g01, .10));
-        grad = LinAlg.add(grad, LinAlg.scale(g10, .10));
-        grad = LinAlg.add(grad, LinAlg.scale(g11, .10));
-
-        grad = LinAlg.scale(grad, 10*maxSpeed);
-
-        ArrayList<double[]> sampleGrads = new ArrayList<double[]>();
-        ArrayList<double[]> samplePoints = new ArrayList<double[]>();
-
-        double theta = Math.atan2(grad[1], grad[0]);
-        if (DEBUG) {
-            // Render the field
-            PotentialField pf = PotentialUtil.getPotential(pp);
-            int[] map = new int[] {0xffffff00,
-                0xffff00ff,
-                0x0007ffff,
-                0xff0000ff,
-                0xff2222ff};
-            double minVal = pf.getMinValue();
-            double maxVal = pf.getMaxValue();
-            maxVal = minVal+1.5*pp.repulsiveWeight+1.5*pp.attractiveWeight;
-            ColorMapper cm = new ColorMapper(map, minVal, maxVal);
-
-            VisWorld.Buffer vb = vw.getBuffer("laser");
-            vb.setDrawOrder(100);
-            ArrayList<double[]> plaser = new ArrayList<double[]>();
-            for (int i = 0; i < params.laser.nranges; i++) {
-                double r = params.laser.ranges[i];
-                if (r < 0)
-                    continue;
-                double t = params.laser.rad0 + i*params.laser.radstep;
-                plaser.add(new double[]{r*Math.cos(t), r*Math.sin(t)});
+                gmdata = new byte[params.gm.width*params.gm.height];
+                int readSoFar = 0;
+                while (readSoFar < gmdata.length) {
+                    int read = gzis.read(gmdata, readSoFar, gmdata.length-readSoFar);
+                    if (read < 0)
+                        break;
+                    readSoFar += read;
+                }
+                gzis.close();
+            } catch (ZipException ex) {
+                System.err.println("ERR: GZIP'd map data is corrupted");
+                ex.printStackTrace();
+                return dd;
             }
-            vb.addBack(new VzPoints(new VisVertexData(plaser),
-                                    new VzPoints.Style(Color.yellow, 3)));
-            vb.swap();
-
-            vb = vw.getBuffer("pf");
-            vb.addBack(pf.getVisObject(cm));
-            vb.swap();
-
-            vb = vw.getBuffer("samples");
-            VisVertexData vvd = new VisVertexData();
-            vvd.add(new double[2]);
-            vvd.add(new double[] {longLookahead*Math.cos(theta), longLookahead*Math.sin(theta)});
-            vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 3)));
-            if (samplePoints.size() > 0) {
-                vb.addBack(new VzPoints(new VisVertexData(samplePoints),
-                                        new VzPoints.Style(Color.green, 3)));
-                vb.addBack(new VzLines(new VisVertexData(sampleGrads),
-                                       VzLines.LINES,
-                                       new VzLines.Style(Color.gray, 1)));
+            catch (IOException ex) {
+                System.err.println("ERR: Could not extract GZIP'd map");
+                ex.printStackTrace();
+                return dd;
             }
-            vb.swap();
-        }
-
-        // Stopping conditions. When these trigger, refuse to continue moving
-        if (lastDistanceToGoal == Double.MAX_VALUE) {
-            lastDistanceToGoal = dgoal;
-            lastUtime = TimeUtil.utime();
         } else {
-            long now = TimeUtil.utime();
-            double dt = (now-lastUtime)/1000000.0;
-            double dg = dgoal-lastDistanceToGoal;
-            lastDistanceToGoal = dgoal;
-            lastUtime = now;
+            gmdata = params.gm.data;
+        }
 
-            assert (dt != 0);
-            double rate = dg/dt;
+        GridMap gm = GridMap.makePixels(params.gm.x0,
+                                        params.gm.y0,
+                                        params.gm.width,
+                                        params.gm.height,
+                                        params.gm.meters_per_pixel,
+                                        0,
+                                        gmdata);
+        //grid_map_t map = new grid_map_t();
+        //map.x0 = gm.x0;
+        //map.y0 = gm.y0;
+        //map.width = gm.width;
+        //map.height = gm.height;
+        //map.meters_per_pixel = gm.metersPerPixel;
+        //map.datalen = gm.data.length;
+        //map.data = gm.data;
+        //lcm.publish("MAP DEBUG", map);
 
-            //if (rate > 0)
-            //    terminated = true;
+        double[] poseXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
+                                                                     params.pose.pos));
+        // Convert global goal to robot local goal
+        // XXX Involves having SLAM working. For now, assuming matching
+        // coordinate frames
+        double[] goalXYT = globalXYT;
 
-            rateWindow.add(rate);
-            if (rateWindow.size() > WINDOW_SIZE)
-                rateWindow.pop();
+        // Medium drive speed
+        double driveGain = 0.0;
+        double turnGain = 3.0;
+        double straightGain = 1.2;
+        double collisionDistance = 0.3;
+        double repulsiveStrength = 1.5;
+        double repulsiveDistance = 2.0;
+        double attractiveStrength = 1.0;
+        double attractiveDistance = 1.0;
+        double maxSpeed = 0.5;
 
-            if (rateWindow.size() ==  WINDOW_SIZE) {
-                double avgRate = 0;
-                for (double r: rateWindow)
-                    avgRate += r;
+        double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
 
-                rate = avgRate/WINDOW_SIZE;
-                if (rate > -maxSpeed/20)
-                    terminated = true;
+        // If sufficiently close to goal, stop
+        if (distToGoal < 0.25)
+            return dd;
+
+        // Single lookahead point
+        double scale = Math.min(1.0, 0.5*distToGoal/LOOKAHEAD_X_M);
+        double[] lookaheadTrans = new double[] { poseXYT[0], poseXYT[1] };
+        lookaheadTrans[0] += scale*Math.cos(poseXYT[2])*LOOKAHEAD_X_M;
+        lookaheadTrans[1] += scale*Math.sin(poseXYT[2])*LOOKAHEAD_X_M;
+        //System.out.printf("[%f %f] -- [%f %f]\n", poseXYT[0], poseXYT[1], lookaheadTrans[0], lookaheadTrans[1]);
+
+        // Compute gradients for point
+        // First, check line of sign. If we don't have it, then
+        // force our gradient back at the robot.
+        double[] grad = new double[2];
+        boolean flagCollision = false;
+        if (gm.evaluatePath(poseXYT, lookaheadTrans, true) < 0) {
+            double angle = Math.atan2(poseXYT[1] - lookaheadTrans[1],
+                                      poseXYT[0] - lookaheadTrans[0]);
+            grad[0] += repulsiveStrength*Math.cos(angle);
+            grad[1] += repulsiveStrength*Math.sin(angle);
+        } else {
+            // Attractive gradient
+            double angle = Math.atan2(goalXYT[1] - lookaheadTrans[1],
+                                      goalXYT[0] - lookaheadTrans[0]);
+            double dist = LinAlg.distance(goalXYT, lookaheadTrans, 2);
+            scale = Math.min(1.0, dist/attractiveDistance);
+            grad[0] += scale*Math.cos(angle)*attractiveStrength;
+            grad[1] += scale*Math.sin(angle)*attractiveStrength;
+
+            // Repulsive gradient
+            double x0 = lookaheadTrans[0] - repulsiveDistance;
+            double y0 = lookaheadTrans[1] - repulsiveDistance;
+            double x1 = lookaheadTrans[0] + repulsiveDistance;
+            double y1 = lookaheadTrans[1] + repulsiveDistance;
+
+            ArrayList<double[]> gradients = new ArrayList<double[]>();
+            double[] data = new double[2];
+            double esum = 0;
+            double escale = 15;
+
+            for (double y = y0; y <= y1; y += gm.metersPerPixel) {
+                for (double x = x0; x <= x1; x += gm.metersPerPixel) {
+                    int v = gm.getValue(x, y);
+                    if (v < 255)
+                        continue;
+
+                    dist = Math.sqrt(LinAlg.sq(lookaheadTrans[0]-x) +
+                                     LinAlg.sq(lookaheadTrans[1]-y));
+                    data[1] = Math.atan2(lookaheadTrans[1]-y,
+                                         lookaheadTrans[0]-x);
+                    if (dist <= collisionDistance) {
+                        flagCollision = true;
+                        data[0] = 1.0;
+                        gradients.add(LinAlg.copy(data));
+                        esum += Math.exp(escale);
+                    } else if (dist > collisionDistance &&
+                               dist < repulsiveDistance) {
+                        scale = (repulsiveDistance - dist)/(repulsiveDistance-collisionDistance);
+                        assert (scale <= 1.0 && scale >= 0.0);
+                        data[0] = scale;
+                        gradients.add(LinAlg.copy(data));
+                        esum += Math.exp(escale*scale);
+                    }
+                }
+            }
+
+            // Remove effects of attractive field
+            if (flagCollision) {
+                grad[0] = 0;
+                grad[1] = 0;
+            }
+
+            // Softmax
+            for (int i = 0; i < gradients.size(); i++) {
+                double[] g = gradients.get(i);
+                double w = Math.exp(escale*g[0])/esum;
+                grad[0] += w*g[0]*Math.cos(g[1])*repulsiveStrength;
+                grad[1] += w*g[0]*Math.sin(g[1])*repulsiveStrength;
             }
         }
 
-        if (terminated)
-            return dd;
 
-        // First pass at direct PWM control
-        //grad = LinAlg.normalize(grad); // XXX
-        double speed = grad[0];
-        double turn = grad[1];
-        double speedLimit = maxSpeed;
-        if (speed < 0) {
-            speed = 0;
-            int sign = turn > 0 ? 1 : -1;
-            turn = sign*Math.min(.4, speedLimit);
-            speedLimit = Math.abs(turn);
+        // Use this gradient to do something
+        if (LinAlg.magnitude(grad) > 0) {
+            double theta = Math.atan2(grad[1], grad[0]);
+            double mag = LinAlg.magnitude(grad);
+
+            double dtheta = theta - poseXYT[2];
+            double drive = mag*Math.cos(dtheta);
+            double turn = mag*Math.sin(dtheta);
+
+            dd.left = straightGain*drive - turnGain*turn;
+            dd.right = straightGain*drive + turnGain*turn;
         }
 
-        dd.left = speed - gain*turn;
-        dd.right = speed + gain*turn;
+        // Clamping for safety.
+        // XXX Weren't we doing something smarter than this before?
+        dd.left = MathUtil.clamp(dd.left, -maxSpeed, maxSpeed);
+        dd.right = MathUtil.clamp(dd.right, -maxSpeed, maxSpeed);
 
-        // Handle deadband better OR let speed controller deal with it. XXX
-        double maxMag = Math.max(Math.abs(dd.left), Math.abs(dd.right));
-        if (maxMag > speedLimit) {
-            dd.left = speedLimit*(dd.left/maxMag);
-            dd.right = speedLimit*(dd.right/maxMag);
-        }
-
-        // Refuse to drive backwards
+        // Turn in place instead of going backwards
         if (dd.left < 0 && dd.right < 0) {
-            dd.left = dd.right = 0;
+            if (dd.left > dd.right)
+                dd.left = -dd.right;
+            else
+                dd.right = -dd.left;
         }
+
+        // Alpha-beta filtering
+        double alpha = 0.20;
+        dd.left = dd.left*alpha + (1.0-alpha)*lastDrive.left;
+        dd.right = dd.right*alpha + (1.0-alpha)*lastDrive.right;
+        lastDrive = dd;
 
         return dd;
     }
 
     public String toString()
     {
-        return String.format("Drive to (%.1f,%.1f)", xyt[0], xyt[1]);
+        return String.format("Drive to (%.1f,%.1f)", globalXYT[0], globalXYT[1]);
     }
 
     public control_law_t getLCM()
@@ -440,18 +375,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         cl.param_names = new String[cl.num_params];
         cl.param_values = new typed_value_t[cl.num_params];
         cl.param_names[0] = "x";
-        cl.param_values[0] = (new TypedValue(xyt[0])).toLCM();
+        cl.param_values[0] = (new TypedValue(globalXYT[0])).toLCM();
         cl.param_names[1] = "y";
-        cl.param_values[1] = (new TypedValue(xyt[1])).toLCM();
-        cl.param_names[2] = "distance";
-        cl.param_values[2] = (new TypedValue(dist)).toLCM();
-        cl.param_names[3] = "gain";
-        cl.param_values[3] = (new TypedValue(gain)).toLCM();
-        cl.param_names[4] = "max-speed";
-        cl.param_values[4] = (new TypedValue(maxSpeed)).toLCM();
-        cl.param_names[5] = "mode";
-        cl.param_values[5] = (new TypedValue(mode)).toLCM();
-
+        cl.param_values[1] = (new TypedValue(globalXYT[1])).toLCM();
 
         return cl;
     }

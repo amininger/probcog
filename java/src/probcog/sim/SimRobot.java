@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
 import java.util.*;
+import java.util.zip.*;
 import java.awt.event.*;
 import java.awt.*;
 import javax.swing.*;
@@ -32,6 +33,8 @@ import magic2.lcmtypes.*;
 public class SimRobot implements SimObject, LCMSubscriber
 {
     static Random classifierRandom = new Random(3611871);
+    static final int ROBOT_MAP_DATA_HZ = 10;
+    long lastMapData = 0;
 
     int ROBOT_ID = 6;
     SimWorld sw;
@@ -318,7 +321,74 @@ public class SimRobot implements SimObject, LCMSubscriber
             laser.rad0 = (float) rad0;
             laser.radstep = (float) radstep;
 
-            lcm.publish(Util.getConfig().getString("robot.lcm.laser_channel", "LASER"), laser);
+            lcm.publish(Util.getConfig().getString("robot.lcm.laser_channel", "HOKUYO_LIDAR"), laser);
+
+            // Make gzipped grid maps periodically
+            if (laser.utime - lastMapData > 1000000L/ROBOT_MAP_DATA_HZ) {
+                grid_map_t gm = new grid_map_t();
+                gm.utime = laser.utime;
+
+                double[] xyt = LinAlg.matrixToXYT(T_odom);
+                double x0 = xyt[0] - 5;
+                double y0 = xyt[1] - 5;
+
+                // Project data into map
+                GridMap map = GridMap.makeMeters(x0, y0, 10.0, 10.0, 0.1, 0);
+                for (int i = 0; i < laser.nranges; i++) {
+                    double r = laser.ranges[i];
+                    if (r < 0)
+                        continue;
+                    double t = laser.rad0 + i*laser.radstep + xyt[2];
+                    double x = xyt[0] + r*Math.cos(t);
+                    double y = xyt[1] + r*Math.sin(t);
+
+                    map.setValue(x, y, (byte)255);
+                }
+
+                gm.x0 = map.x0;
+                gm.y0 = map.y0;
+                gm.width = map.width;
+                gm.height = map.height;
+                gm.meters_per_pixel = map.metersPerPixel;
+
+                // DEBUG
+                //gm.encoding = 0;
+                //gm.datalen = map.data.length;
+                //gm.data = map.data;
+                //lcm.publish("GRID_MAP_DEBUG", gm);
+
+                gm.encoding = grid_map_t.ENCODING_GZIP;
+
+                if (gm.encoding == grid_map_t.ENCODING_GZIP) {
+                    try {
+                        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                        GZIPOutputStream gzos = new GZIPOutputStream(bytes);
+                        gzos.write(map.data, 0, map.data.length);
+                        gzos.finish();
+
+                        byte[] data = bytes.toByteArray();
+                        gm.datalen = data.length;
+                        gm.data = data;
+
+                        gzos.close();
+                    } catch (IOException ex) {
+                        System.out.println("ERR: Could not GZIP grid map data");
+                        ex.printStackTrace();
+                        return;
+                    }
+                }
+
+                robot_map_data_t rmd = new robot_map_data_t();
+                rmd.utime = laser.utime;
+                rmd.gridmap = gm;
+                rmd.latlon_deg = new double[] {Double.NaN, Double.NaN};
+                rmd.xyt_local = xyt;
+
+                lcm.publish(Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA"), rmd);
+
+                lastMapData = laser.utime;
+            }
+
         }
     }
 
