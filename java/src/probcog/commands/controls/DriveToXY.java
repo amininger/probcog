@@ -235,14 +235,22 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         double driveGain = 0.0;
         double turnGain = 3.0;
         double straightGain = 1.2;
-        double collisionDistance = 0.3;
+        double collisionDistance = 0.4;
         double repulsiveStrength = 1.5;
         double repulsiveDistance = 2.0;
         double attractiveStrength = 1.0;
         double attractiveDistance = 1.0;
         double maxSpeed = 0.5;
 
+
         double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
+
+        // Attempts to get working in SIM.
+        //if (true && distToGoal > 2.0) {
+        //    driveGain = 0.4;
+        //    straightGain = 1.0;
+        //    turnGain = 1.2;
+        //}
 
         // If sufficiently close to goal, stop
         if (distToGoal < 0.25)
@@ -336,8 +344,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             double drive = mag*Math.cos(dtheta);
             double turn = mag*Math.sin(dtheta);
 
-            dd.left = straightGain*drive - turnGain*turn;
-            dd.right = straightGain*drive + turnGain*turn;
+            dd.left = driveGain + straightGain*drive - turnGain*turn;
+            dd.right = driveGain + straightGain*drive + turnGain*turn;
         }
 
         // Clamping for safety.
