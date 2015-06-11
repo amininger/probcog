@@ -29,8 +29,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 100;
-    static final double EPS = 0.05;
+    static final double EPS = 0.01;
     static final double DISTANCE_THRESH = 0.25;
+    static final int EPS_STEPS = 5;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -53,9 +54,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     double[] relativeXyt;
     double[] xyt = null;
     String mode = "default";
-    double dist = 2.0*Util.getConfig().requireDouble("robot.geometry.radius");
-    double gain = 0.2;          // Affects turn rate
-    double maxSpeed = 0.4;      // Affects drive speed
+    double dist = 0.5*Util.getConfig().requireDouble("robot.geometry.radius");
+    double gain = 1.0;          // Affects turn rate
+    double maxSpeed = 0.6;      // Affects drive speed
     double lastTheta = Double.MAX_VALUE;
 
     // Determining stopping conditions, beyond just arriving near goal
@@ -278,40 +279,38 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         // Tie lookahead distance to speed traveled
         double maxVelocity = 2.5;   // [m/s]
-        double lookaheadTime = 1.5; // [s]
+        double lookaheadTime = .5; // [s]
         double maxLookahead = Math.max(maxVelocity*maxSpeed*lookaheadTime, 0.5);
         double shortLookahead = dgoal < maxLookahead ? 0 : MagicRobot.CHASSIS_MAIN_SIZE[0]/2;
-        double longLookahead = Math.min(maxLookahead, dgoal-3*EPS);
+        double longLookahead = Math.min(maxLookahead, dgoal-EPS_STEPS*EPS);
 
+        double ll = longLookahead;
 
         rgoal = LinAlg.resize(rgoal,2);
         // What is the right sampling pattern? You need to look ahead to
         // maneuver early enough. You need to be careful, though, since this
         // lookahead point, once beyond your portal, will instead drag you
         // towards a wall (thus, our point just ahead of the robot).
-        //double[] grad = LinAlg.normalize(PotentialUtil.getGradientSoftmax(new double[2], rgoal, pp));
-        //double[] g00 = LinAlg.normalize(PotentialUtil.getGradientSoftmax(new double[] {shortLookahead, 0}, rgoal, pp));
-        //double[] g01 = LinAlg.normalize(PotentialUtil.getGradientSoftmax(new double[] {shortLookahead+EPS,0}, rgoal, pp));
-        //grad = LinAlg.add(grad, LinAlg.scale(g00,1.00));
-        //grad = LinAlg.add(grad, LinAlg.scale(g01,0.99));
+        double[] grad = PotentialUtil.getGradientSoftmax(new double[] {0,0}, rgoal, pp);
+        double[] g00 = PotentialUtil.getGradientSoftmax(new double[] {ll+EPS,0}, rgoal, pp);
+        double[] g01 = PotentialUtil.getGradientSoftmax(new double[] {ll+2*EPS,0}, rgoal, pp);
+        double[] g10 = PotentialUtil.getGradientSoftmax(new double[] {ll+3*EPS,0}, rgoal, pp);
+        double[] g11 = PotentialUtil.getGradientSoftmax(new double[] {ll+4*EPS,0}, rgoal, pp);
 
-        //double[] g10 = LinAlg.normalize(PotentialUtil.getGradientSoftmax(new double[] {longLookahead,0}, rgoal, pp));
-        //double[] g11 = LinAlg.normalize(PotentialUtil.getGradientSoftmax(new double[] {longLookahead+EPS,0}, rgoal, pp));
-        //grad = LinAlg.add(grad, LinAlg.scale(g10, 0.200));
-        //grad = LinAlg.add(grad, LinAlg.scale(g11, 0.199));
-
-        double[] grad = PotentialUtil.getGradientSoftmax(new double[2], rgoal, pp);
-        double[] g00 = PotentialUtil.getGradientSoftmax(new double[] {shortLookahead, 0}, rgoal, pp);
-        double[] g01 = PotentialUtil.getGradientSoftmax(new double[] {shortLookahead+EPS,0}, rgoal, pp);
-        grad = LinAlg.add(grad, g00);
-        grad = LinAlg.add(grad, g01);
-
-        double[] g10 = PotentialUtil.getGradientSoftmax(new double[] {longLookahead,0}, rgoal, pp);
-        double[] g11 = PotentialUtil.getGradientSoftmax(new double[] {longLookahead+EPS,0}, rgoal, pp);
-        grad = LinAlg.add(grad, LinAlg.scale(g10, 0.1));
-        grad = LinAlg.add(grad, LinAlg.scale(g11, 0.099));
+        //System.out.printf("[[%f %f]; [%f %f]; [%f %f]; [%f %f]; [%f %f]];\n",
+        //                  grad[0], grad[1],
+        //                  g00[0], g00[1],
+        //                  g01[0], g01[1],
+        //                  g10[0], g10[1],
+        //                  g11[0], g11[1]);
 
 
+        grad = LinAlg.add(grad, LinAlg.scale(g00, .10));
+        grad = LinAlg.add(grad, LinAlg.scale(g01, .10));
+        grad = LinAlg.add(grad, LinAlg.scale(g10, .10));
+        grad = LinAlg.add(grad, LinAlg.scale(g11, .10));
+
+        grad = LinAlg.scale(grad, 10*maxSpeed);
 
         ArrayList<double[]> sampleGrads = new ArrayList<double[]>();
         ArrayList<double[]> samplePoints = new ArrayList<double[]>();
@@ -415,7 +414,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         // Handle deadband better OR let speed controller deal with it. XXX
         double maxMag = Math.max(Math.abs(dd.left), Math.abs(dd.right));
-        if (maxMag > 0) {
+        if (maxMag > speedLimit) {
             dd.left = speedLimit*(dd.left/maxMag);
             dd.right = speedLimit*(dd.right/maxMag);
         }

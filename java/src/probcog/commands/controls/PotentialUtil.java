@@ -66,29 +66,8 @@ public class PotentialUtil
         public RepulsivePotential repulsivePotential = RepulsivePotential.CLOSEST_POINT;
         public double repulsiveWeight = 1.0;
         public double maxObstacleRange = 5.0*robotRadius;
-        public double safetyRange = .5*Util.getConfig().requireDouble("robot.geometry.width");
+        public double safetyRange = .5*Util.getConfig().requireDouble("robot.geometry.width")+0.05;
     }
-
-    static public ArrayList<double[]> getMinPath(double[] rxy_start,
-                                                 PotentialField pf)
-    {
-        ArrayList<double[]> path = new ArrayList<double[]>();
-
-        double[] currXY = LinAlg.copy(rxy_start);
-        int iters = 300;
-        while (pf.inRange(currXY[0], currXY[1])) {
-            path.add(LinAlg.copy(currXY));
-            double[] g = getGradient(currXY, pf);
-            currXY[0] += g[0]*pf.getMPP()/4;
-            currXY[1] += g[1]*pf.getMPP()/4;
-
-            if (iters-- <= 0)
-                break;
-        }
-
-        return path;
-    }
-
 
     // Returns gradient_0, gradient_1, and weighted "potential"
     static private double[] gpAttract(double[] rxy,
@@ -131,7 +110,7 @@ public class PotentialUtil
             // approximating visiblity checks.
             double[] shiftedPoint = LinAlg.subtract(rxy, xy);
             double[] dir = LinAlg.normalize(shiftedPoint);
-            double d = LinAlg.distance(rxy, xy);
+            double d = LinAlg.distance(rxy, xy)-params.safetyRange;
 
             // Project query onto a vector between lidar point and robot
             // and calculate the distance from the point TO the line, as well.
@@ -145,7 +124,7 @@ public class PotentialUtil
 
             if (d0 < 0 && d1 < .2) {
                 //System.out.println(d0 + " " + d1);
-                d = d0;
+                d = d0 - params.safetyRange;
                 dir = dirRobot;
             }
 
@@ -622,7 +601,7 @@ public class PotentialUtil
 
     static public void main(String[] args)
     {
-        double[] goal = new double[] {3, -0, 0};
+        double[] goal = new double[] {10, 20, 0};
         double[] xyt = new double[] {0, 0, 0};
 
         // Fake a hallway. Wall on right is 1m away, wall on left is 0.5m
@@ -659,10 +638,11 @@ public class PotentialUtil
         params.attractivePotential = AttractivePotential.COMBINED;
         params.fieldSize = 10.0;
         params.fieldRes = 0.10;
-        params.repulsiveWeight = 3.0;
+        params.attractiveWeight = 1.0;
+        params.repulsiveWeight = 1.0;
         params.repulsivePotential = RepulsivePotential.ALL_POINTS;
         params.doorTrough = new GLineSegment2D(new double[] {doorOffset+.5*doorSize,0}, new double[] {goal[0], goal[1]});
-        params.maxObstacleRange = 1.0;
+        params.maxObstacleRange = 0.5;
 
         // Wait for keypress
         try {
@@ -732,6 +712,14 @@ public class PotentialUtil
         vb.addBack(new VisChain(M, new VzRobot(new VzMesh.Style(Color.green))));
         vb.swap();
 
+        // Goal
+        vb = vw.getBuffer("goal");
+        vb.setDrawOrder(10);
+        vb.addBack(new VisChain(LinAlg.xytToMatrix(goal),
+                                LinAlg.scale(0.2),
+                                new VzSphere(new VzMesh.Style(Color.green))));
+        vb.swap();
+
         // Render some local potentials
         vb = vw.getBuffer("gradients");
         vb.setDrawOrder(20);
@@ -769,16 +757,6 @@ public class PotentialUtil
                                 new VzPoints(new VisVertexData(lpoints),
                                              new VzPoints.Style(Color.orange, 3))));
         vb.swap();
-
-        //vb = vw.getBuffer("path");
-        //vb.setDrawOrder(50);
-        //ArrayList<double[]> path = getMinPath(new double[2], pf);
-        //vb.addBack(new VisChain(M,
-        //                        new VzLines(new VisVertexData(path),
-        //                                   VzLines.LINE_STRIP,
-        //                                   new VzLines.Style(Color.green, 2))));
-
-        //vb.swap();
 
         jf.setVisible(true);
     }
