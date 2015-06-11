@@ -33,7 +33,7 @@ import edu.umich.rosie.*;
 import edu.umich.rosie.soar.SVSCommands;
 import edu.umich.rosie.soar.SoarAgent;
 import edu.umich.rosie.soar.SoarUtil;
-import probcog.rosie.perception.Pose;
+import edu.umich.rosie.soarobjects.Pose;
 
 
 
