@@ -13,8 +13,9 @@ import april.util.*;
 import april.vis.*;
 
 import probcog.gui.*;
+import probcog.lcmtypes.bolt_arm_command_t;
+import probcog.lcmtypes.robot_action_t;
 
-import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** Move the arm to a preset number of positions, measuring

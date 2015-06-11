@@ -9,9 +9,10 @@ import april.config.*;
 import april.jmat.*;
 import april.util.*;
 
+import probcog.lcmtypes.bolt_arm_command_t;
+import probcog.lcmtypes.robot_action_t;
 import probcog.util.*;
 
-import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** Receives as input commands from user interface. These

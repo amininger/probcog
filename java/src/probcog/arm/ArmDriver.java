@@ -13,7 +13,6 @@ import april.jmat.*;
 
 import probcog.util.*;
 
-import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 public class ArmDriver implements LCMSubscriber, Runnable

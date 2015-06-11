@@ -10,7 +10,6 @@ import lcm.lcm.*;
 import april.vis.*;
 import april.util.*;
 
-import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 public class ArmStatusPanel extends JScrollPane implements LCMSubscriber

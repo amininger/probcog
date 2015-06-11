@@ -12,7 +12,6 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 
-import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** This class listens in on arm status messages and

@@ -4,7 +4,6 @@ import javax.swing.*;
 
 import april.vis.*;
 
-import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** Defines a generic interface for interacting with
