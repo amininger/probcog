@@ -30,9 +30,7 @@ import sml.smlRunEventId;
 import probcog.lcmtypes.*;
 import april.util.PeriodicTasks;
 import april.util.TimeUtil;
-import edu.umich.rosie.AgentConnector;
-import edu.umich.rosie.soar.SoarAgent;
-import edu.umich.rosie.soar.SoarUtil;
+import edu.umich.rosie.soar.*;
 import probcog.rosie.perception.*;
 
 public class ArmPerceptionConnector extends AgentConnector implements LCMSubscriber {

@@ -59,7 +59,6 @@ public class RosieGUI extends JFrame
 
     	setupMenu();
 
-    	((LanguageConnector)soarAgent.getLanguageConnector()).setChat(chat);
 //    	this.add(new CommandPanel(soarAgent));
     	
     	soarAgent.createAgent();

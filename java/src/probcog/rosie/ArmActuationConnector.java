@@ -30,9 +30,7 @@ import april.jmat.LinAlg;
 import april.jmat.MathUtil;
 import april.util.TimeUtil;
 import edu.umich.rosie.*;
-import edu.umich.rosie.soar.SVSCommands;
-import edu.umich.rosie.soar.SoarAgent;
-import edu.umich.rosie.soar.SoarUtil;
+import edu.umich.rosie.soar.*;
 import edu.umich.rosie.soarobjects.Pose;
 
 
