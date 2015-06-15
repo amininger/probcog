@@ -44,14 +44,14 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     public void connect(){
     	super.connect();
         lcm.subscribe("CLASSIFICATIONS.*", this);
-        lcm.subscribe("POSE_TRUTH.*", this);
+        lcm.subscribe("POSE", this);
     }
     
     @Override
     public void disconnect(){
     	super.disconnect();
         lcm.unsubscribe("CLASSIFICATIONS.*", this);
-        lcm.unsubscribe("POSE_TRUTH.*", this);
+        lcm.unsubscribe("POSE", this);
     }
 
 	@Override
@@ -63,7 +63,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 			if(channel.startsWith("CLASSIFICATIONS")){
 				curClassifications = new classification_list_t(ins);
 				newClassifications = true;
-			} else if (channel.startsWith("POSE_TRUTH")){
+			} else if (channel.startsWith("POSE")){
 				pose_t p = new pose_t(ins);
 				pose.updatePosition(p.pos);
 				newPose = true;
