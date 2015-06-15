@@ -257,7 +257,8 @@ public class CommandSpoofer extends JFrame
                     TypedValue[] choices = tp.getValid().toArray(new TypedValue[0]);
                     JComboBox combo = new JComboBox(choices);
                     combo.addItemListener(new ComboBoxListener(tp, values));
-                    values.put(tp.getName(), choices[0]);
+                    if (tp.isRequired())
+                        values.put(tp.getName(), choices[0]);
 
                     combo.setEnabled(tp.isRequired());
                     jcb.addItemListener(new CheckBoxListener(combo, tp, values));
@@ -414,8 +415,8 @@ public class CommandSpoofer extends JFrame
         cl.num_params = 0;
         cl.param_names = new String[0];
         cl.param_values = new typed_value_t[0];
-        
-        
+
+
         condition_test_t ct = new condition_test_t();
         ct.name = "NONE";
         ct.num_params = 0;
@@ -423,7 +424,7 @@ public class CommandSpoofer extends JFrame
         ct.param_values = new typed_value_t[0];
         ct.compare_type = condition_test_t.CMP_EQ;
         ct.compared_value = (new TypedValue(0)).toLCM();
-        
+
         cl.termination_condition = ct;
         currentMessage = cl;
     }

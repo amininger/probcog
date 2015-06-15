@@ -13,6 +13,8 @@ public class PotentialField
     double[] origin;
     double[] invOrigin;
 
+    private double[] oxy;
+
     /** Assumed to be centered around current robot pose. Operates similarly
      *  to a grid map, but can hold double values.
      **/
@@ -22,6 +24,7 @@ public class PotentialField
                           double metersPerPixel)
     {
         origin = LinAlg.copy(robotXYT);
+        oxy = LinAlg.resize(origin, 2);
         invOrigin = LinAlg.xytInverse(origin);
 
         this.metersPerPixel = metersPerPixel;
@@ -121,6 +124,16 @@ public class PotentialField
         setIndex(ix, iy, nv);
     }
 
+    public void addIndexUnsafe(int ix, int iy, double v)
+    {
+        double pv = data[iy*widthPx + ix];
+        double nv = pv+v;
+        if (Double.isInfinite(nv))
+            nv = Double.MAX_VALUE;
+
+        data[iy*widthPx + ix] = nv;
+    }
+
     /** Convert an index value to global coordinates in meters */
     public double[] indexToMeters(int ix, int iy)
     {
@@ -128,6 +141,18 @@ public class PotentialField
                                       (iy - heightPx/2 + 0.5)*metersPerPixel };
 
         return LinAlg.transform(origin, pxy);
+    }
+
+    public double[] indexToRelative(int ix, int iy)
+    {
+        double[] rxy = new double[] { (ix - widthPx/2 + 0.5)*metersPerPixel,
+                                      (iy - heightPx/2 + 0.5)*metersPerPixel };
+        return rxy;
+    }
+
+    public double[] getOrigin()
+    {
+        return oxy;
     }
 
     public int getWidth()

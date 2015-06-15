@@ -270,6 +270,15 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                         robot.setNoise(pg.gb(name));
                     }
                 }
+            } else if ("pp".equals(name)) {
+                synchronized (simulator) {
+                    for (SimObject obj: simulator.getWorld().objects) {
+                        if (!(obj instanceof probcog.sim.SimRobot))
+                            continue;
+                        probcog.sim.SimRobot robot = (probcog.sim.SimRobot)obj;
+                        robot.setPerfectPose(pg.gb(name));
+                    }
+                }
             }
         }
     }
@@ -301,7 +310,9 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
     {
         // Is noise on by default? Assumes simulator HAS been initialization
         boolean useNoise = simulator.getWorld().config.getBoolean("simulator.sim_magic_robot.use_noise", false);
-        pg.addCheckBoxes("noise", "Sensor Noise", useNoise);
+        boolean perfectPose = simulator.getWorld().config.getBoolean("simulator.sim_magic_robot.perfect_pose", true);
+        pg.addCheckBoxes("noise", "Sensor Noise", useNoise,
+                         "pp", "Perfect Pose", perfectPose);
 
         pg.addListener(new SimParameterListener());
     }

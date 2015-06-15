@@ -1,11 +1,13 @@
 package probcog.commands.controls;
 
 import java.io.*;
+import java.util.zip.*;
 import java.util.*;
 
 import lcm.lcm.*;
 
 import april.jmat.*;
+import april.jmat.geom.*;
 import april.util.*;
 
 import probcog.commands.*;
@@ -27,16 +29,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     private boolean DEBUG = false;
 
     // I don't think we can hit this rate. CPU intensive?
-    static final double HZ = 30;
-    static final double LOOKAHEAD = 0.1;
-    static final int LOOKAHEAD_STEPS = (int)(Math.ceil(0.75/LOOKAHEAD));
-
-    static final double DISTANCE_THRESH = 0.25;
-    static final double TURN_THRESH = Math.toRadians(90);
-    static final double MAX_SPEED = 0.5;
-    static final double TURN_SPEED = 0.4;
-    static final double FORWARD_SPEED = 0.1;
-    static final double TURN_WEIGHT = 5.0;
+    static final double HZ = 100;
+    static final double LOOKAHEAD_X_M = 0.2;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -44,38 +38,41 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     double REAR_AXLE_OFFSET = 0.20;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
-    private ExpiringMessageCache<laser_t> laserCache =
-        new ExpiringMessageCache<laser_t>(.2);
     private ExpiringMessageCache<pose_t> poseCache =
         new ExpiringMessageCache<pose_t>(.2);
+    private ExpiringMessageCache<grid_map_t> gmCache =
+        new ExpiringMessageCache<grid_map_t>(.5);
 
     LCM lcm = LCM.getSingleton();
-    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
+    String mapChannel = Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA");
     String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
-    double[] xyt;
-    double lastTheta = Double.MAX_VALUE;
+    boolean sim = false;
+
+    // The goal target as a global coordinate
+    double[] globalXYT;
+
+    // Alpha-beta filtering for history
+    diff_drive_t lastDrive = new diff_drive_t();
 
     private class UpdateTask implements PeriodicTasks.Task
     {
         public void run(double dt)
         {
-            laser_t laser = laserCache.get();
-            if (laser == null) {
-                //System.err.println("ERR: No laser_t detected on channel "+laserChannel);
+            pose_t pose = poseCache.get();
+            if (pose == null) {
                 return;
             }
 
-            pose_t pose = poseCache.get();
-            if (pose == null) {
-                //System.err.println("ERR: No pose_t detected on channel "+poseChannel);
+            grid_map_t gm = gmCache.get();
+            if (gm == null) {
                 return;
             }
 
             DriveParams params = new DriveParams();
             params.pose = pose;
-            params.laser = laser;
+            params.gm = gm;
             diff_drive_t dd = drive(params);
 
             dd.utime = TimeUtil.utime();
@@ -91,9 +88,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     public DriveToXY(HashMap<String, TypedValue> parameters)
     {
         assert (parameters.containsKey("x") && parameters.containsKey("y"));
-        xyt = new double[] { parameters.get("x").getDouble(),
-                             parameters.get("y").getDouble(),
-                             0.0 };
+        globalXYT = new double[] { parameters.get("x").getDouble(),
+                                   parameters.get("y").getDouble(),
+                                   0.0 };
+
+        if (parameters.containsKey("sim"))
+            sim = true;
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
@@ -124,12 +124,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     synchronized void messageReceivedEx(LCM lcm, String channel,
             LCMDataInputStream ins) throws IOException
     {
-        if (laserChannel.equals(channel)) {
-            laser_t laser = new laser_t(ins);
-            laserCache.put(laser, laser.utime);
-        } else if (poseChannel.equals(channel)) {
+        if (poseChannel.equals(channel)) {
             pose_t pose = new pose_t(ins);
-            poseCache.put(pose, pose.utime);
+            poseCache.put(pose, TimeUtil.utime());
+        } else if (mapChannel.equals(channel)) {
+            robot_map_data_t rmd = new robot_map_data_t(ins);
+            gmCache.put((grid_map_t)rmd.gridmap.copy(), TimeUtil.utime());
         }
     }
 
@@ -140,10 +140,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     public void setRunning(boolean run)
     {
         if (run) {
-            lcm.subscribe(laserChannel, this);
+            lcm.subscribe(mapChannel, this);
             lcm.subscribe(poseChannel, this);
         } else {
-            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe(mapChannel, this);
             lcm.unsubscribe(poseChannel, this);
         }
         tasks.setRunning(run);
@@ -182,127 +182,238 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         dd.left_enabled = dd.right_enabled = true;
         dd.left = dd.right = 0.0;
 
-        // Project pose to robot center. Stop if close to goal.
-        double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
-                                                                      params.pose.pos));
-        //double[] dir = new double[] {Math.cos(robotXYT[2]), Math.sin(robotXYT[2])};
-        //robotXYT[0] += dir[0]*REAR_AXLE_OFFSET;
-        //robotXYT[1] += dir[1]*REAR_AXLE_OFFSET;
+        // Decode map data if necessary
+        byte[] gmdata;
+        if (params.gm.encoding == grid_map_t.ENCODING_GZIP) {
+            try {
+                ByteArrayInputStream bytes = new ByteArrayInputStream(params.gm.data);
+                GZIPInputStream gzis = new GZIPInputStream(bytes);
 
-        if (LinAlg.distance(robotXYT, xyt, 2) < DISTANCE_THRESH)
-            return dd;
-
-        pose_t pose = new pose_t();
-        pose.orientation = LinAlg.copy(params.pose.orientation);
-        pose.pos = new double[] {robotXYT[0], robotXYT[1], 0};
-
-        PotentialUtil.Params pp = new PotentialUtil.Params(params.laser,
-                                                           pose,
-                                                           xyt);
-        if (params.pp != null)
-            pp = params.pp;
-        PotentialField pf = PotentialUtil.getPotential(pp);
-
-        // Determine the heading to pursue by sampling potentials along various
-        // headings. Choose heading with least total potential.
-        double theta = -Math.PI;
-        double potentialBest = Double.MAX_VALUE;
-        for (double t = -3*Math.PI/2; t <= 3*Math.PI/2; t += Math.toRadians(1)) {
-            double potential = 0;
-            for (int i = 1; i <= LOOKAHEAD_STEPS; i++) {
-                double rx = Math.cos(t)*(i*LOOKAHEAD);
-                double ry = Math.sin(t)*(i*LOOKAHEAD);
-                potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
-
-                rx = Math.cos(t+Math.PI/8)*(i*LOOKAHEAD/2);
-                ry = Math.sin(t+Math.PI/8)*(i*LOOKAHEAD/2);
-                potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
-
-                rx = Math.cos(t-Math.PI/8)*(i*LOOKAHEAD/2);
-                ry = Math.sin(t-Math.PI/8)*(i*LOOKAHEAD/2);
-                potential += pf.getRelative(rx, ry)/(LOOKAHEAD_STEPS*i);
-            }
-
-            if (potential < potentialBest) {
-                theta = t;
-                potentialBest = potential;
-            }
-        }
-
-        if (DEBUG) {
-            // Render the field
-            int[] map = new int[] {0xffffff00,
-                0xffff00ff,
-                0x0007ffff,
-                0xff0000ff,
-                0xff2222ff};
-            double minVal = pf.getMinValue();
-            ColorMapper cm = new ColorMapper(map, minVal, 2.5*minVal);
-
-            VisWorld.Buffer vb = vw.getBuffer("pf");
-            vb.addBack(pf.getVisObject(cm));
-            vb.swap();
-
-            vb = vw.getBuffer("grad");
-            VisVertexData vvd = new VisVertexData();
-            vvd.add(new double[2]);
-            vvd.add(new double[] {Math.cos(theta), Math.sin(theta)});
-            vb.addBack(new VzLines(vvd, VzLines.LINES, new VzLines.Style(Color.gray, 2)));
-            vb.swap();
-        }
-
-        // No valid heading
-        if (potentialBest == Double.MAX_VALUE)
-            return dd;
-
-        // Determine if we're stuck
-        if (lastTheta != Double.MAX_VALUE) {
-            double dtheta = MathUtil.mod2pi(lastTheta - theta);
-            if (Math.abs(dtheta) > Math.PI/2)
+                gmdata = new byte[params.gm.width*params.gm.height];
+                int readSoFar = 0;
+                while (readSoFar < gmdata.length) {
+                    int read = gzis.read(gmdata, readSoFar, gmdata.length-readSoFar);
+                    if (read < 0)
+                        break;
+                    readSoFar += read;
+                }
+                gzis.close();
+            } catch (ZipException ex) {
+                System.err.println("ERR: GZIP'd map data is corrupted");
+                ex.printStackTrace();
                 return dd;
-        }
-        lastTheta = theta;
-
-        if (Math.abs(theta) > TURN_THRESH) {
-            if (theta > 0) {
-                dd.left = -TURN_SPEED;
-                dd.right = TURN_SPEED;
-            } else {
-                dd.left = TURN_SPEED;
-                dd.right = -TURN_SPEED;
+            }
+            catch (IOException ex) {
+                System.err.println("ERR: Could not extract GZIP'd map");
+                ex.printStackTrace();
+                return dd;
             }
         } else {
-            double turnSpeed = TURN_WEIGHT*(theta/Math.PI);
-            double right = (2*FORWARD_SPEED + turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
-            double left = (2*FORWARD_SPEED - turnSpeed*WHEELBASE)/WHEEL_DIAMETER;
-            double maxMag = Math.max(Math.abs(right), Math.abs(left));
-            if (maxMag > 0) {
-                dd.left = MAX_SPEED*(left/maxMag);
-                dd.right = MAX_SPEED*(right/maxMag);
+            gmdata = params.gm.data;
+        }
+
+        GridMap gm = GridMap.makePixels(params.gm.x0,
+                                        params.gm.y0,
+                                        params.gm.width,
+                                        params.gm.height,
+                                        params.gm.meters_per_pixel,
+                                        0,
+                                        gmdata);
+        //grid_map_t map = new grid_map_t();
+        //map.x0 = gm.x0;
+        //map.y0 = gm.y0;
+        //map.width = gm.width;
+        //map.height = gm.height;
+        //map.meters_per_pixel = gm.metersPerPixel;
+        //map.datalen = gm.data.length;
+        //map.data = gm.data;
+        //lcm.publish("MAP DEBUG", map);
+
+        double[] poseXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
+                                                                     params.pose.pos));
+        // Convert global goal to robot local goal
+        // XXX Involves having SLAM working. For now, assuming matching
+        // coordinate frames
+        double[] goalXYT = globalXYT;
+
+        // Medium drive speed
+        double driveGain = 0.0;
+        double turnGain = 3.0;          // 3.0 normally
+        double straightGain = 1.2;
+        double collisionDistance = 0.4;
+        double repulsiveStrength = 1.5;
+        double repulsiveDistance = 2.0; // 2.0 normally
+        double attractiveStrength = 1.0;
+        double attractiveDistance = 1.0;
+        double maxSpeed = 0.5;
+        double lookahead = LOOKAHEAD_X_M;
+
+
+        if (sim) {
+            driveGain = 0.0;
+            turnGain = 3.0;
+            maxSpeed = 0.5;
+            lookahead = 0.4;
+        }
+
+        double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
+
+        // If sufficiently close to goal, stop
+        if (distToGoal < 0.25)
+            return dd;
+
+        // Single lookahead point
+        double scale = Math.min(1.0, 0.5*distToGoal/lookahead);
+        double[] lookaheadTrans = new double[] { poseXYT[0], poseXYT[1] };
+        lookaheadTrans[0] += scale*Math.cos(poseXYT[2])*lookahead;
+        lookaheadTrans[1] += scale*Math.sin(poseXYT[2])*lookahead;
+        //System.out.printf("[%f %f] -- [%f %f]\n", poseXYT[0], poseXYT[1], lookaheadTrans[0], lookaheadTrans[1]);
+
+        // Compute gradients for point
+        // First, check line of sign. If we don't have it, then
+        // force our gradient back at the robot.
+        double[] grad = new double[2];
+        boolean flagCollision = false;
+        if (gm.evaluatePath(poseXYT, lookaheadTrans, true) < 0) {
+            double angle = Math.atan2(poseXYT[1] - lookaheadTrans[1],
+                                      poseXYT[0] - lookaheadTrans[0]);
+            grad[0] += repulsiveStrength*Math.cos(angle);
+            grad[1] += repulsiveStrength*Math.sin(angle);
+        } else {
+            // Attractive gradient
+            double angle = Math.atan2(goalXYT[1] - lookaheadTrans[1],
+                                      goalXYT[0] - lookaheadTrans[0]);
+            double dist = LinAlg.distance(goalXYT, lookaheadTrans, 2);
+            scale = Math.min(1.0, dist/attractiveDistance);
+            grad[0] += scale*Math.cos(angle)*attractiveStrength;
+            grad[1] += scale*Math.sin(angle)*attractiveStrength;
+
+            // Repulsive gradient
+            double x0 = lookaheadTrans[0] - repulsiveDistance;
+            double y0 = lookaheadTrans[1] - repulsiveDistance;
+            double x1 = lookaheadTrans[0] + repulsiveDistance;
+            double y1 = lookaheadTrans[1] + repulsiveDistance;
+
+            ArrayList<double[]> gradients = new ArrayList<double[]>();
+            double[] data = new double[2];
+            double esum = 0;
+            double escale = 15;     // 15 normally
+            if (sim)
+                escale = 15;
+
+            for (double y = y0; y <= y1; y += gm.metersPerPixel) {
+                for (double x = x0; x <= x1; x += gm.metersPerPixel) {
+                    int v = gm.getValue(x, y);
+                    if (v < 255)
+                        continue;
+
+                    dist = Math.sqrt(LinAlg.sq(lookaheadTrans[0]-x) +
+                                     LinAlg.sq(lookaheadTrans[1]-y));
+                    data[1] = Math.atan2(lookaheadTrans[1]-y,
+                                         lookaheadTrans[0]-x);
+                    if (dist <= collisionDistance) {
+                        flagCollision = true;
+                        data[0] = 1.0;
+                        gradients.add(LinAlg.copy(data));
+                        esum += Math.exp(escale);
+                    } else if (dist > collisionDistance &&
+                               dist < repulsiveDistance) {
+                        scale = (repulsiveDistance - dist)/(repulsiveDistance-collisionDistance);
+                        assert (scale <= 1.0 && scale >= 0.0);
+                        data[0] = scale;
+                        gradients.add(LinAlg.copy(data));
+                        esum += Math.exp(escale*scale);
+                    }
+                }
+            }
+
+            // Remove effects of attractive field
+            if (flagCollision) {
+                grad[0] = 0;
+                grad[1] = 0;
+            }
+
+            // Softmax
+            for (int i = 0; i < gradients.size(); i++) {
+                double[] g = gradients.get(i);
+                double w = Math.exp(escale*g[0])/esum;
+                grad[0] += w*g[0]*Math.cos(g[1])*repulsiveStrength;
+                grad[1] += w*g[0]*Math.sin(g[1])*repulsiveStrength;
             }
         }
+
+
+        // Use this gradient to do something
+        if (LinAlg.magnitude(grad) > 0) {
+            double theta = Math.atan2(grad[1], grad[0]);
+            double mag = LinAlg.magnitude(grad);
+
+            double dtheta = theta - poseXYT[2];
+            double drive = mag*Math.cos(dtheta);
+            double turn = mag*Math.sin(dtheta);
+
+            dd.left = driveGain + straightGain*drive - turnGain*turn;
+            dd.right = driveGain + straightGain*drive + turnGain*turn;
+        }
+
+        // Scale to preserve proportions
+        double max = Math.max(Math.abs(dd.left), Math.abs(dd.right));
+        dd.left = (dd.left/max)*maxSpeed;
+        dd.right = (dd.right/max)*maxSpeed;
+
+        // Clamping for safety.
+        // XXX Weren't we doing something smarter than this before?
+        dd.left = MathUtil.clamp(dd.left, -maxSpeed, maxSpeed);
+        dd.right = MathUtil.clamp(dd.right, -maxSpeed, maxSpeed);
+
+        // Turn in place instead of going backwards
+        if (dd.left < 0 && dd.right < 0) {
+            if (dd.left > dd.right)
+                dd.left = -dd.right;
+            else
+                dd.right = -dd.left;
+        }
+
+        // Alpha-beta filtering
+        double alpha = 0.2;
+        if (sim) {
+            alpha = 0.8;
+        }
+        dd.left = dd.left*alpha + (1.0-alpha)*lastDrive.left;
+        dd.right = dd.right*alpha + (1.0-alpha)*lastDrive.right;
+        lastDrive = dd;
 
         return dd;
     }
 
     public String toString()
     {
-        return String.format("Drive to (%.1f,%.1f)", xyt[0], xyt[1]);
+        return String.format("Drive to (%.1f,%.1f)", globalXYT[0], globalXYT[1]);
     }
 
     public control_law_t getLCM()
     {
         control_law_t cl = new control_law_t();
         cl.name = "drive-xy";
-        cl.num_params = 2;
+        cl.num_params = 5;
         cl.param_names = new String[cl.num_params];
         cl.param_values = new typed_value_t[cl.num_params];
         cl.param_names[0] = "x";
-        cl.param_values[0] = (new TypedValue(xyt[0])).toLCM();
+        cl.param_values[0] = (new TypedValue(globalXYT[0])).toLCM();
         cl.param_names[1] = "y";
-        cl.param_values[1] = (new TypedValue(xyt[1])).toLCM();
+        cl.param_values[1] = (new TypedValue(globalXYT[1])).toLCM();
 
         return cl;
     }
 
+    static public void main(String[] args)
+    {
+        HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
+        params.put("x", new TypedValue(new Double(args[0])));
+        params.put("y", new TypedValue(new Double(args[1])));
+        if (args.length > 2)
+            params.put("distance", new TypedValue(new Double(args[2])));
+        DriveToXY drive = new DriveToXY(params);
+        drive.setRunning(true);
+    }
 }

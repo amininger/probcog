@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
 import java.util.*;
+import java.util.zip.*;
 import java.awt.event.*;
 import java.awt.*;
 import javax.swing.*;
@@ -32,12 +33,15 @@ import magic2.lcmtypes.*;
 public class SimRobot implements SimObject, LCMSubscriber
 {
     static Random classifierRandom = new Random(3611871);
+    static final int ROBOT_MAP_DATA_HZ = 10;
+    long lastMapData = 0;
 
     int ROBOT_ID = 6;
     SimWorld sw;
     DifferentialDrive drive;
 
     boolean useCoarseShape;
+    boolean perfectPose;
     boolean useNoise;
     boolean drawSensor;
     int robotID;
@@ -62,6 +66,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         this.sw = sw;
         // XXX These don't exist?
         useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);
+        perfectPose = sw.config.getBoolean("simulator.sim_magic_robot.use_perfect_pose", true);
         useNoise = sw.config.getBoolean("simulator.sim_magic_robot.use_noise", false);
         drawSensor = sw.config.getBoolean("simulator.sim_magic_robot.draw_sensor", false);
         this.robotID = ROBOT_ID;
@@ -75,7 +80,8 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         // visObj = new VzSphere(.5, new VzMesh.Style(Color.RED));
 
-        CommandInterpreter ci = new CommandInterpreter();
+        boolean sim = true;
+        CommandInterpreter ci = new CommandInterpreter(sim);
 
         // Reproduce this in monte-carlo bot
         drive = new DifferentialDrive(sw, this, new double[3]);
@@ -87,7 +93,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.rotation_noise = 0.05;
 
         // Motor setup
-        double K_t = 0.7914;    // torque constant in [Nm / A] * multiplier to speed us up
+        double K_t = 0.7914*2;    // torque constant in [Nm / A] * multiplier to speed us up
         drive.leftMotor.torque_constant = K_t;
         drive.rightMotor.torque_constant = K_t;
         double K_emf = 1.406; // emf constant [V/(rad/s)]
@@ -108,7 +114,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         tasks.addFixedDelay(new ImageTask(), 0.04);
         tasks.addFixedDelay(new PoseTask(), 0.04);
-        tasks.addFixedDelay(new ControlTask(), 0.04);
+        tasks.addFixedDelay(new ControlTask(), 0.01);
         tasks.addFixedDelay(new ClassifyTask(), 0.04);
     }
 
@@ -267,6 +273,11 @@ public class SimRobot implements SimObject, LCMSubscriber
         useNoise = noise;
     }
 
+    public void setPerfectPose(boolean pp)
+    {
+        perfectPose = pp;
+    }
+
     class ImageTask implements PeriodicTasks.Task
     {
         double gridmap_range = 10;
@@ -318,7 +329,79 @@ public class SimRobot implements SimObject, LCMSubscriber
             laser.rad0 = (float) rad0;
             laser.radstep = (float) radstep;
 
-            lcm.publish(Util.getConfig().getString("robot.lcm.laser_channel", "LASER"), laser);
+            lcm.publish(Util.getConfig().getString("robot.lcm.laser_channel", "HOKUYO_LIDAR"), laser);
+
+            // Make gzipped grid maps periodically
+            if (laser.utime - lastMapData > 1000000L/ROBOT_MAP_DATA_HZ) {
+                grid_map_t gm = new grid_map_t();
+                gm.utime = laser.utime;
+
+                double[] xyt;
+                if (perfectPose) {
+                    xyt = LinAlg.matrixToXYT(T_truth);
+                } else {
+                    xyt = LinAlg.matrixToXYT(T_odom);
+                }
+                double x0 = xyt[0] - 5;
+                double y0 = xyt[1] - 5;
+
+                // Project data into map
+                GridMap map = GridMap.makeMeters(x0, y0, 10.0, 10.0, 0.1, 0);
+                for (int i = 0; i < laser.nranges; i++) {
+                    double r = laser.ranges[i];
+                    if (r < 0)
+                        continue;
+                    double t = laser.rad0 + i*laser.radstep + xyt[2];
+                    double x = xyt[0] + r*Math.cos(t);
+                    double y = xyt[1] + r*Math.sin(t);
+
+                    map.setValue(x, y, (byte)255);
+                }
+
+                gm.x0 = map.x0;
+                gm.y0 = map.y0;
+                gm.width = map.width;
+                gm.height = map.height;
+                gm.meters_per_pixel = map.metersPerPixel;
+
+                // DEBUG
+                //gm.encoding = 0;
+                //gm.datalen = map.data.length;
+                //gm.data = map.data;
+                //lcm.publish("GRID_MAP_DEBUG", gm);
+
+                gm.encoding = grid_map_t.ENCODING_GZIP;
+
+                if (gm.encoding == grid_map_t.ENCODING_GZIP) {
+                    try {
+                        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                        GZIPOutputStream gzos = new GZIPOutputStream(bytes);
+                        gzos.write(map.data, 0, map.data.length);
+                        gzos.finish();
+
+                        byte[] data = bytes.toByteArray();
+                        gm.datalen = data.length;
+                        gm.data = data;
+
+                        gzos.close();
+                    } catch (IOException ex) {
+                        System.out.println("ERR: Could not GZIP grid map data");
+                        ex.printStackTrace();
+                        return;
+                    }
+                }
+
+                robot_map_data_t rmd = new robot_map_data_t();
+                rmd.utime = laser.utime;
+                rmd.gridmap = gm;
+                rmd.latlon_deg = new double[] {Double.NaN, Double.NaN};
+                rmd.xyt_local = xyt;
+
+                lcm.publish(Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA"), rmd);
+
+                lastMapData = laser.utime;
+            }
+
         }
     }
 
@@ -500,14 +583,14 @@ public class SimRobot implements SimObject, LCMSubscriber
         public void run(double dt)
         {
             pose_t pose;
-            if (useNoise) {
+            if (!perfectPose) {
                 pose = LCMUtil.a2mPose(drive.poseOdom);
             } else {
                 pose = LCMUtil.a2mPose(drive.poseTruth);
             }
-            //lcm.publish("POSE", pose);
-            lcm.publish("POSE", drive.poseOdom);
-            lcm.publish("POSE_TRUTH", drive.poseTruth);
+            lcm.publish("POSE", pose);
+            //lcm.publish("POSE", drive.poseOdom);
+            //lcm.publish("POSE_TRUTH", drive.poseTruth);
         }
     }
 
@@ -548,6 +631,17 @@ public class SimRobot implements SimObject, LCMSubscriber
                     mcmd = new double[] { speed + turn, speed - turn };
                 }
             }
+
+            // Add in some resistance to turning. Let's call it the
+            // "tank-driviness" factor. In general, our commands
+            // regress towards the mean of the two when trying to turn
+            double tankFactor = 0.3;
+            double avg = mcmd[0]+mcmd[1]/2;
+            double dl = avg-mcmd[0];
+            double dr = avg-mcmd[1];
+            mcmd[0] += tankFactor*dl;
+            mcmd[1] += tankFactor*dr;
+
 
             drive.motorCommands = mcmd;
         }

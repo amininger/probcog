@@ -46,6 +46,9 @@ public class CommandInterpreter
 	protected CommandInfo activeCommand = null;
 	protected int highestCommandID = -1;
 
+    // Is this in a sim robot?
+    boolean sim;
+
 	// Handle stale/repeat control law messages
 	//protected int lastCommandID = -1;
 	//protected Queue<control_law_t> waitingCommands;
@@ -53,9 +56,15 @@ public class CommandInterpreter
 	protected ExpiringMessageCache<control_law_status_list_t> statusCache =
 		new ExpiringMessageCache<control_law_status_list_t>(.25);
 
-	public CommandInterpreter()
+    public CommandInterpreter()
+    {
+        this(false);
+    }
+
+	public CommandInterpreter(boolean sim)
 	{
 		//waitingCommands = new LinkedList<control_law_t>();
+        this.sim = sim;
 
 		new ListenerThread().start();
 		new CommandThread().start();
@@ -110,6 +119,10 @@ public class CommandInterpreter
 				paramsControl.put(newCommand.param_names[i],
 								  new TypedValue(newCommand.param_values[i]));
 			}
+
+            if (sim) {
+                paramsControl.put("sim", new TypedValue(1));
+            }
 
 			// Get test condition parameters
 			Map<String, TypedValue> paramsTest = new HashMap<String, TypedValue>();
