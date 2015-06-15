@@ -41,6 +41,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     DifferentialDrive drive;
 
     boolean useCoarseShape;
+    boolean perfectPose;
     boolean useNoise;
     boolean drawSensor;
     int robotID;
@@ -65,6 +66,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         this.sw = sw;
         // XXX These don't exist?
         useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);
+        perfectPose = sw.config.getBoolean("simulator.sim_magic_robot.use_perfect_pose", true);
         useNoise = sw.config.getBoolean("simulator.sim_magic_robot.use_noise", false);
         drawSensor = sw.config.getBoolean("simulator.sim_magic_robot.draw_sensor", false);
         this.robotID = ROBOT_ID;
@@ -270,6 +272,11 @@ public class SimRobot implements SimObject, LCMSubscriber
         useNoise = noise;
     }
 
+    public void setPerfectPose(boolean pp)
+    {
+        perfectPose = pp;
+    }
+
     class ImageTask implements PeriodicTasks.Task
     {
         double gridmap_range = 10;
@@ -328,7 +335,12 @@ public class SimRobot implements SimObject, LCMSubscriber
                 grid_map_t gm = new grid_map_t();
                 gm.utime = laser.utime;
 
-                double[] xyt = LinAlg.matrixToXYT(T_odom);
+                double[] xyt;
+                if (perfectPose) {
+                    xyt = LinAlg.matrixToXYT(T_truth);
+                } else {
+                    xyt = LinAlg.matrixToXYT(T_odom);
+                }
                 double x0 = xyt[0] - 5;
                 double y0 = xyt[1] - 5;
 
@@ -570,14 +582,14 @@ public class SimRobot implements SimObject, LCMSubscriber
         public void run(double dt)
         {
             pose_t pose;
-            if (useNoise) {
+            if (!perfectPose) {
                 pose = LCMUtil.a2mPose(drive.poseOdom);
             } else {
                 pose = LCMUtil.a2mPose(drive.poseTruth);
             }
-            //lcm.publish("POSE", pose);
-            lcm.publish("POSE", drive.poseOdom);
-            lcm.publish("POSE_TRUTH", drive.poseTruth);
+            lcm.publish("POSE", pose);
+            //lcm.publish("POSE", drive.poseOdom);
+            //lcm.publish("POSE_TRUTH", drive.poseTruth);
         }
     }
 

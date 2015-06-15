@@ -14,7 +14,7 @@ public class RemoteLCMTest
     {
         GetOpt gopt = new GetOpt();
         gopt.addBoolean('h', "help", false, "Show usage");
-        gopt.addString('u', "url", "udpm://239.255.76.67:7668?ttl=1", "LCM URL");
+        gopt.addString('u', "url", "udpm://239.255.76.68:7668?ttl=1", "LCM URL");
 
         if (!gopt.parse(args) || gopt.getBoolean("help")) {
             System.out.printf("Usage: %s [-u LCM-URL]\n", args[0]);
