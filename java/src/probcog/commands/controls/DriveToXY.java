@@ -252,14 +252,14 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         if (sim) {
             driveGain = 0.0;
             turnGain = 3.0;
-            maxSpeed = 0.5;
+            maxSpeed = 0.8;
             lookahead = 0.4;
         }
 
         double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
 
         // If sufficiently close to goal, stop
-        if (distToGoal < 0.25)
+        if (0.9*distToGoal < lookahead)
             return dd;
 
         // Single lookahead point
