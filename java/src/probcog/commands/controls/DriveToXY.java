@@ -31,6 +31,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 100;
     static final double LOOKAHEAD_X_M = 0.2;
+    static final double TURN_IN_PLACE_RAD = Math.toRadians(90);
+
+    // Stop when we are oscillating
+    boolean turning = false;
+    int signThen = -1;
+    int switches = 0;
 
     // XXX Get this into config
     double WHEELBASE = 0.46;
@@ -251,16 +257,30 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         if (sim) {
             driveGain = 0.0;
-            turnGain = 3.0;
-            maxSpeed = 0.5;
+            repulsiveDistance = 2.0;
+            turnGain = 2.0;
+            maxSpeed = 0.7;
             lookahead = 0.4;
         }
 
         double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
+        double angleToGoal = Math.atan2(goalXYT[1] - poseXYT[1],
+                                        goalXYT[0] - poseXYT[0]);
+        angleToGoal = MathUtil.mod2pi(angleToGoal - poseXYT[2]);
 
         // If sufficiently close to goal, stop
-        if (distToGoal < 0.25)
+        if (0.8*distToGoal < lookahead)
             return dd;
+
+        // If we need to turn in place, do so
+        if (Math.abs(angleToGoal) > TURN_IN_PLACE_RAD) {
+            dd.right = dd.left = maxSpeed;
+            if (angleToGoal > 0)
+                dd.left *= -1;
+            else
+                dd.right *= -1;
+            return dd;
+        }
 
         // Single lookahead point
         double scale = Math.min(1.0, 0.5*distToGoal/lookahead);
@@ -358,26 +378,56 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         // Scale to preserve proportions
         double max = Math.max(Math.abs(dd.left), Math.abs(dd.right));
-        dd.left = (dd.left/max)*maxSpeed;
-        dd.right = (dd.right/max)*maxSpeed;
+        if (max > maxSpeed) {
+            dd.left = (dd.left/max)*maxSpeed;
+            dd.right = (dd.right/max)*maxSpeed;
+        }
 
         // Clamping for safety.
         // XXX Weren't we doing something smarter than this before?
         dd.left = MathUtil.clamp(dd.left, -maxSpeed, maxSpeed);
         dd.right = MathUtil.clamp(dd.right, -maxSpeed, maxSpeed);
 
+        turning = false;
         // Turn in place instead of going backwards
         if (dd.left < 0 && dd.right < 0) {
             if (dd.left > dd.right)
                 dd.left = -dd.right;
             else
                 dd.right = -dd.left;
+            turning = true;
+        }
+
+        if (sim) {
+            boolean nl = dd.left < 0;
+            boolean nr = dd.right < 0;
+            double diff = Math.abs(dd.right) - Math.abs(dd.left);
+            if (diff > maxSpeed/2) {
+                if (nr && Math.abs(dd.right) > Math.abs(dd.left))
+                    dd.left = -dd.right;
+                else if (nl && Math.abs(dd.left) > Math.abs(dd.right))
+                    dd.right = -dd.left;
+                turning = true;
+            }
+        }
+
+        // Try to stop when we are wiggling
+        if (turning) {
+            int signNow = dd.left < dd.right ? 1 : -1;
+            switches += signNow == signThen ? 0 : 1;
+            signThen = signNow;
+        } else {
+            switches = 0;
+        }
+
+        if (switches >= 2) {
+            dd.left = dd.right = 0;
         }
 
         // Alpha-beta filtering
         double alpha = 0.2;
         if (sim) {
-            alpha = 0.8;
+            alpha = 1.0;
         }
         dd.left = dd.left*alpha + (1.0-alpha)*lastDrive.left;
         dd.right = dd.right*alpha + (1.0-alpha)*lastDrive.right;
