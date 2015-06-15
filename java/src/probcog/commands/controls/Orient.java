@@ -21,11 +21,13 @@ public class Orient implements ControlLaw, LCMSubscriber
     LCM lcm = LCM.getSingleton();
 
     static final double SPEED_THRESH_RANGE_RAD = Math.PI/2;
-    static final double MAX_SPEED = 0.25;   // Not enough to overshoot, ideally
-    static final double MIN_SPEED = 0.20;   // Enough to overcome stall XXX
+    static final double MAX_SPEED = 0.50;
+    static final double MIN_SPEED = 0.35;
+    static final double MIN_SIM_SPEED = 0;
     static final int HZ = 20;
 
 
+    boolean sim = false;
     double goalYaw = 0;
 
     Object poseLock = new Object();
@@ -60,6 +62,9 @@ public class Orient implements ControlLaw, LCMSubscriber
     {
         assert (parameters.containsKey("yaw"));
         goalYaw = parameters.get("yaw").getDouble();
+
+        if (parameters.containsKey("sim"))
+            sim = true;
 
         tasks.addFixedDelay(new OrientTask(), 1.0/HZ);
     }
@@ -140,9 +145,12 @@ public class Orient implements ControlLaw, LCMSubscriber
 
         // We want to rotate toward the goal, but not overshoot.
         double dyaw = MathUtil.mod2pi(goalYaw - yaw);
-        double speed = MathUtil.clamp(MAX_SPEED*(dyaw / SPEED_THRESH_RANGE_RAD),
-                                      MIN_SPEED,
+        double minSpeed = sim ? MIN_SIM_SPEED : MIN_SPEED;
+        double speed = MathUtil.clamp(MAX_SPEED*(Math.abs(dyaw) / SPEED_THRESH_RANGE_RAD),
+                                      minSpeed,
                                       MAX_SPEED);
+
+        // A little filtering
         speed = Math.min((speed + lastSpeed) / 2, MAX_SPEED);
         if (dyaw > 0) {
             // We need to go LEFT

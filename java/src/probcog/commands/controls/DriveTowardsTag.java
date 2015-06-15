@@ -19,7 +19,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     private static final double DTT_HZ = 30;
 
     LCM lcm = LCM.getSingleton();
-    String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
+    String mapChannel = Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     PeriodicTasks tasks = new PeriodicTasks(1);
@@ -41,8 +41,8 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     private Object classyLock = new Object();
     private ExpiringMessageCache<classification_t> lastClassification =
         new ExpiringMessageCache<classification_t>(0.5);
-    private ExpiringMessageCache<laser_t> laserCache =
-        new ExpiringMessageCache<laser_t>(.2);
+    private ExpiringMessageCache<grid_map_t> gmCache =
+        new ExpiringMessageCache<grid_map_t>(.5);
 
     private class DriveTask implements PeriodicTasks.Task
     {
@@ -58,12 +58,13 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                 params.classy = lastClassification.get();
                 params.dt = dt;
 
-                laser_t laser = laserCache.get();
-                if (laser == null) {
-                    System.err.println("ERR: No laser data on channel "+laserChannel);
+                grid_map_t gm = gmCache.get();
+                if (gm == null) {
                     return;
                 }
-                params.laser = laser;
+
+                params.gm = gm;
+
 
                 diff_drive_t dd = drive(params);
                 dd.utime = TimeUtil.utime();
@@ -170,9 +171,9 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                     classification_t curr = cl.classifications[i];
                     handleClassification(curr, cl.utime);
                 }
-            } else if (laserChannel.equals(channel)) {
-                laser_t laser = new laser_t(ins);
-                laserCache.put(laser, laser.utime);
+            } else if (mapChannel.equals(channel)) {
+                robot_map_data_t rmd = new robot_map_data_t(ins);
+                gmCache.put((grid_map_t)rmd.gridmap.copy(), TimeUtil.utime());
             }
         } catch (IOException ex) {
             System.out.println("ERR: Couldn't handle message on channel - "+channel);
@@ -187,10 +188,10 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     public void setRunning(boolean run)
     {
         if (run) {
-            lcm.subscribe(laserChannel, this);
+            lcm.subscribe(mapChannel, this);
             lcm.subscribe("CLASSIFICATIONS", this);
         } else {
-            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe(mapChannel, this);
             lcm.unsubscribe("CLASSIFICATIONS", this);
         }
         tasks.setRunning(run);

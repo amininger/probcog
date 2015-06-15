@@ -245,13 +245,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
 
-        // Attempts to get working in SIM.
-        //if (true && distToGoal > 2.0) {
-        //    driveGain = 0.4;
-        //    straightGain = 1.0;
-        //    turnGain = 1.2;
-        //}
-
         // If sufficiently close to goal, stop
         if (distToGoal < 0.25)
             return dd;
@@ -347,6 +340,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             dd.left = driveGain + straightGain*drive - turnGain*turn;
             dd.right = driveGain + straightGain*drive + turnGain*turn;
         }
+
+        // Scale to preserve proportions
+        double max = Math.max(Math.abs(dd.left), Math.abs(dd.right));
+        dd.left = (dd.left/max)*maxSpeed;
+        dd.right = (dd.right/max)*maxSpeed;
 
         // Clamping for safety.
         // XXX Weren't we doing something smarter than this before?
