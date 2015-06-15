@@ -48,6 +48,8 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
+    boolean sim = false;
+
     // The goal target as a global coordinate
     double[] globalXYT;
 
@@ -89,6 +91,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         globalXYT = new double[] { parameters.get("x").getDouble(),
                                    parameters.get("y").getDouble(),
                                    0.0 };
+
+        if (parameters.containsKey("sim"))
+            sim = true;
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
@@ -233,15 +238,23 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         // Medium drive speed
         double driveGain = 0.0;
-        double turnGain = 3.0;
+        double turnGain = 3.0;          // 3.0 normally
         double straightGain = 1.2;
         double collisionDistance = 0.4;
         double repulsiveStrength = 1.5;
-        double repulsiveDistance = 2.0;
+        double repulsiveDistance = 2.0; // 2.0 normally
         double attractiveStrength = 1.0;
         double attractiveDistance = 1.0;
         double maxSpeed = 0.5;
+        double lookahead = LOOKAHEAD_X_M;
 
+
+        if (sim) {
+            driveGain = 0.0;
+            turnGain = 3.0;
+            maxSpeed = 0.5;
+            lookahead = 0.4;
+        }
 
         double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
 
@@ -250,10 +263,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             return dd;
 
         // Single lookahead point
-        double scale = Math.min(1.0, 0.5*distToGoal/LOOKAHEAD_X_M);
+        double scale = Math.min(1.0, 0.5*distToGoal/lookahead);
         double[] lookaheadTrans = new double[] { poseXYT[0], poseXYT[1] };
-        lookaheadTrans[0] += scale*Math.cos(poseXYT[2])*LOOKAHEAD_X_M;
-        lookaheadTrans[1] += scale*Math.sin(poseXYT[2])*LOOKAHEAD_X_M;
+        lookaheadTrans[0] += scale*Math.cos(poseXYT[2])*lookahead;
+        lookaheadTrans[1] += scale*Math.sin(poseXYT[2])*lookahead;
         //System.out.printf("[%f %f] -- [%f %f]\n", poseXYT[0], poseXYT[1], lookaheadTrans[0], lookaheadTrans[1]);
 
         // Compute gradients for point
@@ -284,7 +297,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             ArrayList<double[]> gradients = new ArrayList<double[]>();
             double[] data = new double[2];
             double esum = 0;
-            double escale = 15;
+            double escale = 15;     // 15 normally
+            if (sim)
+                escale = 15;
 
             for (double y = y0; y <= y1; y += gm.metersPerPixel) {
                 for (double x = x0; x <= x1; x += gm.metersPerPixel) {
@@ -360,7 +375,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         }
 
         // Alpha-beta filtering
-        double alpha = 0.20;
+        double alpha = 0.2;
+        if (sim) {
+            alpha = 0.8;
+        }
         dd.left = dd.left*alpha + (1.0-alpha)*lastDrive.left;
         dd.right = dd.right*alpha + (1.0-alpha)*lastDrive.right;
         lastDrive = dd;

@@ -635,7 +635,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             // Add in some resistance to turning. Let's call it the
             // "tank-driviness" factor. In general, our commands
             // regress towards the mean of the two when trying to turn
-            double tankFactor = 0.2;
+            double tankFactor = 0.3;
             double avg = mcmd[0]+mcmd[1]/2;
             double dl = avg-mcmd[0];
             double dr = avg-mcmd[1];
