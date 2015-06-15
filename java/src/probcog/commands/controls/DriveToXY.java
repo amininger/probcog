@@ -31,6 +31,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     // I don't think we can hit this rate. CPU intensive?
     static final double HZ = 100;
     static final double LOOKAHEAD_X_M = 0.2;
+    static final double TURN_IN_PLACE_RAD = Math.toRadians(90);
 
     // Stop when we are oscillating
     boolean turning = false;
@@ -263,10 +264,23 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         }
 
         double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
+        double angleToGoal = Math.atan2(goalXYT[1] - poseXYT[1],
+                                        goalXYT[0] - poseXYT[0]);
+        angleToGoal = MathUtil.mod2pi(angleToGoal - poseXYT[2]);
 
         // If sufficiently close to goal, stop
         if (0.8*distToGoal < lookahead)
             return dd;
+
+        // If we need to turn in place, do so
+        if (Math.abs(angleToGoal) > TURN_IN_PLACE_RAD) {
+            dd.right = dd.left = maxSpeed;
+            if (angleToGoal > 0)
+                dd.left *= -1;
+            else
+                dd.right *= -1;
+            return dd;
+        }
 
         // Single lookahead point
         double scale = Math.min(1.0, 0.5*distToGoal/lookahead);
@@ -388,7 +402,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             boolean nl = dd.left < 0;
             boolean nr = dd.right < 0;
             double diff = Math.abs(dd.right) - Math.abs(dd.left);
-            if (diff > maxSpeed/3) {
+            if (diff > maxSpeed/2) {
                 if (nr && Math.abs(dd.right) > Math.abs(dd.left))
                     dd.left = -dd.right;
                 else if (nl && Math.abs(dd.left) > Math.abs(dd.right))
