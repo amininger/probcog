@@ -45,7 +45,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
         String[] outputHandlerStrings = { "do-control-law", "stop", "face-point"};
         this.setOutputHandlerNames(outputHandlerStrings);
 
-        activeCommand = SoarCommandParser.createEmptyControlLaw("NONE");
+        activeCommand = SoarCommandParser.createEmptyControlLaw("RESTART");
         activeCommand.id = nextControlLawId++;
     }
     

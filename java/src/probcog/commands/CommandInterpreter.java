@@ -64,18 +64,28 @@ public class CommandInterpreter
 	protected void interpretCommand(control_law_t controlLaw)
 	{
 		synchronized(commandLock){
+			String clName = controlLaw.name.toLowerCase();
+			if(clName.equals("restart")){
+				// Control Law Name == RESTART
+				/// Stop current command and destory, and reset counter
+				if(activeCommand != null){
+					stopActiveCommand();
+					activeCommand = null;
+				}
+				highestCommandID = controlLaw.id;
+			}
 			if(controlLaw.id <= highestCommandID){
 				return;
 			}
 			highestCommandID = controlLaw.id;
-			if(controlLaw.name.toLowerCase().equals("none")){
+			if(clName.equals("none")){
 				// Control Law Name == NONE
 				// Stop current command and destroy it
 				if (activeCommand != null){
 					stopActiveCommand();
 					activeCommand = null;
 				}
-			} else if(controlLaw.name.toLowerCase().equals("stop")){
+			} else if(clName.equals("stop")){
 				// Control Law Name == STOP
 				// Stop current command
 				if (activeCommand != null && activeCommand.running){
@@ -148,7 +158,8 @@ public class CommandInterpreter
 
 	protected void sendCommandStatus(control_law_t controlLaw)
 	{
-		if(controlLaw.name.toLowerCase().equals("none")){
+		String clName = controlLaw.name.toLowerCase();
+		if(clName.equals("none") || clName.equals("restart")){
 			// No commands being sent, no need to reply with a status
 			return;
 		}
