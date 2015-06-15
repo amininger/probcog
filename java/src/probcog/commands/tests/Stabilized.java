@@ -22,7 +22,7 @@ public class Stabilized implements ConditionTest, LCMSubscriber
     LCM lcm = LCM.getSingleton();
     private double PERIOD_S = 1.0;
     static final double THETA_THRESH_RAD = Math.toRadians(3);
-    static final double DIST_THRESH_M = 0.05;
+    static final double DIST_THRESH_M = 0.10;
 
     boolean begun = false;
     long startTime = 0;
@@ -107,6 +107,7 @@ public class Stabilized implements ConditionTest, LCMSubscriber
         double maxy = Double.NEGATIVE_INFINITY;
         double mint = Double.POSITIVE_INFINITY;
         double maxt = Double.NEGATIVE_INFINITY;
+        double avgt = 0;
 
         synchronized (poseQueue) {
             for (pose_t pose: poseQueue) {
@@ -123,7 +124,10 @@ public class Stabilized implements ConditionTest, LCMSubscriber
         double dy = maxy - miny;
         double dt = maxt - mint;
 
-        boolean ret = Math.sqrt(dx*dx + dy*dy) < DIST_THRESH_M && dt < THETA_THRESH_RAD;
+
+        boolean ret = Math.sqrt(dx*dx + dy*dy) < DIST_THRESH_M;
+        ret = ret && dt < THETA_THRESH_RAD;
+
         return ret;
     }
 

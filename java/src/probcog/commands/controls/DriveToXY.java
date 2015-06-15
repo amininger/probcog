@@ -32,6 +32,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double HZ = 100;
     static final double LOOKAHEAD_X_M = 0.2;
 
+    // Stop when we are oscillating
+    boolean turning = false;
+    int signThen = -1;
+    int switches = 0;
+
     // XXX Get this into config
     double WHEELBASE = 0.46;
     double WHEEL_DIAMETER = 0.25;
@@ -251,15 +256,16 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         if (sim) {
             driveGain = 0.0;
-            turnGain = 3.0;
-            maxSpeed = 0.8;
+            repulsiveDistance = 2.0;
+            turnGain = 2.0;
+            maxSpeed = 0.7;
             lookahead = 0.4;
         }
 
         double distToGoal = LinAlg.distance(poseXYT, goalXYT, 2);
 
         // If sufficiently close to goal, stop
-        if (0.9*distToGoal < lookahead)
+        if (0.8*distToGoal < lookahead)
             return dd;
 
         // Single lookahead point
@@ -358,26 +364,56 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         // Scale to preserve proportions
         double max = Math.max(Math.abs(dd.left), Math.abs(dd.right));
-        dd.left = (dd.left/max)*maxSpeed;
-        dd.right = (dd.right/max)*maxSpeed;
+        if (max > maxSpeed) {
+            dd.left = (dd.left/max)*maxSpeed;
+            dd.right = (dd.right/max)*maxSpeed;
+        }
 
         // Clamping for safety.
         // XXX Weren't we doing something smarter than this before?
         dd.left = MathUtil.clamp(dd.left, -maxSpeed, maxSpeed);
         dd.right = MathUtil.clamp(dd.right, -maxSpeed, maxSpeed);
 
+        turning = false;
         // Turn in place instead of going backwards
         if (dd.left < 0 && dd.right < 0) {
             if (dd.left > dd.right)
                 dd.left = -dd.right;
             else
                 dd.right = -dd.left;
+            turning = true;
+        }
+
+        if (sim) {
+            boolean nl = dd.left < 0;
+            boolean nr = dd.right < 0;
+            double diff = Math.abs(dd.right) - Math.abs(dd.left);
+            if (diff > maxSpeed/3) {
+                if (nr && Math.abs(dd.right) > Math.abs(dd.left))
+                    dd.left = -dd.right;
+                else if (nl && Math.abs(dd.left) > Math.abs(dd.right))
+                    dd.right = -dd.left;
+                turning = true;
+            }
+        }
+
+        // Try to stop when we are wiggling
+        if (turning) {
+            int signNow = dd.left < dd.right ? 1 : -1;
+            switches += signNow == signThen ? 0 : 1;
+            signThen = signNow;
+        } else {
+            switches = 0;
+        }
+
+        if (switches >= 2) {
+            dd.left = dd.right = 0;
         }
 
         // Alpha-beta filtering
         double alpha = 0.2;
         if (sim) {
-            alpha = 0.8;
+            alpha = 1.0;
         }
         dd.left = dd.left*alpha + (1.0-alpha)*lastDrive.left;
         dd.right = dd.right*alpha + (1.0-alpha)*lastDrive.right;
