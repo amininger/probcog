@@ -26,8 +26,6 @@ public class RosieGUI extends JFrame
 
 	private JButton startStopButton;
 	
-	private JButton stopRobotButton;
-	
 	private ArmPerceptionConnector perception;
 	private ArmActuationConnector actuation;
 	private LanguageConnector language;
@@ -91,14 +89,6 @@ public class RosieGUI extends JFrame
     	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
     	actuation.createMenu(menuBar);
-    	
-    	stopRobotButton = new JButton("STOP");
-    	stopRobotButton.setBackground(Color.red);
-    	stopRobotButton.addActionListener(new ActionListener(){
-    		public void actionPerformed(ActionEvent e){
-    			
-    		}
-    	});
 
     	this.setJMenuBar(menuBar);
     }
