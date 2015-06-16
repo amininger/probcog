@@ -47,6 +47,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private double targetHeading = Double.MAX_VALUE;
 
     // Task State
+    boolean sim = false;
     boolean oriented = false;
     int startIdx = -1;
     int finIdx = -1;
@@ -256,6 +257,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         // XXX
         double G_weight = Math.pow(goalDistance, .5);
         double K_p = (1.0 - r/G_weight);
+        if (sim)
+            K_p *= 4.0;
         double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
 
         //double nearSpeed = 0.5;
@@ -314,6 +317,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         if (parameters.containsKey("heading"))
             targetHeading = parameters.get("heading").getDouble();
+
+        if (parameters.containsKey("sim"))
+            sim = true;
 
         tasks.addFixedRate(new UpdateTask(), 1.0/FW_HZ);
     }
