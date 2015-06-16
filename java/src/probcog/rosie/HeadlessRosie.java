@@ -1,52 +1,27 @@
 package probcog.rosie;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
 
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JSplitPane;
-
 import probcog.rosie.actuation.MobileActuationConnector;
 import probcog.rosie.perception.MobilePerceptionConnector;
 
-
-import edu.umich.rosie.AgentMenu;
-import edu.umich.rosie.language.ChatPanel;
 import edu.umich.rosie.language.LanguageConnector;
 import edu.umich.rosie.soar.SoarAgent;
 import april.util.GetOpt;
 import april.util.StringUtil;
 
-public class RosieGUI extends JFrame
+public class HeadlessRosie
 {
 	private SoarAgent soarAgent;
 
-	private JButton startStopButton;
-	
 	private MobilePerceptionConnector perception;
 	private MobileActuationConnector actuation;
 	private LanguageConnector language;
 
-    public RosieGUI(Properties props)
+    public HeadlessRosie(Properties props)
     {
-		super("Rosie Chat");
-		
-    	this.setSize(800, 650);
-        addWindowListener(new WindowAdapter() {
-        	public void windowClosing(WindowEvent w) {
-        		soarAgent.kill();
-        	}
-     	});
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    	
-
     	soarAgent = new SoarAgent(props);
     	
     	actuation = new MobileActuationConnector(soarAgent, props);
@@ -58,47 +33,15 @@ public class RosieGUI extends JFrame
     	language = new LanguageConnector(soarAgent, props);
     	soarAgent.setLanguageConnector(language);
 
-    	ChatPanel chat = new ChatPanel(soarAgent, this);
-
-    	setupMenu();
-
     	soarAgent.createAgent();
-
-    	CommandPanel commandPanel = new CommandPanel(soarAgent);
+    	soarAgent.start();
     	
-    	JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, chat, commandPanel);
-    	splitPane.setDividerLocation(400);
-    	this.add(splitPane);
-    	
-    	this.setVisible(true);
+    	while(true){
+    		try{
+    			Thread.sleep(1000);
+    		} catch(InterruptedException e){}
+    	}
     }
-
-    private void setupMenu(){
-    	JMenuBar menuBar = new JMenuBar();
-
-    	startStopButton = new JButton("START");
-        startStopButton.addActionListener(new ActionListener(){
-			public void actionPerformed(ActionEvent arg0) {
-				if(soarAgent.isRunning()){
-					startStopButton.setText("START");
-					soarAgent.stop();
-				} else {
-					startStopButton.setText("STOP");
-					soarAgent.start();
-				}
-			}
-        });
-        menuBar.add(startStopButton);
-
-    	menuBar.add(new AgentMenu(soarAgent));
-    	
-    	language.createMenu(menuBar);
-    	perception.createMenu(menuBar);
-    	actuation.createMenu(menuBar);
-
-    	this.setJMenuBar(menuBar);
-    }
-
 
     public static void main(String[] args) {
 
@@ -121,7 +64,7 @@ public class RosieGUI extends JFrame
         if(configFile == null){
         	configFile = StringUtil.replaceEnvironmentVariables("$ROSIE_CONFIG");
         }
-
+        System.out.println("CONFIG FILE = " + configFile);
         if(configFile.equals("")){
           System.err.println("ERR: No $ROSIE_CONFIG environment variable set");
           System.exit(1);
@@ -137,6 +80,6 @@ public class RosieGUI extends JFrame
 			return;
 		}
 
-        new RosieGUI(props);
+        new HeadlessRosie(props);
     }
 }

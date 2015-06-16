@@ -1,6 +1,0 @@
-sp {satisfy-purpose*elaborate*purpose
-   (state <s> ^name satisfy-purpose
-              ^topstate.top-segment.purpose <purp>)
--->
-   (<s> ^purpose <purp>)
-}

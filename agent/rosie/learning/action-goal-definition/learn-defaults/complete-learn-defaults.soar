@@ -1,9 +1,0 @@
-sp {default-relation*apply*complete-learn-defaults
-   (state <s> ^name learn-defaults
-   	      ^superstate <ss>
-	      ^operator.name complete-learn-defaults)
-   (<ss> ^operator <op>
-   	 ^purpose <p>)
--->
-   (<ss> ^completed <p>)
-}

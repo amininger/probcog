@@ -5,11 +5,22 @@ import java.util.Map;
 
 import april.util.TimeUtil;
 
+import edu.umich.rosie.soar.SoarUtil;
+
 import probcog.commands.TypedValue;
 import probcog.lcmtypes.condition_test_t;
 import probcog.lcmtypes.control_law_t;
 import probcog.lcmtypes.typed_value_t;
-import probcog.rosie.WMUtil;
+//
+//import edu.umich.rosie.SoarUtil;
+//import april.util.TimeUtil;
+//import probcog.commands.TypedValue;
+//import probcog.lcmtypes.condition_test_t;
+//import probcog.lcmtypes.control_law_t;
+//import probcog.lcmtypes.typed_value_t;
+//import sml.Identifier;
+//import sml.WMElement;
+
 import sml.Identifier;
 import sml.WMElement;
 
@@ -20,7 +31,7 @@ public class SoarCommandParser {
 		cl.id = -1;
 
 		// Name of the condition test
-		cl.name = WMUtil.getValueOfAttribute(id, "name");
+		cl.name = SoarUtil.getValueOfAttribute(id, "name");
 		if(cl.name == null){
 			System.err.println("No ^name attribute on condition test");
 			return null;
@@ -39,7 +50,7 @@ public class SoarCommandParser {
 		}
 
 		// Termination condition - when to stop
-		Identifier termId = WMUtil.getIdentifierOfAttribute(id, "termination-condition");
+		Identifier termId = SoarUtil.getIdentifierOfAttribute(id, "termination-condition");
 		cl.termination_condition = parseConditionTest(termId);
 		if(cl.termination_condition == null){
 			System.err.println("Invalid termination condition");
@@ -64,7 +75,7 @@ public class SoarCommandParser {
 		}
 
 		// Name of the condition test
-		ct.name = WMUtil.getValueOfAttribute(id, "name");
+		ct.name = SoarUtil.getValueOfAttribute(id, "name");
 		if(ct.name == null){
 			System.err.println("No ^name attribute on condition test");
 			return null;
@@ -86,7 +97,7 @@ public class SoarCommandParser {
 		ct.compared_value = (new TypedValue(0)).toLCM();
 		// compare-type
 //		//   The type of comparison (gt, gte, eq, lte, lt)
-//		String compareType = WMUtil.getValueOfAttribute(id, "compare-type");
+//		String compareType = SoarUtil.getValueOfAttribute(id, "compare-type");
 //		if(compareType == null){
 //			System.err.println("No compare-type on condition test");
 //			return null;
@@ -106,24 +117,24 @@ public class SoarCommandParser {
 
 		// compared-value
 		//   the value being compared against when evaluating the test
-//		String comparedValue = WMUtil.getValueOfAttribute(id, "compared-value");
+//		String comparedValue = SoarUtil.getValueOfAttribute(id, "compared-value");
 //		if(comparedValue == null){
 //			System.err.println("no compared-value on condition test");
 //			return null;
 //		}
-//		ct.compared_value = WMUtil.wrapTypedValue(id, "compared-value");
+//		ct.compared_value = SoarUtil.wrapTypedValue(id, "compared-value");
 
 		return ct;
 	}
 
 	public static HashMap<String, typed_value_t> parseParameters(Identifier id, String att){
 		HashMap<String, typed_value_t> params = new HashMap<String, typed_value_t>();
-		Identifier paramsId = WMUtil.getIdentifierOfAttribute(id, att);
+		Identifier paramsId = SoarUtil.getIdentifierOfAttribute(id, att);
 		if(paramsId != null){
 			for(int i = 0; i < paramsId.GetNumberChildren(); i++){
 				WMElement wme = paramsId.GetChild(i);
 				String name = wme.GetAttribute();
-				params.put(name, WMUtil.wrapTypedValue(wme));
+				params.put(name, wrapTypedValue(wme));
 			}
 		}
 
@@ -140,5 +151,30 @@ public class SoarCommandParser {
 		cl.param_values = new typed_value_t[0];
 		cl.termination_condition = parseConditionTest(null);
 		return cl;
+	}
+    
+    public static typed_value_t wrapTypedValue(WMElement wme){
+		typed_value_t tv = new typed_value_t();
+		tv.value = wme.GetValueAsString();
+
+		String valType = wme.GetValueType();
+        if(valType.equals(SoarUtil.INTEGER_VAL)){
+        	tv.type = typed_value_t.TYPE_INT;
+        } else if(valType.equals(SoarUtil.FLOAT_VAL)){
+        	tv.type = typed_value_t.TYPE_DOUBLE;
+        } else if(tv.value.equals("true") || tv.value.equals("false")){
+        	tv.type = typed_value_t.TYPE_BOOL;
+        } else {
+        	tv.type = typed_value_t.TYPE_STRING;
+        }
+        return tv;
+    }
+
+	public static typed_value_t wrapTypedValue(Identifier id, String att){
+		WMElement wme = id.FindByAttribute(att, 0);
+        if(wme == null || wme.GetValueAsString().length() == 0){
+            return null;
+        }
+        return wrapTypedValue(wme);
 	}
 }
