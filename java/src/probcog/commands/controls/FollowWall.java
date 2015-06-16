@@ -258,7 +258,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         double G_weight = Math.pow(goalDistance, .5);
         double K_p = (1.0 - r/G_weight);
         if (sim)
-            K_p *= 3.0;
+            K_p *= 4.0;
         double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
 
         //double nearSpeed = 0.5;
