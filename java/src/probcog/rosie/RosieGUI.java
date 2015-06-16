@@ -38,7 +38,8 @@ public class RosieGUI extends JFrame
     {
 		super("Rosie Chat");
 		
-    	this.setSize(800, 650);
+    	//this.setSize(800, 650);
+    	this.setSize(800, 450);
         addWindowListener(new WindowAdapter() {
         	public void windowClosing(WindowEvent w) {
         		soarAgent.kill();
@@ -63,12 +64,14 @@ public class RosieGUI extends JFrame
     	setupMenu();
 
     	soarAgent.createAgent();
-
-    	CommandPanel commandPanel = new CommandPanel(soarAgent);
     	
-    	JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, chat, commandPanel);
-    	splitPane.setDividerLocation(400);
-    	this.add(splitPane);
+    	add(chat);
+
+//    	CommandPanel commandPanel = new CommandPanel(soarAgent);
+//    	
+//    	JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, chat, commandPanel);
+//    	splitPane.setDividerLocation(400);
+//    	this.add(splitPane);
     	
     	this.setVisible(true);
     }
