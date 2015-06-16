@@ -1,5 +1,6 @@
 package probcog.rosie;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -11,7 +12,6 @@ import java.util.Properties;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
-
 
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
@@ -25,6 +25,8 @@ public class RosieGUI extends JFrame
 	private SoarAgent soarAgent;
 
 	private JButton startStopButton;
+	
+	private JButton stopRobotButton;
 	
 	private ArmPerceptionConnector perception;
 	private ArmActuationConnector actuation;
@@ -89,6 +91,14 @@ public class RosieGUI extends JFrame
     	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
     	actuation.createMenu(menuBar);
+    	
+    	stopRobotButton = new JButton("STOP");
+    	stopRobotButton.setBackground(Color.red);
+    	stopRobotButton.addActionListener(new ActionListener(){
+    		public void actionPerformed(ActionEvent e){
+    			
+    		}
+    	});
 
     	this.setJMenuBar(menuBar);
     }
@@ -100,6 +110,7 @@ public class RosieGUI extends JFrame
 
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addBoolean('d', "debug", true, "Show the soar debugger");
+        opts.addString('c', "config", null, "Config file for rosie");
 
         if (!opts.parse(args)) {
             System.err.println("ERR: Error parsing args - "+opts.getReason());
@@ -110,7 +121,10 @@ public class RosieGUI extends JFrame
             System.exit(0);
         }
 
-        String configFile = StringUtil.replaceEnvironmentVariables("$ROSIE_CONFIG");
+        String configFile = opts.getString("config");
+        if(configFile == null){
+        	configFile = StringUtil.replaceEnvironmentVariables("$ROSIE_CONFIG");
+        }
         if(configFile.equals("")){
           System.err.println("ERR: No $ROSIE_CONFIG environment variable set");
           System.exit(1);
