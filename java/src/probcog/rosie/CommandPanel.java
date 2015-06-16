@@ -61,7 +61,7 @@ public class CommandPanel extends JPanel implements RunEventInterface{
 		driveForward.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				sendCommand("drive-forward1", true);
+				sendCommand("go1", true);
 			}
 		});
 		driveForward.setBackground(new Color(150, 255, 150));
