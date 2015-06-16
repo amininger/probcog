@@ -1,5 +1,6 @@
 package probcog.rosie;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -15,8 +16,6 @@ import javax.swing.JSplitPane;
 
 import probcog.rosie.actuation.MobileActuationConnector;
 import probcog.rosie.perception.MobilePerceptionConnector;
-
-
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
 import edu.umich.rosie.language.LanguageConnector;
@@ -29,6 +28,7 @@ public class RosieGUI extends JFrame
 	private SoarAgent soarAgent;
 
 	private JButton startStopButton;
+	private JButton stopRobotButton;
 	
 	private MobilePerceptionConnector perception;
 	private MobileActuationConnector actuation;
@@ -98,6 +98,16 @@ public class RosieGUI extends JFrame
     	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
     	actuation.createMenu(menuBar);
+    	
+
+    	stopRobotButton = new JButton("STOP");
+    	stopRobotButton.setBackground(Color.red);
+        stopRobotButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent arg0) {
+				actuation.processStopCommand(null);
+			}
+        });
+        menuBar.add(stopRobotButton);
 
     	this.setJMenuBar(menuBar);
     }
