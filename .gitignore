@@ -1,1 +1,15 @@
 *.swp
+
+bin
+bin/*
+
+java/build
+java/build/*
+java/src/probcog/lcmtypes
+*.jar
+*.project
+*.classpath
+
+*.local
+
+
