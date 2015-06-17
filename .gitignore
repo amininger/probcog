@@ -1,9 +1,7 @@
-java/src/probcog/lcmtypes/*
 *.swp
 *.local
+*.jar
 
-java/bin/*
-java/build/*
-java/.classpath
-java/.project
+*.project
+*.classpath
 
