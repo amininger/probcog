@@ -233,13 +233,13 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
         // Look for points in front of the robot
         double rWidth = 0.3;
-        double hazardDist = Math.max(goalDistance, 0.6);
+        double hazardDist = Math.max(goalDistance, 1.0);
         double rc = Math.cos(poseXYT[2]);
         double rs = Math.sin(poseXYT[2]);
-        for (double y = -rWidth; y < rWidth; y += gm.metersPerPixel) {
-            for (double x = 0; x < hazardDist; x += gm.metersPerPixel) {
-                double xbot = poseXYT[0] + rc*x + rs*y;
-                double ybot = poseXYT[1] - rs*x + rc*y;
+        for (double y = -rWidth; y < rWidth; y += gm.metersPerPixel/2) {
+            for (double x = 0; x < hazardDist; x += gm.metersPerPixel/2) {
+                double xbot = poseXYT[0] + rc*x - rs*y;
+                double ybot = poseXYT[1] + rs*x + rc*y;
                 int v = gm.getValue(xbot, ybot);
                 if (v > 0) {
                     return dd;
