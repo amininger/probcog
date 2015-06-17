@@ -48,7 +48,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     Direction dir;
     private enum Direction { LEFT, RIGHT }
-    private double goalDistance = 0.5;
+    private double goalDistance = 0.4;
     private double targetHeading = Double.MAX_VALUE;
 
     // Task State
