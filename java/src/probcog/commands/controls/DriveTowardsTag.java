@@ -42,7 +42,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     private ExpiringMessageCache<classification_t> lastClassification =
         new ExpiringMessageCache<classification_t>(0.5);
     private ExpiringMessageCache<grid_map_t> gmCache =
-        new ExpiringMessageCache<grid_map_t>(.5);
+        new ExpiringMessageCache<grid_map_t>(1.5);
 
     private class DriveTask implements PeriodicTasks.Task
     {

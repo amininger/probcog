@@ -355,7 +355,7 @@ public class SimRobot implements SimObject, LCMSubscriber
                     double x = xyt[0] + r*Math.cos(t);
                     double y = xyt[1] + r*Math.sin(t);
 
-                    map.setValue(x, y, (byte)255);
+                    map.setValue(x, y, (byte)1);
                 }
 
                 gm.x0 = map.x0;
