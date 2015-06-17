@@ -34,6 +34,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double TURN_IN_PLACE_RAD = Math.toRadians(90);
 
     // Stop when we are oscillating
+    double alpha = 0.2;
     boolean turning = false;
     int signThen = -1;
     int switches = 0;
@@ -100,6 +101,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         if (parameters.containsKey("sim"))
             sim = true;
+
+        if (parameters.containsKey("alpha"))
+            alpha = parameters.get("alpha").getDouble();
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
@@ -351,7 +355,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             for (double y = y0; y <= y1; y += gm.metersPerPixel) {
                 for (double x = x0; x <= x1; x += gm.metersPerPixel) {
                     int v = gm.getValue(x, y);
-                    if (v > 0)
+                    if (v == 0)
                         continue;
 
                     dist = Math.sqrt(LinAlg.sq(lookaheadTrans[0]-x) +
@@ -452,7 +456,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         }
 
         // Alpha-beta filtering
-        double alpha = 0.2;
         if (sim) {
             alpha = 1.0;
         }
