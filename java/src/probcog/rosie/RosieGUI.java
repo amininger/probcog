@@ -36,8 +36,8 @@ public class RosieGUI extends JFrame
     {
 		super("Rosie Chat");
 		
-    	this.setSize(800, 600);
-    	getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.PAGE_AXIS));
+    	this.setSize(1000, 450);
+    	getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.LINE_AXIS));
         addWindowListener(new WindowAdapter() {
         	public void windowClosing(WindowEvent w) {
         		soarAgent.kill();
