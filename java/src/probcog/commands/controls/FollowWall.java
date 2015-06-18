@@ -48,7 +48,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     Direction dir;
     private enum Direction { LEFT, RIGHT }
-    private double goalDistance = 0.4;
+    private double goalDistance = 0.6;
     private double targetHeading = Double.MAX_VALUE;
 
     // Task State
@@ -273,18 +273,19 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         double alpha0 = 0.0;
         if (lastRange > 0)
             rSide = alpha0*lastRange + (1.0-alpha0)*rSide;
-        double alpha1 = 0.0;
+        double alpha1 = 0.5;
         if (lastRange > 0)
             deriv = deriv*alpha1 + (1.0-alpha1)*(rSide - lastRange)/dt;
         lastRange = rSide;
 
         // Hand tuned controller
-        double G_weight = Math.pow(goalDistance, 0.5);
-        double K_p = (1.0 - rSide/G_weight);
+        double G_weight = Math.pow(goalDistance, 1.0);
+        //double K_p = (1.0 - rSide/G_weight);
+        double K_p = 1.0 - Math.pow(rSide/G_weight, 0.5);
         if (!sim) {
             K_p *= 2.5;
         } else {
-            //K_d = 0.5;
+            K_d = 0.4;
         }
         //double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
         double prop = 0.5 + K_p;
