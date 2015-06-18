@@ -9,12 +9,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
+import edu.umich.rosie.language.InstructorMessagePanel;
 import edu.umich.rosie.language.LanguageConnector;
 import edu.umich.rosie.soar.SoarAgent;
 import april.util.GetOpt;
@@ -34,7 +36,8 @@ public class RosieGUI extends JFrame
     {
 		super("Rosie Chat");
 		
-    	this.setSize(800, 450);
+    	this.setSize(800, 600);
+    	getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.PAGE_AXIS));
         addWindowListener(new WindowAdapter() {
         	public void windowClosing(WindowEvent w) {
         		soarAgent.kill();
@@ -60,6 +63,11 @@ public class RosieGUI extends JFrame
     	setupMenu();
 
 //    	this.add(new CommandPanel(soarAgent));
+    	String[] messages = new String[]{
+    			"Move the green sphere on the table",
+    			"The goal is that the green sphere is on the table"
+    	};
+    	this.add(new InstructorMessagePanel(chat, messages));
     	
     	soarAgent.createAgent();
     	
