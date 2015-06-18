@@ -21,8 +21,8 @@ public class Orient implements ControlLaw, LCMSubscriber
     LCM lcm = LCM.getSingleton();
 
     static final double SPEED_THRESH_RANGE_RAD = Math.PI/2;
-    static final double MAX_SPEED = 0.50;
-    static final double MIN_SPEED = 0.35;
+    static final double MAX_SPEED = 0.60;
+    static final double MIN_SPEED = 0.45;
     static final double MIN_SIM_SPEED = 0;
     static final int HZ = 20;
 
