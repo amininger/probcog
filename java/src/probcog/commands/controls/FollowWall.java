@@ -287,12 +287,12 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         } else {
             K_d = 0.4;
         }
-        //double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
-        double prop = 0.5 + K_p;
+        double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
+        //double prop = 0.5 + K_p;
 
         double farSpeed = 0.5;
-        //double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0.0, 1.0);
-        double nearSpeed = prop - K_d*deriv;
+        double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0.0, 1.0);
+        //double nearSpeed = prop - K_d*deriv;
         double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
         if (max < 0.01) {
             nearSpeed = farSpeed = 0;
