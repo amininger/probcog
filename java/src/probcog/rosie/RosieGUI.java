@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
@@ -18,6 +19,7 @@ import probcog.rosie.actuation.MobileActuationConnector;
 import probcog.rosie.perception.MobilePerceptionConnector;
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
+import edu.umich.rosie.language.InstructorMessagePanel;
 import edu.umich.rosie.language.LanguageConnector;
 import edu.umich.rosie.soar.SoarAgent;
 import april.util.GetOpt;
@@ -39,14 +41,14 @@ public class RosieGUI extends JFrame
 		super("Rosie Chat");
 		
     	//this.setSize(800, 650);
-    	this.setSize(800, 450);
+    	this.setSize(1000, 450);
+    	getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.LINE_AXIS));
         addWindowListener(new WindowAdapter() {
         	public void windowClosing(WindowEvent w) {
         		soarAgent.kill();
         	}
      	});
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    	
 
     	soarAgent = new SoarAgent(props);
     	
@@ -66,6 +68,21 @@ public class RosieGUI extends JFrame
     	soarAgent.createAgent();
     	
     	add(chat);
+    	
+    	String[] messages = new String[]{
+    			"Turn left.",
+    			"Turn right.",
+    			"Follow the left wall until you see a room.",
+    			"Follow the right wall until you see a room.",
+    			"Follow the left wall until you see an intersection.",
+    			"Follow the right wall until you see an intersection.",
+    			"You are in the kitchen",
+    			"You are in the bedroom",
+    			"You are in the laundry",
+    			"You are in the bathroom",
+    			"Deliver the soda to the kitchen"
+    	};
+    	add(new InstructorMessagePanel(chat, messages));
 
 //    	CommandPanel commandPanel = new CommandPanel(soarAgent);
 //    	
