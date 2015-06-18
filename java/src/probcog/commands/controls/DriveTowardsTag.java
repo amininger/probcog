@@ -165,7 +165,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
             dd.right = MIN_SPEED*dd.right/abs;
         }
 
-        if (Math.abs(theta) > TURN_THRESH) {
+        if (dist > 0.75 && Math.abs(theta) > TURN_THRESH) {
             int sign = theta > 0 ? 1 : -1;
             dd.left = -sign*MAX_TURN;
             dd.right = sign*MAX_TURN;
