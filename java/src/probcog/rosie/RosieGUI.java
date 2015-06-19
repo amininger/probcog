@@ -62,6 +62,7 @@ public class RosieGUI extends JFrame
     	soarAgent.setLanguageConnector(language);
 
     	ChatPanel chat = new ChatPanel(soarAgent, this);
+    	chat.getMessageLogger().sendMagicMessages();
 
     	setupMenu();
 
