@@ -65,7 +65,9 @@ public class RosieGUI extends JFrame
 //    	this.add(new CommandPanel(soarAgent));
     	String[] messages = new String[]{
     			"Move the green sphere on the table",
-    			"The goal is that the green sphere is on the table"
+    			"The goal is that the green sphere is on the table",
+    			"Pick up the green sphere",
+    			"Put the green sphere on the table"
     	};
     	this.add(new InstructorMessagePanel(chat, messages));
     	
