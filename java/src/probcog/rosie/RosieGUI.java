@@ -17,6 +17,7 @@ import javax.swing.JMenuBar;
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
 import edu.umich.rosie.language.InstructorMessagePanel;
+import edu.umich.rosie.language.InternalMessagePasser;
 import edu.umich.rosie.language.LanguageConnector;
 import edu.umich.rosie.soar.SoarAgent;
 import april.util.GetOpt;
@@ -54,10 +55,11 @@ public class RosieGUI extends JFrame
     	perception = new ArmPerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
     	
-    	language = new LanguageConnector(soarAgent, props);
+    	InternalMessagePasser messagePasser = new InternalMessagePasser();
+    	language = new LanguageConnector(soarAgent, props, messagePasser);
     	soarAgent.setLanguageConnector(language);
 
-    	ChatPanel chat = new ChatPanel(soarAgent, this);
+    	ChatPanel chat = new ChatPanel(soarAgent, this, messagePasser);
     	this.add(chat);
 
     	setupMenu();
