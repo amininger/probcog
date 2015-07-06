@@ -1,0 +1,21 @@
+classes {
+    c# {
+        labels = ["intersection", ""];
+        probs = [1.0, 0.0];
+        ids = [47,48,49];
+        mean = 1.0;
+        stddev = 0.0;
+        minRange = 2.0;
+        maxRange = 4.0;
+    }
+
+    c# {
+        labels = ["room", ""];
+        probs = [1.0, 0.0];
+        ids = [50, 51, 52, 53];
+        mean = 1.0;
+        stddev = 0.0;
+        minRange = 2.0;
+        maxRange = 4.0;
+    }
+}

@@ -1,6 +1,7 @@
 package probcog.commands.controls;
 
 import java.io.*;
+import java.util.zip.*;
 import java.util.*;
 
 import lcm.lcm.*;
@@ -27,12 +28,14 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
     private static final double BACK_THETA = 16*Math.PI/36;
     private static final double FRONT_THETA = 6*Math.PI/36;
+    private static final double MAX_RANGE_M = 10.0;
     private static final double MAX_V = 0.6;
     private static final double MIN_V = 0.4;
 
     LCM lcm = LCM.getSingleton();
     String laserChannel = Util.getConfig().getString("robot.lcm.laser_channel", "LASER");
     String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
+    String mapChannel = Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
@@ -40,13 +43,16 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         new ExpiringMessageCache<laser_t>(.2);
     private ExpiringMessageCache<pose_t> poseCache =
         new ExpiringMessageCache<pose_t>(.2);
+    private ExpiringMessageCache<grid_map_t> gmCache =
+        new ExpiringMessageCache<grid_map_t>(1.5);
 
     Direction dir;
     private enum Direction { LEFT, RIGHT }
-    private double goalDistance = 0.75;
+    private double goalDistance = 0.6;
     private double targetHeading = Double.MAX_VALUE;
 
     // Task State
+    boolean sim = false;
     boolean oriented = false;
     int startIdx = -1;
     int finIdx = -1;
@@ -55,6 +61,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     double K_d = 0.05;
     //double K_d = 0.001;
     double lastRange = -1;
+    double deriv = 0;
 
     private class UpdateTask implements PeriodicTasks.Task
     {
@@ -62,13 +69,16 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         {
             laser_t laser = laserCache.get();
             if (laser == null) {
-                System.out.println("WRN: No lasers on channel "+laserChannel);
+                return;
+            }
+
+            grid_map_t gm = gmCache.get();
+            if (gm == null) {
                 return;
             }
 
             pose_t pose = poseCache.get();
             if (pose == null) {
-                System.out.println("WRN: No poses on channel "+poseChannel);
                 return;
             }
 
@@ -84,7 +94,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             // Update the movement of the robot. Basically, swing towards wall
             // when range > desired, else swing back the other way. Some extra
             // logic to prevent running into walls.
-            update(laser, pose, dt);
+            update(laser, pose, gm, dt);
         }
     }
 
@@ -110,7 +120,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     }
 
     // P controller to do wall avoidance. More logic could be added...
-    private void update(laser_t laser, pose_t pose, double dt)
+    private void update(laser_t laser, pose_t pose, grid_map_t gm, double dt)
     {
         diff_drive_t dd;
 
@@ -123,9 +133,12 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             DriveParams params = new DriveParams();
             params.dt = dt;
             params.laser = laser;
+            params.pose = pose;
+            params.gm = gm;
             dd = drive(params);
         }
 
+        dd.utime = TimeUtil.utime();
         lcm.publish(driveChannel, dd);
     }
 
@@ -162,10 +175,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     // Publicly exposed diff drive fn (can be used repeatedly as if static obj)
     // after initialized once
-    //public diff_drive_t drive(laser_t laser, double dt)
     public diff_drive_t drive(DriveParams params)
     {
-        if (true) {
+        if (false) {
             return handTunedFollow(params);
         } else {
             return xyFollow(params);
@@ -174,26 +186,133 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     private diff_drive_t xyFollow(DriveParams params)
     {
-        // Tell the robot to goto an XY position. Modify potential field
-        // based on wall following distance. As a result, can't follow a wall
-        // at greater than 1/2 hallwidth distance.
+        diff_drive_t dd = new diff_drive_t();
+        dd.left_enabled = dd.right_enabled = true;
+        dd.left = dd.right = 0;
 
-        // Construct a goal 45 degrees ahead of robot.
-        double[] robotXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
-                                                                      params.pose.pos));
-        double projDist = (2*goalDistance)/Math.cos(Math.PI/2);
-        double[] goalXYT = new double[3];
+        // Decode map data if necessary XXX To util
+        byte[] gmdata;
+        if (params.gm.encoding == grid_map_t.ENCODING_GZIP) {
+            try {
+                ByteArrayInputStream bytes = new ByteArrayInputStream(params.gm.data);
+                GZIPInputStream gzis = new GZIPInputStream(bytes);
+
+                gmdata = new byte[params.gm.width*params.gm.height];
+                int readSoFar = 0;
+                while (readSoFar < gmdata.length) {
+                    int read = gzis.read(gmdata, readSoFar, gmdata.length-readSoFar);
+                    if (read < 0)
+                        break;
+                    readSoFar += read;
+                }
+                gzis.close();
+            } catch (ZipException ex) {
+                System.err.println("ERR: GZIP'd map data is corrupted");
+                ex.printStackTrace();
+                return dd;
+            }
+            catch (IOException ex) {
+                System.err.println("ERR: Could not extract GZIP'd map");
+                ex.printStackTrace();
+                return dd;
+            }
+        } else {
+            gmdata = params.gm.data;
+        }
+
+        GridMap gm = GridMap.makePixels(params.gm.x0,
+                                        params.gm.y0,
+                                        params.gm.width,
+                                        params.gm.height,
+                                        params.gm.meters_per_pixel,
+                                        0,
+                                        gmdata);
+
+        double[] poseXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
+                                                                     params.pose.pos));
+
+        // Look for points in front of the robot
+        double rWidth = 0.3;
+        double hazardDist = Math.max(goalDistance, 1.0);
+        double rc = Math.cos(poseXYT[2]);
+        double rs = Math.sin(poseXYT[2]);
+        for (double y = -rWidth; y < rWidth; y += gm.metersPerPixel/2) {
+            for (double x = 0; x < hazardDist; x += gm.metersPerPixel/2) {
+                double xbot = poseXYT[0] + rc*x - rs*y;
+                double ybot = poseXYT[1] + rs*x + rc*y;
+                int v = gm.getValue(xbot, ybot);
+                if (v > 0) {
+                    return dd;
+                }
+            }
+        }
+
+        // Ray casting to obstacles
         int sign = dir == Direction.LEFT ? 1 : -1;
-        goalXYT[0] = robotXYT[0] + projDist*Math.cos(robotXYT[2]);
-        goalXYT[1] = robotXYT[1] + sign*projDist*Math.sin(robotXYT[2]);
+        double t0 = Math.min(sign*BACK_THETA, sign*FRONT_THETA);
+        double t1 = Math.max(sign*BACK_THETA, sign*FRONT_THETA);
+        double tstep = Math.toRadians(0.25);
+        double rSide = MAX_RANGE_M;
+        double dt = params.dt;
 
-        // XXX XY are wasteful. Better reuse?
-        HashMap<String, TypedValue> typedParams = new HashMap<String, TypedValue>();
-        typedParams.put("x", new TypedValue(goalXYT[0]));
-        typedParams.put("y", new TypedValue(goalXYT[1]));
-        DriveToXY driveXY = new DriveToXY(typedParams);
+        for (double t = t0; t < t1; t += tstep) {
+            for (double r = 0; r < MAX_RANGE_M; r += gm.metersPerPixel/2) {
+                double x = poseXYT[0] + r*Math.cos(t+poseXYT[2]);
+                double y = poseXYT[1] + r*Math.sin(t+poseXYT[2]);
+                int v = gm.getValue(x, y);
+                // Support for new map values.
+                if (v > 0) {
+                    double w = MathUtil.clamp(Math.abs(Math.sin(t)),
+                                              Math.sin(Math.PI/6),
+                                              1.0);
+                    rSide = Math.min(w*r, rSide);
+                }
+            }
+        }
 
-        return driveXY.drive(params);
+        double alpha0 = 0.0;
+        if (lastRange > 0)
+            rSide = alpha0*lastRange + (1.0-alpha0)*rSide;
+        double alpha1 = 0.5;
+        if (lastRange > 0)
+            deriv = deriv*alpha1 + (1.0-alpha1)*(rSide - lastRange)/dt;
+        lastRange = rSide;
+
+        // Hand tuned controller
+        double G_weight = Math.pow(goalDistance, 1.0);
+        //double K_p = (1.0 - rSide/G_weight);
+        double K_p = 1.0 - Math.pow(rSide/G_weight, 0.5);
+        if (!sim) {
+            K_p *= 2.5;
+        } else {
+            K_d = 0.4;
+        }
+        //double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
+        double prop = 0.5 + K_p;
+
+        double farSpeed = 0.5;
+        //double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0.0, 1.0);
+        double nearSpeed = prop - K_d*deriv;
+        double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
+        if (max < 0.01) {
+            nearSpeed = farSpeed = 0;
+        } else {
+            nearSpeed = MAX_V*nearSpeed/max;
+            farSpeed = MAX_V*farSpeed/max;
+        }
+
+        switch (dir) {
+            case LEFT:
+                dd.left = nearSpeed;
+                dd.right = farSpeed;
+                break;
+            case RIGHT:
+                dd.right = nearSpeed;
+                dd.left = farSpeed;
+                break;
+        }
+
+        return dd;
     }
 
     private diff_drive_t handTunedFollow(DriveParams params)
@@ -256,6 +375,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         // XXX
         double G_weight = Math.pow(goalDistance, .5);
         double K_p = (1.0 - r/G_weight);
+        if (sim)
+            K_p *= 4.0;
         double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
 
         //double nearSpeed = 0.5;
@@ -315,6 +436,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("heading"))
             targetHeading = parameters.get("heading").getDouble();
 
+        if (parameters.containsKey("sim"))
+            sim = true;
+
         tasks.addFixedRate(new UpdateTask(), 1.0/FW_HZ);
     }
 
@@ -352,6 +476,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         } else if (poseChannel.equals(channel)) {
             pose_t pose = new pose_t(ins);
             poseCache.put(pose, pose.utime);
+        } else if (mapChannel.equals(channel)) {
+            robot_map_data_t rmd = new robot_map_data_t(ins);
+            gmCache.put(rmd.gridmap, rmd.utime);
         }
     }
 
@@ -364,9 +491,11 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (run) {
             lcm.subscribe(laserChannel, this);
             lcm.subscribe(poseChannel, this);
+            lcm.subscribe(mapChannel, this);
         } else {
             lcm.unsubscribe(laserChannel, this);
             lcm.unsubscribe(poseChannel, this);
+            lcm.unsubscribe(mapChannel, this);
         }
         tasks.setRunning(run);
     }

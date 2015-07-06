@@ -20,15 +20,16 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
     LCM lcm = LCM.getSingleton();
     String mapChannel = Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA");
+    String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     PeriodicTasks tasks = new PeriodicTasks(1);
 
     static final double TURN_THRESH = Math.toRadians(25);
     static final double DIST_THRESH = 2.0;
-    static final double MIN_SPEED = 0.35;    // Avoid deadband
-    static final double MAX_SPEED = 0.5;
-    static final double MAX_TURN = 0.3;
+    static final double MAX_SPEED = 0.6;
+    static final double MIN_SPEED = 0.25;
+    static final double MAX_TURN = 0.5;
 
     static final double DIST_FUDGE = 0.25;
     static final double FORWARD_SPEED = 0.2;
@@ -36,13 +37,17 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     static final double WHEELBASE = 0.46;
     static final double WHEEL_DIAMETER = 0.25;
 
+    boolean sim = false;
+
     private int targetID;
     private String classType;
     private Object classyLock = new Object();
     private ExpiringMessageCache<classification_t> lastClassification =
         new ExpiringMessageCache<classification_t>(0.5);
+    private ExpiringMessageCache<pose_t> poseCache =
+        new ExpiringMessageCache<pose_t>(0.2);
     private ExpiringMessageCache<grid_map_t> gmCache =
-        new ExpiringMessageCache<grid_map_t>(.5);
+        new ExpiringMessageCache<grid_map_t>(1.5);
 
     private class DriveTask implements PeriodicTasks.Task
     {
@@ -63,6 +68,12 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                     return;
                 }
 
+                pose_t pose = poseCache.get();
+                if (pose == null) {
+                    return;
+                }
+
+                params.pose = pose;
                 params.gm = gm;
 
 
@@ -112,20 +123,47 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         double dist = LinAlg.magnitude(LinAlg.resize(classy.xyzrpy, 2));
         double theta = Math.atan2(classy.xyzrpy[1], classy.xyzrpy[0]);
 
-        pose_t pose = new pose_t();
-        pose.orientation = new double[] {1,0,0,0};
-        pose.pos = new double[3];
-        params.pose = pose;
-
-        HashMap<String, TypedValue> typedParams = new HashMap<String, TypedValue>();
-        typedParams.put("x", new TypedValue(classy.xyzrpy[0]));
-        typedParams.put("y", new TypedValue(classy.xyzrpy[1]));
-        DriveToXY driveXY = new DriveToXY(typedParams);
-
-        dd = driveXY.drive(params);
-
-        if (dd.left == 0 && dd.right == 0)
+        if (dist < 0.2)
             return dd;
+
+        double[] poseXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
+                                                                     params.pose.pos));
+        double rc = Math.cos(poseXYT[2]);
+        double rs = Math.sin(poseXYT[2]);
+        double x = poseXYT[0] + classy.xyzrpy[0]*rc - classy.xyzrpy[1]*rs;
+        double y = poseXYT[1] + classy.xyzrpy[0]*rs + classy.xyzrpy[1]*rc;
+
+        //HashMap<String, TypedValue> typedParams = new HashMap<String, TypedValue>();
+        //typedParams.put("x", new TypedValue(x));
+        //typedParams.put("y", new TypedValue(y));
+        //typedParams.put("alpha", new TypedValue(1.0));
+        //DriveToXY driveXY = new DriveToXY(typedParams);
+        //dd = driveXY.drive(params);
+
+        //if (dd.left == 0 && dd.right == 0)
+        //    return dd;
+        double[] grad = new double[] { Math.cos(theta), Math.sin(theta) };
+        double speed = grad[0];
+        double turn = grad[1];
+
+        dd.left = speed - turn;
+        dd.right = speed + turn;
+
+        double abs = Math.max(Math.abs(dd.left), Math.abs(dd.right));
+
+        if (abs == 0)
+            return dd;
+
+        double maxspeed = MathUtil.clamp(dist/DIST_THRESH, 0, 1)*MAX_SPEED;
+        if (abs > maxspeed) {
+            dd.left = maxspeed*dd.left/abs;
+            dd.right = maxspeed*dd.right/abs;
+        }
+
+        if (abs < MIN_SPEED && !sim) {
+            dd.left = MIN_SPEED*dd.left/abs;
+            dd.right = MIN_SPEED*dd.right/abs;
+        }
 
         if (Math.abs(theta) > TURN_THRESH) {
             int sign = theta > 0 ? 1 : -1;
@@ -157,6 +195,9 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         assert (parameters.containsKey("class"));
         classType = parameters.get("class").toString();
 
+        if (parameters.containsKey("sim"))
+            sim = true;
+
         tasks.addFixedDelay(new DriveTask(), 1.0/DTT_HZ);
         //tasks.setRunning(true);
     }
@@ -173,7 +214,10 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
                 }
             } else if (mapChannel.equals(channel)) {
                 robot_map_data_t rmd = new robot_map_data_t(ins);
-                gmCache.put((grid_map_t)rmd.gridmap.copy(), TimeUtil.utime());
+                gmCache.put((grid_map_t)rmd.gridmap.copy(), rmd.utime);
+            } else if (poseChannel.equals(channel)) {
+                pose_t pose = new pose_t(ins);
+                poseCache.put(pose, pose.utime);
             }
         } catch (IOException ex) {
             System.out.println("ERR: Couldn't handle message on channel - "+channel);
@@ -189,9 +233,11 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     {
         if (run) {
             lcm.subscribe(mapChannel, this);
+            lcm.subscribe(poseChannel, this);
             lcm.subscribe("CLASSIFICATIONS", this);
         } else {
             lcm.unsubscribe(mapChannel, this);
+            lcm.subscribe(poseChannel, this);
             lcm.unsubscribe("CLASSIFICATIONS", this);
         }
         tasks.setRunning(run);

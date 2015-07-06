@@ -34,6 +34,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double TURN_IN_PLACE_RAD = Math.toRadians(90);
 
     // Stop when we are oscillating
+    double alpha = 0.2;
     boolean turning = false;
     int signThen = -1;
     int switches = 0;
@@ -47,7 +48,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     private ExpiringMessageCache<pose_t> poseCache =
         new ExpiringMessageCache<pose_t>(.2);
     private ExpiringMessageCache<grid_map_t> gmCache =
-        new ExpiringMessageCache<grid_map_t>(.5);
+        new ExpiringMessageCache<grid_map_t>(1.5);
 
     LCM lcm = LCM.getSingleton();
     String mapChannel = Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA");
@@ -100,6 +101,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         if (parameters.containsKey("sim"))
             sim = true;
+
+        if (parameters.containsKey("alpha"))
+            alpha = parameters.get("alpha").getDouble();
 
         tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
 
@@ -179,6 +183,33 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
                                       true));
 
         return params;
+    }
+
+    // Return true if we see a hazard in the map
+    private boolean evaluatePath(GridMap gm, double[] xy0, double[] xy1)
+    {
+        // we'll microstep at 0.25 pixels. this isn't exact but it's pretty darn close.
+        double stepsize = gm.metersPerPixel * 0.25;
+
+        double dist = Math.sqrt(LinAlg.sq(xy0[0]-xy1[0]) +
+                                LinAlg.sq(xy0[1]-xy1[1]));
+
+        int nsteps = ((int) (dist / stepsize)) + 1;
+
+        double cost = 0;
+
+        for (int i = 0; i < nsteps; i++) {
+            double alpha = ((double) i) / nsteps;
+            double x = alpha*xy0[0] + (1-alpha)*xy1[0];
+            double y = alpha*xy0[1] + (1-alpha)*xy1[1];
+
+            int v = gm.getValue(x,y);
+            if (v > 0)
+                return true;
+        }
+
+        // normalize correctly for distance.
+        return false;
     }
 
     /** Get a drive command from the CL. */
@@ -294,7 +325,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         // force our gradient back at the robot.
         double[] grad = new double[2];
         boolean flagCollision = false;
-        if (gm.evaluatePath(poseXYT, lookaheadTrans, true) < 0) {
+        if (evaluatePath(gm, poseXYT, lookaheadTrans)) {
             double angle = Math.atan2(poseXYT[1] - lookaheadTrans[1],
                                       poseXYT[0] - lookaheadTrans[0]);
             grad[0] += repulsiveStrength*Math.cos(angle);
@@ -324,7 +355,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             for (double y = y0; y <= y1; y += gm.metersPerPixel) {
                 for (double x = x0; x <= x1; x += gm.metersPerPixel) {
                     int v = gm.getValue(x, y);
-                    if (v < 255)
+                    if (v == 0)
                         continue;
 
                     dist = Math.sqrt(LinAlg.sq(lookaheadTrans[0]-x) +
@@ -425,7 +456,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         }
 
         // Alpha-beta filtering
-        double alpha = 0.2;
         if (sim) {
             alpha = 1.0;
         }

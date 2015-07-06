@@ -18,11 +18,14 @@ public class Turn implements ControlLaw, LCMSubscriber
     LCM lcm = LCM.getSingleton();
 
     static final int DD_HZ = 100;
-    static final double SPEED = 0.25;
+    static final double ROBOT_SPEED = 0.5;
+    static final double SIM_SPEED = 0.25;
 
     Object poseLock = new Object();
     pose_t currPose = null;
     pose_t lastPose = null;
+
+    boolean sim = false;
 
     private double yaw = 0;
     private double goalYaw = Double.MAX_VALUE;
@@ -84,9 +87,9 @@ public class Turn implements ControlLaw, LCMSubscriber
         dd.left = 0;
         dd.right = 0;
 
-        //double delta = goalYaw - yaw;
-        //double speed = MathUtil.clamp(SPEED*delta/Math.PI, 0.1, SPEED);
-        double speed = SPEED;
+        double speed = ROBOT_SPEED;
+        if (sim)
+            speed = SIM_SPEED;
 
         // Change left and right wheels depending on turn direction
         if (dir.equals(Direction.RIGHT)) {
@@ -98,8 +101,6 @@ public class Turn implements ControlLaw, LCMSubscriber
             dd.right = speed;
         }
 
-        //System.out.printf("[%f  |  %f]\n", dd.left, dd.right);
-        //System.out.printf("[%f < %f]\n", yaw, goalYaw);
         return dd;
     }
 
@@ -130,6 +131,9 @@ public class Turn implements ControlLaw, LCMSubscriber
 
         if (parameters.containsKey("yaw"))
             goalYaw = Math.abs(parameters.get("yaw").getDouble());
+
+        if (parameters.containsKey("sim"))
+            sim = true;
 
         tasks.addFixedDelay(new TurnTask(), 1.0/DD_HZ);
     }

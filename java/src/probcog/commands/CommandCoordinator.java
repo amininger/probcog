@@ -156,8 +156,8 @@ public class CommandCoordinator
             //int termId = registerConditionTest(new ObstacleTest(new HashMap<String, TypedValue>()));
             //registerTerminationCondition(termId, id, CommandCoordinator.Status.FAILURE);
             HashMap<String, TypedValue> params = new HashMap<String, TypedValue>();
-            params.put("timeout", new TypedValue(300.0));   // 5 minutes XXX
-            int termId = registerConditionTest(new TimeoutTest(params));
+            params.put("timeout", new TypedValue(30.0));   // 30 seconds
+            int termId = registerConditionTest(new Stabilized(params));
             registerTerminationCondition(termId, id, CommandCoordinator.Status.FAILURE);
 
             return id;
