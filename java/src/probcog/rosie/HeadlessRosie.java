@@ -30,7 +30,9 @@ public class HeadlessRosie
     	perception = new MobilePerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
     	
-    	language = new LanguageConnector(soarAgent, props);
+    	LcmMessagePasser messagePasser = new LcmMessagePasser("robot");
+    	
+    	language = new LanguageConnector(soarAgent, props, messagePasser);
     	soarAgent.setLanguageConnector(language);
 
     	soarAgent.createAgent();
