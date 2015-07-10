@@ -37,12 +37,8 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
 	private static int SEND_TRAINING_FPS = 10;
 	Timer sendTrainingTimer;
 	
-	// Time Information
-	private Identifier timeId = null;
-	private int stepNumber = 0;
-	
 	// Object being pointed to
-	private int pointedId = -1;
+	private int pointedHandle = -1;
 	private int currentTimer = -10;
 	
     private HashMap<training_label_t, Identifier> outstandingTraining;
@@ -154,33 +150,14 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
 
 	@Override
     public synchronized void onInputPhase(Identifier inputLink){
-    	time = TimeUtil.utime();
-    	
-    	if(timeId == null){
-            timeId = inputLink.CreateIdWME("time");
-        }
-        
-        stepNumber++;
-        
         if(world.isAdded()){
         	world.updateWM();
         } else {
         	world.addToWM(inputLink);
         }
         
-        SoarUtil.updateIntWME(timeId, "steps", stepNumber);
-        SoarUtil.updateIntWME(timeId, "seconds", TimeUtil.utime() / 1000000);
-        
         // Update pointed object
-        SoarUtil.updateIntWME(inputLink, "pointed-object", world.getSoarId(pointedId));
-    	
-    	if(currentTimer <= -10){
-    		SoarUtil.updateStringWME(timeId, "timer-status", "waiting");
-    	} else if(--currentTimer <= 0){
-    		SoarUtil.updateStringWME(timeId, "timer-status", "expired");
-    	} else {
-    		SoarUtil.updateStringWME(timeId, "timer-status", "ticking");
-    	}
+        SoarUtil.updateIntWME(inputLink, "pointed-object", world.getSoarHandle(pointedHandle));
     }
 
     /*************************************************
@@ -197,36 +174,34 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
 	}
 
     private void processSendTrainingLabelCommand(Identifier id){
-    	Integer objId = Integer.parseInt(SoarUtil.getValueOfAttribute(id, "id", 
-    			"Error (send-training-label): No ^id attribute"));
+    	Integer objHandle = Integer.parseInt(SoarUtil.getValueOfAttribute(id, "object-handle", 
+    			"Error (send-training-label): No ^object-handle attribute"));
     	String label = SoarUtil.getValueOfAttribute(id, "label", 
     			"Error (send-training-label): No ^label attribute");
-    	String propName = SoarUtil.getValueOfAttribute(id, "property-name", 
-    			"Error (send-training-label): No ^property-name attribute");
-    	Integer catNum = PerceptualProperty.getPropertyID(propName);
+    	String propHandle = SoarUtil.getValueOfAttribute(id, "property-handle", 
+    			"Error (send-training-label): No ^property-handle attribute");
+    	Integer catNum = PerceptualProperty.getPropertyID(propHandle);
     	if(catNum == null){
     		id.CreateStringWME("status", "error");
     		System.err.println("ArmPerceptionConnector::processSendTrainingLabelCommand - bad category");
     		return;
     	}
     	
-    	queueTrainingLabel(objId, catNum, label, id);
+    	queueTrainingLabel(objHandle, catNum, label, id);
     }
     
     
     private void processModifySceneCommand(Identifier rootId){
     	String type = SoarUtil.getValueOfAttribute(rootId, "type", "Error: No ^type attribute");
     	if(type.equals("link")){
-    		Set<String> sourceIds = SoarUtil.getAllValuesOfAttribute(rootId, "source-id");
-    		if(sourceIds.size() == 0){
+    		Set<String> sourceHandles = SoarUtil.getAllValuesOfAttribute(rootId, "source-handle");
+    		if(sourceHandles.size() == 0){
     			rootId.CreateStringWME("status", "error");
-    			System.err.println("Error (link): No ^source-id attribute");
+    			System.err.println("Error (link): No ^source-handle attribute");
     		}
-    		String destId = SoarUtil.getValueOfAttribute(rootId, "dest-id", "Error (link): No ^dest-id attribute");
-    		if(destId.contains("bel-")){
-    			destId = destId.substring(4);
-    		}
-    		world.linkObjects(sourceIds, destId);
+    		String destHandle = SoarUtil.getValueOfAttribute(rootId, "destination-handle", 
+    				"Error (link): No ^destination-handle attribute");
+    		world.linkObjects(sourceHandles, destHandle);
     	} else {
     		rootId.CreateStringWME("status", "error");
     		System.err.println("ArmPerceptionConnector::processModifySceneCommand - bad type");
@@ -245,7 +220,7 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
             observations_t obs = null;
             try {
                 obs = new observations_t(ins);
-                pointedId = obs.click_id;
+                pointedHandle = obs.click_id;
                 world.newObservation(obs);
                 receiveAckTime(obs.soar_utime);
             }
@@ -332,7 +307,6 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
 	@Override
 	protected void onInitSoar() {
 		world.removeFromWM();
-		timeId = null;
 		outstandingTraining.clear();
 	}
 }

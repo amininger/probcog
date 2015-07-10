@@ -24,28 +24,8 @@ import april.util.TimeUtil;
  */
 public class WorldObject implements ISoarObject
 {
-    public static String getSensableId(String sensable){
-        // Matches against id=ID followed by a comma, whitespace, or end of string
-        // Assumes ID consists of numbers
-        sensable = sensable.toLowerCase();
-        Pattern p = Pattern.compile("id=(\\p{Digit})+(,|\\s|\\Z)");
-        Matcher m = p.matcher(sensable);
-        if(!m.find()){
-            return null;
-        }
-        // m.group() returns a string like "id=ID,"
-        // we trim, then split to get the actual ID
-        String[] id = m.group().trim().split("(id=)|,");
-        if(id.length < 2){
-            return null;
-        }
-        //Note that the first element will be the empty string, we want the second
-        return id[1];
-    }
-    
-    // Id of the object 
-    protected int id;
-    
+    // Handle of the object 
+    protected int handle;
     
     // Information about the bounding box
     // Center of the bounding box (XYZ)
@@ -73,9 +53,9 @@ public class WorldObject implements ISoarObject
     private boolean gotBboxUpdate = false;
     private boolean gotPoseUpdate = false;
     
-    public WorldObject(WorldModel world, Integer id, ArrayList<object_data_t> objDatas){
+    public WorldObject(WorldModel world, Integer handle, ArrayList<object_data_t> objDatas){
     	this.world = world;
-        this.id = id;
+        this.handle = handle;
         bboxPos = new double[3];
         bboxRot = new double[3];
         bboxSize = new double[3];
@@ -89,19 +69,19 @@ public class WorldObject implements ISoarObject
         updateProperties(objDatas);
     }
     
-    // ID: Get
-    public int getId(){
-        return id;
+    // Handle: Get
+    public int getHandle(){
+        return handle;
     }
     
-    public String getIdString(){
-    	return (new Integer(id)).toString();
+    public String getHandleStr(){
+    	return (new Integer(handle)).toString();
     }
     
     public Integer getPerceptionId(){
     	for(object_data_t objDat : lastData){
-    		if(objDat.id == id){
-    			return id;
+    		if(objDat.id == handle){
+    			return handle;
     		}
     	}
     	if(lastData.size() > 0){
@@ -270,7 +250,7 @@ public class WorldObject implements ISoarObject
     		removeFromWM();
     	}
 		objId = parentId.CreateIdWME("object");
-    	objId.CreateIntWME("id", id);
+    	objId.CreateIntWME("object-handle", handle);
 
     	for(PerceptualProperty pp : perceptualProperties.values()){
     		pp.addToWM(objId);
@@ -278,8 +258,8 @@ public class WorldObject implements ISoarObject
     	stateProperties.addToWM(objId);
 
     	StringBuilder svsCommands = new StringBuilder();
-    	svsCommands.append(SVSCommands.add(getIdString()));
-		svsCommands.append(SVSCommands.addTag(getIdString(), "object-source", "perception"));
+    	svsCommands.append(SVSCommands.add(getHandleStr()));
+		svsCommands.append(SVSCommands.addTag(getHandleStr(), "object-source", "perception"));
 		world.getAgent().SendSVSInput(svsCommands.toString());
 		
     	added = true;
@@ -313,12 +293,12 @@ public class WorldObject implements ISoarObject
     	// Update SVS
 		StringBuilder svsCommands = new StringBuilder();
     	if(gotPoseUpdate || gotBboxUpdate){
-    		svsCommands.append(SVSCommands.changePos(getIdString(), bboxPos));
+    		svsCommands.append(SVSCommands.changePos(getHandleStr(), bboxPos));
     		gotPoseUpdate = false;
     	}
     	if(gotBboxUpdate){
-    		svsCommands.append(SVSCommands.changeRot(getIdString(), bboxRot));
-    		svsCommands.append(SVSCommands.changeSize(getIdString(), bboxSize));
+    		svsCommands.append(SVSCommands.changeRot(getHandleStr(), bboxRot));
+    		svsCommands.append(SVSCommands.changeSize(getHandleStr(), bboxSize));
     		gotBboxUpdate = false;
     	}
     	if(svsCommands.length() > 0){
@@ -333,7 +313,7 @@ public class WorldObject implements ISoarObject
     	}
 
     	StringBuilder svsCommands = new StringBuilder();
-    	svsCommands.append(SVSCommands.delete(getIdString()));
+    	svsCommands.append(SVSCommands.delete(getHandleStr()));
     	world.getAgent().SendSVSInput(svsCommands.toString());
     	
     	for(PerceptualProperty pp : perceptualProperties.values()){

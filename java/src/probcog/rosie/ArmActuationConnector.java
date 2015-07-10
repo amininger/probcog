@@ -228,7 +228,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     	}
     	SoarUtil.updateStringWME(selfId, "holding-obj", (curStatus.obj_id != -1 ? "true" : "false"));
     	ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
-    	SoarUtil.updateIntWME(selfId, "grabbed-object", perception.getWorld().getSoarId(curStatus.obj_id));
+    	SoarUtil.updateIntWME(selfId, "grabbed-object", perception.getWorld().getSoarHandle(curStatus.obj_id));
     	pose.updateWithArray(curStatus.xyz);
     	pose.updateWM();
     }
@@ -303,21 +303,21 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
      */
     private void processPickUpCommand(Identifier pickUpId)
     {
-        String objectIdStr = SoarUtil.getValueOfAttribute(pickUpId,
-                "object-id", "pick-up does not have an ^object-id attribute");
+        String objectHandleStr = SoarUtil.getValueOfAttribute(pickUpId,
+                "object-handle", "pick-up does not have an ^object-id attribute");
         ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
-        Integer id = perception.getWorld().getPerceptionId(Integer.parseInt(objectIdStr));
-        if(id == null){
-        	System.err.println("Pick up: unknown id " + objectIdStr);
+        Integer percId = perception.getWorld().getPerceptionId(Integer.parseInt(objectHandleStr));
+        if(percId == null){
+        	System.err.println("Pick up: unknown id " + objectHandleStr);
         	pickUpId.CreateStringWME("status", "error");
         	return;
         }
         
         robot_command_t command = new robot_command_t();
         command.utime = TimeUtil.utime(); 
-        command.action = String.format("GRAB=%d", id);
+        command.action = String.format("GRAB=%d", percId);
         command.dest = new double[6];
-        System.out.println("PICK UP: " + id + " (" + objectIdStr + ")");
+        System.out.println("PICK UP: " + percId + " (Soar Handle: " + objectHandleStr + ")");
     	lcm.publish("ROBOT_COMMAND", command);
         sentCommand = command;
         sentTime = TimeUtil.utime();
@@ -358,12 +358,12 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
      */
     private void processSetCommand(Identifier id)
     {
-        String objIdStr = SoarUtil.getValueOfAttribute(id, "id",
-                "Error (set-state): No ^id attribute");
+        String objHandleStr = SoarUtil.getValueOfAttribute(id, "object-handle",
+                "Error (set-state): No ^object-handle attribute");
         ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
-        Integer objId = perception.getWorld().getPerceptionId(Integer.parseInt(objIdStr));
-        if(objId == null){
-        	System.err.println("Set: unknown id " + objIdStr);
+        Integer percId = perception.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
+        if(percId == null){
+        	System.err.println("Set: unknown id " + objHandleStr);
         	id.CreateStringWME("status", "error");
         	return;
         }
@@ -377,18 +377,19 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         command.utime = TimeUtil.utime(); 
         command.state_name = name;
         command.state_val = value;
-        command.obj_id = objId;
+        command.obj_id = percId;
     	lcm.publish("SET_STATE_COMMAND", command);
         id.CreateStringWME("status", "complete");
     }
 
     private void processPointCommand(Identifier pointId)
     {
-    	String idStr = SoarUtil.getValueOfAttribute(pointId, "id", "Error (point): No ^id attribute");
+    	String objHandleStr = SoarUtil.getValueOfAttribute(pointId, "object-handle", 
+    			"Error (point): No ^object-handle attribute");
     	ArmPerceptionConnector perc = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
-        Integer objId = perc.getWorld().getPerceptionId(Integer.parseInt(idStr));
-        if(objId == null){
-        	System.err.println("Set: unknown id " + idStr);
+        Integer percId = perc.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
+        if(percId == null){
+        	System.err.println("Set: unknown handle " + objHandleStr);
         	pointId.CreateStringWME("status", "error");
         	return;
         }
@@ -396,7 +397,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         robot_command_t command = new robot_command_t();
         command.utime = TimeUtil.utime(); 
         command.dest = new double[]{0, 0, 0, 0, 0, 0};
-    	command.action = "POINT=" + objId;
+    	command.action = "POINT=" + percId;
     	lcm.publish("ROBOT_COMMAND", command);
         pointId.CreateStringWME("status", "complete");
     }

@@ -48,48 +48,54 @@ public class WorldModel implements ISoarObject
     
     public void reset(){
     	for(WorldObject object : objects.values()){
-    		String command = SVSCommands.delete(object.getIdString());
+    		String command = SVSCommands.delete(object.getHandleStr());
     		soarAgent.getAgent().SendSVSInput(command);
     	}
     	
     	objects.clear();
     }
     
-    
-    public synchronized Integer getPerceptionId(Integer id){
-    	if(objects.containsKey(id)){
-    		return objects.get(id).getPerceptionId();
+    public synchronized Integer getPerceptionId(Integer handle){
+    	if(objects.containsKey(handle)){
+    		return objects.get(handle).getPerceptionId();
     	}
     	return null;
     }	
     
-    public synchronized Integer getSoarId(Integer id){
-    	if(objectLinks.containsKey(id)){
-    		return objectLinks.get(id);
+    public synchronized Integer getSoarHandle(Integer handle){
+    	if(objectLinks.containsKey(handle)){
+    		return objectLinks.get(handle);
     	}
-    	return id;
+    	return handle;
     }
 
     
-    public synchronized void linkObjects(Set<String> sourceIds, String destId){
-    	Integer dId = Integer.parseInt(destId);
+    public synchronized void linkObjects(Set<String> sourceHandles, String destHandle){
+    	Integer dHandle = Integer.parseInt(destHandle);
     	
     	ArrayList<object_data_t> objData = new ArrayList<object_data_t>();
     	
-    	for(String sourceId : sourceIds){
-    		Integer sId = Integer.parseInt(sourceId);
-    		objectLinks.put(sId, dId);
-    		if(objects.containsKey(sId)){
-    			WorldObject wobj = objects.get(sId);
+    	for(String sourceHandle : sourceHandles){
+    		Integer sHandle = Integer.parseInt(sourceHandle);
+    		objectLinks.put(sHandle, dHandle);
+    		if(objects.containsKey(sHandle)){
+    			WorldObject wobj = objects.get(sHandle);
     			objData.addAll(wobj.getLastDatas());
     			objsToRemove.add(wobj);
-    			objects.remove(sId);
+    			objects.remove(sHandle);
     		}
     	}
     	
+    	
         if(objData.size() > 0){
-        	WorldObject object = new WorldObject(this, dId, objData);
-        	objects.put(dId, object);
+        	if(objects.containsKey(dHandle)){
+        		WorldObject dObj = objects.get(dHandle);
+        		objData.addAll(dObj.getLastDatas());
+    			dObj.update(objData);
+    		} else {
+    			WorldObject object = new WorldObject(this, dHandle, objData);
+    			objects.put(dHandle, object);
+    		}
         }
         needsUpdate = true;
     }
@@ -100,40 +106,40 @@ public class WorldModel implements ISoarObject
     	
     	Set<Integer> staleObjects = new HashSet<Integer>();
     	for(WorldObject object : objects.values()){
-    		staleObjects.add(object.getId());
+    		staleObjects.add(object.getHandle());
     	}
     	
     	// Combine multiple observations that correspond to the same object into a list per id
     	HashMap<Integer, ArrayList<object_data_t>> newData = new HashMap<Integer, ArrayList<object_data_t>>();
     	for(object_data_t objData : observation.observations){
-    		Integer id = objData.id;
-    		if(objectLinks.containsKey(id)){
-    			id = objectLinks.get(id);
+    		Integer handle = objData.id;
+    		if(objectLinks.containsKey(handle)){
+    			handle = objectLinks.get(handle);
     		}
-    		if(!newData.containsKey(id)){
-    			newData.put(id, new ArrayList<object_data_t>());
+    		if(!newData.containsKey(handle)){
+    			newData.put(handle, new ArrayList<object_data_t>());
     		}
-    		newData.get(id).add(objData);
+    		newData.get(handle).add(objData);
     	}
     	
     	// For each object, either update existing or create if new
     	for(Map.Entry<Integer, ArrayList<object_data_t>> e : newData.entrySet()){
-    		Integer id = e.getKey();
-    		WorldObject object = objects.get(id);
+    		Integer handle = e.getKey();
+    		WorldObject object = objects.get(handle);
     		if(object == null){
-    			object = new WorldObject(this, id, e.getValue());
-    			objects.put(id, object);
+    			object = new WorldObject(this, handle, e.getValue());
+    			objects.put(handle, object);
     		} else {
-    			staleObjects.remove(id);
+    			staleObjects.remove(handle);
     			object.update(e.getValue());
     		}
     	}
 
     	// Remove all stale objects from WM
-        for(Integer id : staleObjects){
-        	WorldObject object = objects.get(id);
+        for(Integer handle : staleObjects){
+        	WorldObject object = objects.get(handle);
         	objsToRemove.add(object);
-        	objects.remove(id);
+        	objects.remove(handle);
         }
 
         needsUpdate = true;
@@ -144,11 +150,11 @@ public class WorldModel implements ISoarObject
     	
     	String[] beliefObjects = soarAgent.getAgent().SVSQuery("objs-with-flag object-source belief\n").split(" ");
     	for(int i = 2; i < beliefObjects.length; i++){
-    		String objId = beliefObjects[i].trim();
-    		if(objId.length() == 0){
+    		String beliefId = beliefObjects[i].trim();
+    		if(beliefId.length() == 0){
     			continue;
     		}
-    		String obj = soarAgent.getAgent().SVSQuery("obj-info " + objId);
+    		String obj = soarAgent.getAgent().SVSQuery("obj-info " + beliefId);
     		objDatas.add(parseObject(obj));
     	}
 
@@ -177,12 +183,12 @@ public class WorldModel implements ISoarObject
     		String field = fields[i++];
     		if(field.equals("o")){
     			// Parse ID: Should be in format bel-#
-    			String id = fields[i++];
-    			Integer index = id.indexOf("bel-");
+    			String beliefId = fields[i++];
+    			Integer index = beliefId.indexOf("bel-");
     			if(index == 0){
-    				objData.id = Integer.parseInt(id.substring(4));
+    				objData.id = Integer.parseInt(beliefId.substring(4));
     			} else {
-    				objData.id = Integer.parseInt(id);
+    				objData.id = Integer.parseInt(beliefId);
     			}
     		} else if (field.equals("p") || field.equals("r") || field.equals("s")){
     			// Parse position, rotation, or scaling

@@ -180,7 +180,7 @@ public class PerceptualProperty implements ISoarObject
     	}
 
 		propId = parentId.CreateIdWME("property");
-		propId.CreateStringWME("name", name);
+		propId.CreateStringWME("property-handle", name);
 		propId.CreateStringWME("type", type);
 		valuesId = propId.CreateIdWME("values");
 		for(FloatWME wme : values.values()){
