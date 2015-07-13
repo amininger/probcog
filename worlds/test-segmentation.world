@@ -1,0 +1,49 @@
+# This world is used to test Rosie on being able to handle segmentation errors
+# Specifically blocks being merged together.
+# There are 3 blocks of all the same color than you can test with
+
+"probcog.sim.SimFlatSurface"
+{
+	.4 
+	.4
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	0.2 -0.2 0.03 0.0 0.0 0.0
+	0.05
+	vec 4
+  1.0 0.0 0.0 1.0
+	1
+  color=color-red
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	0.2 0.0 0.03 0.0 0.0 0.0
+	0.05
+	vec 4
+  1.0 0.0 0.0 1.0
+	1
+  color=color-red
+	vec 3
+	1 1 1
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	0.2 0.2 0.03 0.0 0.0 0.0
+	0.05
+	vec 4
+  1.0 0.0 0.0 1.0
+	1
+  color=color-red
+	vec 3
+	1 1 1
+}
+
