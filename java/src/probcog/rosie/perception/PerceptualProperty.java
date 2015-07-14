@@ -91,7 +91,7 @@ public class PerceptualProperty implements ISoarObject
     	return name;
     }
     
-    public void updateProperty(HashMap<String, Double> valueInfo){
+    public synchronized void updateProperty(HashMap<String, Double> valueInfo){
     	HashSet<String> valuesToRemove = new HashSet<String>(values.keySet());
 
     	for(Map.Entry<String, Double> e : valueInfo.entrySet()){
@@ -99,10 +99,10 @@ public class PerceptualProperty implements ISoarObject
     		Double conf = e.getValue();
     		
     		if(values.containsKey(valueName)){
-    			valuesToRemove.remove(valueName);
-    			values.put(valueName, new FloatWME(valueName, conf));
-    		} else {
     			values.get(valueName).setValue(conf);
+    			valuesToRemove.remove(valueName);
+    		} else {
+    			values.put(valueName, new FloatWME(valueName, conf));
     		}
     	}
     	
@@ -114,30 +114,11 @@ public class PerceptualProperty implements ISoarObject
     }
     
     public void updateProperty(categorized_data_t catDat){
-    	HashSet<String> valuesToRemove = new HashSet<String>(values.keySet());
-
+    	HashMap<String, Double> valueInfo = new HashMap<String, Double>();
     	for(int i = 0; i < catDat.len; i++){
-    		String valueName = catDat.label[i];
-    		Double conf = catDat.confidence[i];
-    		
-    		if(values.containsKey(valueName)){
-    			valuesToRemove.remove(valueName);
-    			values.get(valueName).setValue(conf);
-    		} else {
-    			values.put(valueName, new FloatWME(valueName, conf));
-    		}
+    		valueInfo.put(catDat.label[i], catDat.confidence[i]);
     	}
-    	
-    	for(String valueName : valuesToRemove){
-    		wmesToRemove.add(values.get(valueName));
-    		values.remove(valueName);
-    	}
-	    	
-    	// Update feature-val
-    	if(type.equals(MEASURABLE_TYPE)){
-    		featureVal.setValue(catDat.features[0]);
-    	}
-    	gotUpdate = true;
+    	updateProperty(valueInfo);
     }
     
     public categorized_data_t getCatDat(){
@@ -199,7 +180,7 @@ public class PerceptualProperty implements ISoarObject
 		
 		for(FloatWME wme : values.values()){
 			if(!wme.isAdded()){
-				wme.addToWM(propId);
+				wme.addToWM(valuesId);
 			} else {
 				wme.updateWM();
 			}
