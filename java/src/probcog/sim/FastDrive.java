@@ -6,9 +6,11 @@ import april.config.*;
 import april.sim.*;
 import april.util.*;
 import april.jmat.*;
-import april.lcmtypes.*;
+//import april.lcmtypes.*;
 
 import probcog.util.Util;
+
+import magic2.lcmtypes.*;
 
 /** A class that acts as a fixed-speed update DifferentialDrive. */
 public class FastDrive
