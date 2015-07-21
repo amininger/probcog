@@ -178,6 +178,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     public diff_drive_t drive(DriveParams params)
     {
         if (false) {
+            // XXX Might be used by MCP still
             return handTunedFollow(params);
         } else {
             return xyFollow(params);

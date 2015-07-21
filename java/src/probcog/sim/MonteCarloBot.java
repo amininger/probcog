@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
+import lcm.lcm.*;
+
 import april.config.*;
 import april.jmat.*;
 import april.sim.*;
@@ -24,7 +26,7 @@ import magic2.lcmtypes.*;
 public class MonteCarloBot implements SimObject
 {
     private static final double GM_SIZE_M = 8.0;
-    private static final double GM_MPP = 0.05;
+    private static final double GM_MPP = 0.10;
 
     Random r = new Random();
 
@@ -222,8 +224,8 @@ public class MonteCarloBot implements SimObject
                     continue;
                 double robotTheta = LinAlg.quatToRollPitchYaw(drive.poseOdom.orientation)[2];
                 double t = laser.rad0 + i*laser.radstep + robotTheta;
-                double x = r*Math.cos(t);
-                double y = r*Math.sin(t);
+                double x = drive.poseOdom.pos[0]+r*Math.cos(t);
+                double y = drive.poseOdom.pos[1]+r*Math.sin(t);
                 int ix = (int)Math.floor((x-gm.x0)/gm.meters_per_pixel);
                 int iy = (int)Math.floor((y-gm.y0)/gm.meters_per_pixel);
                 if (ix < 0 || ix >= gm.width || iy < 0 || iy >= gm.height)
