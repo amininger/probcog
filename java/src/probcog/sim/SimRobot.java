@@ -538,8 +538,8 @@ public class SimRobot implements SimObject, LCMSubscriber
             tag_detection_list_t tdl = new tag_detection_list_t();
             tdl.utime = TimeUtil.utime();
 
-            int iw = Util.getConfig().requireDouble("cameraCalibration.imWidth");
-            int ih = Util.getConfig().requireDouble("cameraCalibration.imHeight");
+            double iw = Util.getConfig().requireDouble("cameraCalibration.imWidth");
+            double ih = Util.getConfig().requireDouble("cameraCalibration.imHeight");
 
             double cx = iw/2.0;
             double cy = ih/2.0;

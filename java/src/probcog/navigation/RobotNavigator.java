@@ -31,8 +31,11 @@ public class RobotNavigator implements LCMSubscriber
     VisLayer vl;
     VisCanvas vc;
 
+    plan_request_t lastRequest = null;
+
     LCM lcm = LCM.getSingleton();
     String tagChannel;
+    String planChannel;
 
     SimWorld world;
     GridMap gm; // Eventually populated by SLAM, for now, populated by sim?
@@ -67,6 +70,8 @@ public class RobotNavigator implements LCMSubscriber
 
         tagChannel = gopt.getString("tag-channel");
         lcm.subscribe(tagChannel, this);
+        planChannel = gopt.getString("plan-channel");
+        lcm.subscribe(planChannel, this);
     }
 
     private void createGridMap()
@@ -136,7 +141,7 @@ public class RobotNavigator implements LCMSubscriber
      *  Note that the robot will localize itself based on tags, teleporting
      *  around the sim world as needed.
      **/
-    synchronized public void computePlan(double[] goalXYT)
+    public void computePlan(double[] goalXYT)
     {
         MonteCarloPlanner mcp = new MonteCarloPlanner(world, gm, null);
 
@@ -166,6 +171,9 @@ public class RobotNavigator implements LCMSubscriber
             if (channel.equals(tagChannel)) {
                 tag_detection_list_t tdl = new tag_detection_list_t(ins);
                 handleTags(tdl);
+            } else if (channel.equals(planChannel)) {
+                plan_request_t pr = new plan_request_t(ins);
+                handleRequest(pr);
             }
         } catch (IOException ex) {
             System.err.println("ERR: Could not handle message on channel - "+channel);
@@ -242,6 +250,16 @@ public class RobotNavigator implements LCMSubscriber
         // XXX THE SIM SHOULD NOT DO ANYTHING, RECALL! JUST THE REAL ROBOT
     }
 
+    synchronized private void handleRequest(plan_request_t pr)
+    {
+        if (lastRequest != null && lastRequest.id == pr.id)
+            return;
+        lastRequest = pr;
+
+        // Compute and save plan for execution
+        computePlan(pr.goalXYT);
+    }
+
     // === UTILITY ===
     private SimRobot getRobot()
     {
@@ -292,6 +310,7 @@ public class RobotNavigator implements LCMSubscriber
         gopt.addBoolean('h', "help", false, "Show this help screen");
         gopt.addString('w', "world", null, "(Someday Optional) sim world file");
         gopt.addString('\0', "tag-channel", "TAG_DETECTIONS", "Tag detection channel");
+        gopt.addString('\0', "plan-channel", "PLAN_REQUEST", "Plan request channel");
 
         if (!gopt.parse(args) || gopt.getBoolean("help")) {
             System.err.printf("Usage: %s [options]\n", args[0]);
