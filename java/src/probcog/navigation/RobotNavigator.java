@@ -8,11 +8,13 @@ import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
 import april.sim.*;
+import april.tag.*;
 import april.util.*;
 
 import probcog.lcmtypes.*;
 import probcog.navigation.*;
 import probcog.sim.*;
+import probcog.util.*;
 
 import magic2.lcmtypes.*;
 
@@ -151,9 +153,69 @@ public class RobotNavigator implements LCMSubscriber
     {
         // Correct robot pose based on tags. In the presence of multiple
         // tags from the sim world, use the average position.
-        // XXX We need to eliminate tags that might also be robots!
+        // XXX We need to eliminate tags that might also be robots! Currently,
+        // we assume that the tags will provide (noisy) estimates of XYT.
+
+        double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
+
+        double[] meanXYT = new double[3];
+        for (int i = 0; i < tdl.ndetections; i++) {
+            tag_detection_t td = tdl.detections[i];
+
+            // XXX Calibration of detection. Should it happen on this end,
+            // or on the detection side?
+            TagDetection tag = new TagDetection();
+            tag.id = td.id;
+            tag.hammingDistance = td.hamming_dist;
+            tag.homography = new double[3][];
+            for (int n = 0; n < 3; n++) {
+                tag.homography[n] = new double[3];
+                for (int m = 0; m < 3; m++) {
+                    tag.homography[n][m] = (double)(td.H[n][m]);
+                }
+            }
+            tag.cxy = new double[] {td.cxy[0], td.cxy[1]};
+            tag.p = new double[][] {{td.pxy[0][0], td.pxy[0][1]},
+                                    {td.pxy[1][0], td.pxy[1][1]},
+                                    {td.pxy[2][0], td.pxy[2][1]},
+                                    {td.pxy[3][0], td.pxy[3][1]}};
+
+            // Compute the tag position relative to the robot
+            // for a fixed, upwards facing camera.
+            double[][] T2B = TagUtil.getTagToPose(tag, tagSize_m);
+
+            // Determine the actual tag position
+            SimAprilTag simTag = getTagByID(tag.id);
+            assert (simTag != null);
+            double[][] T2W = simTag.getPose();
+
+            // Use this to extract the global position of the robot
+            // XXX Are we getting rotations right? Translation is pretty
+            // trivial.
+            double[][] B2W = LinAlg.matrixAB(T2W, LinAlg.inverse(T2B));
+            double[] xyt = LinAlg.matrixToXYT(B2W);
+            LinAlg.plusEquals(meanXYT, LinAlg.scale(xyt, 1.0/tdl.ndetections));
+        }
+
+        SimRobot robot = getRobot();
+        assert (robot != null);
+        double[][] B2W = LinAlg.xytToMatrix(meanXYT);
+        B2W[2][3] = robot.getPose()[2][3];
+        robot.setPose(B2W);
 
         // XXX TODO
+        // We need to...
+        // 1) Localize off of tags in the sim world (might want to visualize
+        // for this, after all?)
+        //
+        // 2) Make an interface, maybe via LCM, for querying the system for
+        // plans
+        //
+        // 3) Have some other thread running in the background that actually
+        // handles the execution of plans, resulting in a robot that DOES
+        // something.
+        //
+        // XXX THE SIM SHOULD NOT DO ANYTHING, RECALL! JUST THE REAL ROBOT
     }
 
     // === UTILITY ===
@@ -164,6 +226,19 @@ public class RobotNavigator implements LCMSubscriber
             if (!(so instanceof SimRobot))
                 continue;
             return (SimRobot)so;
+        }
+
+        return null;
+    }
+
+    private SimAprilTag getTagByID(double id)
+    {
+        for (SimObject so: world.objects) {
+            if (!(so instanceof SimAprilTag))
+                continue;
+            SimAprilTag tag = (SimAprilTag)so;
+            if (tag.getID() == id)
+                return tag;
         }
 
         return null;
