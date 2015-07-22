@@ -1,7 +1,9 @@
 package probcog.navigation;
 
+import java.awt.*;
 import java.io.*;
 import java.util.*;
+import javax.swing.*;
 
 import lcm.lcm.*;
 
@@ -10,6 +12,7 @@ import april.jmat.*;
 import april.sim.*;
 import april.tag.*;
 import april.util.*;
+import april.vis.*;
 
 import probcog.lcmtypes.*;
 import probcog.navigation.*;
@@ -23,6 +26,11 @@ import magic2.lcmtypes.*;
  **/
 public class RobotNavigator implements LCMSubscriber
 {
+    private boolean DEBUG = true;
+    VisWorld vw;
+    VisLayer vl;
+    VisCanvas vc;
+
     LCM lcm = LCM.getSingleton();
     String tagChannel;
 
@@ -34,11 +42,27 @@ public class RobotNavigator implements LCMSubscriber
         if (gopt.wasSpecified("world")) {
             Config config = new Config();
             world = new SimWorld(gopt.getString("world"), config);
+            world.setRunning(false);
 
             createGridMap();
         } else {
             System.err.println("ERR: Currently only support sim mode");
             assert (false);
+        }
+
+        if (DEBUG) {
+            JFrame jf = new JFrame("Debug RobotNavigator");
+            jf.setSize(1000, 800);
+            jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            jf.setLayout(new BorderLayout());
+
+            vw = new VisWorld();
+            vl = new VisLayer(vw);
+            vc = new VisCanvas(vl);
+            jf.add(vc, BorderLayout.CENTER);
+            Simulator sim = new Simulator(vw, vl, new VisConsole(vw, vl, vc), world);
+
+            jf.setVisible(true);
         }
 
         tagChannel = gopt.getString("tag-channel");
