@@ -14,6 +14,8 @@ import april.tag.*;
 import april.util.*;
 import april.vis.*;
 
+import probcog.commands.controls.*;
+import probcog.commands.tests.*;
 import probcog.lcmtypes.*;
 import probcog.navigation.*;
 import probcog.sim.*;
@@ -31,6 +33,9 @@ public class RobotNavigator implements LCMSubscriber
     VisLayer vl;
     VisCanvas vc;
 
+    boolean executing = false;
+    ExecutionThread exec = null;
+
     plan_request_t lastRequest = null;
 
     LCM lcm = LCM.getSingleton();
@@ -39,6 +44,77 @@ public class RobotNavigator implements LCMSubscriber
 
     SimWorld world;
     GridMap gm; // Eventually populated by SLAM, for now, populated by sim?
+
+    int commandID = 0;
+    private class ExecutionThread extends Thread
+    {
+        ArrayList<Behavior> plan;
+
+        public ExecutionThread(ArrayList<Behavior> plan_)
+        {
+            plan = plan;
+            executing = true;
+        }
+
+        // XXX TODO Execute the current plan. This means issuing the command
+        // and then making sure we can respond appropriately as status messages
+        // come in.
+        public void run()
+        {
+            for (Behavior b: plan) {
+               // statusMessageReceived = false;
+               // do {
+               //     issueCommand(b);
+               //     try {
+               //         statusLock.wait(100);
+               //     } catch (InterruptedException ex) {}
+               // } while (!statusMessageReceived);
+               // commandID++;
+
+               // while (executing) {
+
+               // }
+            }
+        }
+
+        private void issueCommand(Behavior b)
+        {
+            // Issue the appropriate command
+            control_law_t cl = null;
+            if (b.law instanceof FollowWall) {
+                cl = ((FollowWall)b.law).getLCM();
+            } else if (b.law instanceof DriveTowardsTag) {
+                cl = ((DriveTowardsTag)b.law).getLCM();
+            } else if (b.law instanceof Turn) {
+                cl = ((Turn)b.law).getLCM();
+            } else if (b.law instanceof Orient) {
+                cl = ((Orient)b.law).getLCM();
+            } else {
+                assert (false);
+            }
+            cl.utime = TimeUtil.utime();
+            cl.id = commandID;
+
+            condition_test_t ct = null;
+            if (b.test instanceof ClassificationCounterTest) {
+                ct = ((ClassificationCounterTest)b.test).getLCM();
+            } else if (b.test instanceof NearTag) {
+                ct = ((NearTag)b.test).getLCM();
+            } else if (b.test instanceof RotationTest) {
+                ct = ((RotationTest)b.test).getLCM();
+            } else if (b.test instanceof Stabilized) {
+                ct = ((Stabilized)b.test).getLCM();
+            } else {
+                assert (false);
+            }
+            cl.termination_condition = ct;
+
+            // Publishing
+            lcm.publish("SOAR_COMMAND", cl);
+            lcm.publish("SOAR_COMMAND", cl);
+            lcm.publish("SOAR_COMMAND", cl);
+        }
+    }
 
     public RobotNavigator(GetOpt gopt) throws IOException
     {
@@ -141,7 +217,7 @@ public class RobotNavigator implements LCMSubscriber
      *  Note that the robot will localize itself based on tags, teleporting
      *  around the sim world as needed.
      **/
-    public void computePlan(double[] goalXYT)
+    public ArrayList<Behavior> computePlan(double[] goalXYT)
     {
         MonteCarloPlanner mcp = new MonteCarloPlanner(world, gm, null);
 
@@ -158,7 +234,7 @@ public class RobotNavigator implements LCMSubscriber
         ArrayList<double[]> starts = new ArrayList<double[]>();
         starts.add(LinAlg.matrixToXYT(robot.getPose()));
 
-        ArrayList<Behavior> behaviors = mcp.plan(starts, goalXYT, tag);
+        return mcp.plan(starts, goalXYT, tag);
     }
 
     // === LCM ===
@@ -257,7 +333,19 @@ public class RobotNavigator implements LCMSubscriber
         lastRequest = pr;
 
         // Compute and save plan for execution
-        computePlan(pr.goalXYT);
+        ArrayList<Behavior> plan = computePlan(pr.goalXYT);
+        if (plan.size() < 0) {
+            System.err.println("ERR: Zero length plan returned");
+            return;
+        }
+
+        executing = false;
+        try {
+            if (exec != null)
+                exec.join();
+        } catch (InterruptedException ex) {}
+        exec = new ExecutionThread(plan);
+        exec.start();
     }
 
     // === UTILITY ===
