@@ -170,7 +170,7 @@ public class Orient implements ControlLaw, LCMSubscriber
         return dd;
     }
 
-    public control_law_t toLCM()
+    public control_law_t getLCM()
     {
         control_law_t cl = new control_law_t();
         cl.name = "orient";

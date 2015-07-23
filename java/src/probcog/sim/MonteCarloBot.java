@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
+import lcm.lcm.*;
+
 import april.config.*;
 import april.jmat.*;
 import april.sim.*;
@@ -23,6 +25,9 @@ import magic2.lcmtypes.*;
 
 public class MonteCarloBot implements SimObject
 {
+    private static final double GM_SIZE_M = 8.0;
+    private static final double GM_MPP = 0.10;
+
     Random r = new Random();
 
     int ROBOT_ID = 6;
@@ -151,6 +156,10 @@ public class MonteCarloBot implements SimObject
         laser_t laser = new laser_t();
         laser.utime = currentUtime;
 
+        // Populate a grid map with robot data
+        grid_map_t gm = new grid_map_t();
+        gm.utime = currentUtime;
+
         // Populate our knowledge of tags based on what we can see already.
         // In the future, we may actually want to work on knowing exactly what
         // tags were labeled as in recent history, but for now, it is sufficient
@@ -201,10 +210,35 @@ public class MonteCarloBot implements SimObject
             laser.rad0 = (float) rad0;
             laser.radstep = (float) radstep;
 
+            gm.x0 = drive.poseOdom.pos[0] - GM_SIZE_M/2;
+            gm.y0 = drive.poseOdom.pos[1] - GM_SIZE_M/2;
+            gm.encoding = grid_map_t.ENCODING_NONE;
+            gm.meters_per_pixel = GM_MPP;
+            gm.width = (int)Math.ceil(GM_SIZE_M/GM_MPP);
+            gm.height = gm.width;
+            gm.datalen = gm.width*gm.height;
+            gm.data = new byte[gm.datalen];
+            for (int i = 0; i < laser.nranges; i++) {
+                double r = laser.ranges[i];
+                if (r < 0)
+                    continue;
+                double robotTheta = LinAlg.quatToRollPitchYaw(drive.poseOdom.orientation)[2];
+                double t = laser.rad0 + i*laser.radstep + robotTheta;
+                double x = drive.poseOdom.pos[0]+r*Math.cos(t);
+                double y = drive.poseOdom.pos[1]+r*Math.sin(t);
+                int ix = (int)Math.floor((x-gm.x0)/gm.meters_per_pixel);
+                int iy = (int)Math.floor((y-gm.y0)/gm.meters_per_pixel);
+                if (ix < 0 || ix >= gm.width || iy < 0 || iy >= gm.height)
+                    continue;
+                gm.data[iy*gm.width + ix] = 1;  // SLAMMABLE
+            }
+
             DriveParams params = new DriveParams();
             params.dt = FastDrive.DT;
             params.laser = laser;
-            params.pose = LCMUtil.a2mPose(drive.poseOdom); // XXX
+            params.pose = drive.poseOdom; // XXX
+            params.gm = gm;
+
 
             diff_drive_t dd = new diff_drive_t();
             dd.utime = TimeUtil.utime();
@@ -243,7 +277,7 @@ public class MonteCarloBot implements SimObject
             // Update condition test, if necessary
             if (test instanceof Stabilized) {
                 Stabilized stable = (Stabilized)test;
-                pose_t stable_pose = LCMUtil.a2mPose(drive.poseTruth);
+                pose_t stable_pose = drive.poseTruth;
                 stable_pose.utime = currentUtime;
                 stable.update(stable_pose);
             }

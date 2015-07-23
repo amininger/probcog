@@ -162,7 +162,11 @@ public class Stabilized implements ConditionTest, LCMSubscriber
     {
         condition_test_t ct = new condition_test_t();
         ct.name = "stabilized";
-        ct.num_params = 0;
+        ct.num_params = 1;
+        ct.param_names = new String[ct.num_params];
+        ct.param_values = new typed_value_t[ct.num_params];
+        ct.param_names[0] = "timeout";
+        ct.param_values[0] = new TypedValue(PERIOD_S).toLCM();
 
         // Not used
         ct.compare_type = condition_test_t.CMP_GT;

@@ -137,6 +137,11 @@ public class CommandCoordinator
         tasks.setRunning(true);
     }
 
+    public void setRunning(boolean run)
+    {
+        tasks.setRunning(run);  // Is this coordinator active?
+    }
+
     /** Register a control law with the Coordinator.
      *
      *  @param controlLaw       Control law to be registered

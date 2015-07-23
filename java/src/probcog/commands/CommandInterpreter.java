@@ -34,6 +34,7 @@ public class CommandInterpreter
 		}
 	}
 
+    private boolean running;
 	protected static LCM lcm = LCM.getSingleton();
 	private static int LCM_FPS = 60;
 	private static int CMD_FPS = 20;
@@ -66,9 +67,16 @@ public class CommandInterpreter
 		//waitingCommands = new LinkedList<control_law_t>();
         this.sim = sim;
 
+        running = true;
 		new ListenerThread().start();
 		new CommandThread().start();
 	}
+
+    public void setRunning(boolean run)
+    {
+        running = run;
+        coordinator.setRunning(run);
+    }
 
 	protected void interpretCommand(control_law_t controlLaw)
 	{
@@ -181,7 +189,7 @@ public class CommandInterpreter
 			if(controlLaw.name.toLowerCase().equals("stop")){
 				control_law_status_t clStatus = new control_law_status_t();
 				clStatus.id = controlLaw.id;
-				clStatus.status = Status.SUCCESS.toString(); 
+				clStatus.status = Status.SUCCESS.toString();
 				clStatus.name = controlLaw.name;
 				lcm.publish("SOAR_COMMAND_STATUS_TX", clStatus);
 			}
@@ -237,6 +245,9 @@ public class CommandInterpreter
 
 		public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
 		{
+            if (!running)
+                return;
+
 			try {
 				messageReceivedEx(lcm, channel, ins);
 			} catch (IOException ioex) {
