@@ -309,6 +309,8 @@ public class RobotNavigator implements LCMSubscriber
         assert (robot != null);
         double[][] B2W = LinAlg.xytToMatrix(meanXYT);
         B2W[2][3] = robot.getPose()[2][3];
+
+        // XXX Filtering...also, take into account robot's reported odom
         robot.setPose(B2W);
 
         // XXX TODO
