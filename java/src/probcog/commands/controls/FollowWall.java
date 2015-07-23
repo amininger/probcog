@@ -232,7 +232,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
                                                                      params.pose.pos));
 
         // Look for points in front of the robot
-        double rWidth = 0.3;
+        double rWidth = 0.25;
         double hazardDist = Math.max(goalDistance, 1.0);
         double rc = Math.cos(poseXYT[2]);
         double rs = Math.sin(poseXYT[2]);
@@ -283,7 +283,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         //double K_p = (1.0 - rSide/G_weight);
         double K_p = 1.0 - Math.pow(rSide/G_weight, 0.5);
         if (!sim) {
-            K_p *= 2.5;
+            K_p *= 5.0;
         } else {
             K_d = 0.4;
         }

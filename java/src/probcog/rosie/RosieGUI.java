@@ -31,7 +31,7 @@ public class RosieGUI extends JFrame
 
 	private JButton startStopButton;
 	private JButton stopRobotButton;
-	
+
 	private MobilePerceptionConnector perception;
 	private MobileActuationConnector actuation;
 	private LanguageConnector language;
@@ -39,7 +39,7 @@ public class RosieGUI extends JFrame
     public RosieGUI(Properties props)
     {
 		super("Rosie Chat");
-		
+
     	//this.setSize(800, 650);
     	this.setSize(1000, 450);
     	getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.LINE_AXIS));
@@ -51,13 +51,13 @@ public class RosieGUI extends JFrame
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     	soarAgent = new SoarAgent(props);
-    	
+
     	actuation = new MobileActuationConnector(soarAgent, props);
     	soarAgent.setActuationConnector(actuation);
-    	
+
     	perception = new MobilePerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
-    	
+
     	language = new LanguageConnector(soarAgent, props);
     	soarAgent.setLanguageConnector(language);
 
@@ -66,30 +66,24 @@ public class RosieGUI extends JFrame
     	setupMenu();
 
     	soarAgent.createAgent();
-    	
+
     	add(chat);
-    	
+
     	String[] messages = new String[]{
-    			"Turn left.",
-    			"Turn right.",
-    			"Follow the left wall until you see a room.",
-    			"Follow the right wall until you see a room.",
-    			"Follow the left wall until you see an intersection.",
-    			"Follow the right wall until you see an intersection.",
-    			"You are in the kitchen",
-    			"You are in the bedroom",
-    			"You are in the laundry",
-    			"You are in the bathroom",
-    			"Deliver the soda to the kitchen"
+    			"Deliver the soda to the bedroom",
+                "You are in the bedroom",
+                "Find a soda",
+                "Fetch a soda"
+
     	};
     	add(new InstructorMessagePanel(chat, messages));
 
 //    	CommandPanel commandPanel = new CommandPanel(soarAgent);
-//    	
+//
 //    	JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, chat, commandPanel);
 //    	splitPane.setDividerLocation(400);
 //    	this.add(splitPane);
-    	
+
     	this.setVisible(true);
     }
 
@@ -111,11 +105,11 @@ public class RosieGUI extends JFrame
         menuBar.add(startStopButton);
 
     	menuBar.add(new AgentMenu(soarAgent));
-    	
+
     	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
     	actuation.createMenu(menuBar);
-    	
+
 
     	stopRobotButton = new JButton("STOP");
     	stopRobotButton.setBackground(Color.red);
@@ -156,7 +150,7 @@ public class RosieGUI extends JFrame
           System.err.println("ERR: No $ROSIE_CONFIG environment variable set");
           System.exit(1);
         }
-        
+
         // Load the properties file
         Properties props = new Properties();
         try {
