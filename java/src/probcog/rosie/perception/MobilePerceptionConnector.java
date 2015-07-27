@@ -121,7 +121,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
    		for (classification_t c : curClassifications.classifications){
    			if (c.id == closestWaypoint){
    				if (c.name.startsWith("wp")){
-   					SoarUtil.updateStringWME(waypointId, "id", c.name);
+   					SoarUtil.updateStringWME(waypointId, "waypoint-handle", c.name);
    				} else {
    					SoarUtil.updateStringWME(waypointId, "classification", c.name);
    				}
