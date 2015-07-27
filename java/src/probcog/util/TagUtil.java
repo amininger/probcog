@@ -35,7 +35,7 @@ public class TagUtil
 
         // Rotate around Y to correct for upside down tags.
         M = LinAlg.matrixAB(xform, M);
-        M = LinAlg.matrixAB(M, LinAlg.rotateY(Math.PI));
+        M = LinAlg.matrixAB(M, LinAlg.rotateZ(Math.PI));
 
         return M;
     }
