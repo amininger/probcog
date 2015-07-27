@@ -184,21 +184,21 @@ public class CommandInterpreter
 			// No commands being sent, no need to reply with a status
 			return;
 		}
+		control_law_status_t clStatus = new control_law_status_t();
+        clStatus.utime = TimeUtil.utime();
+		clStatus.id = activeCommand.commandID;
+        clStatus.status = Status.SUCCESS.toString();
+		clStatus.name = controlLaw.name;
+
 		if(activeCommand == null){
 			// No command to report on
 			if(controlLaw.name.toLowerCase().equals("stop")){
-				control_law_status_t clStatus = new control_law_status_t();
-				clStatus.id = controlLaw.id;
-				clStatus.status = Status.SUCCESS.toString();
-				clStatus.name = controlLaw.name;
 				lcm.publish("SOAR_COMMAND_STATUS_TX", clStatus);
 			}
 			return;
 		}
-		control_law_status_t clStatus = new control_law_status_t();
-		clStatus.id = activeCommand.commandID;
+
 		clStatus.status = activeCommand.status.toString();
-		clStatus.name = controlLaw.name;
 		lcm.publish("SOAR_COMMAND_STATUS_TX", clStatus);
 	}
 

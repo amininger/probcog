@@ -46,8 +46,11 @@ public class RobotNavigator implements LCMSubscriber
     GridMap gm; // Eventually populated by SLAM, for now, populated by sim?
 
     int commandID = 0;
-    private class ExecutionThread extends Thread
+    private class ExecutionThread extends Thread implements LCMSubscriber
     {
+        control_law_status_t lastStatus = null;
+        boolean statusMessageReceived = false;
+        Object statusLock = new Object();
         ArrayList<Behavior> plan;
 
         public ExecutionThread(ArrayList<Behavior> plan_)
@@ -56,24 +59,52 @@ public class RobotNavigator implements LCMSubscriber
             executing = true;
         }
 
+        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        {
+            try {
+                if (channel.equals("SOAR_COMMAND_STATUS_TX")) {
+                    // Handle command statuses...see if we can move on
+                    synchronized (statusLock) {
+                        control_law_status_t status = new control_law_status_t(ins);
+                        if (status.id == commandID) {
+                            lastStatus = status;
+                            statusMessageReceived = true;
+                            statusLock.notifyAll();
+                        }
+                    }
+                }
+            } catch (IOException ex) {
+                System.err.println("ERR: Could not handle message on channel - "+channel);
+                ex.printStackTrace();
+            }
+        }
+
         // XXX TODO Execute the current plan. This means issuing the command
         // and then making sure we can respond appropriately as status messages
         // come in.
         public void run()
         {
             for (Behavior b: plan) {
-               // statusMessageReceived = false;
-               // do {
-               //     issueCommand(b);
-               //     try {
-               //         statusLock.wait(100);
-               //     } catch (InterruptedException ex) {}
-               // } while (!statusMessageReceived);
-               // commandID++;
+                synchronized (statusLock) {
+                    statusMessageReceived = false;
+                    do {
+                        issueCommand(b);
+                        try {
+                            statusLock.wait(100);
+                        } catch (InterruptedException ex) {}
+                    } while (!statusMessageReceived);
 
-               // while (executing) {
+                    while (lastStatus.status.equals("EXECUTING")) {
+                        try {
+                            statusLock.wait();
+                        } catch (InterruptedException ex) {}
+                    }
 
-               // }
+                    System.out.printf("NFO: Execution %s on %d\n",
+                                      lastStatus.status,
+                                      lastStatus.id);
+                    commandID++;
+                }
             }
         }
 
