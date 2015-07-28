@@ -73,17 +73,11 @@ public class RosieGUI extends JFrame
     	add(chat);
     	
     	String[] messages = new String[]{
-    			"Turn left.",
-    			"Turn right.",
-    			"Follow the left wall until you see a room.",
-    			"Follow the right wall until you see a room.",
-    			"Follow the left wall until you see an intersection.",
-    			"Follow the right wall until you see an intersection.",
-    			"You are in the kitchen",
-    			"You are in the bedroom",
-    			"You are in the laundry",
-    			"You are in the bathroom",
-    			"Deliver the soda to the kitchen"
+    			"Deliver the soda to the kitchen",
+    			"The goal is that the soda is in the kitchen",
+    			"Pick up the soda",
+    			"Go to the kitchen",
+    			"Put down the soda"
     	};
     	add(new InstructorMessagePanel(chat, messages));
 
