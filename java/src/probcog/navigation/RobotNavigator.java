@@ -28,7 +28,7 @@ import magic2.lcmtypes.*;
  **/
 public class RobotNavigator implements LCMSubscriber
 {
-    private boolean DEBUG = true;
+    private boolean DEBUG = false;
     VisWorld vw;
     VisLayer vl;
     VisCanvas vc;
@@ -55,8 +55,9 @@ public class RobotNavigator implements LCMSubscriber
 
         public ExecutionThread(ArrayList<Behavior> plan_)
         {
-            plan = plan;
+            plan = plan_;
             executing = true;
+            lcm.subscribe("SOAR_COMMAND_STATUS_TX", this);
         }
 
         public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -64,8 +65,10 @@ public class RobotNavigator implements LCMSubscriber
             try {
                 if (channel.equals("SOAR_COMMAND_STATUS_TX")) {
                     // Handle command statuses...see if we can move on
+                    System.out.println("LOCK?");
                     synchronized (statusLock) {
                         control_law_status_t status = new control_law_status_t(ins);
+                        System.out.println("LOCK! :"+status.status);
                         if (status.id == commandID) {
                             lastStatus = status;
                             statusMessageReceived = true;
@@ -85,6 +88,7 @@ public class RobotNavigator implements LCMSubscriber
         public void run()
         {
             for (Behavior b: plan) {
+                System.out.println(b);
                 synchronized (statusLock) {
                     statusMessageReceived = false;
                     do {
@@ -94,7 +98,10 @@ public class RobotNavigator implements LCMSubscriber
                         } catch (InterruptedException ex) {}
                     } while (!statusMessageReceived);
 
-                    while (lastStatus.status.equals("EXECUTING")) {
+                    while (lastStatus.status.equals("EXECUTING") ||
+                           lastStatus.status.equals("RECEIVED"))
+                    {
+                        System.out.println("Status: "+lastStatus.status);
                         try {
                             statusLock.wait();
                         } catch (InterruptedException ex) {}
@@ -142,13 +149,13 @@ public class RobotNavigator implements LCMSubscriber
 
             // Publishing
             lcm.publish("SOAR_COMMAND", cl);
-            lcm.publish("SOAR_COMMAND", cl);
-            lcm.publish("SOAR_COMMAND", cl);
         }
     }
 
     public RobotNavigator(GetOpt gopt) throws IOException
     {
+        DEBUG = gopt.getBoolean("debug");
+
         if (gopt.wasSpecified("world")) {
             Config config = new Config();
             world = new SimWorld(gopt.getString("world"), config);
@@ -250,7 +257,7 @@ public class RobotNavigator implements LCMSubscriber
      **/
     public ArrayList<Behavior> computePlan(double[] goalXYT)
     {
-        MonteCarloPlanner mcp = new MonteCarloPlanner(world, gm, null);
+        MonteCarloPlanner mcp = new MonteCarloPlanner(world, gm, DEBUG ? vw : null);
 
         // For now, base starting position on wherever the robot was
         // last placed in the world and the closest tag to our target
@@ -366,11 +373,13 @@ public class RobotNavigator implements LCMSubscriber
         lastRequest = pr;
 
         // Compute and save plan for execution
+        System.out.println("NFO: Planning on ID "+pr.id);
         ArrayList<Behavior> plan = computePlan(pr.goalXYT);
         if (plan.size() < 0) {
             System.err.println("ERR: Zero length plan returned");
             return;
         }
+        System.out.println("NFO: Plan complete, size "+plan.size());
 
         executing = false;
         try {
@@ -432,6 +441,7 @@ public class RobotNavigator implements LCMSubscriber
         gopt.addString('w', "world", null, "(Someday Optional) sim world file");
         gopt.addString('\0', "tag-channel", "TAG_DETECTIONS", "Tag detection channel");
         gopt.addString('\0', "plan-channel", "PLAN_REQUEST", "Plan request channel");
+        gopt.addBoolean('d', "debug", false, "Debugging visualization, etc");
 
         if (!gopt.parse(args) || gopt.getBoolean("help")) {
             System.err.printf("Usage: %s [options]\n", args[0]);

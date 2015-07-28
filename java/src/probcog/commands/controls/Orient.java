@@ -178,7 +178,7 @@ public class Orient implements ControlLaw, LCMSubscriber
         cl.param_names = new String[cl.num_params];
         cl.param_values = new typed_value_t[cl.num_params];
         cl.param_names[0] = "yaw";
-        cl.param_values[1] = new TypedValue(goalYaw).toLCM();
+        cl.param_values[0] = new TypedValue(goalYaw).toLCM();
 
         return cl;
     }

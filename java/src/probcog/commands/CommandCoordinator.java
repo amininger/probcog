@@ -126,6 +126,8 @@ public class CommandCoordinator
                     sl.statuses[idx++] = s;
                 }
                 lcm.publish("CONTROL_LAW_STATUS", sl);
+                lcm.publish("CONTROL_LAW_STATUS", sl);
+                lcm.publish("CONTROL_LAW_STATUS", sl);
             }
         }
     }
