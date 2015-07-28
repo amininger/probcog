@@ -1,0 +1,243 @@
+"probcog.sim.SimRobot"
+{
+	# Robot ID
+	6
+	# XYZRPY Truth
+	vec 6
+   0.00   5.50   0.50   0.00   0.00   0.00
+	# XYZRPY Odom
+	vec 6
+   0.00   0.00   0.00   0.00   0.00   0.00
+}
+# Top
+"april.sim.SimBox"
+{
+	vec 6
+   0.00   7.00   0.50   0.00   0.00   0.00
+	vec 3
+  40.00   0.10   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Bottom
+"april.sim.SimBox"
+{
+	vec 6
+   0.00  -7.00   0.50   0.00   0.00   0.00
+	vec 3
+  40.00   0.10   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Inside Top
+"april.sim.SimBox"
+{
+	vec 6
+   0.00   4.00   0.50   0.00   0.00   0.00
+	vec 3
+  24.00   0.10   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Inside Bottom
+"april.sim.SimBox"
+{
+	vec 6
+   0.00  -4.00   0.50   0.00   0.00   0.00
+	vec 3
+  24.00   0.10   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Inside Left
+"april.sim.SimBox"
+{
+	vec 6
+ -12.00   0.00   0.50   0.00   0.00   0.00
+	vec 3
+   0.10   8.00   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Inside Right
+"april.sim.SimBox"
+{
+	vec 6
+  12.00   0.00   0.50   0.00   0.00   0.00
+	vec 3
+   0.10   8.00   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Outside Left
+"april.sim.SimBox"
+{
+	vec 6
+ -15.00   0.00   0.50   0.00   0.00   0.00
+	vec 3
+   0.10   8.00   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Outside Right
+"april.sim.SimBox"
+{
+	vec 6
+  15.00   0.00   0.50   0.00   0.00   0.00
+	vec 3
+   0.10   8.00   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Top-Left Leg
+"april.sim.SimBox"
+{
+	vec 6
+ -17.50   4.00   0.50   0.00   0.00   0.00
+	vec 3
+   5.00   0.10   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Top-Right Leg
+"april.sim.SimBox"
+{
+	vec 6
+  17.50   4.00   0.50   0.00   0.00   0.00
+	vec 3
+   5.00   0.10   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Bottom-Left Leg
+"april.sim.SimBox"
+{
+	vec 6
+ -17.50  -4.00   0.50   0.00   0.00   0.00
+	vec 3
+   5.00   0.10   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Bottom-Right Leg
+"april.sim.SimBox"
+{
+	vec 6
+  17.50  -4.00   0.50   0.00   0.00   0.00
+	vec 3
+   5.00   0.10   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Top-Left End
+"april.sim.SimBox"
+{
+	vec 6
+ -20.00   5.50   0.50   0.00   0.00   0.00
+	vec 3
+   0.10   3.00   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Top-Right End
+"april.sim.SimBox"
+{
+	vec 6
+  20.00   5.50   0.50   0.00   0.00   0.00
+	vec 3
+   0.10   3.00   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Bottom-Left End
+"april.sim.SimBox"
+{
+	vec 6
+ -20.00  -5.50   0.50   0.00   0.00   0.00
+	vec 3
+   0.10   3.00   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+# Bottom-Right End
+"april.sim.SimBox"
+{
+	vec 6
+  20.00  -5.50   0.50   0.00   0.00   0.00
+	vec 3
+   0.10   3.00   1.00
+	vec 4
+   0.20   0.20   0.20   1.00
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+ -18.00   5.50   0.50   0.00   0.00   0.00
+	1
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+ -13.50   5.50   0.50   0.00   0.00   0.00
+	2
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+   0.00   5.50   0.50   0.00   0.00   0.00
+	3
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+  13.50   5.50   0.50   0.00   0.00   0.00
+	4
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+  18.00   5.50   0.50   0.00   0.00   0.00
+	5
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+ -13.50   0.00   0.50   0.00   0.00   0.00
+  6	
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+  13.50   0.00   0.50   0.00   0.00   0.00
+	7
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+ -18.00  -5.50   0.50   0.00   0.00   0.00
+	8
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+ -13.50  -5.50   0.50   0.00   0.00   0.00
+	9
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+   0.00  -5.50   0.50   0.00   0.00   0.00
+	10
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+  13.50  -5.50   0.50   0.00   0.00   0.00
+	11
+}
+"probcog.sim.SimAprilTag"
+{
+	vec 6
+  18.00  -5.50   0.50   0.00   0.00   0.00
+	12
+}
