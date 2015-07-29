@@ -76,7 +76,10 @@ public class RosieGUI extends JFrame
     			"Deliver the soda to the kitchen",
     			"The goal is that the soda is in the kitchen",
     			"Pick up the soda",
+    			"Ok",
     			"Go to the kitchen",
+    			"Follow the right wall until you see a door",
+    			"You are in the kitchen",
     			"Put down the soda"
     	};
     	add(new InstructorMessagePanel(chat, messages));
