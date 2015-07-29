@@ -45,6 +45,40 @@ public class RobotNavigator implements LCMSubscriber
     SimWorld world;
     GridMap gm; // Eventually populated by SLAM, for now, populated by sim?
 
+    Random random = new Random(198741);
+    tag_detection_list_t lastTags = null;
+    pose_t lastPose = null;
+
+    pose_t pose = null;
+    ArrayList<Particle> particles = new ArrayList<Particle>();
+
+    private class Particle
+    {
+        public double[] xyt = new double[3];
+        public double chi2 = 0.0;
+        public double logProb = 0.0;
+        public double weight = 1.0;
+
+        public Particle(double[] xyt_)
+        {
+            xyt = LinAlg.copy(xyt_);
+        }
+
+        public Particle(Particle p)
+        {
+            xyt = LinAlg.copy(p.xyt);
+            chi2 = p.chi2;
+            logProb = p.logProb;
+            weight = 1.0;
+        }
+
+        public void update(double[] localXYT, double chi2)
+        {
+            xyt = LinAlg.xytMultiply(xyt, localXYT);
+            this.chi2 += chi2;
+        }
+    }
+
     int commandID = 0;
     private class ExecutionThread extends Thread implements LCMSubscriber
     {
@@ -288,6 +322,9 @@ public class RobotNavigator implements LCMSubscriber
             } else if (channel.equals(planChannel)) {
                 plan_request_t pr = new plan_request_t(ins);
                 handleRequest(pr);
+            } else if (channel.equals("POSE")) {
+                pose_t p = new pose_t(ins);
+                handlePose(p);
             }
         } catch (IOException ex) {
             System.err.println("ERR: Could not handle message on channel - "+channel);
@@ -297,16 +334,185 @@ public class RobotNavigator implements LCMSubscriber
 
     synchronized private void handleTags(tag_detection_list_t tdl)
     {
-        // Correct robot pose based on tags. In the presence of multiple
-        // tags from the sim world, use the average position.
-        // XXX We need to eliminate tags that might also be robots! Currently,
-        // we assume that the tags will provide (noisy) estimates of XYT.
+
+        // Initialization of pose
+        if (pose == null && tdl.ndetections > 0) {
+            pose = new pose_t();
+
+            // Correct robot pose based on tags. In the presence of multiple
+            // tags from the sim world, use the average position.
+            // XXX We need to eliminate tags that might also be robots! Currently,
+            // we assume that the tags will provide (noisy) estimates of XYT.
+
+            double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
+
+            double[] meanXYT = new double[3];
+            for (int i = 0; i < tdl.ndetections; i++) {
+                tag_detection_t td = tdl.detections[i];
+
+                // XXX Calibration of detection. Should it happen on this end,
+                // or on the detection side?
+                TagDetection tag = new TagDetection();
+                tag.id = td.id;
+                tag.hammingDistance = td.hamming_dist;
+                tag.homography = new double[3][];
+                for (int n = 0; n < 3; n++) {
+                    tag.homography[n] = new double[3];
+                    for (int m = 0; m < 3; m++) {
+                        tag.homography[n][m] = (double)(td.H[n][m]);
+                    }
+                }
+                tag.cxy = new double[] {td.cxy[0], td.cxy[1]};
+                tag.p = new double[][] {{td.pxy[0][0], td.pxy[0][1]},
+                    {td.pxy[1][0], td.pxy[1][1]},
+                    {td.pxy[2][0], td.pxy[2][1]},
+                    {td.pxy[3][0], td.pxy[3][1]}};
+
+                // Compute the tag position relative to the robot
+                // for a fixed, upwards facing camera.
+                double[][] T2B = TagUtil.getTagToPose(tag, tagSize_m);
+
+                // Determine the actual tag position
+                SimAprilTag simTag = getTagByID(tag.id);
+                assert (simTag != null);
+                double[][] T2W = simTag.getPose();
+
+                // Use this to extract the global position of the robot
+                // XXX Are we getting rotations right? Translation is pretty
+                // trivial.
+                double[][] B2W = LinAlg.matrixAB(T2W, LinAlg.inverse(T2B));
+                double[] xyt = LinAlg.matrixToXYT(B2W);
+                LinAlg.plusEquals(meanXYT, LinAlg.scale(xyt, 1.0/tdl.ndetections));
+            }
+
+            SimRobot robot = getRobot();
+            assert (robot != null);
+            double[][] B2W = LinAlg.xytToMatrix(meanXYT);
+            B2W[2][3] = robot.getPose()[2][3];
+
+            robot.setPose(B2W);
+
+            pose.pos = LinAlg.copy(meanXYT);
+            pose.pos[2] = 0;
+
+            pose.orientation = LinAlg.angleAxisToQuat(meanXYT[2], new double[] {0,0,1});
+
+            // Init particles
+            int nparticles = 1000;
+            for (int i = 0; i < nparticles; i++) {
+                particles.add(new Particle(meanXYT));
+            }
+        }
+
+        lastTags = tdl;
+
+        // XXX TODO
+        // We need to...
+        // 1) Localize off of tags in the sim world (might want to visualize
+        // for this, after all?)
+        //
+        // 2) Make an interface, maybe via LCM, for querying the system for
+        // plans
+        //
+        // 3) Have some other thread running in the background that actually
+        // handles the execution of plans, resulting in a robot that DOES
+        // something.
+        //
+        // XXX THE SIM SHOULD NOT DO ANYTHING, RECALL! JUST THE REAL ROBOT
+    }
+
+    synchronized private void handlePose(pose_t pose_)
+    {
+        if (lastPose == null) {
+            lastPose = pose_;
+            return;
+        }
+
+        // Wait for initialization
+        if (pose == null)
+            return;
+
+        double[] lastXYT = LinAlg.quatPosToXYT(lastPose.orientation,
+                                               lastPose.pos);
+        double[] currXYT = LinAlg.quatPosToXYT(pose_.orientation,
+                                               pose_.pos);
+
+        double gdx = currXYT[0] - lastXYT[0];
+        double gdy = currXYT[1] - lastXYT[1];
+        double dt = currXYT[2] - lastXYT[2];
+
+        // Project X and Y into old T
+        double ct = Math.cos(lastXYT[2]);
+        double st = Math.sin(lastXYT[2]);
+        double ldx = ct*gdx + st*gdy;
+        double ldy = -st*gdx + ct*gdy;
+
+        // Update particles and handle new tags, if need be
+        for (Particle p: particles) {
+            // Update pose
+            double[][] P = new double[3][];
+            P[0] = new double[] {0.05*ldx*ldx, 0, 0};
+            P[1] = new double[] {0.01*ldy*ldy, 0, 0};
+            P[2] = new double[] {0.001, 0, 0};
+
+            MultiGaussian mg = new MultiGaussian(P, new double[3]);
+            double[] localXYT = mg.sample(random);
+            double chi2 = mg.chi2(localXYT);
+            p.update(localXYT, chi2);
+            p.logProb += -chi2/2;
+
+            // Reweight for landmarks, if applicable
+            if (lastTags == null)
+                continue;
+
+            updateFromTags(p);
+        }
+
+        // Resample
+        ArrayList<Particle> newParticles = new ArrayList<Particle>();
+        double weightTotal = 0;
+        for (Particle p: particles)
+            weightTotal += p.weight;
+        for (int i = 0; i < particles.size(); i++) {
+            double rand = random.nextDouble()*weightTotal;
+            double sum = 0;
+            for (Particle p: particles) {
+                sum += p.weight;
+                if (sum >= rand) {
+                    newParticles.add(new Particle(p));
+                    break;
+                }
+            }
+        }
+        particles = newParticles;
+
+        lastPose = pose_;
+
+        // Update our pose based on best particle. Choose based on chi2
+        double chi2 = Double.MAX_VALUE;
+        Particle best = null;
+        for (Particle p: particles) {
+            if (p.chi2 < chi2) {
+                chi2 = p.chi2;
+                best = p;
+            }
+        }
+
+        assert (best != null);
+        double[][] M = LinAlg.xytToMatrix(best.xyt);
+        SimRobot robot = getRobot();
+        assert (robot != null);
+        M[2][3] = robot.getPose()[2][3];
+        robot.setPose(M);
+    }
+
+    private void updateFromTags(Particle p)
+    {
+        assert (lastTags != null);
 
         double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
-
-        double[] meanXYT = new double[3];
-        for (int i = 0; i < tdl.ndetections; i++) {
-            tag_detection_t td = tdl.detections[i];
+        for (int i = 0; i < lastTags.ndetections; i++) {
+            tag_detection_t td = lastTags.detections[i];
 
             // XXX Calibration of detection. Should it happen on this end,
             // or on the detection side?
@@ -322,48 +528,46 @@ public class RobotNavigator implements LCMSubscriber
             }
             tag.cxy = new double[] {td.cxy[0], td.cxy[1]};
             tag.p = new double[][] {{td.pxy[0][0], td.pxy[0][1]},
-                                    {td.pxy[1][0], td.pxy[1][1]},
-                                    {td.pxy[2][0], td.pxy[2][1]},
-                                    {td.pxy[3][0], td.pxy[3][1]}};
+                {td.pxy[1][0], td.pxy[1][1]},
+                {td.pxy[2][0], td.pxy[2][1]},
+                {td.pxy[3][0], td.pxy[3][1]}};
 
             // Compute the tag position relative to the robot
             // for a fixed, upwards facing camera.
             double[][] T2B = TagUtil.getTagToPose(tag, tagSize_m);
+            double[] xyt_z = LinAlg.matrixToXYT(T2B);
 
             // Determine the actual tag position
             SimAprilTag simTag = getTagByID(tag.id);
             assert (simTag != null);
             double[][] T2W = simTag.getPose();
+            double[] t2wXYT = LinAlg.matrixToXYT(T2W);
 
-            // Use this to extract the global position of the robot
-            // XXX Are we getting rotations right? Translation is pretty
-            // trivial.
-            double[][] B2W = LinAlg.matrixAB(T2W, LinAlg.inverse(T2B));
-            double[] xyt = LinAlg.matrixToXYT(B2W);
-            LinAlg.plusEquals(meanXYT, LinAlg.scale(xyt, 1.0/tdl.ndetections));
+            // Determine predicted tag observation
+            double[] xyt_pred = LinAlg.xytMultiply(t2wXYT, LinAlg.xytInverse(p.xyt));
+
+            // Score based on crummily tuned estimator assuming noisy XY, stable T
+            double[][] P = new double[3][];
+            double sigma_xy = 0.25;
+            double sigma_t = 0.01;
+            P[0] = new double[] {sigma_xy, 0, 0};
+            P[1] = new double[] {0, sigma_xy, 0};
+            P[2] = new double[] {0, 0, sigma_t};
+
+            MultiGaussian mg = new MultiGaussian(P, xyt_pred);
+            double chi2 = mg.chi2(xyt_z);
+            double logProb = -chi2/2;
+
+            p.chi2 += chi2;
+            p.logProb += logProb;
+
+            Matrix Q = new Matrix(P);
+            double[] residual = LinAlg.subtract(xyt_z, xyt_pred);
+            Matrix r = Matrix.columnMatrix(residual);
+            double w = (1.0/Math.sqrt(Q.times(2*Math.PI).det()));
+            w *= Math.exp(-0.5*r.transpose().times(Q.inverse()).times(r).get(0));
+            p.weight *= w;
         }
-
-        SimRobot robot = getRobot();
-        assert (robot != null);
-        double[][] B2W = LinAlg.xytToMatrix(meanXYT);
-        B2W[2][3] = robot.getPose()[2][3];
-
-        // XXX Filtering...also, take into account robot's reported odom
-        robot.setPose(B2W);
-
-        // XXX TODO
-        // We need to...
-        // 1) Localize off of tags in the sim world (might want to visualize
-        // for this, after all?)
-        //
-        // 2) Make an interface, maybe via LCM, for querying the system for
-        // plans
-        //
-        // 3) Have some other thread running in the background that actually
-        // handles the execution of plans, resulting in a robot that DOES
-        // something.
-        //
-        // XXX THE SIM SHOULD NOT DO ANYTHING, RECALL! JUST THE REAL ROBOT
     }
 
     synchronized private void handleRequest(plan_request_t pr)
