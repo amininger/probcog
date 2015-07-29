@@ -283,7 +283,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         double G_weight = Math.pow(goalDistance, 1.0);
         double rSideNorm = rSide-G_weight;
         int goalSign = rSideNorm > 0 ? 1 : -1;
-        double K_p = -MathUtil.clamp(goalSign*Math.pow(Math.abs(rSideNorm)/G_weight, 0.5), -1, 1);
+        //double K_p = -MathUtil.clamp(goalSign*Math.pow(Math.abs(rSideNorm)/G_weight, 0.5), -1, 1);
+        double K_p = 1.0 - Math.pow(rSide/G_weight, 0.5);
         if (!sim) {
             K_p *= 5.0;
         } else {
@@ -293,7 +294,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         //double prop = 0.5 + K_p;
 
         double farSpeed = 0.5;
-        double nearSpeed = MathUtil.clamp(prop - K_d*deriv, -1.0, 1.0);
+        //double nearSpeed = MathUtil.clamp(prop - K_d*deriv, -1.0, 1.0);
+        double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0, 1.0);
         //double nearSpeed = prop - K_d*deriv;
         double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
         if (max < 0.01) {

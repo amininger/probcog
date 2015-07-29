@@ -197,7 +197,7 @@ public class MonteCarloBot implements SimObject
 
             if (!perfect) {
                 double mean = 0;
-                double stddev = 0.03;   // Laser noise
+                double stddev = 0.01;   // Laser noise
                 for (int i = 0; i < ranges.length; i++) {
                     if (ranges[i] >= maxRange || ranges[i] < 0)
                         continue;

@@ -99,10 +99,8 @@ public class RobotNavigator implements LCMSubscriber
             try {
                 if (channel.equals("SOAR_COMMAND_STATUS_TX")) {
                     // Handle command statuses...see if we can move on
-                    System.out.println("LOCK?");
                     synchronized (statusLock) {
                         control_law_status_t status = new control_law_status_t(ins);
-                        System.out.println("LOCK! :"+status.status);
                         if (status.id == commandID) {
                             lastStatus = status;
                             statusMessageReceived = true;
@@ -135,7 +133,6 @@ public class RobotNavigator implements LCMSubscriber
                     while (lastStatus.status.equals("EXECUTING") ||
                            lastStatus.status.equals("RECEIVED"))
                     {
-                        System.out.println("Status: "+lastStatus.status);
                         try {
                             statusLock.wait();
                         } catch (InterruptedException ex) {}
@@ -451,8 +448,8 @@ public class RobotNavigator implements LCMSubscriber
 
         double[][] P = new double[3][];
         P[0] = new double[] {0.05*ldx*ldx, 0, 0};
-        P[1] = new double[] {0, 0.01*ldy*ldy, 0};
-        P[2] = new double[] {0, 0, 0.0001};
+        P[1] = new double[] {0, 0.02*ldy*ldy, 0};
+        P[2] = new double[] {0, 0, 0.001};
         MultiGaussian mg = new MultiGaussian(P, new double[] {ldx, ldy, dt});
 
         // Update particles and handle new tags, if need be
@@ -468,6 +465,14 @@ public class RobotNavigator implements LCMSubscriber
                 continue;
 
             updateFromTags(p);
+        }
+
+        if (pose == null) {
+            particles.clear();
+            if (DEBUG) {
+                vw.getBuffer("particles").swap();
+            }
+            return; // We got lost
         }
 
         // Resample
@@ -517,12 +522,16 @@ public class RobotNavigator implements LCMSubscriber
         assert (robot != null);
         M[2][3] = robot.getPose()[2][3];
         robot.setPose(M);
+
+        pose.utime = TimeUtil.utime();
+        lcm.publish("POSE_EST", pose);
     }
 
     private void updateFromTags(Particle p)
     {
         assert (lastTags != null);
 
+        double minDist = Double.MAX_VALUE;
         double tagSize_m = Util.getConfig().requireDouble("tag_detection.tag.size_m");
         for (int i = 0; i < lastTags.ndetections; i++) {
             tag_detection_t td = lastTags.detections[i];
@@ -584,13 +593,18 @@ public class RobotNavigator implements LCMSubscriber
 
             Matrix Q = new Matrix(P);
             double[] residual = LinAlg.subtract(xyt_z, xyt_pred);
+            residual[2] = MathUtil.mod2pi(residual[2]);
             Matrix r = Matrix.columnMatrix(residual);
             double w = (1.0/Math.sqrt(Q.times(2*Math.PI).det()));
             w *= Math.exp(-0.5*r.transpose().times(Q.inverse()).times(r).get(0));
             //System.out.printf("%f: %f\n", w, LinAlg.magnitude(residual));
             p.weight *= w;
+            minDist = Math.min(Math.sqrt(residual[0]*residual[0]+residual[1]*residual[1]), minDist);
         }
 
+        if (minDist > 0.5) {
+            pose = null;
+        }
         lastTags = null;
     }
 
