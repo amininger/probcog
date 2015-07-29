@@ -54,7 +54,7 @@ public class RobotNavigator implements LCMSubscriber
 
     private class Particle
     {
-        public double[] xyt = new double[3];
+        public double[] xyt;
         public double chi2 = 0.0;
         public double logProb = 0.0;
         public double weight = 1.0;
@@ -220,6 +220,7 @@ public class RobotNavigator implements LCMSubscriber
         lcm.subscribe(tagChannel, this);
         planChannel = gopt.getString("plan-channel");
         lcm.subscribe(planChannel, this);
+        lcm.subscribe("POSE", this);
     }
 
     private void createGridMap()
@@ -432,6 +433,7 @@ public class RobotNavigator implements LCMSubscriber
         if (pose == null)
             return;
 
+
         double[] lastXYT = LinAlg.quatPosToXYT(lastPose.orientation,
                                                lastPose.pos);
         double[] currXYT = LinAlg.quatPosToXYT(pose_.orientation,
@@ -447,15 +449,15 @@ public class RobotNavigator implements LCMSubscriber
         double ldx = ct*gdx + st*gdy;
         double ldy = -st*gdx + ct*gdy;
 
+        double[][] P = new double[3][];
+        P[0] = new double[] {0.05*ldx*ldx, 0, 0};
+        P[1] = new double[] {0, 0.01*ldy*ldy, 0};
+        P[2] = new double[] {0, 0, 0.0001};
+        MultiGaussian mg = new MultiGaussian(P, new double[] {ldx, ldy, dt});
+
         // Update particles and handle new tags, if need be
         for (Particle p: particles) {
             // Update pose
-            double[][] P = new double[3][];
-            P[0] = new double[] {0.05*ldx*ldx, 0, 0};
-            P[1] = new double[] {0.01*ldy*ldy, 0, 0};
-            P[2] = new double[] {0.001, 0, 0};
-
-            MultiGaussian mg = new MultiGaussian(P, new double[3]);
             double[] localXYT = mg.sample(random);
             double chi2 = mg.chi2(localXYT);
             p.update(localXYT, chi2);
@@ -491,11 +493,22 @@ public class RobotNavigator implements LCMSubscriber
         // Update our pose based on best particle. Choose based on chi2
         double chi2 = Double.MAX_VALUE;
         Particle best = null;
+        ArrayList<double[]> xys = new ArrayList<double[]>();
         for (Particle p: particles) {
             if (p.chi2 < chi2) {
                 chi2 = p.chi2;
                 best = p;
             }
+
+            if (DEBUG) {
+                xys.add(LinAlg.resize(p.xyt, 2));
+            }
+        }
+
+        if (DEBUG) {
+            vw.getBuffer("particles").addBack(new VzPoints(new VisVertexData(xys),
+                                                           new VzPoints.Style(Color.red, 2)));
+            vw.getBuffer("particles").swap();
         }
 
         assert (best != null);
@@ -544,8 +557,16 @@ public class RobotNavigator implements LCMSubscriber
             double[] t2wXYT = LinAlg.matrixToXYT(T2W);
 
             // Determine predicted tag observation
-            double[] xyt_pred = LinAlg.xytMultiply(t2wXYT, LinAlg.xytInverse(p.xyt));
+            double[] xyt_pred = LinAlg.xytInvMul31(p.xyt, t2wXYT);
+            xyt_pred[2] = MathUtil.mod2pi(xyt_pred[2]);
 
+            //System.out.printf("%f %f %f ___ %f %f %f\n",
+            //                  xyt_z[0],
+            //                  xyt_z[1],
+            //                  xyt_z[2],
+            //                  xyt_pred[0],
+            //                  xyt_pred[1],
+            //                  xyt_pred[2]);
             // Score based on crummily tuned estimator assuming noisy XY, stable T
             double[][] P = new double[3][];
             double sigma_xy = 0.25;
@@ -566,8 +587,11 @@ public class RobotNavigator implements LCMSubscriber
             Matrix r = Matrix.columnMatrix(residual);
             double w = (1.0/Math.sqrt(Q.times(2*Math.PI).det()));
             w *= Math.exp(-0.5*r.transpose().times(Q.inverse()).times(r).get(0));
+            System.out.printf("%f: %f\n", w, LinAlg.magnitude(residual));
             p.weight *= w;
         }
+
+        lastTags = null;
     }
 
     synchronized private void handleRequest(plan_request_t pr)
