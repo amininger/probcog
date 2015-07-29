@@ -570,7 +570,7 @@ public class RobotNavigator implements LCMSubscriber
             // Score based on crummily tuned estimator assuming noisy XY, stable T
             double[][] P = new double[3][];
             double sigma_xy = 0.25;
-            double sigma_t = 0.01;
+            double sigma_t = 0.05;
             P[0] = new double[] {sigma_xy, 0, 0};
             P[1] = new double[] {0, sigma_xy, 0};
             P[2] = new double[] {0, 0, sigma_t};
@@ -587,7 +587,7 @@ public class RobotNavigator implements LCMSubscriber
             Matrix r = Matrix.columnMatrix(residual);
             double w = (1.0/Math.sqrt(Q.times(2*Math.PI).det()));
             w *= Math.exp(-0.5*r.transpose().times(Q.inverse()).times(r).get(0));
-            System.out.printf("%f: %f\n", w, LinAlg.magnitude(residual));
+            //System.out.printf("%f: %f\n", w, LinAlg.magnitude(residual));
             p.weight *= w;
         }
 
