@@ -20,10 +20,16 @@ class Node:
 			self.classification = data[3]
 		else:
 			self.classification = None
+
+		if len(data) > 4 and data[4] == "invisible":
+			self.visible = False
+		else:
+			self.visible = True
 	
 	def print(self, out):
-		fout.write('  (%(var)s ^handle %(hand)s ^handle-int %(num)d ^x %(x)s ^y %(y)s ^map <building>)\n' % \
-				{ "var": self.var, "hand": self.name, "num": self.num, "x": self.x, "y": self.y })
+		if self.visible:
+			fout.write('  (%(var)s ^handle %(hand)s ^handle-int %(num)d ^x %(x)s ^y %(y)s ^map <building>)\n' % \
+					{ "var": self.var, "hand": self.name, "num": self.num, "x": self.x, "y": self.y })
 
 
 class Edge:
@@ -153,6 +159,8 @@ for node in nodes.values():
 
 for node_id in sorted(nodes):
 	node = nodes[node_id]
+	if not node.visible:
+		continue
 	fout.write("  c# {\n")
 	fout.write("    labels = [\"" + node.name + "\", \"\"];\n")
 	fout.write("    ids = [" + str(node.num) + "];\n")
