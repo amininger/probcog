@@ -1,0 +1,7 @@
+nodes:
+3  -21.00   3.50 door
+5  -21.00  -1.50 intersection
+17 -28.50  -17.00 door
+edges:
+3 5 1
+5 17 1
