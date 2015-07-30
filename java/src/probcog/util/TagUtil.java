@@ -26,22 +26,14 @@ public class TagUtil
         double M[][] = CameraUtil.homographyToPose(-camera_fc[0], camera_fc[1], imWidth/2, imHeight/2, d.homography);
         M = CameraUtil.scalePose(M, 2.0, tagSize_m);
 
-        // double M[][]   = CameraUtil.homographyToPose(camera_fc[0],
-        //                                              camera_fc[1],
-        //                                              tagSize_m,
-        //                                              d.homography);
         // Hardcoded transform for vertical facing camera
         double[][] xform = new double[][]{{ 0,-1, 0, 0},
                                           {-1, 0, 0, 0},
                                           { 0, 0,-1, 0},
                                           { 0, 0, 0, 1}};
 
-        // observation-to-body transformation
-        //return LinAlg.multiplyMany(cam2pose,
-        //                           // camera observation transformation
-        //                           // z is forward out of the camera, x horizontal
-        //                           LinAlg.rotateX(Math.PI),
-        //                           M);
+
+        // Rotate around Y to correct for upside down tags.
         M = LinAlg.matrixAB(xform, M);
         M = LinAlg.matrixAB(M, LinAlg.rotateZ(Math.PI));
 

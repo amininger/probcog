@@ -32,7 +32,7 @@ public class RosieGUI extends JFrame
 
 	private JButton startStopButton;
 	private JButton stopRobotButton;
-	
+
 	private MobilePerceptionConnector perception;
 	private MobileActuationConnector actuation;
 	private LanguageConnector language;
@@ -40,7 +40,7 @@ public class RosieGUI extends JFrame
     public RosieGUI(Properties props)
     {
 		super("Rosie Chat");
-		
+
     	//this.setSize(800, 650);
     	this.setSize(1000, 450);
     	getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.LINE_AXIS));
@@ -52,10 +52,10 @@ public class RosieGUI extends JFrame
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     	soarAgent = new SoarAgent(props);
-    	
+
     	actuation = new MobileActuationConnector(soarAgent, props);
     	soarAgent.setActuationConnector(actuation);
-    	
+
     	perception = new MobilePerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
     	
@@ -69,9 +69,9 @@ public class RosieGUI extends JFrame
     	setupMenu();
 
     	soarAgent.createAgent();
-    	
+
     	add(chat);
-    	
+
     	String[] messages = new String[]{
     			"Deliver the soda to the kitchen",
     			"The goal is that the soda is in the kitchen",
@@ -85,11 +85,11 @@ public class RosieGUI extends JFrame
     	add(new InstructorMessagePanel(chat, messages));
 
 //    	CommandPanel commandPanel = new CommandPanel(soarAgent);
-//    	
+//
 //    	JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, chat, commandPanel);
 //    	splitPane.setDividerLocation(400);
 //    	this.add(splitPane);
-    	
+
     	this.setVisible(true);
     }
 
@@ -111,11 +111,11 @@ public class RosieGUI extends JFrame
         menuBar.add(startStopButton);
 
     	menuBar.add(new AgentMenu(soarAgent));
-    	
+
     	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
     	actuation.createMenu(menuBar);
-    	
+
 
     	stopRobotButton = new JButton("STOP");
     	stopRobotButton.setBackground(Color.red);
@@ -156,7 +156,7 @@ public class RosieGUI extends JFrame
           System.err.println("ERR: No $ROSIE_CONFIG environment variable set");
           System.exit(1);
         }
-        
+
         // Load the properties file
         Properties props = new Properties();
         try {
