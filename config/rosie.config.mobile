@@ -1,0 +1,12 @@
+agent-name = rosie
+agent-source = /home/april/probcog/agent/_agent_source.soar
+smem-source = /home/april/probcog/agent/init-smem/init-smem_source.soar
+
+decision-throttle-ms = 10
+
+verbose = false
+write-to-stdout = false
+enable-log = true
+spawn-debugger = false
+
+message-source = lcm

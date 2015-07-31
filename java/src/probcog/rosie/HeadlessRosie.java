@@ -35,6 +35,7 @@ public class HeadlessRosie
     	IMessagePasser messagePasser;
     	if(!props.getProperty("message-source", "lcm").equals("tablet")){
     		messagePasser = new LcmMessagePasser("robot");
+    		new MessageServer();
     	} else {
     		messagePasser = new MessageServer();
     	}
