@@ -1,16 +1,16 @@
 nodes:
-1  -18.00   5.50 door
-2  -13.50   5.50 intersection
-3    0.00   5.50 door
-4   13.50   5.50 intersection
-5   18.00   5.50 door
-6  -13.50   0.00 intersection
-7   13.50   0.00 intersection
-8  -18.00  -5.50 door
-9  -13.50  -5.50 intersection
-10   0.00  -5.50 door
-11  13.50  -5.50 intersection
-12  18.00  -5.50 door
+1   -8.00   3.50 door
+2   -3.50   3.50 intersection
+3    0.00   3.50 door
+4    3.50   3.50 intersection
+5    8.00   3.50 door
+6   -3.50   0.00 intersection
+7    3.50   0.00 intersection
+8   -8.00  -3.50 door
+9   -3.50  -3.50 intersection
+10   0.00  -3.50 door
+11   3.50  -3.50 intersection
+12   8.00  -3.50 door
 edges:
 1 2
 2 3
