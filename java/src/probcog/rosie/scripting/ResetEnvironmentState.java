@@ -38,44 +38,44 @@ public class ResetEnvironmentState implements UiCommand {
 		
 		set_state_command_t commandObjectState1 = new set_state_command_t();
 		commandObjectState1.utime = TimeUtil.utime();
-		commandObjectState1.state_name = "cooked";
-		commandObjectState1.state_val = "false";
+		commandObjectState1.state_name = "meat1";
+		commandObjectState1.state_val = "raw1";
 		commandObjectState1.obj_id = 5;
 		LCM.getSingleton().publish("SET_STATE_COMMAND", commandObjectState1);
 		
 		set_state_command_t commandObjectState2 = new set_state_command_t();
 		commandObjectState2.utime = TimeUtil.utime();
-		commandObjectState2.state_name = "cooked";
-		commandObjectState2.state_val = "false";
+		commandObjectState2.state_name = "meat1";
+		commandObjectState2.state_val = "raw1";
 		commandObjectState2.obj_id = 6;
 		LCM.getSingleton().publish("SET_STATE_COMMAND", commandObjectState2);
 		
 		set_state_command_t commandObjectState3 = new set_state_command_t();
 		commandObjectState3.utime = TimeUtil.utime();
-		commandObjectState3.state_name = "cooked";
-		commandObjectState3.state_val = "false";
+		commandObjectState3.state_name = "meat1";
+		commandObjectState3.state_val = "raw1";
 		commandObjectState3.obj_id = 7;
 		LCM.getSingleton().publish("SET_STATE_COMMAND", commandObjectState3);
 		
 		set_state_command_t commandObjectState4 = new set_state_command_t();
 		commandObjectState4.utime = TimeUtil.utime();
-		commandObjectState4.state_name = "cooked";
-		commandObjectState4.state_val = "false";
+		commandObjectState4.state_name = "meat1";
+		commandObjectState4.state_val = "raw1";
 		commandObjectState4.obj_id = 8;
 		LCM.getSingleton().publish("SET_STATE_COMMAND", commandObjectState4);
 		
 		set_state_command_t commandStoveHeat = new set_state_command_t();
 		if (stoveHeatState){
 			commandStoveHeat.utime = TimeUtil.utime();
-			commandStoveHeat.state_name = "heat";
-			commandStoveHeat.state_val = "on";
+			commandStoveHeat.state_name = "activation1";
+			commandStoveHeat.state_val = "on2";
 			commandStoveHeat.obj_id = 4;
 			LCM.getSingleton().publish("SET_STATE_COMMAND", commandStoveHeat);
 		}
 		else {
 			commandStoveHeat.utime = TimeUtil.utime();
-			commandStoveHeat.state_name = "heat";
-			commandStoveHeat.state_val = "off";
+			commandStoveHeat.state_name = "activation1";
+			commandStoveHeat.state_val = "off2";
 			commandStoveHeat.obj_id = 4;
 			LCM.getSingleton().publish("SET_STATE_COMMAND", commandStoveHeat);
 		}
@@ -83,15 +83,15 @@ public class ResetEnvironmentState implements UiCommand {
 		set_state_command_t commandPantryDoor = new set_state_command_t();
 		if (pantryDoorState){
 			commandPantryDoor.utime = TimeUtil.utime();
-			commandPantryDoor.state_name = "door";
-			commandPantryDoor.state_val = "open";
+			commandPantryDoor.state_name = "door1";
+			commandPantryDoor.state_val = "open2";
 			commandPantryDoor.obj_id = 1;
 			LCM.getSingleton().publish("SET_STATE_COMMAND", commandPantryDoor);
 		}
 		else {
 			commandPantryDoor.utime = TimeUtil.utime();
-			commandPantryDoor.state_name = "door";
-			commandPantryDoor.state_val = "closed";
+			commandPantryDoor.state_name = "door1";
+			commandPantryDoor.state_val = "closed2";
 			commandPantryDoor.obj_id = 1;
 			LCM.getSingleton().publish("SET_STATE_COMMAND", commandPantryDoor);
 		}

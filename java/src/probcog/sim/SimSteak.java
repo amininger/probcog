@@ -26,8 +26,8 @@ public class SimSteak extends SimBoxPC{
     	super.read(ins);
         
         // Boolean for cooked (false = raw)
-        this.addNewState("meat1", new String[]{"raw1", "cooked1"});
-		this.setState("meat1", (ins.readString().equals("true") ? "cooked1" : "raw1"));
+        this.addNewState(SoarConcepts.MEAT, new String[]{SoarConcepts.RAW, SoarConcepts.COOKED});
+		this.setState(SoarConcepts.MEAT, (ins.readString().equals("true") ? SoarConcepts.COOKED : SoarConcepts.RAW ));
     }
 
     /** Write one or more lines that serialize this instance. No line
@@ -45,13 +45,13 @@ public class SimSteak extends SimBoxPC{
     			if(temp > 60){
     				isCooked = true;
     	        	this.color = cookedColor;
-    	        	super.setState("meat1", "cooked1");
+    	        	super.setState(SoarConcepts.MEAT, SoarConcepts.COOKED);
     			}
     		}
 			return;
     	}
-    	if(stateName.equals("meat1")){
-			isCooked = (stateVal.equals("cooked1"));
+    	if(stateName.equals(SoarConcepts.MEAT)){
+			isCooked = (stateVal.equals(SoarConcepts.COOKED));
 			if(isCooked){
 				temp = 60;
 				color = cookedColor;

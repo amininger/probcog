@@ -33,7 +33,7 @@ public class SimLocation extends SimObjectPC
         objs.add(new VisChain(LinAlg.translate(0, 0, .5), new VzRectangle(lenxyz[0], lenxyz[1], new VzMesh.Style(color))));
 
         // The smaller inner box is only drawn if there is a door and it's open
-        if(currentState.containsKey("door1") && currentState.get("door1").equals("open1")) {
+        if(currentState.containsKey(SoarConcepts.DOOR) && currentState.get(SoarConcepts.DOOR).equals(SoarConcepts.OPEN)) {
             objs.add(new VisChain(LinAlg.translate(0,0,0.501),
                                   LinAlg.scale(.9),
                                   new VzRectangle(lenxyz[0], lenxyz[1], new VzMesh.Style(Color.DARK_GRAY))));

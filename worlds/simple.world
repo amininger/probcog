@@ -12,7 +12,7 @@
 	vec 4
 	0.0 0.0 1.0 1.0
 	1
-	door=closed,open
+	door1=closed2,open2
 	pantry
 }
 "probcog.sim.SimLocation"

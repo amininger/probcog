@@ -28,6 +28,7 @@ import probcog.perception.Tracker.TrackerSettings;
 import probcog.sensor.*;
 import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
+import probcog.sim.SoarConcepts;
 import probcog.util.*;
 import probcog.vis.*;
 
@@ -240,6 +241,25 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         editMenu.add(redoAction);
     }
 
+    
+    public void resetSimObjects(){
+        synchronized(simulator.world) {
+        	for(SimObject obj : simulator.world.objects){
+        		if(obj instanceof SimObjectPC){
+        			SimObjectPC simObj = (SimObjectPC)obj;
+        			if(simObj.getState(SoarConcepts.DOOR) != null){
+        				simObj.setState(SoarConcepts.DOOR, SoarConcepts.CLOSED);
+        			}
+        			if(simObj.getState(SoarConcepts.HEAT) != null){
+        				simObj.setState(SoarConcepts.HEAT, SoarConcepts.OFF);
+        			}
+        			if(simObj.getState(SoarConcepts.MEAT) != null){
+        				simObj.setState(SoarConcepts.MEAT, SoarConcepts.RAW);
+        			}
+        		}
+        	}
+        }
+    }
 
     @Override
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -284,6 +304,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 		animation = null;
         			} else if(args[0].equals("reset")){
         				soarTime = 0;
+        				resetSimObjects();
         			}
         		}
         	} catch (IOException e){
