@@ -22,6 +22,7 @@ import april.sim.*;
 
 import probcog.classify.*;
 import probcog.commands.CommandInterpreter;
+import probcog.commands.CommandCoordinator.Status;
 import probcog.util.*;
 import probcog.vis.*;
 import probcog.robot.control.*;
@@ -112,6 +113,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         lcm.subscribe("GAMEPAD", this);
         lcm.subscribe("DIFF_DRIVE", this);
+        lcm.subscribe("SOAR_COMMAND.*", this);
 
         tasks.addFixedDelay(new ImageTask(), 0.04);
         tasks.addFixedDelay(new PoseTask(), 0.04);
@@ -267,6 +269,24 @@ public class SimRobot implements SimObject, LCMSubscriber
             gamepad_t msg = new gamepad_t(ins);
             gamepadCache.put(msg, msg.utime);
         }
+
+        // AM: Added so that simulated drive-xy commands teleport the robot
+		if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")) {
+			control_law_t controlLaw = new control_law_t(ins);
+			if(controlLaw.name.equals("drive-xy")){
+				double newx = 0.0;
+				double newy = 0.0;
+				for(int p = 0; p < controlLaw.num_params; p++){
+					if(controlLaw.param_names[p].equals("x")){
+						newx = Double.parseDouble(controlLaw.param_values[p].value);
+					} else if(controlLaw.param_names[p].equals("y")){
+						newy = Double.parseDouble(controlLaw.param_values[p].value);
+					}
+				}
+				drive.poseTruth.pos[0] = newx;
+				drive.poseTruth.pos[1] = newy;
+			}
+		}
     }
 
     public void setNoise(boolean noise)
