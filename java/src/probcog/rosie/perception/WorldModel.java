@@ -280,6 +280,9 @@ public class WorldModel implements ISoarObject
     		} else {
     			obj.addToWM(objectsId);
     		}
+    		if(objsToRemove.contains(obj)){
+    			objsToRemove.remove(obj);
+    		}
     	}
     	
     	for(WorldObject obj : objsToRemove){
