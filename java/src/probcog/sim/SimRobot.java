@@ -7,10 +7,10 @@ import java.util.*;
 import java.util.zip.*;
 import java.awt.event.*;
 import java.awt.*;
+
 import javax.swing.*;
 
 import lcm.lcm.*;
-
 import april.config.Config;
 import april.jmat.LinAlg;
 import april.jmat.MathUtil;
@@ -19,15 +19,16 @@ import april.vis.*;
 import april.lcm.*;
 import april.util.*;
 import april.sim.*;
-
 import probcog.classify.*;
+import probcog.classify_old.TagClassifier;
+import probcog.classify_old.TagHistory;
 import probcog.commands.CommandInterpreter;
 import probcog.commands.CommandCoordinator.Status;
 import probcog.util.*;
 import probcog.vis.*;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
-
+import probcog.sim_old.SimDoor;
 import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
@@ -480,8 +481,11 @@ public class SimRobot implements SimObject, LCMSubscriber
                 // Object detections imperfect. Based on classification confidence
                 if (so instanceof SimDoor) {
                     SimDoor door = (SimDoor)so;
-                    classies.id = door.id;
-                    classies.confidence = sampleConfidence(door.mean, door.stddev);
+                    classies.id = 0; // XXX: door.id;
+                    classies.confidence = 1.0;
+                    // XXX: DOOR: 
+                   // classies.id = door.id;
+                   // classies.confidence = sampleConfidence(door.mean, door.stddev);
                 } else {
                     SimFalseDoor door = (SimFalseDoor)so;
                     classies.id = door.id;
@@ -492,7 +496,7 @@ public class SimRobot implements SimObject, LCMSubscriber
                 if (!(so instanceof SimDoor))
                     return;
                 SimDoor door = (SimDoor)so;
-                classies.id = door.id;
+                classies.id = 0; // XXX: DOOR: door.id;
                 classies.confidence = 1.0;
             }
 

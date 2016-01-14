@@ -5,21 +5,20 @@ import java.io.*;
 import java.util.*;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 import april.sim.*;
 import april.vis.*;
 import april.util.*;
-
 import probcog.vis.*;
 import probcog.classify.*;
+import probcog.classify_old.TagClassifier;
+import probcog.classify_old.TagHistory;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
 import probcog.util.*;
 import probcog.navigation.*;
-
 import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 

@@ -1,4 +1,4 @@
-package probcog.perception;
+package probcog.old.perception;
 
 import java.awt.Rectangle;
 import java.io.IOException;

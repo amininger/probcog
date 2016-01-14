@@ -4,13 +4,10 @@ import java.io.*;
 import java.util.*;
 
 import lcm.lcm.*;
-
 import april.jmat.*;
 import april.util.*;
-
 import probcog.commands.*;
-import probcog.classify.TagHistory;
-
+import probcog.classify_old.TagHistory;
 import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 

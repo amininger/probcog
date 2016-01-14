@@ -3,15 +3,11 @@ package probcog.arm;
 import java.io.*;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 import april.sim.*;
 import april.util.*;
-
-// import probcog.sim.*;
-import probcog.sim.SimObjectPC;
-
+import probcog.sim_old.SimObjectPC;
 import magic2.lcmtypes.*;
 
 /** Simulates the movements of the robotic arm through the environment based

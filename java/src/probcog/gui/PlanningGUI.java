@@ -3,20 +3,21 @@ package probcog.gui;
 import java.awt.*;
 import java.awt.image.*;
 import java.awt.event.*;
+
 import javax.swing.*;
+
 import java.io.*;
 import java.text.*;
 import java.util.*;
 
 import lcm.lcm.*;
-
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.vis.*;
 import april.util.*;
 import april.sim.*;
-
 import probcog.classify.*;
+import probcog.classify_old.TagClassifier;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
@@ -25,7 +26,6 @@ import probcog.vis.*;
 import probcog.util.*;
 import probcog.sim.*;
 import probcog.robot.control.*;
-
 import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 

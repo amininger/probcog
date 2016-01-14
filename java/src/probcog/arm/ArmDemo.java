@@ -2,12 +2,13 @@ package probcog.arm;
 
 import java.awt.*;
 import java.awt.event.*;
+
 import javax.swing.*;
+
 import java.util.*;
 import java.io.*;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.dynamixel.*;
 import april.jserial.*;
@@ -16,9 +17,8 @@ import april.jmat.geom.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;
-
 import probcog.classify.*;
-import probcog.classify.Features.FeatureCategory;
+import probcog.classify_old.Features.FeatureCategory;
 import probcog.lcmtypes.*;
 import probcog.perception.*;
 
