@@ -25,6 +25,7 @@ import probcog.commands.CommandCoordinator.Status;
 import probcog.util.*;
 import probcog.vis.*;
 import probcog.old.sim.SimDoor;
+import probcog.perception.SimObjectDetector;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
 import probcog.lcmtypes.*;
@@ -32,7 +33,6 @@ import magic2.lcmtypes.*;
 
 public class SimRobot implements SimObject, LCMSubscriber
 {
-    static Random classifierRandom = new Random(3611871);
     static final int ROBOT_MAP_DATA_HZ = 10;
     long lastMapData = 0;
 
@@ -47,8 +47,9 @@ public class SimRobot implements SimObject, LCMSubscriber
     int robotID;
 
     CommandInterpreter ci;
-    TagHistory tagHistory = new TagHistory();
     LCM lcm = LCM.getSingleton();
+    
+    SimObjectDetector objDetector;
 
     CompoundShape shape;
     VisObject visObj;
@@ -61,6 +62,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     // static variables ..
     static Random r = new Random();
     static Model4 model4 = new Model4();
+
 
     public SimRobot(SimWorld sw)
     {
@@ -109,6 +111,8 @@ public class SimRobot implements SimObject, LCMSubscriber
         double K_drag = 1.0;    // XXX Hand-picked drag [Nm / (rad/s)], always >= 0
         drive.leftMotor.drag_constant = K_drag;
         drive.rightMotor.drag_constant = K_drag;
+        
+        objDetector = new SimObjectDetector(this, sw);
 
         lcm.subscribe("GAMEPAD", this);
         lcm.subscribe("DIFF_DRIVE", this);
@@ -547,5 +551,6 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.setRunning(b);
         tasks.setRunning(b);
         ci.setRunning(b);
+        objDetector.setRunning(b);
     }
 }

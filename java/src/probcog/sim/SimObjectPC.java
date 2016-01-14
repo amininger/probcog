@@ -61,8 +61,12 @@ public abstract class SimObjectPC implements SimObject{
     	// classifications
     	int numClassifications = ins.readInt();
     	for (int i = 0; i < numClassifications; i++){
-    		String category = ins.readString();
-    		String value = ins.readString();
+    		String[] words = ins.readString().trim().split("=");
+    		if(words.length > 2){
+    			continue;
+    		}
+    		String category = words[0];
+    		String value = words[1];
     		classifications.put(category, value);
     	}
     }

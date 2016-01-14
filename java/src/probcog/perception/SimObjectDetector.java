@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
+import lcm.lcm.LCM;
 import magic2.lcmtypes.tag_detection_list_t;
 import magic2.lcmtypes.tag_detection_t;
 import april.jmat.LinAlg;
@@ -15,29 +17,47 @@ import april.sim.SimWorld;
 import april.util.PeriodicTasks;
 import april.util.TimeUtil;
 import probcog.classify.TagClassifier;
+import probcog.classify.TagHistory;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
+import probcog.lcmtypes.object_data_t;
+import probcog.lcmtypes.object_list_t;
+import probcog.lcmtypes.tag_classification_list_t;
+import probcog.lcmtypes.tag_classification_t;
 import probcog.old.sim.SimDoor;
 import probcog.sim.SimAprilTag;
 import probcog.sim.SimFalseDoor;
 import probcog.sim.SimHallway;
 import probcog.sim.SimObjectPC;
 import probcog.sim.SimRobot;
+import probcog.util.BoundingBox;
 import probcog.util.Util;
 
 public class SimObjectDetector {
+	private static double MSG_PER_SEC = 10.0;
+	
 	protected SimRobot robot;
 	protected SimWorld world;
 	
 	protected HashMap<SimObjectPC, Integer> detectedObjects;
 	private Integer nextID = 1;
+
+    TagHistory tagHistory = new TagHistory();
+    static Random classifierRandom = new Random(3611871);
+	
+    PeriodicTasks tasks = new PeriodicTasks(2);
 	
 	public SimObjectDetector(SimRobot robot, SimWorld world){
 		this.robot = robot;
 		this.world = world;
 		this.detectedObjects = new HashMap<SimObjectPC, Integer>();
+		
+		tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
 	}
 	
+	public void setRunning(boolean b){
+		tasks.setRunning(b);
+	}
 	
 	protected class DetectorTask implements PeriodicTasks.Task {
         TagClassifier tc;
@@ -58,6 +78,11 @@ public class SimObjectDetector {
             	simObjects = (ArrayList<SimObject>)world.objects.clone();
             }
             
+            sendObjectMessage(simObjects);
+            detectAprilTags(simObjects, LinAlg.matrixToXyzrpy(robot.getPose()));
+        }
+        
+        private void sendObjectMessage(ArrayList<SimObject> simObjects){
             for(SimObject so : simObjects){
             	if (so instanceof SimObjectPC){
             		// Run through each SimObjectPC for a possible inclusion in the object list
@@ -77,11 +102,37 @@ public class SimObjectDetector {
             	}
             }
             
+            object_list_t objects = new object_list_t();
+            objects.utime = TimeUtil.utime();
+            objects.num_objects = detectedObjects.size();
+            objects.objects = new object_data_t[objects.num_objects];
+            int obj_index = 0;
             for(Map.Entry<SimObjectPC, Integer> e : detectedObjects.entrySet()){
+            	object_data_t objData = new object_data_t();
+            	objData.utime = TimeUtil.utime();
+            	objData.id = e.getValue().toString();
             	
+            	BoundingBox bbox = e.getKey().getBoundingBox();
+            	objData.xyzrpy = bbox.xyzrpy;
+            	objData.lenxyz = bbox.lenxyz;
+            	
+            	HashMap<String, String> classifications = e.getKey().getClassifications();
+            	objData.num_classifications = classifications.size();
+            	objData.classifications = new classification_t[objData.num_classifications];
+            	int cl_index = 0;
+            	for(Map.Entry<String, String> cl : classifications.entrySet()){
+            		classification_t c = new classification_t();
+            		c.category = cl.getKey();
+            		c.name = cl.getValue();
+            		c.confidence = 1.0;
+            		objData.classifications[cl_index++] = c;
+            	}
+            	
+            	objects.objects[obj_index++] = objData;
             }
+            LCM.getSingleton().publish("OBJECTS", objects);
         }
-
+        
 //		public void run(double dt)
 //        {
 //            // Look through all objects in the world and if one is
@@ -181,77 +232,77 @@ public class SimObjectDetector {
 //            return classies;
 //        }
 //
-//        /** Publish april tag detections. Also directly publishes classifications
-//         *  right now.
-//         **/
-//        private void detectApriltags(Collection<SimObject> sos, double[] xyzrpyBot)
-//        {
-//            ArrayList<classification_t> classies = new ArrayList<classification_t>();
-//            classification_list_t classy_list = new classification_list_t();
-//            classy_list.utime = TimeUtil.utime();
-//
-//            ArrayList<tag_detection_t> dets = new ArrayList<tag_detection_t>();
-//            tag_detection_list_t tdl = new tag_detection_list_t();
-//            tdl.utime = TimeUtil.utime();
-//
-//            double iw = Util.getConfig().requireDouble("cameraCalibration.imWidth");
-//            double ih = Util.getConfig().requireDouble("cameraCalibration.imHeight");
-//
-//            double cx = iw/2.0;
-//            double cy = ih/2.0;
-//
-//            for (SimObject so: sos) {
-//                if (!(so instanceof SimAprilTag))
-//                    continue;
-//                SimAprilTag tag = (SimAprilTag)so;
-//                double sensingThreshold = 2;
-//
-//                double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
-//                double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
-//                if (dist > sensingThreshold)
-//                    continue;
-//
-//                // Fake tag detections for 36h11 by a chameleon
-//                //tag_detection_t td = new tag_detection_t();
-//                //td.tag_family_bit_width = (byte) 6;
-//                //td.tag_family_min_hamming_dist = (byte) 11;
-//                //td.id = tag.getID();
-//                //td.hamming_dist = 0;
-//                //td.goodness = 0.0f;
-//
-//
-//                //dets.add(td);
-//
-//                // Position relative to robot. For now, tossing away orientation data,
-//                // but may be relevant later.
-//                double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
-//
-//                long now = TimeUtil.utime();
-//                ArrayList<classification_t> temp = tc.classifyTag(tag.getID(), relXyzrpy);
-//                tagHistory.addObservations(temp, now);
-//                classies.addAll(tagHistory.getLabels(tag.getID(), relXyzrpy, now));
-//            }
-//            classy_list.num_classifications = classies.size();
-//            classy_list.classifications = classies.toArray(new classification_t[0]);
-//            lcm.publish("CLASSIFICATIONS", classy_list);
-//        }
-//
-//        private double sampleConfidence(double u, double s)
-//        {
-//            return MathUtil.clamp(u + classifierRandom.nextGaussian()*s, 0, 1);
-//        }
-//
-//        private double[] relativePose(double[][] A, double[] xyzrpy)
-//        {
-//            double[] xyzrpy_A = LinAlg.matrixToXyzrpy(A);
-//            double[] p = LinAlg.resize(xyzrpy, 3);
-//            p = LinAlg.transform(LinAlg.inverse(A), p);
-//            p = LinAlg.resize(p, 6);
-//
-//            // Relative yaw difference.
-//            p[5] = MathUtil.mod2pi(xyzrpy[5] - xyzrpy_A[5]);
-//
-//            return p;
-//        }
+        /** Publish april tag detections. Also directly publishes classifications
+         *  right now.
+         **/
+        private void detectAprilTags(ArrayList<SimObject> sos, double[] xyzrpyBot)
+        {
+            ArrayList<tag_classification_t> classies = new ArrayList<tag_classification_t>();
+            tag_classification_list_t classy_list = new tag_classification_list_t();
+            classy_list.utime = TimeUtil.utime();
+
+            ArrayList<tag_detection_t> dets = new ArrayList<tag_detection_t>();
+            tag_detection_list_t tdl = new tag_detection_list_t();
+            tdl.utime = TimeUtil.utime();
+
+            double iw = Util.getConfig().requireDouble("cameraCalibration.imWidth");
+            double ih = Util.getConfig().requireDouble("cameraCalibration.imHeight");
+
+            double cx = iw/2.0;
+            double cy = ih/2.0;
+
+            for (SimObject so: sos) {
+                if (!(so instanceof SimAprilTag))
+                    continue;
+                SimAprilTag tag = (SimAprilTag)so;
+                double sensingThreshold = 2;
+
+                double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
+                double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
+                if (dist > sensingThreshold)
+                    continue;
+
+                // Fake tag detections for 36h11 by a chameleon
+                //tag_detection_t td = new tag_detection_t();
+                //td.tag_family_bit_width = (byte) 6;
+                //td.tag_family_min_hamming_dist = (byte) 11;
+                //td.id = tag.getID();
+                //td.hamming_dist = 0;
+                //td.goodness = 0.0f;
+
+
+                //dets.add(td);
+
+                // Position relative to robot. For now, tossing away orientation data,
+                // but may be relevant later.
+                double[] relXyzrpy = relativePose(robot.getPose(), xyzrpyTag);
+
+                long now = TimeUtil.utime();
+                ArrayList<tag_classification_t> temp = tc.classifyTag(tag.getID(), relXyzrpy);
+                tagHistory.addObservations(temp, now);
+                classies.addAll(tagHistory.getLabels(tag.getID(), relXyzrpy, now));
+            }
+            classy_list.num_classifications = classies.size();
+            classy_list.classifications = classies.toArray(new tag_classification_t[0]);
+            LCM.getSingleton().publish("CLASSIFICATIONS", classy_list);
+        }
+
+        private double sampleConfidence(double u, double s)
+        {
+            return MathUtil.clamp(u + classifierRandom.nextGaussian()*s, 0, 1);
+        }
+
+        private double[] relativePose(double[][] A, double[] xyzrpy)
+        {
+            double[] xyzrpy_A = LinAlg.matrixToXyzrpy(A);
+            double[] p = LinAlg.resize(xyzrpy, 3);
+            p = LinAlg.transform(LinAlg.inverse(A), p);
+            p = LinAlg.resize(p, 6);
+
+            // Relative yaw difference.
+            p[5] = MathUtil.mod2pi(xyzrpy[5] - xyzrpy_A[5]);
+
+            return p;
+        }
     }
 }
