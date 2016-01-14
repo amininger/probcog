@@ -3,17 +3,16 @@ package probcog.gui;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
+
 import javax.swing.JFrame;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.LinAlg;
 import april.vis.*;
 import april.util.*;
-
 import probcog.lcmtypes.*;
-import probcog.perception.*;
+import probcog.old.perception.*;
 import probcog.sensor.*;
 import probcog.util.*;
 

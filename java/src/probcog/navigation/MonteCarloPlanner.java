@@ -10,7 +10,6 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 import probcog.classify.*;
-import probcog.classify_old.TagClassifier;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;

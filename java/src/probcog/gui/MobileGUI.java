@@ -22,10 +22,10 @@ import april.vis.*;
 import april.vis.VisCameraManager.CameraPosition;
 import probcog.arm.*;
 import probcog.classify.*;
-import probcog.classify_old.Features.FeatureCategory;
 import probcog.commands.*;
 import probcog.lcmtypes.*;
-import probcog.perception.*;
+import probcog.old.classify.Features.FeatureCategory;
+import probcog.old.perception.*;
 import probcog.sensor.*;
 import probcog.sim.*;
 import probcog.util.*;
@@ -113,8 +113,8 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
     {
         int fps = 20;
         Object classyLock = new Object();
-        HashMap<Integer, classification_t> classifications =
-            new HashMap<Integer, classification_t>();
+        HashMap<Integer, tag_classification_t> classifications =
+            new HashMap<Integer, tag_classification_t>();
 
         public RenderThread()
         {
@@ -145,11 +145,11 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                     pose_t pose = new pose_t(ins);
                     poseCache.put(pose, pose.utime);
                 } else if ("CLASSIFICATIONS".equals(channel)) {
-                    classification_list_t classy_list = new classification_list_t(ins);
+                    tag_classification_list_t classy_list = new tag_classification_list_t(ins);
                     synchronized (classyLock) {
                         for (int i = 0; i < classy_list.num_classifications; i++) {
-                            classification_t classy = classy_list.classifications[i];
-                            classifications.put(classy.id, classy);
+                            tag_classification_t classy = classy_list.classifications[i];
+                            classifications.put(classy.tag_id, classy);
                         }
                     }
                 }
@@ -176,16 +176,16 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                 }
                 VisVertexData vvd = new VisVertexData();
                 VisColorData vcd = new VisColorData();
-                for (classification_t classy: classifications.values()) {
+                for (tag_classification_t classy: classifications.values()) {
 
                     double yaw = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
                     double[] rel_xyz = LinAlg.transform(LinAlg.rotateZ(yaw), LinAlg.resize(classy.xyzrpy, 3));
                     double[] xyz = LinAlg.add(pose.pos, rel_xyz);
-                    if (labels.get(classy.id) == null) {
-                        labels.put(classy.id, "");
-                        poses.put(classy.id, xyz);
+                    if (labels.get(classy.tag_id) == null) {
+                        labels.put(classy.tag_id, "");
+                        poses.put(classy.tag_id, xyz);
                     }
-                    labels.put(classy.id, labels.get(classy.id)+classy.name+"\n");
+                    labels.put(classy.tag_id, labels.get(classy.tag_id)+classy.name+"\n");
 
                     vvd.add(xyz);
                     vcd.add(ColorUtil.swapRedBlue(ColorUtil.seededColor(classy.name.hashCode()).getRGB()));

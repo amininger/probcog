@@ -15,12 +15,14 @@ import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
+import probcog.lcmtypes.tag_classification_list_t;
+import probcog.lcmtypes.tag_classification_t;
 import probcog.rosie.actuation.MobileActuationConnector;
 import sml.Identifier;
 
 public class MobilePerceptionConnector extends AgentConnector implements LCMSubscriber{
 	private boolean newClassifications = false;
-	private classification_list_t curClassifications = null;
+	private tag_classification_list_t curTagClassifications = null;
 	private Identifier waypointId = null;
 	private int curWaypoint = -1;
 
@@ -61,7 +63,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
 		try {
 			if(channel.startsWith("CLASSIFICATIONS")){
-				curClassifications = new classification_list_t(ins);
+				curTagClassifications = new tag_classification_list_t(ins);
 				newClassifications = true;
 			} else if (channel.startsWith("POSE")){
 				pose_t p = new pose_t(ins);
@@ -101,9 +103,9 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	
     	int closestWaypoint = -1;
     	double closestDistance = Double.MAX_VALUE;
-    	for (classification_t c : curClassifications.classifications){
+    	for (tag_classification_t c : curTagClassifications.classifications){
     		if (c.range < closestDistance){
-    			closestWaypoint = c.id;
+    			closestWaypoint = c.tag_id;
     			closestDistance = c.range;
     		}
     	}
@@ -118,8 +120,8 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
    		if (waypointId == null){
     		waypointId = selfId.CreateIdWME("current-waypoint");
    		}
-   		for (classification_t c : curClassifications.classifications){
-   			if (c.id == closestWaypoint){
+   		for (tag_classification_t c : curTagClassifications.classifications){
+   			if (c.tag_id == closestWaypoint){
    				if (c.name.startsWith("wp")){
    					SoarUtil.updateStringWME(waypointId, "waypoint-handle", c.name);
    				} else {

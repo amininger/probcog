@@ -14,16 +14,16 @@ import april.vis.*;
 import lcm.lcm.*;
 import probcog.arm.*;
 import probcog.classify.*;
-import probcog.classify_old.Classifications;
-import probcog.classify_old.ClassifierManager;
-import probcog.classify_old.Features;
-import probcog.classify_old.Features.FeatureCategory;
 import probcog.lcmtypes.*;
+import probcog.old.classify.Classifications;
+import probcog.old.classify.ClassifierManager;
+import probcog.old.classify.Features;
+import probcog.old.classify.Features.FeatureCategory;
+import probcog.old.sim.ISimEffector;
+import probcog.old.sim.ISimStateful;
+import probcog.old.sim.SimLocation;
+import probcog.old.sim.SimObjectPC;
 import probcog.sensor.*;
-import probcog.sim_old.ISimEffector;
-import probcog.sim_old.ISimStateful;
-import probcog.sim_old.SimLocation;
-import probcog.sim_old.SimObjectPC;
 import probcog.util.*;
 
 public class Tracker
@@ -409,21 +409,22 @@ public class Tracker
 
                 for(int i=0; i<soar_lcm.num_objects; i++) {
                     object_data_t odt = soar_lcm.objects[i];
-                    Obj sObj = new Obj(odt.id);
-                    double[] xyzrpy = odt.pos;
+                    Obj sObj = new Obj(new Integer(odt.id));
+                    double[] xyzrpy = odt.xyzrpy;
                     sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
-                    sObj.setBoundingBox(new BoundingBox(odt.bbox_dim,
-                                                        odt.bbox_xyzrpy));
+                    sObj.setBoundingBox(new BoundingBox(odt.lenxyz,
+                                                        odt.xyzrpy));
 
-                    for(int j=0; j<odt.num_cat; j++) {
-                        categorized_data_t cat = odt.cat_dat[j];
-                        FeatureCategory fc = Features.getFeatureCategory(cat.cat.cat);
-                        Classifications cs = new Classifications();
-                        for(int k=0; k<cat.len; k++)
-                            cs.add(cat.label[k], cat.confidence[k]);
-
-                        sObj.addClassifications(fc, cs);
-                    }
+                    // XXX: AM: BROKEN
+//                    for(int j=0; j<odt.num_classifications; j++) {
+//                        categorized_data_t cat = odt.cat_dat[j];
+//                        FeatureCategory fc = Features.getFeatureCategory(cat.cat.cat);
+//                        Classifications cs = new Classifications();
+//                        for(int k=0; k<cat.len; k++)
+//                            cs.add(cat.label[k], cat.confidence[k]);
+//
+//                        sObj.addClassifications(fc, cs);
+//                    }
                     soarObjects.put(sObj.getID(), sObj);
                 }
             }
@@ -560,19 +561,20 @@ public class Tracker
             	object_data_t od = new object_data_t();
 
                 od.utime = utime;
-                od.id = ob.getID();
-                od.pos = ob.getPose();
+                od.id = new Integer(ob.getID()).toString();
+                od.xyzrpy = ob.getPose();
 
                 BoundingBox bbox = ob.getBoundingBox();
-                od.bbox_dim = bbox.lenxyz;
-                od.bbox_xyzrpy = bbox.xyzrpy;
-
-                od.state_values = ob.getStates();
-                od.num_states = od.state_values.length;
-
-                categorized_data_t[] cat_dat = ob.getCategoryData();
-                od.num_cat = cat_dat.length;
-                od.cat_dat = cat_dat;
+                od.xyzrpy = bbox.lenxyz;
+                od.lenxyz = bbox.xyzrpy;
+                
+                // XXX: AM: BROKEN (changed lcm types)
+//                od.state_values = ob.getStates();
+//                od.num_states = od.state_values.length;
+//
+//                categorized_data_t[] cat_dat = ob.getCategoryData();
+//                od.num_cat = cat_dat.length;
+//                od.cat_dat = cat_dat;
 
                 objList.add(od);
             }

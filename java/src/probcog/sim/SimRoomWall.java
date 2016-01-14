@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import probcog.classify_old.Classifications;
-import probcog.classify_old.Features;
-import probcog.classify_old.Features.FeatureCategory;
-import probcog.perception.Obj;
-import probcog.sim_old.SimObjectPC;
+import probcog.old.classify.Classifications;
+import probcog.old.classify.Features;
+import probcog.old.classify.Features.FeatureCategory;
+import probcog.old.perception.Obj;
+import probcog.old.sim.SimObjectPC;
 import probcog.util.BoundingBox;
 import april.jmat.LinAlg;
 import april.sim.BoxShape;

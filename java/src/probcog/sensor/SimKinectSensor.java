@@ -11,8 +11,8 @@ import java.util.List;
 
 import javax.swing.JFrame;
 
-import probcog.sim_old.SimLocation;
-import probcog.sim_old.SimObjectPC;
+import probcog.old.sim.SimLocation;
+import probcog.old.sim.SimObjectPC;
 import april.jmat.LinAlg;
 import april.jmat.geom.GRay3D;
 import april.sim.Collisions;

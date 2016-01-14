@@ -17,7 +17,6 @@ import april.vis.*;
 import april.util.*;
 import april.sim.*;
 import probcog.classify.*;
-import probcog.classify_old.TagClassifier;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;

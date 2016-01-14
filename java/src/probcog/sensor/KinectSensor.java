@@ -17,9 +17,9 @@ import april.sim.SimObject;
 import april.util.*;
 import april.vis.*;
 import probcog.lcmtypes.*;
-import probcog.perception.PointCloud;
+import probcog.old.perception.PointCloud;
+import probcog.old.sim.SimLocation;
 import probcog.sensor.SimKinectSensor.SimPixel;
-import probcog.sim_old.SimLocation;
 import probcog.util.Util;
 
 /** Provides access to the frames taken by the kinect. Only

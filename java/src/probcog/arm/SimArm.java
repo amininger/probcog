@@ -7,7 +7,7 @@ import april.config.*;
 import april.jmat.*;
 import april.sim.*;
 import april.util.*;
-import probcog.sim_old.SimObjectPC;
+import probcog.old.sim.SimObjectPC;
 import magic2.lcmtypes.*;
 
 /** Simulates the movements of the robotic arm through the environment based

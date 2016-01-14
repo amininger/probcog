@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import probcog.old.sim.SimLocation;
+import probcog.old.sim.SimObjectPC;
 import probcog.sensor.Sensor;
 import probcog.sensor.SimKinectSensor;
 import probcog.sensor.SimKinectSensor.SimPixel;
-import probcog.sim_old.SimLocation;
-import probcog.sim_old.SimObjectPC;
 import april.config.Config;
 import april.sim.SimObject;
 import april.sim.SimWorld;

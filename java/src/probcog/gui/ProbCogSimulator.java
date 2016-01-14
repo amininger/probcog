@@ -16,8 +16,8 @@ import april.vis.VisCanvas;
 import april.vis.VisConsole;
 import april.vis.VisLayer;
 import april.vis.VisWorld;
-import probcog.sim_old.ISimEffector;
-import probcog.sim_old.SimObjectPC;
+import probcog.old.sim.ISimEffector;
+import probcog.old.sim.SimObjectPC;
 
 public class ProbCogSimulator implements VisConsole.Listener
 {
