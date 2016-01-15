@@ -130,7 +130,7 @@ public class SimObjectDetector {
             	
             	objects.objects[obj_index++] = objData;
             }
-            LCM.getSingleton().publish("OBJECTS", objects);
+            LCM.getSingleton().publish("DETECTED_OBJECTS", objects);
         }
         
 //		public void run(double dt)
