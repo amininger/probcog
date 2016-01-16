@@ -21,7 +21,7 @@ import probcog.classify.TagHistory;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
 import probcog.lcmtypes.object_data_t;
-import probcog.lcmtypes.object_list_t;
+import probcog.lcmtypes.soar_objects_t;
 import probcog.lcmtypes.tag_classification_list_t;
 import probcog.lcmtypes.tag_classification_t;
 import probcog.old.sim.SimDoor;
@@ -102,7 +102,7 @@ public class SimObjectDetector {
             	}
             }
             
-            object_list_t objects = new object_list_t();
+            soar_objects_t objects = new soar_objects_t();
             objects.utime = TimeUtil.utime();
             objects.num_objects = detectedObjects.size();
             objects.objects = new object_data_t[objects.num_objects];

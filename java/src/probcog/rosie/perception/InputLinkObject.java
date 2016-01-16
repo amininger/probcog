@@ -35,6 +35,7 @@ public class InputLinkObject implements ISoarObject {
 	public InputLinkObject(object_data_t objectData){
 		handle = new StringWME("handle", objectData.id);
 
+		classifications = new HashMap<String, StringWME>();
 		wmesToRemove = new HashSet<StringWME>();
 		svsCommands = new StringBuilder();
 		
@@ -54,7 +55,7 @@ public class InputLinkObject implements ISoarObject {
 				updateRot = true;
 			}
 			// Only update scale if it was changed by a significant amount
-			if(Math.abs(scale[d] - newData.lenxyz[3]) > 0.01){
+			if(Math.abs(scale[d] - newData.lenxyz[d]) > 0.01){
 				scale[d] = newData.lenxyz[d];
 				updateScale = true;
 			}
@@ -111,6 +112,7 @@ public class InputLinkObject implements ISoarObject {
     	}
     	
     	svsCommands.append(SVSCommands.addBox(handle.getValue(), pos, rot, scale));
+    	svsCommands.append(SVSCommands.addTag(handle.getValue(), "source", "perception"));
     	for (StringWME wme : classifications.values()){
     		svsCommands.append(SVSCommands.addTag(handle.getValue(), wme.getAttribute(), wme.getValue()));
     	}

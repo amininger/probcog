@@ -115,6 +115,8 @@ def parseWallChain(reader):
 		wall.x2 = x2
 		wall.y2 = y2
 		walls.append(wall)
+		x1 = x2
+		y1 = y2
 	return walls
 
 ###### DOORS #####

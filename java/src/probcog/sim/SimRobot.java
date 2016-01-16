@@ -293,7 +293,29 @@ public class SimRobot implements SimObject, LCMSubscriber
     }
     
     public boolean inViewRange(double[] xyz){
-    	return true;
+    	double VIEW_DIST = 5;
+    	double VIEW_DIST_SQ = VIEW_DIST*VIEW_DIST;
+    	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
+    	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
+    	
+    	// Check if point is within view distance
+    	double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
+    	if(sqDist > VIEW_DIST_SQ){
+    		return false;
+    	}
+    	if(sqDist < 0.01){
+    		// Within 10 cm of object, report as seen
+    		return true;
+    	}
+
+    	double[] forward = LinAlg.copy(this.drive.poseTruth.orientation, 3);
+    	double dp = LinAlg.dotProduct(forward, toPoint);
+    	double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
+    	if(dp/lengthProduct > 0.75){
+    		// Looking at object (constant is cos of viewing angle)
+    		return true;
+    	}
+    	return false;
     }
 
     public void setNoise(boolean noise)
