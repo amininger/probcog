@@ -112,7 +112,7 @@ public class InputLinkObject implements ISoarObject {
     	}
     	
     	svsCommands.append(SVSCommands.addBox(handle.getValue(), pos, rot, scale));
-    	svsCommands.append(SVSCommands.addTag(handle.getValue(), "source", "perception"));
+    	svsCommands.append(SVSCommands.addTag(handle.getValue(), "object-source", "perception"));
     	for (StringWME wme : classifications.values()){
     		svsCommands.append(SVSCommands.addTag(handle.getValue(), wme.getAttribute(), wme.getValue()));
     	}

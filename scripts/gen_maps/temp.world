@@ -4,7 +4,7 @@
   6
   # XYZRPY Truth
   vec 6
-    5.00   5.00   0.10   0.00   0.00   0.00
+    1.00   1.00   0.10   0.00   0.00   0.00
   # XYZRPY Odometry
   vec 6
     0.00   0.00   0.00   0.00   0.00   0.00
@@ -13,7 +13,7 @@
 {
   # Object xyzrpy
   vec 6
-    5.00   7.00   0.00   0.00   0.00   0.00
+    8.00   1.00   0.00   0.00   0.00   0.00
   # Length xyz
   vec 3
     0.50   0.50   0.50
@@ -25,11 +25,95 @@
   category=soda
   color=red
 }
+"probcog.sim.SimBoxObject"
+{
+  # Object xyzrpy
+  vec 6
+    1.00   9.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   0.50
+  # Color rgb (int 0-255)
+  vec 3
+  100 100 0
+  # Labels 
+  2
+  category=book
+  color=brown
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object xyzrpy
+  vec 6
+    8.00   9.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   0.50
+  # Color rgb (int 0-255)
+  vec 3
+  0 0 255
+  # Labels 
+  2
+  category=book
+  color=blue
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object xyzrpy
+  vec 6
+    1.00   1.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   0.50
+  # Color rgb (int 0-255)
+  vec 3
+  50 50 50
+  # Labels 
+  2
+  category=stapler
+  color=black
+}
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
     0.00   0.00
+  # End Point 2
+  vec 2
+    0.00   2.00
+}
+"probcog.sim.SimRoomWall"
+{
+  # End Point 1
+  vec 2
+    0.00   2.00
+  # End Point 2
+  vec 2
+    4.00   2.00
+}
+"probcog.sim.SimRoomWall"
+{
+  # End Point 1
+  vec 2
+    4.00   2.00
+  # End Point 2
+  vec 2
+    4.00   8.00
+}
+"probcog.sim.SimRoomWall"
+{
+  # End Point 1
+  vec 2
+    4.00   8.00
+  # End Point 2
+  vec 2
+    0.00   8.00
+}
+"probcog.sim.SimRoomWall"
+{
+  # End Point 1
+  vec 2
+    0.00   8.00
   # End Point 2
   vec 2
     0.00  10.00
@@ -50,88 +134,43 @@
    10.00  10.00
   # End Point 2
   vec 2
-   10.00  20.00
+   10.00   8.00
 }
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   10.00  20.00
+   10.00   8.00
   # End Point 2
   vec 2
-    0.00  20.00
+    6.00   8.00
 }
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-    0.00  20.00
+    6.00   8.00
   # End Point 2
   vec 2
-    0.00  30.00
+    6.00   2.00
 }
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-    0.00  30.00
+    6.00   2.00
   # End Point 2
   vec 2
-   25.00  30.00
+   10.00   2.00
 }
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   25.00  30.00
+   10.00   2.00
   # End Point 2
   vec 2
-   25.00  20.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   25.00  20.00
-  # End Point 2
-  vec 2
-   15.00  20.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   15.00  20.00
-  # End Point 2
-  vec 2
-   15.00  10.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   15.00  10.00
-  # End Point 2
-  vec 2
-   25.00  10.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   25.00  10.00
-  # End Point 2
-  vec 2
-   25.00   0.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   25.00   0.00
-  # End Point 2
-  vec 2
-    0.00   0.00
+   10.00   0.00
 }
 "probcog.sim.SimRoomWall"
 {
@@ -140,120 +179,13 @@
    10.00   0.00
   # End Point 2
   vec 2
-   10.00   4.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   10.00   5.50
-  # End Point 2
-  vec 2
-   10.00  10.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   10.00  20.00
-  # End Point 2
-  vec 2
-   10.00  24.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   10.00  25.50
-  # End Point 2
-  vec 2
-   10.00  30.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   15.00   0.00
-  # End Point 2
-  vec 2
-   15.00   4.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   15.00   5.50
-  # End Point 2
-  vec 2
-   15.00  10.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   15.00  20.00
-  # End Point 2
-  vec 2
-   15.00  24.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   15.00  25.50
-  # End Point 2
-  vec 2
-   15.00  30.00
-}
-"probcog.sim.SimDoor"
-{
-  # Door xyzrpy
-  vec 6
-   10.00   5.00   0.00   0.00   0.00   0.00
-  # Connected Waypoints 
-  4
-  5
-  # Open or closed
-  open
-}
-"probcog.sim.SimDoor"
-{
-  # Door xyzrpy
-  vec 6
-   10.00  25.00   0.00   0.00   0.00   0.00
-  # Connected Waypoints 
-  5
-  6
-  # Open or closed
-  closed
-}
-"probcog.sim.SimDoor"
-{
-  # Door xyzrpy
-  vec 6
-   15.00  25.00   0.00   0.00   0.00   0.00
-  # Connected Waypoints 
-  1
-  2
-  # Open or closed
-  closed
-}
-"probcog.sim.SimDoor"
-{
-  # Door xyzrpy
-  vec 6
-   15.00  25.00   0.00   0.00   0.00   0.00
-  # Connected Waypoints 
-  2
-  3
-  # Open or closed
-  open
+    0.00   0.00
 }
 "probcog.sim.SimAprilTag"
 {
   # Tag Position
   vec 6
-    5.00  25.00   0.01   0.00   0.00   0.00
+    2.00   9.00   0.01   0.00   0.00   0.00
   # Tag ID
   1
 }
@@ -261,7 +193,7 @@
 {
   # Tag Position
   vec 6
-   12.50  25.00   0.01   0.00   0.00   0.00
+    5.00   9.00   0.01   0.00   0.00   0.00
   # Tag ID
   2
 }
@@ -269,7 +201,7 @@
 {
   # Tag Position
   vec 6
-   20.00  25.00   0.01   0.00   0.00   0.00
+    8.00   9.00   0.01   0.00   0.00   0.00
   # Tag ID
   3
 }
@@ -277,7 +209,7 @@
 {
   # Tag Position
   vec 6
-    5.00   5.00   0.01   0.00   0.00   0.00
+    2.00   1.00   0.01   0.00   0.00   0.00
   # Tag ID
   4
 }
@@ -285,7 +217,7 @@
 {
   # Tag Position
   vec 6
-   12.50   5.00   0.01   0.00   0.00   0.00
+    5.00   1.00   0.01   0.00   0.00   0.00
   # Tag ID
   5
 }
@@ -293,7 +225,7 @@
 {
   # Tag Position
   vec 6
-   20.00   5.00   0.01   0.00   0.00   0.00
+    8.00   1.00   0.01   0.00   0.00   0.00
   # Tag ID
   6
 }

@@ -11,6 +11,7 @@ import edu.umich.rosie.soar.AgentConnector;
 import edu.umich.rosie.soar.SoarAgent;
 import edu.umich.rosie.soar.SoarUtil;
 import edu.umich.rosie.soarobjects.Pose;
+import april.jmat.LinAlg;
 import april.lcmtypes.pose_t;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
@@ -25,31 +26,25 @@ import probcog.rosie.actuation.MobileActuationConnector;
 import sml.Identifier;
 
 public class MobilePerceptionConnector extends AgentConnector implements LCMSubscriber{
-	private boolean newClassifications = false;
-	private tag_classification_list_t curTagClassifications = null;
-	private Identifier waypointId = null;
-	private int curWaypoint = -1;
-	
+
 	private HashMap<String, InputLinkObject> objects;
 	private HashMap<String, InputLinkObject> objsToRemove;
 	private boolean newObjectsMessage = false;
 
     private LCM lcm;
     
-    private Identifier selfId = null;
     private Identifier objectsId = null;
     
-    private boolean newPose = false;
-    private Pose pose;
-
+    private Robot robot;
+    
     public MobilePerceptionConnector(SoarAgent agent, Properties props){
     	super(agent);
     	
     	objects = new HashMap<String, InputLinkObject>();
     	objsToRemove = new HashMap<String, InputLinkObject>();
     	
-    	pose = new Pose();
-
+    	robot = new Robot();
+    	
     	// Setup LCM events
         lcm = LCM.getSingleton();
     }
@@ -84,12 +79,11 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
 		try {
 			if(channel.startsWith("CLASSIFICATIONS")){
-				curTagClassifications = new tag_classification_list_t(ins);
-				newClassifications = true;
+				tag_classification_list_t tcl = new tag_classification_list_t(ins);
+				handleClassificationsMessage(tcl);
 			} else if (channel.startsWith("POSE")){
 				pose_t p = new pose_t(ins);
-				pose.updatePosition(p.pos);
-				newPose = true;
+				handlePoseMessage(p);
 			} else if(channel.startsWith("DETECTED_OBJECTS")){
 				soar_objects_t newObjs = new soar_objects_t(ins);
 				processNewObjectMessage(newObjs);
@@ -100,6 +94,14 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 		}
     }
     
+    private void handleClassificationsMessage(tag_classification_list_t tcl){
+    	robot.updateClassifications(tcl);
+    }
+    
+    private void handlePoseMessage(pose_t pose){
+    	double[] xyzrpy = LinAlg.quatPosToXyzrpy(pose.orientation, pose.pos);
+    	robot.updatePose(xyzrpy);
+    }
 
     private void processNewObjectMessage(soar_objects_t newObjs){
     	// Set of objects that didn't appear in the new update
@@ -146,70 +148,30 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     
     protected synchronized void onInputPhase(Identifier inputLink){
     	// Update the information about the robot
-    	if(selfId == null){
-    		selfId = inputLink.CreateIdWME("self");
-    	}
-    	updateSelf();
-
-    	// Update information about waypoints
-    	updateClassifications();
+    	updateRobot();
 
     	// Update information about objects
-    	if(objectsId == null){
-    		objectsId = inputLink.CreateIdWME("objects");
-    	}
     	updateObjects();
-    }
-    
-    private void updateSelf(){
-    	if(!pose.isAdded()){
-    		pose.addToWM(selfId);
-    	} else if(newPose){
-    		pose.updateWM();
-    		newPose = false;
-    	}
-
-    	String movingState = ((MobileActuationConnector)soarAgent.getActuationConnector()).getMovingState();
-		SoarUtil.updateStringWME(selfId, "moving-state", movingState);
-    }
-    
-    private void updateClassifications(){
-    	if(!newClassifications){
-    		return;
-    	}
-    	newClassifications = false;
     	
-    	int closestWaypoint = -1;
-    	double closestDistance = Double.MAX_VALUE;
-    	for (tag_classification_t c : curTagClassifications.classifications){
-    		if (c.range < closestDistance){
-    			closestWaypoint = c.tag_id;
-    			closestDistance = c.range;
-    		}
+    	// Update SVS
+    	updateSVS();
+    	
+    	objsToRemove.clear();
+    }
+    
+    private void updateRobot(){
+    	robot.updateMovingState(((MobileActuationConnector)soarAgent.getActuationConnector()).getMovingState());
+    	if(!robot.isAdded()){
+    		robot.addToWM(soarAgent.getAgent().GetInputLink());
+    	} else {
+    		robot.updateWM();
     	}
-   		if (closestWaypoint != curWaypoint && waypointId != null){
-   			waypointId.DestroyWME();
-   			waypointId = null;
-   		}
-   		curWaypoint = closestWaypoint;
-   		if (curWaypoint == -1){
-   			return;
-   		}
-   		if (waypointId == null){
-    		waypointId = selfId.CreateIdWME("current-waypoint");
-   		}
-   		for (tag_classification_t c : curTagClassifications.classifications){
-   			if (c.tag_id == closestWaypoint){
-   				if (c.name.startsWith("wp")){
-   					SoarUtil.updateStringWME(waypointId, "waypoint-handle", c.name);
-   				} else {
-   					SoarUtil.updateStringWME(waypointId, "classification", c.name);
-   				}
-   			}
-   		}
     }
     
     private void updateObjects(){
+    	if(objectsId == null){
+    		objectsId = soarAgent.getAgent().GetInputLink().CreateIdWME("objects");
+    	}
     	for(InputLinkObject obj : objects.values()){
     		if(obj.isAdded()){
     			obj.updateWM();
@@ -220,25 +182,36 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	for(InputLinkObject obj : objsToRemove.values()){
     		obj.removeFromWM();
     	}
-    	objsToRemove.clear();
     }
-
+    
+    private void updateSVS(){
+    	StringBuilder svsCommands = new StringBuilder();
+    	svsCommands.append(robot.getSVSCommands());
+    	for(InputLinkObject obj : objects.values()){
+    		svsCommands.append(obj.getSVSCommands());
+    	}
+    	for(InputLinkObject obj : objsToRemove.values()){
+    		svsCommands.append(obj.getSVSCommands());
+    	}
+    	if(svsCommands.length() > 0){
+    		soarAgent.getAgent().SendSVSInput(svsCommands.toString());
+    	}
+    }
 
 	@Override
 	protected void onInitSoar() {
-		pose.removeFromWM();
 		for(InputLinkObject obj : objects.values()){
+			obj.removeFromWM();
+		}
+		for(InputLinkObject obj : objsToRemove.values()){
 			obj.removeFromWM();
 		}
 		if(objectsId != null){
 			objectsId.DestroyWME();
 			objectsId = null;
 		}
-		if(selfId != null){
-			selfId.DestroyWME();
-			selfId = null;
-			waypointId = null;
-		}
+		robot.removeFromWM();
+		updateSVS();
 	}
 	
     // Currently no commands relevant to perception

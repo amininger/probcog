@@ -33,6 +33,11 @@ import magic2.lcmtypes.*;
 
 public class SimRobot implements SimObject, LCMSubscriber
 {
+	static final double OBJECT_VIEW_DIST = 5.0;  // max distant it can see objects at
+	static final double OBJECT_VIEW_DIST_SQ = OBJECT_VIEW_DIST * OBJECT_VIEW_DIST;
+	static final double OBJECT_VIEW_ANGLE = Math.PI/2;  // max angle it can see objects at
+	static final double OBJECT_VIEW_ANGLE_COS = Math.cos(OBJECT_VIEW_ANGLE/2);
+	
     static final int ROBOT_MAP_DATA_HZ = 10;
     long lastMapData = 0;
 
@@ -293,14 +298,12 @@ public class SimRobot implements SimObject, LCMSubscriber
     }
     
     public boolean inViewRange(double[] xyz){
-    	double VIEW_DIST = 5;
-    	double VIEW_DIST_SQ = VIEW_DIST*VIEW_DIST;
     	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
     	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
     	
     	// Check if point is within view distance
     	double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
-    	if(sqDist > VIEW_DIST_SQ){
+    	if(sqDist > OBJECT_VIEW_DIST_SQ){
     		return false;
     	}
     	if(sqDist < 0.01){
@@ -311,8 +314,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double[] forward = LinAlg.copy(this.drive.poseTruth.orientation, 3);
     	double dp = LinAlg.dotProduct(forward, toPoint);
     	double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
-    	if(dp/lengthProduct > 0.75){
-    		// Looking at object (constant is cos of viewing angle)
+    	if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
     		return true;
     	}
     	return false;

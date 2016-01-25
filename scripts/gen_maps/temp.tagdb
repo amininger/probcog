@@ -1,7 +1,7 @@
 classes {
   c# {
-    labels = ["wp1", ""];
-    ids = [1]
+    labels = ["wp01", ""];
+    ids = [1];
     probs = [1.0, 0.0];
     mean = 1.0;
     stddev = 0.0;
@@ -10,8 +10,8 @@ classes {
   }
 
   c# {
-    labels = ["wp2", ""];
-    ids = [2]
+    labels = ["wp02", ""];
+    ids = [2];
     probs = [1.0, 0.0];
     mean = 1.0;
     stddev = 0.0;
@@ -20,8 +20,8 @@ classes {
   }
 
   c# {
-    labels = ["wp3", ""];
-    ids = [3]
+    labels = ["wp03", ""];
+    ids = [3];
     probs = [1.0, 0.0];
     mean = 1.0;
     stddev = 0.0;
@@ -30,8 +30,8 @@ classes {
   }
 
   c# {
-    labels = ["wp4", ""];
-    ids = [4]
+    labels = ["wp04", ""];
+    ids = [4];
     probs = [1.0, 0.0];
     mean = 1.0;
     stddev = 0.0;
@@ -40,8 +40,8 @@ classes {
   }
 
   c# {
-    labels = ["wp5", ""];
-    ids = [5]
+    labels = ["wp05", ""];
+    ids = [5];
     probs = [1.0, 0.0];
     mean = 1.0;
     stddev = 0.0;
@@ -50,8 +50,8 @@ classes {
   }
 
   c# {
-    labels = ["wp6", ""];
-    ids = [6]
+    labels = ["wp06", ""];
+    ids = [6];
     probs = [1.0, 0.0];
     mean = 1.0;
     stddev = 0.0;

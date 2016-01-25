@@ -46,9 +46,12 @@ class TagLabel:
 		self.tags = []
 
 def printTagId(tag_id, fout):
+	tag_id_str = str(tag_id)
+	if len(tag_id_str) < 2:
+		tag_id_str = "0" + tag_id_str
 	fout.write("  c# {\n")
-	fout.write("    labels = [\"wp" + str(tag_id) + "\", \"\"];\n")
-	fout.write("    ids = [" + str(tag_id) + "]\n")
+	fout.write("    labels = [\"wp" + tag_id_str + "\", \"\"];\n")
+	fout.write("    ids = [" + str(tag_id) + "];\n")
 	fout.write("    probs = [1.0, 0.0];\n")
 	fout.write("    mean = 1.0;\n")
 	fout.write("    stddev = 0.0;\n")

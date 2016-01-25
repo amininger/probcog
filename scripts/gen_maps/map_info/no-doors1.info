@@ -1,0 +1,35 @@
+robot 1 1
+
+object 8 1 255 0 0 2 category soda color red
+object 1 9 100 100 0 2 category book color brown
+object 8 9 0 0 255 2 category book color blue
+object 1 1 50 50 50 2 category stapler color black
+
+waypoint 1 2 9 room
+waypoint 2 5 9 door
+waypoint 3 8 9 room
+waypoint 4 2 1 room
+waypoint 5 5 1 door
+waypoint 6 8 1 room
+
+edge 1 2
+edge 2 3
+edge 2 5
+edge 4 5
+edge 5 6
+
+wallchain 12
+  0 0
+  0 2 
+  4 2
+  4 8
+  0 8
+  0 10
+  10 10
+  10 8
+  6 8
+  6 2
+  10 2
+  10 0
+  0 0
+

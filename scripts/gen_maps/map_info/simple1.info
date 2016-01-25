@@ -1,6 +1,10 @@
 robot 5 5
 
 object 5 7 255 0 0 2 category soda color red
+object 4 3 100 100 0 2 category book color brown
+object 4 27 0 0 255 2 category book color blue
+object 18 22 50 50 50 2 category stapler color black
+object 17 5 255 0 0 2 category soda color red
 
 waypoint 1 5 25 room
 waypoint 2 12.5 25 door

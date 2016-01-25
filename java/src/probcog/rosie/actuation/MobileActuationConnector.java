@@ -6,6 +6,8 @@ import java.util.Properties;
 import edu.umich.rosie.soar.AgentConnector;
 import edu.umich.rosie.soar.SoarAgent;
 import edu.umich.rosie.soar.SoarUtil;
+import april.jmat.LinAlg;
+import april.lcmtypes.pose_t;
 import april.util.TimeUtil;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
@@ -16,12 +18,11 @@ import probcog.lcmtypes.control_law_status_t;
 import probcog.lcmtypes.control_law_t;
 import probcog.lcmtypes.typed_value_t;
 import sml.Identifier;
+
 import javax.swing.JMenuBar;
 
 public class MobileActuationConnector extends AgentConnector implements LCMSubscriber{
 	private static int CL_FPS = 10;
-
-	private Identifier selfId;
 
 	private Object commandLock = new Object();
 	private control_law_t activeCommand = null;
@@ -40,7 +41,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     	super(agent);
 
         lcm = LCM.getSingleton();
-
+        
         // Setup Output Link Events
         String[] outputHandlerStrings = { "do-control-law", "stop", "face-point"};
         this.setOutputHandlerNames(outputHandlerStrings);
@@ -102,6 +103,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 			commandStatus = newStatus.toString().toLowerCase();
 		}
     }
+
     
     /*****************************************************
      * 
@@ -139,12 +141,8 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 			}
 		}
 	}
-
+	
 	protected void onInitSoar() {
-		if(selfId != null){
-			selfId.DestroyWME();
-			selfId = null;
-		}
 		activeCommandId = null;
 	}
 	
