@@ -21,9 +21,10 @@
   vec 3
   255 0 0
   # Labels 
-  2
-  category=soda
-  color=red
+  3
+  shape=soda1
+  color=red1
+  category=object
 }
 "probcog.sim.SimBoxObject"
 {
@@ -37,9 +38,10 @@
   vec 3
   100 100 0
   # Labels 
-  2
-  category=book
-  color=brown
+  3
+  shape=book1
+  color=brown1
+  category=object
 }
 "probcog.sim.SimBoxObject"
 {
@@ -53,9 +55,10 @@
   vec 3
   0 0 255
   # Labels 
-  2
-  category=book
-  color=blue
+  3
+  shape=book1
+  color=blue1
+  category=object
 }
 "probcog.sim.SimBoxObject"
 {
@@ -69,9 +72,10 @@
   vec 3
   50 50 50
   # Labels 
-  2
-  category=stapler
-  color=black
+  3
+  shape=stapler1
+  color=black1
+  category=object
 }
 "probcog.sim.SimRoomWall"
 {

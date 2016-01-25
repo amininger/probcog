@@ -109,6 +109,7 @@ public class Robot implements ISoarObject {
 		
 		svsCommands.append(String.format("add robot world p %s r %s\n", 
 				SVSCommands.posToStr(pos), SVSCommands.rotToStr(rot)));
+		svsCommands.append(String.format("add robot_pos robot\n"));
 		svsCommands.append(String.format("add robot_body robot v %s p .2 0 0 s %s\n", 
 				SVSCommands.bboxVertices(), SVSCommands.scaleToStr(dims)));
 		svsCommands.append(String.format("add robot_view robot v %s p %f %f %f\n", 
@@ -126,7 +127,7 @@ public class Robot implements ISoarObject {
 		movingState.updateWM();
 		if(needsUpdate){
 			svsCommands.append(SVSCommands.changePos("robot", pos));
-			svsCommands.append(SVSCommands.changePos("robot", pos));
+			svsCommands.append(SVSCommands.changeRot("robot", rot));
 			needsUpdate = false;
 		}
 		if(newClassifications){

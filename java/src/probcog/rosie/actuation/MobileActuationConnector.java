@@ -43,7 +43,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
         lcm = LCM.getSingleton();
         
         // Setup Output Link Events
-        String[] outputHandlerStrings = { "do-control-law", "stop", "face-point"};
+        String[] outputHandlerStrings = { "do-control-law", "stop", "face-point", "pick-up", "put-down"};
         this.setOutputHandlerNames(outputHandlerStrings);
 
         activeCommand = SoarCommandParser.createEmptyControlLaw("RESTART");
@@ -158,6 +158,10 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 			processStopCommand(id);
 		} else if(attName.equals("face-point")){
 			processFacePoint(id);
+		} else if(attName.equals("pick-up")){
+			
+		} else if(attName.equals("pick-down")){
+			
 		}
 	}
 

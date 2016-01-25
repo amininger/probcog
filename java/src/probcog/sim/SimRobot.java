@@ -68,6 +68,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     static Random r = new Random();
     static Model4 model4 = new Model4();
 
+    private String grabbedObjectId = null;
 
     public SimRobot(SimWorld sw)
     {
@@ -293,6 +294,17 @@ public class SimRobot implements SimObject, LCMSubscriber
 				}
 				drive.poseTruth.pos[0] = newx;
 				drive.poseTruth.pos[1] = newy;
+			} else if(controlLaw.name.equals("pick-up")){
+				for(int p = 0; p < controlLaw.num_params; p++){
+					if(controlLaw.param_names[p].equals("object-id")){
+						String objectId = controlLaw.param_values[p].value;
+						if(grabbedObjectId != null){
+							System.err.println("ERROR: Trying to pick up object " + objectId + " but already holding " + grabbedObjectId);
+						} else {
+							
+						}
+					}
+				}
 			}
 		}
     }
