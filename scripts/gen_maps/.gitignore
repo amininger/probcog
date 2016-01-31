@@ -1,1 +1,8 @@
-*/__pycache__
+__pycache__
+*.pyc
+
+temp.map
+temp.world
+temp.tagdb
+
+

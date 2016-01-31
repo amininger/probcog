@@ -65,6 +65,9 @@ public class InputLinkObject implements ISoarObject {
 		missingClassifications.addAll(classifications.keySet());
 
 		for (classification_t classification : newData.classifications){
+			if(classification.category.equals("arm-status")){
+				continue;
+			}
 			StringWME wme = classifications.get(classification.category);
 			if (wme == null){
 				wme = new StringWME(classification.category, classification.name);

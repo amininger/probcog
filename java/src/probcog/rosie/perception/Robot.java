@@ -27,6 +27,7 @@ public class Robot implements ISoarObject {
 	private Identifier selfId = null;
 	
 	private StringWME movingState;
+	private StringWME heldObject;
 	
 	private tag_classification_list_t curTagClassifications = null;
 	private boolean newClassifications = false;
@@ -36,7 +37,12 @@ public class Robot implements ISoarObject {
 	
 	public Robot(){
 		movingState = new StringWME("moving-state", "stopped");
+		heldObject = new StringWME("held-object", "none");
 		pose = new Pose();
+	}
+	
+	public void setHeldObject(String heldObject){
+		this.heldObject.setValue(heldObject);
 	}
 	
 	public void updatePose(double[] xyzrpy){
@@ -106,6 +112,7 @@ public class Robot implements ISoarObject {
 		selfId = parentId.CreateIdWME("self");
 		pose.addToWM(selfId);
 		movingState.addToWM(selfId);
+		heldObject.addToWM(selfId);
 		
 		svsCommands.append(String.format("add robot world p %s r %s\n", 
 				SVSCommands.posToStr(pos), SVSCommands.rotToStr(rot)));
@@ -125,6 +132,7 @@ public class Robot implements ISoarObject {
 		}
 		pose.updateWM();
 		movingState.updateWM();
+		heldObject.updateWM();
 		if(needsUpdate){
 			svsCommands.append(SVSCommands.changePos("robot", pos));
 			svsCommands.append(SVSCommands.changeRot("robot", rot));
@@ -178,6 +186,7 @@ public class Robot implements ISoarObject {
 			waypointId = null;
 		}
 		movingState.removeFromWM();
+		heldObject.removeFromWM();
 		pose.removeFromWM();
 
 		selfId.DestroyWME();

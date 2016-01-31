@@ -67,8 +67,8 @@ public class SimRobot implements SimObject, LCMSubscriber
     // static variables ..
     static Random r = new Random();
     static Model4 model4 = new Model4();
-
-    private String grabbedObjectId = null;
+    
+    private SimObjectPC grabbedObject = null;
 
     public SimRobot(SimWorld sw)
     {
@@ -294,19 +294,32 @@ public class SimRobot implements SimObject, LCMSubscriber
 				}
 				drive.poseTruth.pos[0] = newx;
 				drive.poseTruth.pos[1] = newy;
-			} else if(controlLaw.name.equals("pick-up")){
-				for(int p = 0; p < controlLaw.num_params; p++){
-					if(controlLaw.param_names[p].equals("object-id")){
-						String objectId = controlLaw.param_values[p].value;
-						if(grabbedObjectId != null){
-							System.err.println("ERROR: Trying to pick up object " + objectId + " but already holding " + grabbedObjectId);
-						} else {
-							
-						}
-					}
-				}
 			}
 		}
+    }
+    
+    public SimObjectPC getGrabbedObject(){
+    	return grabbedObject;
+    }
+    
+    public void pickUpObject(SimObjectPC obj){
+    	if(grabbedObject != null && obj != grabbedObject){
+    		System.err.println("ERROR: already holding different object");
+    		return;
+    	}
+    	double[] objPos = LinAlg.copy(LinAlg.matrixToXyzrpy(obj.getPose()), 3);
+    	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
+    	double dist = LinAlg.distance(robPos, objPos);
+    	
+    	if(dist <= .1){
+    		grabbedObject = obj;
+    		double[][] robPose = LinAlg.xyzrpyToMatrix(LinAlg.quatPosToXyzrpy(this.drive.poseTruth.orientation, robPos));
+    		obj.setPose(robPose);
+    	}
+    }
+    
+    public void putDownObject(){
+    	grabbedObject = null;
     }
     
     public boolean inViewRange(double[] xyz){
@@ -492,6 +505,12 @@ public class SimRobot implements SimObject, LCMSubscriber
             }
             lcm.publish("POSE", pose);
             lcm.publish("POSE_EST", pose);
+
+            if(grabbedObject != null){
+            	double[][] robPose = LinAlg.xyzrpyToMatrix(LinAlg.quatPosToXyzrpy(drive.poseTruth.orientation, 
+            			drive.poseTruth.pos));
+    		    grabbedObject.setPose(robPose);
+            }
             //lcm.publish("POSE", drive.poseOdom);
             //lcm.publish("POSE_TRUTH", drive.poseTruth);
         }
@@ -507,6 +526,9 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
 
         public void run(double dt) {
+
+        	
+        	
             double[] mcmd = new double[2];
 
             double center_xyz[] = LinAlg.add(drive.poseOdom.pos, LinAlg.quatRotate(drive.poseOdom.orientation, drive.centerOfRotation));

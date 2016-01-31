@@ -108,6 +108,8 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	// (remove ids as we see them)
     	HashSet<String> oldIds = new HashSet<String>();
     	oldIds.addAll(objects.keySet());
+    	
+    	String heldObject = "none";
 
     	for (object_data_t newObj : newObjs.objects){
     		String objID = newObj.id;
@@ -131,6 +133,12 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     				objects.put(objID, obj);
     			}
     		}
+    		
+    		for(classification_t cls : newObj.classifications){
+    			if(cls.category.equals("arm-status") && cls.name.equals("grabbed")){
+    				heldObject = objID;
+    			}
+    		}
     	}
     	
     	for(String oldID : oldIds){
@@ -138,6 +146,8 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     		objects.remove(oldID);
     		objsToRemove.put(oldID, oldObj);
     	}
+    	
+    	robot.setHeldObject(heldObject);
     }
     
 	/***************************

@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Random;
 
 import lcm.lcm.LCM;
+import lcm.lcm.LCMDataInputStream;
+import lcm.lcm.LCMSubscriber;
 import magic2.lcmtypes.tag_detection_list_t;
 import magic2.lcmtypes.tag_detection_t;
 import april.jmat.LinAlg;
@@ -20,6 +22,7 @@ import probcog.classify.TagClassifier;
 import probcog.classify.TagHistory;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
+import probcog.lcmtypes.control_law_t;
 import probcog.lcmtypes.object_data_t;
 import probcog.lcmtypes.soar_objects_t;
 import probcog.lcmtypes.tag_classification_list_t;
@@ -33,13 +36,14 @@ import probcog.sim.SimRobot;
 import probcog.util.BoundingBox;
 import probcog.util.Util;
 
-public class SimObjectDetector {
+public class SimObjectDetector implements LCMSubscriber{
 	private static double MSG_PER_SEC = 10.0;
 	
 	protected SimRobot robot;
 	protected SimWorld world;
 	
 	protected HashMap<SimObjectPC, Integer> detectedObjects;
+	protected HashMap<Integer, SimObjectPC> objectLookup;
 	private Integer nextID = 1;
 
     TagHistory tagHistory = new TagHistory();
@@ -51,12 +55,44 @@ public class SimObjectDetector {
 		this.robot = robot;
 		this.world = world;
 		this.detectedObjects = new HashMap<SimObjectPC, Integer>();
+		this.objectLookup = new HashMap<Integer, SimObjectPC>();
 		
 		tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
+		
+		LCM.getSingleton().subscribe("SOAR_COMMAND.*", this);
 	}
 	
 	public void setRunning(boolean b){
 		tasks.setRunning(b);
+	}
+	
+
+	@Override
+	public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins) {
+        try {
+        	if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")){
+		  		control_law_t controlLaw = new control_law_t(ins);
+			  	handleSoarCommand(controlLaw);
+	      	}
+        } catch (IOException ex) {
+            System.out.println("WRN: "+ex);
+        }
+    }	
+	
+	private void handleSoarCommand(control_law_t controlLaw){
+		if(controlLaw.name.equals("pick-up")){
+			for(int p = 0; p < controlLaw.num_params; p++){
+				if(controlLaw.param_names[p].equals("object-handle")){
+					Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
+					SimObjectPC obj = objectLookup.get(objectId);
+					if(obj != null){
+						robot.pickUpObject(obj);
+					}
+				}
+			}
+		} else if(controlLaw.name.equals("put-down")){
+			robot.putDownObject();
+		}
 	}
 	
 	protected class DetectorTask implements PeriodicTasks.Task {
@@ -92,15 +128,19 @@ public class SimObjectDetector {
             			// A newly seen object (not seen in previous frame), give a new id and add to list
             			if(!detectedObjects.containsKey(obj)){
             				detectedObjects.put(obj, nextID);
+            				objectLookup.put(nextID, obj);
             				nextID++;
             			}
             		} else {
             			if (detectedObjects.containsKey(obj)){
+            				objectLookup.remove(detectedObjects.get(obj));
             				detectedObjects.remove(obj);
             			}
             		}
             	}
             }
+            
+            SimObjectPC grabbed = robot.getGrabbedObject();
             
             soar_objects_t objects = new soar_objects_t();
             objects.utime = TimeUtil.utime();
@@ -117,8 +157,12 @@ public class SimObjectDetector {
             	objData.lenxyz = bbox.lenxyz;
             	
             	HashMap<String, String> classifications = e.getKey().getClassifications();
+            	if(e.getKey() == grabbed){
+            		classifications.put("arm-status", "grabbed");
+            	}
             	objData.num_classifications = classifications.size();
             	objData.classifications = new classification_t[objData.num_classifications];
+            	
             	int cl_index = 0;
             	for(Map.Entry<String, String> cl : classifications.entrySet()){
             		classification_t c = new classification_t();
@@ -305,4 +349,5 @@ public class SimObjectDetector {
             return p;
         }
     }
+
 }
