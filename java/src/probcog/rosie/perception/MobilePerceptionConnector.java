@@ -16,20 +16,24 @@ import april.lcmtypes.pose_t;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
+import magic2.lcmtypes.ooi_msg_list_t;
+import magic2.lcmtypes.ooi_msg_t;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
 import probcog.lcmtypes.object_data_t;
-import probcog.lcmtypes.soar_objects_t;
 import probcog.lcmtypes.tag_classification_list_t;
 import probcog.lcmtypes.tag_classification_t;
 import probcog.rosie.actuation.MobileActuationConnector;
 import sml.Identifier;
 
 public class MobilePerceptionConnector extends AgentConnector implements LCMSubscriber{
+	private WorldObjectManager objectManager;
 
-	private HashMap<String, InputLinkObject> objects;
-	private HashMap<String, InputLinkObject> objsToRemove;
+	private HashMap<Integer, WorldObject> objects;
+	private HashMap<Integer, WorldObject> objsToRemove;
 	private boolean newObjectsMessage = false;
+	
+	private Integer nextID = 1;
 
     private LCM lcm;
     
@@ -40,8 +44,10 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     public MobilePerceptionConnector(SoarAgent agent, Properties props){
     	super(agent);
     	
-    	objects = new HashMap<String, InputLinkObject>();
-    	objsToRemove = new HashMap<String, InputLinkObject>();
+    	objects = new HashMap<Integer, WorldObject>();
+    	objsToRemove = new HashMap<Integer, WorldObject>();
+    	
+    	objectManager = new WorldObjectManager(props);
     	
     	robot = new Robot();
     	
@@ -85,7 +91,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 				pose_t p = new pose_t(ins);
 				handlePoseMessage(p);
 			} else if(channel.startsWith("DETECTED_OBJECTS")){
-				soar_objects_t newObjs = new soar_objects_t(ins);
+				ooi_msg_list_t newObjs = new ooi_msg_list_t(ins);
 				processNewObjectMessage(newObjs);
 				newObjectsMessage = true;
 			}
@@ -103,51 +109,45 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	robot.updatePose(xyzrpy);
     }
 
-    private void processNewObjectMessage(soar_objects_t newObjs){
+    private void processNewObjectMessage(ooi_msg_list_t newObjs){
     	// Set of objects that didn't appear in the new update
     	// (remove ids as we see them)
-    	HashSet<String> oldIds = new HashSet<String>();
+    	HashSet<Integer> oldIds = new HashSet<Integer>();
     	oldIds.addAll(objects.keySet());
     	
-    	String heldObject = "none";
-
-    	for (object_data_t newObj : newObjs.objects){
-    		String objID = newObj.id;
-    		InputLinkObject obj = objects.get(objID);
+    	for (ooi_msg_t newObj : newObjs.observations){
+    		Integer tagID = newObj.ooi_id;
+    		WorldObject obj = objects.get(tagID);
     		if(obj != null){
     			// Object is in our normal list, update it
-    			obj.update(newObj);
-    			oldIds.remove(objID);
+    			oldIds.remove(tagID);
     		} else {
-    			obj = objsToRemove.get(objID);
+    			obj = objsToRemove.get(tagID);
     			if(obj != null){
     				// Object was going to be removed
     				// Transfer it to the normal list and update
-    				objsToRemove.remove(objID);
-    				objects.put(objID, obj);
-    				obj.update(newObj);
-    				oldIds.remove(objID);
+    				objsToRemove.remove(tagID);
+    				oldIds.remove(tagID);
     			} else {
     				// It's a new object, add it to the map
-    				obj = new InputLinkObject(newObj);
-    				objects.put(objID, obj);
+    				obj = objectManager.getObject(tagID);
+    				if(obj == null){
+    					System.err.println("Bad object tag id from SOAR_OBJECTS: " + tagID.toString());
+    					continue;
+    				}
+    				obj.setHandle(nextID.toString());
+    				nextID++;
     			}
+    			objects.put(tagID, obj);
     		}
-    		
-    		for(classification_t cls : newObj.classifications){
-    			if(cls.category.equals("arm-status") && cls.name.equals("grabbed")){
-    				heldObject = objID;
-    			}
-    		}
+    		obj.update(newObj.z);
     	}
     	
-    	for(String oldID : oldIds){
-    		InputLinkObject oldObj = objects.get(oldID);
+    	for(Integer oldID : oldIds){
+    		WorldObject oldObj = objects.get(oldID);
     		objects.remove(oldID);
     		objsToRemove.put(oldID, oldObj);
     	}
-    	
-    	robot.setHeldObject(heldObject);
     }
     
 	/***************************
@@ -182,14 +182,14 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	if(objectsId == null){
     		objectsId = soarAgent.getAgent().GetInputLink().CreateIdWME("objects");
     	}
-    	for(InputLinkObject obj : objects.values()){
+    	for(WorldObject obj : objects.values()){
     		if(obj.isAdded()){
     			obj.updateWM();
     		} else {
     			obj.addToWM(objectsId);
     		}
     	}
-    	for(InputLinkObject obj : objsToRemove.values()){
+    	for(WorldObject obj : objsToRemove.values()){
     		obj.removeFromWM();
     	}
     }
@@ -197,10 +197,10 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     private void updateSVS(){
     	StringBuilder svsCommands = new StringBuilder();
     	svsCommands.append(robot.getSVSCommands());
-    	for(InputLinkObject obj : objects.values()){
+    	for(WorldObject obj : objects.values()){
     		svsCommands.append(obj.getSVSCommands());
     	}
-    	for(InputLinkObject obj : objsToRemove.values()){
+    	for(WorldObject obj : objsToRemove.values()){
     		svsCommands.append(obj.getSVSCommands());
     	}
     	if(svsCommands.length() > 0){
@@ -210,10 +210,10 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 
 	@Override
 	protected void onInitSoar() {
-		for(InputLinkObject obj : objects.values()){
+		for(WorldObject obj : objects.values()){
 			obj.removeFromWM();
 		}
-		for(InputLinkObject obj : objsToRemove.values()){
+		for(WorldObject obj : objsToRemove.values()){
 			obj.removeFromWM();
 		}
 		if(objectsId != null){

@@ -1,9 +1,9 @@
 robot 1 1
 
-object 8 1 255 0 0 3 shape soda1 color red1 category object
-object 1 9 100 100 0 3 shape book1 color brown1 category object
-object 8 9 0 0 255 3 shape book1 color blue1 category object
-object 1 1 50 50 50 3 shape stapler1 color black1 category object
+object 1 8 1 255 0 0 3 shape soda1 color red1 category object
+object 2 1 9 100 100 0 3 shape book1 color brown1 category object
+object 3 8 9 0 0 255 3 shape book1 color blue1 category object
+object 4 1 1 50 50 50 3 shape stapler1 color black1 category object
 
 waypoint 1 2 9 room
 waypoint 2 5 9 door

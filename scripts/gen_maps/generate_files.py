@@ -6,6 +6,7 @@ from parse_info_file import parse_info_file
 from create_world import create_world
 from create_tagdb import create_tagdb
 from create_soar_map import create_soar_map
+from create_object_file import create_object_file
 
 # Arg 1: stem of the info file
 
@@ -68,3 +69,13 @@ print("Writing soar map file: " + map_filename)
 create_soar_map(world_info, "temp.soar")
 shutil.copyfile("temp.soar", map_filename)
 print("Success!\n")
+
+
+# Write the object info file
+obj_filename = rosie_path + "/probcog/worlds/objects/" + world_stem + ".info"
+
+print("Writing object info file: " + obj_filename)
+create_object_file(world_info, "temp.objinfo")
+shutil.copyfile("temp.objinfo", obj_filename)
+print("Success!\n")
+

@@ -150,6 +150,7 @@ class ObjectInfo:
 		self.labels = []
 
 	def read_info(self, reader):
+		self.obj_id = int(reader.nextWord())
 		self.x = float(reader.nextWord())
 		self.y = float(reader.nextWord())
 		self.rgb = []

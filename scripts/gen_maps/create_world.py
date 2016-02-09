@@ -48,6 +48,8 @@ def printRobot(robot_info, fout):
 def printObject(obj_info, fout):
 	fout.write("\"probcog.sim.SimBoxObject\"\n")
 	fout.write("{\n")
+	fout.write("  # Object id\n")
+	fout.write("  " + str(obj_info.obj_id) + "\n")
 	fout.write("  # Object xyzrpy\n")
 	fout.write("  vec 6\n")
 	fout.write("  %(x)s %(y)s %(z)s %(roll)s %(pitch)s %(yaw)s\n" % \
@@ -61,10 +63,10 @@ def printObject(obj_info, fout):
 	fout.write("  vec 3\n")
 	fout.write("  %(r)d %(g)d %(b)d\n" % \
 			{ "r": obj_info.rgb[0], "g": obj_info.rgb[1], "b": obj_info.rgb[2] })
-	fout.write("  # Labels \n")
-	fout.write("  " + str(len(obj_info.cats)) + "\n")
-	for i in range(len(obj_info.cats)):
-		fout.write("  " + obj_info.cats[i] + "=" + obj_info.labels[i] + "\n")
+	#fout.write("  # Labels \n")
+	#fout.write("  " + str(len(obj_info.cats)) + "\n")
+	#for i in range(len(obj_info.cats)):
+	#	fout.write("  " + obj_info.cats[i] + "=" + obj_info.labels[i] + "\n")
 	fout.write("}\n")
 
 ##### WALLS ######

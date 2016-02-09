@@ -10,6 +10,8 @@ import java.util.Random;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
+import magic2.lcmtypes.ooi_msg_list_t;
+import magic2.lcmtypes.ooi_msg_t;
 import magic2.lcmtypes.tag_detection_list_t;
 import magic2.lcmtypes.tag_detection_t;
 import april.jmat.LinAlg;
@@ -42,9 +44,7 @@ public class SimObjectDetector implements LCMSubscriber{
 	protected SimRobot robot;
 	protected SimWorld world;
 	
-	protected HashMap<SimObjectPC, Integer> detectedObjects;
-	protected HashMap<Integer, SimObjectPC> objectLookup;
-	private Integer nextID = 1;
+	protected HashMap<Integer, SimObjectPC> detectedObjects;
 
     TagHistory tagHistory = new TagHistory();
     static Random classifierRandom = new Random(3611871);
@@ -54,8 +54,7 @@ public class SimObjectDetector implements LCMSubscriber{
 	public SimObjectDetector(SimRobot robot, SimWorld world){
 		this.robot = robot;
 		this.world = world;
-		this.detectedObjects = new HashMap<SimObjectPC, Integer>();
-		this.objectLookup = new HashMap<Integer, SimObjectPC>();
+		this.detectedObjects = new HashMap<Integer, SimObjectPC>();
 		
 		tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
 		
@@ -84,7 +83,7 @@ public class SimObjectDetector implements LCMSubscriber{
 			for(int p = 0; p < controlLaw.num_params; p++){
 				if(controlLaw.param_names[p].equals("object-handle")){
 					Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
-					SimObjectPC obj = objectLookup.get(objectId);
+					SimObjectPC obj = detectedObjects.get(objectId);
 					if(obj != null){
 						robot.pickUpObject(obj);
 					}
@@ -123,56 +122,51 @@ public class SimObjectDetector implements LCMSubscriber{
             	if (so instanceof SimObjectPC){
             		// Run through each SimObjectPC for a possible inclusion in the object list
             		SimObjectPC obj = (SimObjectPC)so;
+            		Integer objID = obj.getID();
             		// Check if the object is visible by the robot
             		if (robot.inViewRange(obj.getBoundingBox().xyzrpy)){
             			// A newly seen object (not seen in previous frame), give a new id and add to list
-            			if(!detectedObjects.containsKey(obj)){
-            				detectedObjects.put(obj, nextID);
-            				objectLookup.put(nextID, obj);
-            				nextID++;
+            			if(!detectedObjects.containsKey(objID)){
+            				detectedObjects.put(obj.getID(), obj);
             			}
             		} else {
-            			if (detectedObjects.containsKey(obj)){
-            				objectLookup.remove(detectedObjects.get(obj));
-            				detectedObjects.remove(obj);
+            			if (detectedObjects.containsKey(objID)){
+            				detectedObjects.remove(objID);
             			}
             		}
             	}
             }
             
-            SimObjectPC grabbed = robot.getGrabbedObject();
-            
-            soar_objects_t objects = new soar_objects_t();
+            ooi_msg_list_t objects = new ooi_msg_list_t();
             objects.utime = TimeUtil.utime();
-            objects.num_objects = detectedObjects.size();
-            objects.objects = new object_data_t[objects.num_objects];
+            objects.num_observations = detectedObjects.size();
+            objects.observations = new ooi_msg_t[objects.num_observations];
             int obj_index = 0;
-            for(Map.Entry<SimObjectPC, Integer> e : detectedObjects.entrySet()){
-            	object_data_t objData = new object_data_t();
+            for(Map.Entry<Integer, SimObjectPC> e : detectedObjects.entrySet()){
+            	ooi_msg_t objData = new ooi_msg_t();
             	objData.utime = TimeUtil.utime();
-            	objData.id = e.getValue().toString();
+            	objData.ooi_id = e.getValue().getID();
+            	objData.ooi_type = ooi_msg_t.TAG_POSE_QUAT;
+            	objData.local_pose = new magic2.lcmtypes.pose_t();
+            	objData.local_pose.utime = TimeUtil.utime();
+            	objData.local_pose.accel = new double[3];
+            	objData.local_pose.orientation = new double[4];
+            	objData.local_pose.pos = new double[3];
+            	objData.local_pose.rotation_rate = new double[3];
+            	objData.local_pose.vel = new double[3];
             	
-            	BoundingBox bbox = e.getKey().getBoundingBox();
-            	objData.xyzrpy = bbox.xyzrpy;
-            	objData.lenxyz = bbox.lenxyz;
-            	
-            	HashMap<String, String> classifications = e.getKey().getClassifications();
-            	if(e.getKey() == grabbed){
-            		classifications.put("arm-status", "grabbed");
+            	objData.z = new double[7];
+            	double[] pos = LinAlg.matrixToXyzrpy(e.getValue().getPose());
+            	for(int d = 0; d < 3; d++){
+            		objData.z[d] = pos[d];
             	}
-            	objData.num_classifications = classifications.size();
-            	objData.classifications = new classification_t[objData.num_classifications];
+            	// TODO: figure out this transform
             	
-            	int cl_index = 0;
-            	for(Map.Entry<String, String> cl : classifications.entrySet()){
-            		classification_t c = new classification_t();
-            		c.category = cl.getKey();
-            		c.name = cl.getValue();
-            		c.confidence = 1.0;
-            		objData.classifications[cl_index++] = c;
-            	}
+//            	BoundingBox bbox = e.getKey().getBoundingBox();
+//            	objData.xyzrpy = bbox.xyzrpy;
+//            	objData.lenxyz = bbox.lenxyz;
             	
-            	objects.objects[obj_index++] = objData;
+            	objects.observations[obj_index++] = objData;
             }
             LCM.getSingleton().publish("DETECTED_OBJECTS", objects);
         }
