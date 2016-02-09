@@ -16,7 +16,7 @@ class WorldInfo:
 	def __init__(self, reader):
 		self.robot = None
 		self.walls = []
-		self.waypoints = []
+		self.regions = []
 		self.edges = []
 		self.doors = []
 		self.objects = []
@@ -27,16 +27,14 @@ class WorldInfo:
 			itemtype = word
 			if itemtype == "robot":
 				self.robot = RobotInfo().read_info(reader)
-			elif itemtype == "waypoint":
-				self.waypoints.append(WaypointInfo().read_info(reader))
+			elif itemtype == "region":
+				self.regions.append(RegionInfo().read_info(reader))
 			elif itemtype == "edge":
 				self.edges.append(EdgeInfo().read_info(reader))
 			elif itemtype == "wall":
 				self.walls.append(WallInfo().read_info(reader))
 			elif itemtype == "wallchain":
 				self.walls.extend(parseWallChain(reader))
-			elif itemtype == "door":
-				self.doors.append(DoorInfo().read_info(reader))
 			elif itemtype == "object":
 				self.objects.append(ObjectInfo().read_info(reader))
 			word = reader.nextWord()
@@ -53,19 +51,32 @@ class RobotInfo:
 		self.y = float(reader.nextWord())
 		return self
 
-###### WAYPOINT ######
+###### REGION ######
 
-class WaypointInfo:
+class RegionInfo:
 	def __init__(self):
 		self.tag_id = 0
 		self.x = 0
 		self.y = 0
+		self.rot = 0
+		self.width = 0
+		self.length = 0
 		self.label = None
 
 	def read_info(self, reader):
 		self.tag_id = int(reader.nextWord())
+
+		# Note: this assumes all ids are less than 100 (and thus 2 characters)
+		#   Increase this to accomodate more node ids
+		self.soar_id = str(self.tag_id)
+		while len(self.soar_id) < 2:
+			self.soar_id = "0" + self.soar_id
+
 		self.x = float(reader.nextWord())
 		self.y = float(reader.nextWord())
+		self.rot = float(reader.nextWord())
+		self.width = float(reader.nextWord())
+		self.length = float(reader.nextWord())
 		label = reader.nextWord()
 		if label == "none":
 			self.label = None
@@ -79,10 +90,19 @@ class EdgeInfo:
 	def __init__(self):
 		self.start_wp = 0
 		self.end_wp = 0
+		self.has_door = False
 	
 	def read_info(self, reader):
 		self.start_wp = int(reader.nextWord())
 		self.end_wp = int(reader.nextWord())
+		label = reader.nextWord()
+		if label == "open":
+			self.has_door = False
+		elif label == "door":
+			self.has_door = True
+			self.door_x = float(reader.nextWord())
+			self.door_y = float(reader.nextWord())
+			self.door_rot = float(reader.nextWord())
 		return self
 
 ###### WALLS ######

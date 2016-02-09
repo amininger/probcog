@@ -506,11 +506,18 @@ public class SimRobot implements SimObject, LCMSubscriber
             lcm.publish("POSE", pose);
             lcm.publish("POSE_EST", pose);
 
+            double[] xyzrpy = LinAlg.quatPosToXyzrpy(drive.poseTruth.orientation, drive.poseTruth.pos);
             if(grabbedObject != null){
-            	double[][] robPose = LinAlg.xyzrpyToMatrix(LinAlg.quatPosToXyzrpy(drive.poseTruth.orientation, 
-            			drive.poseTruth.pos));
+            	double[][] robPose = LinAlg.xyzrpyToMatrix(xyzrpy);
     		    grabbedObject.setPose(robPose);
             }
+            
+            robot_info_t robotInfo = new robot_info_t();
+            robotInfo.utime = TimeUtil.utime();
+            robotInfo.xyzrpy = xyzrpy;
+            robotInfo.holding_object = (grabbedObject != null);
+            lcm.publish("ROBOT_INFO", robotInfo);
+
             //lcm.publish("POSE", drive.poseOdom);
             //lcm.publish("POSE_TRUTH", drive.poseTruth);
         }

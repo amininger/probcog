@@ -21,6 +21,7 @@ import magic2.lcmtypes.ooi_msg_t;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
 import probcog.lcmtypes.object_data_t;
+import probcog.lcmtypes.robot_info_t;
 import probcog.lcmtypes.tag_classification_list_t;
 import probcog.lcmtypes.tag_classification_t;
 import probcog.rosie.actuation.MobileActuationConnector;
@@ -49,7 +50,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	
     	objectManager = new WorldObjectManager(props);
     	
-    	robot = new Robot();
+    	robot = new Robot(props);
     	
     	// Setup LCM events
         lcm = LCM.getSingleton();
@@ -58,16 +59,14 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     @Override
     public void connect(){
     	super.connect();
-        lcm.subscribe("CLASSIFICATIONS.*", this);
-        lcm.subscribe("POSE", this);
+        lcm.subscribe("ROBOT_INFO", this);
         lcm.subscribe("DETECTED_OBJECTS", this);
     }
     
     @Override
     public void disconnect(){
     	super.disconnect();
-        lcm.unsubscribe("CLASSIFICATIONS.*", this);
-        lcm.unsubscribe("POSE", this);
+        lcm.unsubscribe("ROBOT_INFO", this);
         lcm.unsubscribe("DETECTED_OBJECTS", this);
     }
 
@@ -84,12 +83,9 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
 		try {
-			if(channel.startsWith("CLASSIFICATIONS")){
-				tag_classification_list_t tcl = new tag_classification_list_t(ins);
-				handleClassificationsMessage(tcl);
-			} else if (channel.startsWith("POSE")){
-				pose_t p = new pose_t(ins);
-				handlePoseMessage(p);
+			if (channel.startsWith("ROBOT_INFO")){
+				robot_info_t robotInfo = new robot_info_t(ins);
+				robot.update(robotInfo);
 			} else if(channel.startsWith("DETECTED_OBJECTS")){
 				ooi_msg_list_t newObjs = new ooi_msg_list_t(ins);
 				processNewObjectMessage(newObjs);
@@ -98,15 +94,6 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-    }
-    
-    private void handleClassificationsMessage(tag_classification_list_t tcl){
-    	robot.updateClassifications(tcl);
-    }
-    
-    private void handlePoseMessage(pose_t pose){
-    	double[] xyzrpy = LinAlg.quatPosToXyzrpy(pose.orientation, pose.pos);
-    	robot.updatePose(xyzrpy);
     }
 
     private void processNewObjectMessage(ooi_msg_list_t newObjs){

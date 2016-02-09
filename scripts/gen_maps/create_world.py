@@ -19,8 +19,8 @@ def create_world(world_info, world_filename):
 	for door in world_info.doors:
 		printDoor(door, fout)
 
-	for waypoint in world_info.waypoints:
-		printWaypoint(waypoint, fout)
+	for region in world_info.regions:
+		printRegion(region, fout)
 
 	fout.close()
 
@@ -53,7 +53,7 @@ def printObject(obj_info, fout):
 	fout.write("  # Object xyzrpy\n")
 	fout.write("  vec 6\n")
 	fout.write("  %(x)s %(y)s %(z)s %(roll)s %(pitch)s %(yaw)s\n" % \
-			{ "x": pNum(obj_info.x), "y": pNum(obj_info.y), "z": pNum(0), \
+			{ "x": pNum(obj_info.x), "y": pNum(obj_info.y), "z": pNum(0.25), \
 			  "roll": pNum(0), "pitch": pNum(0), "yaw": pNum(0) })
 	fout.write("  # Length xyz\n")
 	fout.write("  vec 3\n")
@@ -84,18 +84,21 @@ def printWall(wall_info, fout):
 			{ "x2": pNum(wall_info.x2), "y2": pNum(wall_info.y2) })
 	fout.write("}\n")
 
-##### WAYPOINTS #####
+##### REGIONS #####
 
-def printWaypoint(wp_info, fout):
-	fout.write("\"probcog.sim.SimAprilTag\"\n")
+def printRegion(region, fout):
+	fout.write("\"probcog.sim.SimRegion\"\n")
 	fout.write("{\n")
+	fout.write("  # Region ID\n")
+	fout.write("  " + str(region.tag_id) + "\n")
 	fout.write("  # Tag Position\n")
 	fout.write("  vec 6\n")
 	fout.write("  %(x)s %(y)s %(z)s %(roll)s %(pitch)s %(yaw)s\n" % \
-			{ "x": pNum(wp_info.x), "y": pNum(wp_info.y), "z": pNum(0.01), \
-			  "roll": pNum(0), "pitch": pNum(0), "yaw": pNum(0) })
-	fout.write("  # Tag ID\n")
-	fout.write("  " + str(wp_info.tag_id) + "\n")
+			{ "x": pNum(region.x), "y": pNum(region.y), "z": pNum(0.01), \
+			  "roll": pNum(0), "pitch": pNum(0), "yaw": pNum(region.rot) })
+	fout.write("  # Width (dx) and Length (dy)\n")
+	fout.write("  " + str(region.width) + "\n")
+	fout.write("  " + str(region.length) + "\n")
 	fout.write("}\n")
 
 ##### DOOR #####
@@ -114,5 +117,4 @@ def printDoor(door_info, fout):
 	fout.write("  # Open or closed\n")
 	fout.write("  " + ("open" if door_info.open else "closed") + "\n")
 	fout.write("}\n")
-
 

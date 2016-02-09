@@ -7,6 +7,7 @@ from create_world import create_world
 from create_tagdb import create_tagdb
 from create_soar_map import create_soar_map
 from create_object_file import create_object_file
+from create_map_info import create_map_info
 
 # Arg 1: stem of the info file
 
@@ -16,8 +17,10 @@ if len(sys.argv) <= 1:
 	print("Example: given the stem of 'simple_office'")
 	print("  Input File : map_info/simple_office.info")
 	print("  Output File: rosie-project/probcog/worlds/simple_office.world")
-	print("  Output File: rosie-project/probcog/config/simple_office.tagdb")
+	#print("  Output File: rosie-project/probcog/config/simple_office.tagdb")
 	print("  Output File: rosie-project/rosie/agent/_agent/manage-world-state/world/maps/simple_office.soar")
+	print("  Output File: rosie-project/probcog/worlds/objects/simple_office.info")
+	print("  Output File: rosie-project/probcog/worlds/maps/simple_office.map")
 	sys.exit(0)
 
 world_stem = sys.argv[1]
@@ -53,13 +56,13 @@ shutil.copyfile("temp.world", world_filename)
 print("Success!\n")
 
 
-# Write the tagdb file
-tagdb_filename = rosie_path + "/probcog/config/" + world_stem + ".tagdb"
-
-print("Writing tagdb file: " + tagdb_filename)
-create_tagdb(world_info, "temp.tagdb")
-shutil.copyfile("temp.tagdb", tagdb_filename)
-print("Success!\n")
+## Write the tagdb file
+#tagdb_filename = rosie_path + "/probcog/config/" + world_stem + ".tagdb"
+#
+#print("Writing tagdb file: " + tagdb_filename)
+#create_tagdb(world_info, "temp.tagdb")
+#shutil.copyfile("temp.tagdb", tagdb_filename)
+#print("Success!\n")
 
 
 # Write the soar map file
@@ -79,3 +82,11 @@ create_object_file(world_info, "temp.objinfo")
 shutil.copyfile("temp.objinfo", obj_filename)
 print("Success!\n")
 
+
+# Write the map info file
+map_filename = rosie_path + "/probcog/worlds/maps/" + world_stem + ".map"
+
+print("Writing map info file: " + map_filename)
+create_map_info(world_info, "temp.map")
+shutil.copyfile("temp.map", map_filename)
+print("Success!\n")

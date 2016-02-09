@@ -4,13 +4,13 @@ def create_soar_map(world_info, map_filename):
 	nodes = {}
 	edges = []
 
-	for wp in world_info.waypoints:
-		node = Node(wp)
+	for region in world_info.regions:
+		node = Node(region)
 		nodes[node.id_num] = node
 	
 	for edge in world_info.edges:
-		edges.append(Edge(edge.start_wp, edge.end_wp, 1))
-		edges.append(Edge(edge.end_wp, edge.start_wp, -1))
+		edges.append(Edge(edge, True))
+		edges.append(Edge(edge, False))
 
 	fout = open(map_filename, 'w')
 
@@ -52,21 +52,16 @@ def create_soar_map(world_info, map_filename):
 	fout.close()
 
 class Node:
-	def __init__(self, wp_info):
-		self.x = wp_info.x
-		self.y = wp_info.y
+	def __init__(self, region):
+		self.x = str(region.x)
+		self.y = str(region.y)
 
-		self.id_num = wp_info.tag_id
-		self.id_str = str(self.id_num)
-
-		# Note: this assumes all ids are less than 100 (and thus 2 characters)
-		#   Increase this to accomodate more node ids
-		while len(self.id_str) < 2:
-			self.id_str = "0" + self.id_str
+		self.id_num = region.tag_id
+		self.id_str = region.soar_id
 
 		self.name = "wp" + self.id_str
 		self.var = "<" + self.name + ">"
-		self.classification = wp_info.label
+		self.classification = region.label
 	
 	def print(self, out):
 		out.write('  (%(var)s ^handle %(hand)s ^handle-int %(id_num)d ^x %(x)s ^y %(y)s ^map <building>)\n' % \
@@ -74,10 +69,20 @@ class Node:
 
 
 class Edge:
-	def __init__(self, start, end, side):
-		self.start = start
-		self.end = end
-		self.side = side
+	def __init__(self, edge, forward):
+		if forward:
+			self.start = edge.start_wp
+			self.end = edge.end_wp
+			self.side = 1
+		else:
+			self.start = edge.end_wp
+			self.end = edge.start_wp
+			self.side = -1
+		self.has_door = edge.has_door
+		if edge.has_door:
+			self.door_x = str(edge.door_x)
+			self.door_y = str(edge.door_y)
+			self.door_rot = str(edge.door_rot)
 	
 	def print(self, nodes, fout):
 		start = nodes[self.start]
@@ -86,6 +91,11 @@ class Edge:
 
 		fout.write('   (%(start)s ^edge %(edge)s)\n' % \
 				{ "start": start.var, "edge": self.var })
-		fout.write('    (%(edge)s ^start %(start)s ^end %(end)s ^wall-side %(side)s)\n' % \
+		fout.write('    (%(edge)s ^start %(start)s ^end %(end)s ^wall-side %(side)s\n' % \
 				{ "edge": self.var, "start": start.var, "end": end.var, "side": self.side})
-
+		if self.has_door:
+			fout.write('         ^doorway true ^dx %(x)s ^dy %(y)s ^dr %(r)s)\n' % \
+					{ "x": self.door_x, "y": self.door_y, "r": self.door_rot })
+		else:
+			fout.write('         ^doorway false)\n')
+				

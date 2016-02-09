@@ -1,5 +1,9 @@
 package probcog.rosie.perception;
 
+import java.util.HashSet;
+import java.util.Properties;
+
+import probcog.lcmtypes.robot_info_t;
 import probcog.lcmtypes.tag_classification_list_t;
 import probcog.lcmtypes.tag_classification_t;
 import sml.Identifier;
@@ -20,7 +24,8 @@ public class Robot implements ISoarObject {
 	private double[] rot = new double[]{ 0.0, 0.0, 0.0 };
 	private Pose pose;
 	
-	private boolean needsUpdate = true;
+	private boolean updatePose = true;
+	private boolean updateWaypoint = true;
 	
 	private StringBuilder svsCommands = new StringBuilder();
 	
@@ -29,44 +34,55 @@ public class Robot implements ISoarObject {
 	private StringWME movingState;
 	private StringWME heldObject;
 	
-	private tag_classification_list_t curTagClassifications = null;
-	private boolean newClassifications = false;
-
+	private Region curRegion = null;
 	private Identifier waypointId = null;
-	private int curWaypoint = -1;
 	
-	public Robot(){
+	private MapInfo mapInfo;
+	
+	public Robot(Properties props){
 		movingState = new StringWME("moving-state", "stopped");
-		heldObject = new StringWME("held-object", "none");
+		heldObject = new StringWME("holding-object", "false");
 		pose = new Pose();
+		mapInfo = new MapInfo(props);
 	}
 	
 	public void setHeldObject(String heldObject){
 		this.heldObject.setValue(heldObject);
 	}
 	
-	public void updatePose(double[] xyzrpy){
+	public void update(robot_info_t info){
+		heldObject.setValue(info.holding_object ? "true" : "false");
 		for(int d = 0; d < 3; d++){
-			if(Math.abs(pos[d] - xyzrpy[d]) > 0.02){
-				pos[d] = xyzrpy[d];
-				needsUpdate = true;
+			if(Math.abs(pos[d] - info.xyzrpy[d]) > 0.02){
+				pos[d] = info.xyzrpy[d];
+				updatePose = true;
 			}
 		}
 		for(int d = 0; d < 0; d++){
-			if(Math.abs(rot[d] - xyzrpy[3+d]) > 0.05){
-				rot[d] = xyzrpy[3+d];
-				needsUpdate = true;
+			if(Math.abs(rot[d] - info.xyzrpy[3+d]) > 0.05){
+				rot[d] = info.xyzrpy[3+d];
+				updatePose = true;
 			}
 		}
-		if(needsUpdate){
-			pose.updateWithArray(xyzrpy);
+		if(updatePose){
+			pose.updateWithArray(info.xyzrpy);
+		}
+		
+		HashSet<Region> regions = mapInfo.getRegions(pos);
+		Region closest = null;
+		Double distance = Double.MAX_VALUE;
+		for(Region r : regions){
+			double d = r.getDistanceSq(pos);
+			if(d < distance){
+				distance = d;
+				closest = r;
+			}
+		}
+		if(curRegion != closest){
+			curRegion = closest;
+			updateWaypoint = true;
 		}
 	}
-	
-	 public void updateClassifications(tag_classification_list_t newTagClassifications){
-		 curTagClassifications = newTagClassifications;
-		 newClassifications = true;
-	 }
 	 
 	 public void updateMovingState(String newMovingState){
 		 movingState.setValue(newMovingState);
@@ -130,49 +146,33 @@ public class Robot implements ISoarObject {
 		if(!added){
 			return;
 		}
-		pose.updateWM();
+
 		movingState.updateWM();
 		heldObject.updateWM();
-		if(needsUpdate){
+
+		if(updatePose){
+			pose.updateWM();
 			svsCommands.append(SVSCommands.changePos("robot", pos));
 			svsCommands.append(SVSCommands.changeRot("robot", rot));
-			needsUpdate = false;
+			updatePose = false;
 		}
-		if(newClassifications){
+		
+		if(updateWaypoint){
 			updateWaypointInfo();
-			newClassifications = false;
+			updateWaypoint = false;
 		}
 	}
 	
 	private void updateWaypointInfo(){
-    	int closestWaypoint = -1;
-    	double closestDistance = Double.MAX_VALUE;
-    	for (tag_classification_t c : curTagClassifications.classifications){
-    		if (c.range < closestDistance){
-    			closestWaypoint = c.tag_id;
-    			closestDistance = c.range;
-    		}
-    	}
-   		if (closestWaypoint != curWaypoint && waypointId != null){
-   			waypointId.DestroyWME();
-   			waypointId = null;
+		if(waypointId != null){
+			waypointId.DestroyWME();
+			waypointId = null;
    		}
-   		curWaypoint = closestWaypoint;
-   		if (curWaypoint == -1){
-   			return;
-   		}
-   		if (waypointId == null){
-    		waypointId = selfId.CreateIdWME("current-waypoint");
-   		}
-   		for (tag_classification_t c : curTagClassifications.classifications){
-   			if (c.tag_id == closestWaypoint){
-   				if (c.name.startsWith("wp")){
-   					SoarUtil.updateStringWME(waypointId, "waypoint-handle", c.name);
-   				} else {
-   					SoarUtil.updateStringWME(waypointId, "classification", c.name);
-   				}
-   			}
-   		}
+		if(curRegion != null){
+			waypointId = selfId.CreateIdWME("current-waypoint");
+			waypointId.CreateStringWME("waypoint-handle", curRegion.id);
+			waypointId.CreateStringWME("classification", curRegion.label);
+		}
 	}
 
 	@Override
