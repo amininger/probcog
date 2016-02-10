@@ -68,9 +68,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         public void run(double dt)
         {
             laser_t laser = laserCache.get();
-            if (laser == null) {
-                return;
-            }
+            //if (laser == null) {
+            //    return;
+            //}
 
             grid_map_t gm = gmCache.get();
             if (gm == null) {

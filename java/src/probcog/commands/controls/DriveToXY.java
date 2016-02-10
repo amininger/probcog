@@ -32,6 +32,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     static final double HZ = 100;
     static final double LOOKAHEAD_X_M = 0.2;
     static final double TURN_IN_PLACE_RAD = Math.toRadians(90);
+    static final double STOP_DIST = 0.25;
 
     // Stop when we are oscillating
     double alpha = 0.2;
@@ -57,6 +58,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     boolean sim = false;
+    boolean stopped = false;
+
+    // RobotDrive state tracking
+    byte robotid = 3;
+    static byte robotDriveID = 0;
 
     // The goal target as a global coordinate
     double[] globalXYT;
@@ -84,8 +90,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             params.gm = gm;
             diff_drive_t dd = drive(params);
 
-            dd.utime = TimeUtil.utime();
-            lcm.publish(driveChannel, dd);
+            if (dd != null) {
+                dd.utime = TimeUtil.utime();
+                lcm.publish(driveChannel, dd);
+            }
         }
     }
 
@@ -100,6 +108,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         if (rid == null)
             rid = "3";
         mapChannel += "_"+rid;
+        this.robotid = Byte.valueOf(rid);
 
         assert (parameters.containsKey("x") && parameters.containsKey("y"));
         globalXYT = new double[] { parameters.get("x").getDouble(),
@@ -162,6 +171,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
      **/
     public void setRunning(boolean run)
     {
+        stopped = !run;
         if (run) {
             lcm.subscribe(mapChannel, this);
             lcm.subscribe(poseChannel, this);
@@ -172,6 +182,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             lcm.unsubscribe(l2gChannel, this);
         }
         tasks.setRunning(run);
+        if (!run) {
+            sendNullCmd();
+        }
     }
 
     /** Get the name of this control law. Mostly useful for debugging purposes.
@@ -227,8 +240,68 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         return false;
     }
 
-    /** Get a drive command from the CL. */
     public diff_drive_t drive(DriveParams params)
+    {
+        if (sim) {
+            return driveSim(params);
+        } else {
+            return driveReal(params);
+        }
+    }
+
+    synchronized public void sendNullCmd()
+    {
+        magic2.lcmtypes.robot_command_t msg =
+            new magic2.lcmtypes.robot_command_t();
+        msg.robotid = robotid;
+        msg.task = new magic2.lcmtypes.robot_task_t();
+        msg.task.task = magic2.lcmtypes.robot_task_t.TASK_FREEZE;
+        msg.taskid = robotDriveID++;
+
+        msg.ndparams = 0;
+        msg.niparams = 0;
+
+        lcm.publish("CMDS_STOP", msg);
+        lcm.publish("CMDS_STOP", msg);
+        lcm.publish("CMDS_STOP", msg);
+    }
+
+    /** Marshal data to robotDrive from magic2 */
+    synchronized public diff_drive_t driveReal(DriveParams params)
+    {
+        if (stopped)
+            return null;
+
+        // Convert global goal to robot local goal
+        double[] goalXYT;
+        synchronized (l2g) {
+            goalXYT = LinAlg.xytInvMul31(l2g, globalXYT);
+        }
+
+        magic2.lcmtypes.robot_command_t msg =
+            new magic2.lcmtypes.robot_command_t();
+        //msg.utime = TimeUtil.utime();
+        msg.robotid = robotid;
+        msg.task = new magic2.lcmtypes.robot_task_t();
+        msg.task.task = magic2.lcmtypes.robot_task_t.TASK_GOTO_LOCAL;
+        msg.taskid = robotDriveID++;
+
+        msg.ndparams = 4;
+        msg.dparams = new double[] {goalXYT[0],
+                                    goalXYT[1],
+                                    goalXYT[2],
+                                    STOP_DIST};
+
+        msg.niparams = 1;
+        msg.iparams = new byte[] {0};
+
+            lcm.publish("CMDS", msg);
+
+        return null;
+    }
+
+    /** Get a drive command from the CL. */
+    public diff_drive_t driveSim(DriveParams params)
     {
         diff_drive_t dd = new diff_drive_t();
         dd.left_enabled = dd.right_enabled = true;
