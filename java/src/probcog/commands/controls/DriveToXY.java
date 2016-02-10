@@ -53,12 +53,14 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     LCM lcm = LCM.getSingleton();
     String mapChannel = Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA");
     String poseChannel = Util.getConfig().getString("robot.lcm.pose_channel", "POSE");
+    String l2gChannel = Util.getConfig().getString("robot.lcm.l2g_channel", "L2G");
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     boolean sim = false;
 
     // The goal target as a global coordinate
     double[] globalXYT;
+    double[] l2g = new double[3];
 
     // Alpha-beta filtering for history
     diff_drive_t lastDrive = new diff_drive_t();
@@ -94,6 +96,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
     public DriveToXY(HashMap<String, TypedValue> parameters)
     {
+        String rid = System.getenv("ROBOT_ID");
+        if (rid == null)
+            rid = "3";
+        mapChannel += "_"+rid;
+
         assert (parameters.containsKey("x") && parameters.containsKey("y"));
         globalXYT = new double[] { parameters.get("x").getDouble(),
                                    parameters.get("y").getDouble(),
@@ -140,6 +147,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         } else if (mapChannel.equals(channel)) {
             robot_map_data_t rmd = new robot_map_data_t(ins);
             gmCache.put((grid_map_t)rmd.gridmap.copy(), TimeUtil.utime());
+        } else if (l2gChannel.equals(channel)) {
+            lcmdoubles_t l2g_ = new lcmdoubles_t(ins);
+            assert (l2g_.ndata == 3);
+            synchronized (l2g) {
+                System.arraycopy(l2g_.data, 0, l2g, 0, 3);
+            }
         }
     }
 
@@ -152,9 +165,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         if (run) {
             lcm.subscribe(mapChannel, this);
             lcm.subscribe(poseChannel, this);
+            lcm.subscribe(l2gChannel, this);
         } else {
             lcm.unsubscribe(mapChannel, this);
             lcm.unsubscribe(poseChannel, this);
+            lcm.unsubscribe(l2gChannel, this);
         }
         tasks.setRunning(run);
     }
@@ -269,9 +284,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         double[] poseXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                      params.pose.pos));
         // Convert global goal to robot local goal
-        // XXX Involves having SLAM working. For now, assuming matching
-        // coordinate frames
-        double[] goalXYT = globalXYT;
+        double[] goalXYT;
+        synchronized (l2g) {
+            goalXYT = LinAlg.xytInvMul31(l2g, globalXYT);
+        }
 
         // Medium drive speed
         double driveGain = 0.0;

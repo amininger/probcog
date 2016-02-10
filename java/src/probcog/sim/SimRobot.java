@@ -36,7 +36,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     static final int ROBOT_MAP_DATA_HZ = 10;
     long lastMapData = 0;
 
-    int ROBOT_ID = 6;
+    int ROBOT_ID = 3;
     SimWorld sw;
     DifferentialDrive drive;
 
@@ -398,7 +398,7 @@ public class SimRobot implements SimObject, LCMSubscriber
                 rmd.latlon_deg = new double[] {Double.NaN, Double.NaN};
                 rmd.xyt_local = xyt;
 
-                lcm.publish(Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA"), rmd);
+                lcm.publish(Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA")+"_"+ROBOT_ID, rmd);
 
                 lastMapData = laser.utime;
             }
@@ -607,16 +607,26 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         public void run(double dt)
         {
-            pose_t pose;
-            if (!perfectPose) {
-                pose = LCMUtil.a2mPose(drive.poseOdom);
-            } else {
-                pose = LCMUtil.a2mPose(drive.poseTruth);
-            }
-            lcm.publish("POSE", pose);
-            lcm.publish("POSE_EST", pose);
-            //lcm.publish("POSE", drive.poseOdom);
-            //lcm.publish("POSE_TRUTH", drive.poseTruth);
+            //pose_t pose;
+            //if (!perfectPose) {
+            //    pose = LCMUtil.a2mPose(drive.poseOdom);
+            //} else {
+            //    pose = LCMUtil.a2mPose(drive.poseTruth);
+            //}
+            drive.poseOdom.utime = TimeUtil.utime();
+            lcm.publish("POSE", drive.poseOdom);
+
+            // Compute L2G
+            double[] gxyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
+                                                                      drive.poseTruth.pos));
+            double[] lxyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
+                                                                      drive.poseOdom.pos));
+            double[] l2g_ = getL2G();
+            lcmdoubles_t l2g = new lcmdoubles_t();
+            l2g.utime = drive.poseOdom.utime;
+            l2g.ndata = 3;
+            l2g.data = l2g_;
+            lcm.publish("L2G", l2g);
         }
     }
 

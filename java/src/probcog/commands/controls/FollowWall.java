@@ -434,6 +434,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     public FollowWall(Map<String, TypedValue> parameters)
     {
         //System.out.println("FOLLOW WALL");
+        String rid = System.getenv("ROBOT_ID");
+        if (rid == null)
+            rid = "3";
+        mapChannel += "_"+rid;
 
         assert (parameters.containsKey("side"));
         if (parameters.get("side").getInt() < 0)
