@@ -156,9 +156,9 @@ public class SimObjectDetector implements LCMSubscriber{
             	objData.local_pose.vel = new double[3];
             	
             	objData.z = new double[7];
-            	double[] pos = LinAlg.matrixToXyzrpy(e.getValue().getPose());
-            	for(int d = 0; d < 3; d++){
-            		objData.z[d] = pos[d];
+            	double[] pose = LinAlg.matrixToXyzrpy(e.getValue().getPose());
+            	for(int d = 0; d < 6; d++){
+            		objData.z[d] = pose[d];
             	}
             	// TODO: figure out this transform
             	

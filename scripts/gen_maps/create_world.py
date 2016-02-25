@@ -53,12 +53,12 @@ def printObject(obj_info, fout):
 	fout.write("  # Object xyzrpy\n")
 	fout.write("  vec 6\n")
 	fout.write("  %(x)s %(y)s %(z)s %(roll)s %(pitch)s %(yaw)s\n" % \
-			{ "x": pNum(obj_info.x), "y": pNum(obj_info.y), "z": pNum(0.25), \
-			  "roll": pNum(0), "pitch": pNum(0), "yaw": pNum(0) })
+			{ "x": pNum(obj_info.vals[0]), "y": pNum(obj_info.vals[1]), "z": pNum(obj_info.vals[2]), \
+			  "roll": pNum(obj_info.vals[3]), "pitch": pNum(obj_info.vals[4]), "yaw": pNum(obj_info.vals[5]) })
 	fout.write("  # Length xyz\n")
 	fout.write("  vec 3\n")
 	fout.write("  %(x)s %(y)s %(z)s\n" % \
-			{ "x": pNum(0.5), "y": pNum(0.5), "z": pNum(0.5) })
+			{ "x": pNum(obj_info.vals[6]), "y": pNum(obj_info.vals[7]), "z": pNum(obj_info.vals[8]) })
 	fout.write("  # Color rgb (int 0-255)\n")
 	fout.write("  vec 3\n")
 	fout.write("  %(r)d %(g)d %(b)d\n" % \

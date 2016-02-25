@@ -20,18 +20,19 @@ public class WorldObject implements ISoarObject {
 	private boolean updatePos = true;
 	private double[] pos = new double[3];
 	
-//	private boolean updateRot = true;
-//	private double[] rot = new double[3];
-//	
+	private boolean updateRot = true;
+	private double[] rot = new double[3];
+	
 //	private boolean updateScale = true;
-//	private double[] scale = new double[3];
+	private double[] scale = new double[3];
 	
 	private StringBuilder svsCommands;
 	
 	private boolean changed = false;
 	
-	public WorldObject(Integer tagID, HashMap<String, String> classifications){
+	public WorldObject(Integer tagID, double[] scale, HashMap<String, String> classifications){
 		this.tagID = tagID;
+		this.scale = scale;
 		this.handle = new StringWME("handle", "none");
 
 		this.classifications = new HashMap<String, StringWME>();
@@ -58,18 +59,18 @@ public class WorldObject implements ISoarObject {
 		changed = true;
 	}
 	
-	public synchronized void update(double[] pos){
+	public synchronized void update(double[] pose){
 		for(int d = 0; d < 3; d++){
 			// Only update pos if it has changed by a significant amount
-			if(Math.abs(this.pos[d] - pos[d]) > 0.02){
-				this.pos[d] = pos[d];
+			if(Math.abs(this.pos[d] - pose[d]) > 0.02){
+				this.pos[d] = pose[d];
 				updatePos = true;
 			}
-//			// Only update rot if it has changed by a significant amount
-//			if(Math.abs(rot[d] - newData.xyzrpy[3+d]) > 0.05){
-//				rot[d] = newData.xyzrpy[3+d];
-//				updateRot = true;
-//			}
+			// Only update rot if it has changed by a significant amount
+			if(Math.abs(rot[d] - pose[3+d]) > 0.05){
+				rot[d] = pose[3+d];
+				updateRot = true;
+			}
 //			// Only update scale if it was changed by a significant amount
 //			if(Math.abs(scale[d] - newData.lenxyz[d]) > 0.01){
 //				scale[d] = newData.lenxyz[d];
@@ -108,9 +109,9 @@ public class WorldObject implements ISoarObject {
     		e.getValue().addToWM(classificationsID);
     	}
     	
-    	double[] defaultRot = new double[]{ 0.0, 0.0, 0.0 };
-    	double[] defaultScale = new double[]{ .1, .1, .1 };
-    	svsCommands.append(SVSCommands.addBox(handle.getValue(), pos, defaultRot, defaultScale));
+//    	double[] defaultRot = new double[]{ 0.0, 0.0, 0.0 };
+//    	double[] defaultScale = new double[]{ .5, .5, .5 };
+    	svsCommands.append(SVSCommands.addBox(handle.getValue(), pos, rot, scale));
     	svsCommands.append(SVSCommands.addTag(handle.getValue(), "object-source", "perception"));
     	for (StringWME wme : classifications.values()){
     		svsCommands.append(SVSCommands.addTag(handle.getValue(), wme.getAttribute(), wme.getValue()));
@@ -129,11 +130,10 @@ public class WorldObject implements ISoarObject {
    			svsCommands.append(SVSCommands.changePos(handle.getValue(), pos));
    			updatePos = false;
     	}
-    	// For now, we don't update rotation/scale
-//   		if(updateRot){
-//   			svsCommands.append(SVSCommands.changeRot(handle.getValue(), rot));
-//   			updateRot = false;
-//   		}
+   		if(updateRot){
+   			svsCommands.append(SVSCommands.changeRot(handle.getValue(), rot));
+   			updateRot = false;
+   		}
 //   		if(updateScale){
 //   			svsCommands.append(SVSCommands.changeScale(handle.getValue(), scale));
 //   			updateScale = false;

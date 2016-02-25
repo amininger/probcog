@@ -78,6 +78,6 @@ public class Region{
 		double localTheta = theta - rot;
 		double xproj = dist * Math.cos(localTheta);
 		double yproj = dist * Math.sin(localTheta);
-		return (Math.abs(xproj) < width && Math.abs(yproj) < length);
+		return (Math.abs(xproj) < width/2 && Math.abs(yproj) < length/2);
 	}
 }

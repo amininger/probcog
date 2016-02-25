@@ -54,22 +54,31 @@ public class WorldObjectManager {
 	
 	private void parseObjectInfo(String info){
 		String[] params = info.split(" ");
-		if(params.length < 2){
+		if(params.length < 5){
 			return;
 		}
+		// Param 1 : id
 		Integer tagID = new Integer(params[0]);
+
 		if(objects.containsKey(tagID)){
 			System.err.println("Trying to add multiple objects for tag id " + tagID.toString());
 			return;
 		}
-		Integer numClasses = new Integer(params[1]);
+
+		// Param 2-4: size
+		double[] size = new double[]{
+				new Double(params[1]), new Double(params[2]), new Double(params[3])
+		};
+		
+		// Param 4: num classes
+		Integer numClasses = new Integer(params[4]);
 		HashMap<String, String> classifications = new HashMap<String, String>();
 		for(int i = 0; i < numClasses; i++){
-			String name = params[2*i+2];
-			String value = params[2*i+3];
+			String name = params[2*i+5];
+			String value = params[2*i+6];
 			classifications.put(name, value);
 		}
-		objects.put(tagID, new WorldObject(tagID, classifications));
+		objects.put(tagID, new WorldObject(tagID, size, classifications));
 		System.out.println("Added object " + tagID.toString());
 		System.out.println("  " + classifications.toString());
 	}

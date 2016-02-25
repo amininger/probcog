@@ -163,16 +163,15 @@ class DoorInfo:
 
 class ObjectInfo:
 	def __init__(self):
-		self.x = 0
-		self.y = 0
+		self.vals = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 		self.rgb = [ 0, 0, 0 ]
 		self.cats = []
 		self.labels = []
 
 	def read_info(self, reader):
 		self.obj_id = int(reader.nextWord())
-		self.x = float(reader.nextWord())
-		self.y = float(reader.nextWord())
+		for i in range(0, 9):
+			self.vals[i] = float(reader.nextWord())
 		self.rgb = []
 		self.rgb.append(int(reader.nextWord()))
 		self.rgb.append(int(reader.nextWord()))
