@@ -9,11 +9,13 @@ import probcog.lcmtypes.classification_t;
 import probcog.lcmtypes.object_data_t;
 import sml.Identifier;
 import edu.umich.rosie.soar.ISoarObject;
+import edu.umich.rosie.soar.IntWME;
 import edu.umich.rosie.soar.SVSCommands;
 import edu.umich.rosie.soar.StringWME;
 
 public class WorldObject implements ISoarObject {
 	private Integer tagID;
+	private IntWME tagWME;
 	private StringWME handle;
 	private HashMap<String, StringWME> classifications;
 	
@@ -34,6 +36,7 @@ public class WorldObject implements ISoarObject {
 		this.tagID = tagID;
 		this.scale = scale;
 		this.handle = new StringWME("handle", "none");
+		this.tagWME = new IntWME("tag-id", (long)tagID);
 
 		this.classifications = new HashMap<String, StringWME>();
 		for(Map.Entry<String, String> e : classifications.entrySet()){
@@ -46,12 +49,20 @@ public class WorldObject implements ISoarObject {
 		return tagID;
 	}
 	
+	public double[] getPos(){
+		return pos;
+	}
+	
 	public synchronized void addClassification(String name, String value){
 		if(classifications.containsKey(name)){
 			return;
 		}
 		classifications.put(name, new StringWME(name, value));
 		changed = true;
+	}
+	
+	public String getHandle(){
+		return handle.getValue();
 	}
 	
 	public synchronized void setHandle(String handle){
@@ -104,6 +115,7 @@ public class WorldObject implements ISoarObject {
     	
     	rootID = parentID.CreateIdWME("object");
     	handle.addToWM(rootID);
+    	tagWME.addToWM(rootID);
     	classificationsID = rootID.CreateIdWME("classifications");
     	for (Map.Entry<String, StringWME> e : classifications.entrySet()){
     		e.getValue().addToWM(classificationsID);
@@ -163,6 +175,7 @@ public class WorldObject implements ISoarObject {
     	}
     	classificationsID = null;
     	handle.removeFromWM();
+    	tagWME.removeFromWM();
     	rootID.DestroyWME();
     	rootID = null;
     	

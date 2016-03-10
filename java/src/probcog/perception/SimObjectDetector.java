@@ -81,7 +81,7 @@ public class SimObjectDetector implements LCMSubscriber{
 	private void handleSoarCommand(control_law_t controlLaw){
 		if(controlLaw.name.equals("pick-up")){
 			for(int p = 0; p < controlLaw.num_params; p++){
-				if(controlLaw.param_names[p].equals("object-handle")){
+				if(controlLaw.param_names[p].equals("object-id")){
 					Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
 					SimObjectPC obj = detectedObjects.get(objectId);
 					if(obj != null){
@@ -124,7 +124,7 @@ public class SimObjectDetector implements LCMSubscriber{
             		SimObjectPC obj = (SimObjectPC)so;
             		Integer objID = obj.getID();
             		// Check if the object is visible by the robot
-            		if (robot.inViewRange(obj.getBoundingBox().xyzrpy)){
+            		if (robot.inViewRange(obj.getBoundingBox().xyzrpy) || obj == robot.getGrabbedObject()){
             			// A newly seen object (not seen in previous frame), give a new id and add to list
             			if(!detectedObjects.containsKey(objID)){
             				detectedObjects.put(obj.getID(), obj);

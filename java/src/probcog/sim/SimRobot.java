@@ -124,7 +124,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         lcm.subscribe("DIFF_DRIVE", this);
         lcm.subscribe("SOAR_COMMAND.*", this);
 
-        tasks.addFixedDelay(new ImageTask(), 0.04);
+        tasks.addFixedDelay(new ImageTask(sw.objects), 0.04);
         tasks.addFixedDelay(new PoseTask(), 0.04);
         tasks.addFixedDelay(new ControlTask(), 0.01);
 //        tasks.addFixedDelay(new ClassifyTask(), 0.04);
@@ -201,6 +201,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
         return shape;
     }
+    
 
     public VisObject getVisObject()
     {
@@ -311,11 +312,11 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
     	double dist = LinAlg.distance(robPos, objPos);
     	
-    	if(dist <= .1){
+//    	if(dist <= .1){
     		grabbedObject = obj;
     		double[][] robPose = LinAlg.xyzrpyToMatrix(LinAlg.quatPosToXyzrpy(this.drive.poseTruth.orientation, robPos));
     		obj.setPose(robPose);
-    	}
+//    	}
     }
     
     public void putDownObject(){
@@ -324,7 +325,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     
     public boolean inViewRange(double[] xyz){
     	return true;
-
 //    	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
 //    	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
 //    	
@@ -333,12 +333,13 @@ public class SimRobot implements SimObject, LCMSubscriber
 //    	if(sqDist > OBJECT_VIEW_DIST_SQ){
 //    		return false;
 //    	}
-//    	if(sqDist < 0.01){
+//    	if(sqDist < 1.5){
 //    		// Within 10 cm of object, report as seen
 //    		return true;
 //    	}
 //
-//    	double[] forward = LinAlg.copy(this.drive.poseTruth.orientation, 3);
+//    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
+//    	forward = LinAlg.copy(forward, 3);
 //    	double dp = LinAlg.dotProduct(forward, toPoint);
 //    	double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
 //    	if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
@@ -365,15 +366,23 @@ public class SimRobot implements SimObject, LCMSubscriber
         double gridmap_range = 10;
         double gridmap_meters_per_pixel = 0.1;
 
-        HashSet<SimObject> ignore = new HashSet<SimObject>();
+        HashSet<SimObject> ignore = null;
 
-        public ImageTask()
+        public ImageTask(Collection<SimObject> objects)
         {
-            ignore.add(SimRobot.this);
         }
 
         public void run(double dt)
         {
+        	if(ignore == null){
+        		ignore = new HashSet<SimObject>();
+        		ignore.add(SimRobot.this);
+        		for(SimObject obj : sw.objects){
+        			if(obj instanceof SimObjectPC){
+        				ignore.add(obj);
+        			}
+        		}
+        	}
             double radstep = Math.atan2(gridmap_meters_per_pixel, gridmap_range);
             double minDeg = -135;
             double maxDeg = 135;
@@ -388,6 +397,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             double T_odom[][] = LinAlg.matrixAB(LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
                                                                        drive.poseOdom.pos),
                                                 LinAlg.translate(0.3, 0, 0.25));
+
 
             double ranges[] = Sensors.laser(sw, ignore, T_truth, (int) ((rad1-rad0)/radstep),
                                             rad0, radstep, maxRange);
@@ -517,7 +527,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             robot_info_t robotInfo = new robot_info_t();
             robotInfo.utime = TimeUtil.utime();
             robotInfo.xyzrpy = xyzrpy;
-            robotInfo.holding_object = (grabbedObject != null);
+            robotInfo.held_object = (grabbedObject == null ? -1 : grabbedObject.getID());
             lcm.publish("ROBOT_INFO", robotInfo);
 
             //lcm.publish("POSE", drive.poseOdom);

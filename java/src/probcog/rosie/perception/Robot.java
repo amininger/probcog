@@ -41,24 +41,27 @@ public class Robot implements ISoarObject {
 	
 	public Robot(Properties props){
 		movingState = new StringWME("moving-state", "stopped");
-		heldObject = new StringWME("holding-object", "false");
+		heldObject = new StringWME("held-object", "none");
 		pose = new Pose();
 		mapInfo = new MapInfo(props);
 	}
 	
-	public void setHeldObject(String heldObject){
-		this.heldObject.setValue(heldObject);
+	public MapInfo getMapInfo(){
+		return mapInfo;
+	}
+	
+	public void setHeldObject(String handle){
+		this.heldObject.setValue(handle == null ? "none" : handle);
 	}
 	
 	public void update(robot_info_t info){
-		heldObject.setValue(info.holding_object ? "true" : "false");
 		for(int d = 0; d < 3; d++){
 			if(Math.abs(pos[d] - info.xyzrpy[d]) > 0.02){
 				pos[d] = info.xyzrpy[d];
 				updatePose = true;
 			}
 		}
-		for(int d = 0; d < 0; d++){
+		for(int d = 0; d < 3; d++){
 			if(Math.abs(rot[d] - info.xyzrpy[3+d]) > 0.05){
 				rot[d] = info.xyzrpy[3+d];
 				updatePose = true;
@@ -82,6 +85,10 @@ public class Robot implements ISoarObject {
 			curRegion = closest;
 			updateWaypoint = true;
 		}
+	}
+	
+	public Region getRegion(){
+		return curRegion;
 	}
 	 
 	 public void updateMovingState(String newMovingState){

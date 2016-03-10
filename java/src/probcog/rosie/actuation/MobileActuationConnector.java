@@ -171,6 +171,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     		id.CreateStringWME("error-type", "syntax-error");
     		return;
     	}
+    	
     	controlLaw.id = nextControlLawId++;
     	id.CreateStringWME("status", "sent");
     	synchronized(commandLock){

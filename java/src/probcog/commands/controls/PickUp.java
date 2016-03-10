@@ -19,7 +19,8 @@ public class PickUp implements ControlLaw
 
     public PickUp(Map<String, TypedValue> parameters)
     {
-        System.out.println("PICK UP");
+        assert (parameters.containsKey("object-id"));
+        System.out.println("PICK UP: " + parameters.get("object-id").getInt().toString());
     }
 
     /** Start/stop the execution of the control law.
@@ -48,7 +49,7 @@ public class PickUp implements ControlLaw
     {
         // No parameters, so this can just return an empty container
     	ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-    	params.add(new TypedParameter("object-handle", TypedValue.TYPE_STRING, true));
+    	params.add(new TypedParameter("object-id", TypedValue.TYPE_INT, true));
     	return params;
     }
 

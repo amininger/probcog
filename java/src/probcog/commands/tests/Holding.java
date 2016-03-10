@@ -18,7 +18,7 @@ public class Holding implements ConditionTest, LCMSubscriber
 
     LCM lcm = LCM.getSingleton();
 
-    String objectId = "";
+    int objectId = -1;
     boolean held = false;
     
     boolean negated = false;
@@ -29,8 +29,8 @@ public class Holding implements ConditionTest, LCMSubscriber
 
     public Holding(HashMap<String, TypedValue> parameters)
     {
-    	assert (parameters.containsKey("object-handle"));
-    	objectId = parameters.get("object-handle").toString();
+    	assert (parameters.containsKey("object-id"));
+    	objectId = parameters.get("object-id").getInt();
     	
     	if(parameters.containsKey("negated")){
     		held = true;
@@ -46,27 +46,21 @@ public class Holding implements ConditionTest, LCMSubscriber
         return hold;
     }
 
-    public void processObjects(soar_objects_t objs)
+    public void processRobotInfo(robot_info_t info)
     {
-    	for(object_data_t obj : objs.objects){
-    		for(classification_t cls : obj.classifications){
-    			if(cls.category.equals("arm-status") && cls.name.equals("grabbed")){
-    				if(obj.id.equals(objectId)){
-    					held = true;
-    					return;
-    				}
-    			}
-    		}
+    	if(objectId == info.held_object){
+    		held = true;
+    	} else {
+    		held = false;
     	}
-    	held = false;
     }
 
     public void setRunning(boolean run)
     {
         if (run) {
-            lcm.subscribe("DETECTED_OBJECTS", this);
+            lcm.subscribe("ROBOT_INFO", this);
         } else {
-            lcm.unsubscribe("DETECTED_OBJECTS", this);
+            lcm.unsubscribe("ROBOT_INFO", this);
         }
     }
 
@@ -74,9 +68,9 @@ public class Holding implements ConditionTest, LCMSubscriber
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
-            if (channel.startsWith("DETECTED_OBJECTS")) {
-            	soar_objects_t objs = new soar_objects_t(ins);
-            	processObjects(objs);
+            if (channel.startsWith("ROBOT_INFO")) {
+            	robot_info_t info = new robot_info_t(ins);
+            	processRobotInfo(info);
             }
         } catch (IOException ex) {
             System.err.println("ERR: Could not handle message on channel - "+channel);
@@ -104,8 +98,8 @@ public class Holding implements ConditionTest, LCMSubscriber
     public Collection<TypedParameter> getParameters()
     {
         ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-        params.add(new TypedParameter("object-handle",
-                                      TypedValue.TYPE_STRING,
+        params.add(new TypedParameter("object-id",
+                                      TypedValue.TYPE_INT,
                                       true));
         params.add(new TypedParameter("negated",
                                       TypedValue.TYPE_BOOLEAN,
@@ -126,7 +120,7 @@ public class Holding implements ConditionTest, LCMSubscriber
         ct.num_params = 2;
         ct.param_names = new String[ct.num_params];
         ct.param_values = new typed_value_t[ct.num_params];
-        ct.param_names[0] = "object-handle";
+        ct.param_names[0] = "object-id";
         ct.param_values[0] = new TypedValue(objectId).toLCM();
         ct.param_names[1] = "negated-handle";
         ct.param_values[1] = new TypedValue(negated).toLCM();

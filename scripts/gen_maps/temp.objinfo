@@ -1,0 +1,27 @@
+1 0.5 0.5 2.0 2 name alice1 category person
+2 0.5 0.5 2.0 2 name bob1 category person
+3 0.5 0.5 2.0 2 name charlie1 category person
+1 0.5 0.5 0.5 3 shape box1 color red1 category object
+2 0.5 0.5 0.5 3 shape box1 color green1 category object
+3 0.5 0.5 0.5 3 shape box1 color blue1 category object
+4 0.5 0.5 0.5 3 shape soda1 color red1 category object
+5 0.5 0.5 0.5 3 shape water1 color white1 category object
+6 0.5 0.5 0.5 3 shape juice1 color orange1 category object
+7 0.5 0.5 0.5 3 shape book1 color black1 category object
+8 0.5 0.5 0.5 3 shape stapler1 color blue1 category object
+9 0.5 0.5 0.5 3 shape package1 color brown1 category object
+7 0.5 0.5 0.5 3 shape book1 color black1 category object
+8 0.5 0.5 0.5 3 shape stapler1 color blue1 category object
+9 0.5 0.5 0.5 3 shape package1 color brown1 category object
+1 0.5 0.5 0.5 3 shape box1 color red1 category object
+2 0.5 0.5 0.5 3 shape box1 color green1 category object
+3 0.5 0.5 0.5 3 shape box1 color blue1 category object
+4 0.5 0.5 0.5 3 shape soda1 color red1 category object
+5 0.5 0.5 0.5 3 shape water1 color white1 category object
+6 0.5 0.5 0.5 3 shape juice1 color orange1 category object
+7 0.5 0.5 0.5 3 shape book1 color black1 category object
+8 0.5 0.5 0.5 3 shape stapler1 color blue1 category object
+9 0.5 0.5 0.5 3 shape package1 color brown1 category object
+7 0.5 0.5 0.5 3 shape book1 color black1 category object
+8 0.5 0.5 0.5 3 shape stapler1 color blue1 category object
+9 0.5 0.5 0.5 3 shape package1 color brown1 category object

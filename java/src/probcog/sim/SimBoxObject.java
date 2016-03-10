@@ -15,6 +15,6 @@ public class SimBoxObject extends SimObjectPC{
 
 	@Override
 	public Shape getShape() {
-		return new BoxShape(scale_xyz);
+		return new SphereShape(-.5);
 	}
 }

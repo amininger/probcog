@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+from math import sin
+from math import cos
+
 def create_soar_map(world_info, map_filename):
 	nodes = {}
 	edges = []
@@ -80,9 +83,18 @@ class Edge:
 			self.side = -1
 		self.has_door = edge.has_door
 		if edge.has_door:
-			self.door_x = str(edge.door_x)
-			self.door_y = str(edge.door_y)
-			self.door_rot = str(edge.door_rot)
+			dx = cos(edge.door_rot)
+			dy = sin(edge.door_rot)
+			if forward:
+				self.door_sx = edge.door_x - dx
+				self.door_sy = edge.door_y - dy
+				self.door_ex = edge.door_x + dx
+				self.door_ey = edge.door_y + dy
+			else:
+				self.door_sx = edge.door_x + dx
+				self.door_sy = edge.door_y + dy
+				self.door_ex = edge.door_x - dx
+				self.door_ey = edge.door_y - dy
 	
 	def print(self, nodes, fout):
 		start = nodes[self.start]
@@ -94,8 +106,8 @@ class Edge:
 		fout.write('    (%(edge)s ^start %(start)s ^end %(end)s ^wall-side %(side)s\n' % \
 				{ "edge": self.var, "start": start.var, "end": end.var, "side": self.side})
 		if self.has_door:
-			fout.write('         ^doorway true ^dx %(x)s ^dy %(y)s ^dr %(r)s)\n' % \
-					{ "x": self.door_x, "y": self.door_y, "r": self.door_rot })
+			fout.write('         ^doorway true ^door_sx %(sx)s ^door_sy %(sy)s ^door_ex %(ex)s ^door_ey %(ey)s)\n' % \
+					{ "sx": self.door_sx, "sy": self.door_sy, "ex": self.door_ex, "ey": self.door_ey })
 		else:
 			fout.write('         ^doorway false)\n')
 				

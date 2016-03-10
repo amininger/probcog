@@ -6,5 +6,5 @@ struct robot_info_t
     double xyzrpy[6];
     
     // True if the robot is holding something
-    boolean holding_object;
+    int32_t held_object;
 }
