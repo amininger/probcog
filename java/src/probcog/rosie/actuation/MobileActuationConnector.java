@@ -1,5 +1,8 @@
 package probcog.rosie.actuation;
 
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -18,6 +21,7 @@ import probcog.lcmtypes.control_law_t;
 import probcog.lcmtypes.typed_value_t;
 import sml.Identifier;
 
+import javax.swing.JButton;
 import javax.swing.JMenuBar;
 
 public class MobileActuationConnector extends AgentConnector implements LCMSubscriber{
@@ -35,6 +39,9 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     
     private boolean killThread = false;
     private ControlLawThread sendCommandThread = null;
+    
+    private boolean robotPaused = false;
+    private JButton pauseButton;
     
     public MobileActuationConnector(SoarAgent agent, Properties props){
     	super(agent);
@@ -77,7 +84,27 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     	return movingState;
     }
 
-	public void createMenu(JMenuBar menuBar) { }
+	public void createMenu(JMenuBar menuBar) {
+		pauseButton = new JButton("Pause");
+		pauseButton.setBackground(new Color(50, 255, 50));
+		pauseButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent arg0) {
+				control_law_t command;
+				if(robotPaused){
+					pauseButton.setText("Pause");
+					pauseButton.setBackground(new Color(50, 255, 50));
+					command = SoarCommandParser.createEmptyControlLaw("resume");
+				} else {
+					pauseButton.setText("Resume");
+					pauseButton.setBackground(new Color(255, 50, 50));
+					command = SoarCommandParser.createEmptyControlLaw("pause");
+				}
+				robotPaused = !robotPaused;
+				lcm.publish("SOAR_COMMAND_TX", command);
+			}
+		});
+		menuBar.add(pauseButton);
+	}
 
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){

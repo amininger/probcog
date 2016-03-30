@@ -206,6 +206,22 @@ public class CommandCoordinator
             return record != null;
         }
     }
+    
+    public void pause(){
+    	synchronized(conditionTests){
+    		for(ConditionTest test : conditionTests.values()){
+    			test.setRunning(false);
+    		}
+    	}
+    }
+    
+    public void resume(){
+    	synchronized(conditionTests){
+    		for(ConditionTest test : conditionTests.values()){
+    			test.setRunning(true);
+    		}
+    	}
+    }
 
     /** Register a condition test with the Coordinator.
      *
