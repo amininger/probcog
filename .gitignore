@@ -7,3 +7,5 @@
 
 *.pyc
 
+scripts/gen_maps/temp*
+
