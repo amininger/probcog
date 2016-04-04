@@ -142,6 +142,11 @@ public class CommandCoordinator
     public void setRunning(boolean run)
     {
         tasks.setRunning(run);  // Is this coordinator active?
+    	synchronized(conditionTests){
+    		for(ConditionTest test : conditionTests.values()){
+    			test.setRunning(run);
+    		}
+    	}
     }
 
     /** Register a control law with the Coordinator.
@@ -205,22 +210,6 @@ public class CommandCoordinator
             }
             return record != null;
         }
-    }
-    
-    public void pause(){
-    	synchronized(conditionTests){
-    		for(ConditionTest test : conditionTests.values()){
-    			test.setRunning(false);
-    		}
-    	}
-    }
-    
-    public void resume(){
-    	synchronized(conditionTests){
-    		for(ConditionTest test : conditionTests.values()){
-    			test.setRunning(true);
-    		}
-    	}
     }
 
     /** Register a condition test with the Coordinator.

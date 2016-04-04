@@ -201,7 +201,6 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
         return shape;
     }
-    
 
     public VisObject getVisObject()
     {
@@ -258,7 +257,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.poseTruth.orientation = LinAlg.matrixToQuat(T);
         drive.poseTruth.pos = new double[] { T[0][3], T[1][3], 0 };
     }
-
+    
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
@@ -293,8 +292,12 @@ public class SimRobot implements SimObject, LCMSubscriber
 						newy = Double.parseDouble(controlLaw.param_values[p].value);
 					}
 				}
-				drive.poseTruth.pos[0] = newx;
-				drive.poseTruth.pos[1] = newy;
+				//drive.poseTruth.pos[0] = newx;
+				//drive.poseTruth.pos[1] = newy;
+			} else if (controlLaw.name.toLowerCase().equals("pause")){
+				this.setRunning(false);
+			} else if (controlLaw.name.toLowerCase().equals("resume")){
+				this.setRunning(true);
 			}
 		}
     }
@@ -324,28 +327,27 @@ public class SimRobot implements SimObject, LCMSubscriber
     }
     
     public boolean inViewRange(double[] xyz){
-    	return true;
-//    	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
-//    	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
-//    	
-//    	// Check if point is within view distance
-//    	double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
-//    	if(sqDist > OBJECT_VIEW_DIST_SQ){
-//    		return false;
-//    	}
-//    	if(sqDist < 1.5){
-//    		// Within 10 cm of object, report as seen
-//    		return true;
-//    	}
-//
-//    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
-//    	forward = LinAlg.copy(forward, 3);
-//    	double dp = LinAlg.dotProduct(forward, toPoint);
-//    	double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
-//    	if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
-//    		return true;
-//    	}
-//    	return false;
+    	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
+    	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
+    	
+    	// Check if point is within view distance
+    	double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
+    	if(sqDist > OBJECT_VIEW_DIST_SQ){
+    		return false;
+    	}
+    	if(sqDist < 1.5){
+    		// Within 10 cm of object, report as seen
+    		return true;
+    	}
+
+    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
+    	forward = LinAlg.copy(forward, 3);
+    	double dp = LinAlg.dotProduct(forward, toPoint);
+    	double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
+    	if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
+    		return true;
+    	}
+    	return false;
     }
 
     public void setNoise(boolean noise)

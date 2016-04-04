@@ -103,61 +103,61 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     }
 
     private void processNewObjectMessage(ooi_msg_list_t newObjs){
-    	for(ooi_msg_t objMsg : newObjs.observations){
-    		Integer tagID = objMsg.ooi_id;
-    		WorldObject obj = objects.get(tagID);
-    		if(obj == null){
-    			obj = objectManager.getObject(tagID);
-    			if(obj == null){
-    				System.err.println("Bad object tag id from SOAR_OBJECTS: " + tagID.toString());
-    				continue;
-    			}
-    			obj.setHandle(nextID.toString());
-    			nextID++;
-    			objects.put(tagID, obj);
-    		}
-    		obj.update(objMsg.z);
-    	}
-    	
-    	
-//    	// Set of objects that didn't appear in the new update
-//    	// (remove ids as we see them)
-//    	HashSet<Integer> oldIds = new HashSet<Integer>();
-//    	oldIds.addAll(objects.keySet());
-//    	
-//    	for (ooi_msg_t newObj : newObjs.observations){
-//    		Integer tagID = newObj.ooi_id;
+//    	for(ooi_msg_t objMsg : newObjs.observations){
+//    		Integer tagID = objMsg.ooi_id;
 //    		WorldObject obj = objects.get(tagID);
-//    		if(obj != null){
-//    			// Object is in our normal list, update it
-//    			oldIds.remove(tagID);
-//    		} else {
-//    			obj = objsToRemove.get(tagID);
-//    			if(obj != null){
-//    				// Object was going to be removed
-//    				// Transfer it to the normal list and update
-//    				objsToRemove.remove(tagID);
-//    				oldIds.remove(tagID);
-//    			} else {
-//    				// It's a new object, add it to the map
-//    				obj = objectManager.getObject(tagID);
-//    				if(obj == null){
-//    					System.err.println("Bad object tag id from SOAR_OBJECTS: " + tagID.toString());
-//    					continue;
-//    				}
-//    				obj.setHandle(nextID.toString());
-//    				nextID++;
+//    		if(obj == null){
+//    			obj = objectManager.getObject(tagID);
+//    			if(obj == null){
+//    				System.err.println("Bad object tag id from SOAR_OBJECTS: " + tagID.toString());
+//    				continue;
 //    			}
+//    			obj.setHandle(nextID.toString());
+//    			nextID++;
 //    			objects.put(tagID, obj);
 //    		}
-//    		obj.update(newObj.z);
+//    		obj.update(objMsg.z);
 //    	}
-//    	
-//    	for(Integer oldID : oldIds){
-//    		WorldObject oldObj = objects.get(oldID);
-//    		objects.remove(oldID);
-//    		objsToRemove.put(oldID, oldObj);
-//    	}
+    	
+    	
+    	// Set of objects that didn't appear in the new update
+    	// (remove ids as we see them)
+    	HashSet<Integer> oldIds = new HashSet<Integer>();
+    	oldIds.addAll(objects.keySet());
+    	
+    	for (ooi_msg_t newObj : newObjs.observations){
+    		Integer tagID = newObj.ooi_id;
+    		WorldObject obj = objects.get(tagID);
+    		if(obj != null){
+    			// Object is in our normal list, update it
+    			oldIds.remove(tagID);
+    		} else {
+    			obj = objsToRemove.get(tagID);
+    			if(obj != null){
+    				// Object was going to be removed
+    				// Transfer it to the normal list and update
+    				objsToRemove.remove(tagID);
+    				oldIds.remove(tagID);
+    			} else {
+    				// It's a new object, add it to the map
+    				obj = objectManager.getObject(tagID);
+    				if(obj == null){
+    					System.err.println("Bad object tag id from SOAR_OBJECTS: " + tagID.toString());
+    					continue;
+    				}
+    				obj.setHandle(nextID.toString());
+    				nextID++;
+    			}
+    			objects.put(tagID, obj);
+    		}
+    		obj.update(newObj.z);
+    	}
+    	
+    	for(Integer oldID : oldIds){
+    		WorldObject oldObj = objects.get(oldID);
+    		objects.remove(oldID);
+    		objsToRemove.put(oldID, oldObj);
+    	}
     }
     
 	/***************************
@@ -192,37 +192,37 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	if(objectsId == null){
     		objectsId = soarAgent.getAgent().GetInputLink().CreateIdWME("objects");
     	}
-    	Region curRegion = robot.getRegion();
-    	if(curRegion != null){
-    		for(WorldObject obj : objects.values()){
-    			Collection<Region> regions = robot.getMapInfo().getRegions(obj.getPos());
-    			if(regions.contains(curRegion)){
-    				// in current location
-    				if(obj.isAdded()){
-    					obj.updateWM();
-    				} else {
-    					obj.addToWM(objectsId);
-    				}
-    			} else {
-    				// not in current location
-    				if(obj.isAdded()){
-    					obj.removeFromWM();
-    				}
-    			}
-    
-    		}
-    		
-    	}
-//    	for(WorldObject obj : objects.values()){
-//    		if(obj.isAdded()){
-//    			obj.updateWM();
-//    		} else {
-//    			obj.addToWM(objectsId);
+//    	Region curRegion = robot.getRegion();
+//    	if(curRegion != null){
+//    		for(WorldObject obj : objects.values()){
+//    			Collection<Region> regions = robot.getMapInfo().getRegions(obj.getPos());
+//    			if(regions.contains(curRegion)){
+//    				// in current location
+//    				if(obj.isAdded()){
+//    					obj.updateWM();
+//    				} else {
+//    					obj.addToWM(objectsId);
+//    				}
+//    			} else {
+//    				// not in current location
+//    				if(obj.isAdded()){
+//    					obj.removeFromWM();
+//    				}
+//    			}
+//    
 //    		}
+//    		
 //    	}
-//    	for(WorldObject obj : objsToRemove.values()){
-//    		obj.removeFromWM();
-//    	}
+    	for(WorldObject obj : objects.values()){
+    		if(obj.isAdded()){
+    			obj.updateWM();
+    		} else {
+    			obj.addToWM(objectsId);
+    		}
+    	}
+    	for(WorldObject obj : objsToRemove.values()){
+    		obj.removeFromWM();
+    	}
     }
     
     private void updateSVS(){

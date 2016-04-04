@@ -93,14 +93,6 @@ public class CommandInterpreter
 				}
 				highestCommandID = controlLaw.id;
 			}
-			if(clName.equals("pause")){
-				coordinator.pause();
-				return;
-			} 
-			if(clName.equals("resume")){
-				coordinator.resume();
-				return;
-			}
 			if(controlLaw.id <= highestCommandID){
 				return;
 			}

@@ -19,7 +19,7 @@ public class Turn implements ControlLaw, LCMSubscriber
 
     static final int DD_HZ = 100;
     static final double ROBOT_SPEED = 0.5;
-    static final double SIM_SPEED = 0.25;
+    static final double SIM_SPEED = 0.1;
 
     Object poseLock = new Object();
     pose_t currPose = null;
