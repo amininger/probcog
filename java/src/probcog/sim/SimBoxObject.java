@@ -10,7 +10,11 @@ public class SimBoxObject extends SimObjectPC{
 
 	@Override
 	public VisObject getVisObject() {
-		return new VzBox(scale_xyz, new VzMesh.Style(color));
+		if(color.getRed() == 0 && color.getGreen() == 0 && color.getBlue() == 0){
+			return new VzBox(scale_xyz, new VzLines.Style(color, 1));
+		} else {
+			return new VzBox(scale_xyz, new VzMesh.Style(color));
+		}
 	}
 
 	@Override

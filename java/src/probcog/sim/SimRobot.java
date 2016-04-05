@@ -292,8 +292,8 @@ public class SimRobot implements SimObject, LCMSubscriber
 						newy = Double.parseDouble(controlLaw.param_values[p].value);
 					}
 				}
-				//drive.poseTruth.pos[0] = newx;
-				//drive.poseTruth.pos[1] = newy;
+				drive.poseTruth.pos[0] = newx;
+				drive.poseTruth.pos[1] = newy;
 			} else if (controlLaw.name.toLowerCase().equals("pause")){
 				this.setRunning(false);
 			} else if (controlLaw.name.toLowerCase().equals("resume")){
@@ -323,6 +323,15 @@ public class SimRobot implements SimObject, LCMSubscriber
     }
     
     public void putDownObject(){
+    	if(grabbedObject == null){
+    		return;
+    	}
+    	double[] robotPos = LinAlg.copy(this.drive.poseTruth.pos);
+    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
+    	forward = LinAlg.scale(forward, 1.5);
+    	double[] newPos = LinAlg.add(robotPos, forward);
+    	double[] xyzrpy = new double[]{ newPos[0], newPos[1], newPos[2], 0, 0, 0 };
+    	grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
     	grabbedObject = null;
     }
     
