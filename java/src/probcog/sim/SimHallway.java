@@ -31,6 +31,18 @@ public class SimHallway implements SimObject
     {
         id = Util.nextID();
     }
+    
+    public int getID(){
+    	return id;
+    }
+    
+    public double getMean(){
+    	return mean;
+    }
+    
+    public double getStdDev(){
+    	return stddev;
+    }
 
     public void setPose(double[][] T)
     {

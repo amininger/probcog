@@ -10,7 +10,7 @@ import magic2.lcmtypes.*;
  **/
 public class DriveParams
 {
-    public classification_t classy; // XXX
+    public tag_classification_t classy; // XXX
     public grid_map_t gm;
     public laser_t laser;
     public pose_t pose;

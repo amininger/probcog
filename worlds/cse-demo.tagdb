@@ -1,7 +1,7 @@
 classes {
   c# {
     labels = ["door", ""];
-    ids = [2, 5, 15, 101];
+    ids = [3, 5, 11, 17];
     probs = [1.0, 0.0];
     mean = 1.0;
     stddev = 0.0;
@@ -50,6 +50,16 @@ classes {
   }
 
   c# {
+    labels = ["wp11", ""];
+    ids = [11];
+    probs = [1.0, 0.0];
+    mean = 1.0;
+    stddev = 0.0;
+    minRange = 1.0;
+    maxRange = 2.0;
+  }
+
+  c# {
     labels = ["wp12", ""];
     ids = [12];
     probs = [1.0, 0.0];
@@ -60,18 +70,8 @@ classes {
   }
 
   c# {
-    labels = ["wp15", ""];
-    ids = [15];
-    probs = [1.0, 0.0];
-    mean = 1.0;
-    stddev = 0.0;
-    minRange = 1.0;
-    maxRange = 2.0;
-  }
-
-  c# {
-    labels = ["wp101", ""];
-    ids = [101];
+    labels = ["wp17", ""];
+    ids = [17];
     probs = [1.0, 0.0];
     mean = 1.0;
     stddev = 0.0;

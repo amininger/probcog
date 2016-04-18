@@ -1,6 +1,9 @@
 package probcog.rosie.perception;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Properties;
 
 import javax.swing.JMenuBar;
@@ -9,33 +12,47 @@ import edu.umich.rosie.soar.AgentConnector;
 import edu.umich.rosie.soar.SoarAgent;
 import edu.umich.rosie.soar.SoarUtil;
 import edu.umich.rosie.soarobjects.Pose;
+import april.jmat.LinAlg;
 import april.lcmtypes.pose_t;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
+import magic2.lcmtypes.ooi_msg_list_t;
+import magic2.lcmtypes.ooi_msg_t;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
+import probcog.lcmtypes.object_data_t;
+import probcog.lcmtypes.robot_info_t;
+import probcog.lcmtypes.tag_classification_list_t;
+import probcog.lcmtypes.tag_classification_t;
 import probcog.rosie.actuation.MobileActuationConnector;
 import sml.Identifier;
 
 public class MobilePerceptionConnector extends AgentConnector implements LCMSubscriber{
-	private boolean newClassifications = false;
-	private classification_list_t curClassifications = null;
-	private Identifier waypointId = null;
-	private int curWaypoint = -1;
+	private WorldObjectManager objectManager;
+
+	private HashMap<Integer, WorldObject> objects;
+	private HashMap<Integer, WorldObject> objsToRemove;
+	private boolean newObjectsMessage = false;
+	
+	private Integer nextID = 1;
 
     private LCM lcm;
     
-    private Identifier selfId = null;
+    private Identifier objectsId = null;
     
-    private boolean newPose = false;
-    private Pose pose;
-
+    private Robot robot;
+    
     public MobilePerceptionConnector(SoarAgent agent, Properties props){
     	super(agent);
     	
-    	pose = new Pose();
-
+    	objects = new HashMap<Integer, WorldObject>();
+    	objsToRemove = new HashMap<Integer, WorldObject>();
+    	
+    	objectManager = new WorldObjectManager(props);
+    	
+    	robot = new Robot(props);
+    	
     	// Setup LCM events
         lcm = LCM.getSingleton();
     }
@@ -43,103 +60,201 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     @Override
     public void connect(){
     	super.connect();
-        lcm.subscribe("CLASSIFICATIONS.*", this);
-        lcm.subscribe("POSE", this);
+        lcm.subscribe("ROBOT_INFO", this);
+        lcm.subscribe("DETECTED_OBJECTS", this);
     }
     
     @Override
     public void disconnect(){
     	super.disconnect();
-        lcm.unsubscribe("CLASSIFICATIONS.*", this);
-        lcm.unsubscribe("POSE", this);
+        lcm.unsubscribe("ROBOT_INFO", this);
+        lcm.unsubscribe("DETECTED_OBJECTS", this);
     }
 
 	@Override
 	public void createMenu(JMenuBar menuBar) {}
 
+	/***************************
+	 * 
+	 * LCM HANDLING
+	 * 
+	 **************************/
+	
+	
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
 		try {
-			if(channel.startsWith("CLASSIFICATIONS")){
-				curClassifications = new classification_list_t(ins);
-				newClassifications = true;
-			} else if (channel.startsWith("POSE")){
-				pose_t p = new pose_t(ins);
-				pose.updatePosition(p.pos);
-				newPose = true;
+			if (channel.startsWith("ROBOT_INFO")){
+				robot_info_t robotInfo = new robot_info_t(ins);
+				robot.update(robotInfo);
+				if(objects.containsKey(robotInfo.held_object)){
+					robot.setHeldObject(objects.get(robotInfo.held_object).getHandle());
+				} else {
+					robot.setHeldObject(null);
+				}
+			} else if(channel.startsWith("DETECTED_OBJECTS")){
+				ooi_msg_list_t newObjs = new ooi_msg_list_t(ins);
+				processNewObjectMessage(newObjs);
+				newObjectsMessage = true;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
     }
+
+    private void processNewObjectMessage(ooi_msg_list_t newObjs){
+//    	for(ooi_msg_t objMsg : newObjs.observations){
+//    		Integer tagID = objMsg.ooi_id;
+//    		WorldObject obj = objects.get(tagID);
+//    		if(obj == null){
+//    			obj = objectManager.getObject(tagID);
+//    			if(obj == null){
+//    				System.err.println("Bad object tag id from SOAR_OBJECTS: " + tagID.toString());
+//    				continue;
+//    			}
+//    			obj.setHandle(nextID.toString());
+//    			nextID++;
+//    			objects.put(tagID, obj);
+//    		}
+//    		obj.update(objMsg.z);
+//    	}
+    	
+    	
+    	// Set of objects that didn't appear in the new update
+    	// (remove ids as we see them)
+    	HashSet<Integer> oldIds = new HashSet<Integer>();
+    	oldIds.addAll(objects.keySet());
+    	
+    	for (ooi_msg_t newObj : newObjs.observations){
+    		Integer tagID = newObj.ooi_id;
+    		WorldObject obj = objects.get(tagID);
+    		if(obj != null){
+    			// Object is in our normal list, update it
+    			oldIds.remove(tagID);
+    		} else {
+    			obj = objsToRemove.get(tagID);
+    			if(obj != null){
+    				// Object was going to be removed
+    				// Transfer it to the normal list and update
+    				objsToRemove.remove(tagID);
+    				oldIds.remove(tagID);
+    			} else {
+    				// It's a new object, add it to the map
+    				obj = objectManager.getObject(tagID);
+    				if(obj == null){
+    					System.err.println("Bad object tag id from SOAR_OBJECTS: " + tagID.toString());
+    					continue;
+    				}
+    				obj.setHandle(nextID.toString());
+    				nextID++;
+    			}
+    			objects.put(tagID, obj);
+    		}
+    		obj.update(newObj.z);
+    	}
+    	
+    	for(Integer oldID : oldIds){
+    		WorldObject oldObj = objects.get(oldID);
+    		objects.remove(oldID);
+    		objsToRemove.put(oldID, oldObj);
+    	}
+    }
+    
+	/***************************
+	 * 
+	 * INPUT PHASE HANDLING
+	 * 
+	 **************************/
     
     protected synchronized void onInputPhase(Identifier inputLink){
-    	if(selfId == null){
-    		selfId = inputLink.CreateIdWME("self");
-    	}
-    	updateSelf();
-    	updateClassifications();
-    }
-    
-    private void updateSelf(){
-    	if(!pose.isAdded()){
-    		pose.addToWM(selfId);
-    	} else if(newPose){
-    		pose.updateWM();
-    		newPose = false;
-    	}
+    	// Update the information about the robot
+    	updateRobot();
 
-    	String movingState = ((MobileActuationConnector)soarAgent.getActuationConnector()).getMovingState();
-		SoarUtil.updateStringWME(selfId, "moving-state", movingState);
+    	// Update information about objects
+    	updateObjects();
+    	
+    	// Update SVS
+    	updateSVS();
+    	
+    	objsToRemove.clear();
     }
     
-    private void updateClassifications(){
-    	if(!newClassifications){
-    		return;
+    private void updateRobot(){
+    	robot.updateMovingState(((MobileActuationConnector)soarAgent.getActuationConnector()).getMovingState());
+    	if(!robot.isAdded()){
+    		robot.addToWM(soarAgent.getAgent().GetInputLink());
+    	} else {
+    		robot.updateWM();
     	}
-    	newClassifications = false;
-    	
-    	int closestWaypoint = -1;
-    	double closestDistance = Double.MAX_VALUE;
-    	for (classification_t c : curClassifications.classifications){
-    		if (c.range < closestDistance){
-    			closestWaypoint = c.id;
-    			closestDistance = c.range;
+    }
+    
+    private void updateObjects(){
+    	if(objectsId == null){
+    		objectsId = soarAgent.getAgent().GetInputLink().CreateIdWME("objects");
+    	}
+//    	Region curRegion = robot.getRegion();
+//    	if(curRegion != null){
+//    		for(WorldObject obj : objects.values()){
+//    			Collection<Region> regions = robot.getMapInfo().getRegions(obj.getPos());
+//    			if(regions.contains(curRegion)){
+//    				// in current location
+//    				if(obj.isAdded()){
+//    					obj.updateWM();
+//    				} else {
+//    					obj.addToWM(objectsId);
+//    				}
+//    			} else {
+//    				// not in current location
+//    				if(obj.isAdded()){
+//    					obj.removeFromWM();
+//    				}
+//    			}
+//    
+//    		}
+//    		
+//    	}
+    	for(WorldObject obj : objects.values()){
+    		if(obj.isAdded()){
+    			obj.updateWM();
+    		} else {
+    			obj.addToWM(objectsId);
     		}
     	}
-   		if (closestWaypoint != curWaypoint && waypointId != null){
-   			waypointId.DestroyWME();
-   			waypointId = null;
-   		}
-   		curWaypoint = closestWaypoint;
-   		if (curWaypoint == -1){
-   			return;
-   		}
-   		if (waypointId == null){
-    		waypointId = selfId.CreateIdWME("current-waypoint");
-   		}
-   		for (classification_t c : curClassifications.classifications){
-   			if (c.id == closestWaypoint){
-   				if (c.name.startsWith("wp")){
-   					SoarUtil.updateStringWME(waypointId, "waypoint-handle", c.name);
-   				} else {
-   					SoarUtil.updateStringWME(waypointId, "classification", c.name);
-   				}
-   			}
-   		}
+    	for(WorldObject obj : objsToRemove.values()){
+    		obj.removeFromWM();
+    	}
     }
-
+    
+    private void updateSVS(){
+    	StringBuilder svsCommands = new StringBuilder();
+    	svsCommands.append(robot.getSVSCommands());
+    	for(WorldObject obj : objects.values()){
+    		svsCommands.append(obj.getSVSCommands());
+    	}
+    	for(WorldObject obj : objsToRemove.values()){
+    		svsCommands.append(obj.getSVSCommands());
+    	}
+    	if(svsCommands.length() > 0){
+    		soarAgent.getAgent().SendSVSInput(svsCommands.toString());
+    	}
+    }
 
 	@Override
 	protected void onInitSoar() {
-		pose.removeFromWM();
-		if(selfId != null){
-			selfId.DestroyWME();
-			selfId = null;
-			waypointId = null;
+		for(WorldObject obj : objects.values()){
+			obj.removeFromWM();
 		}
+		for(WorldObject obj : objsToRemove.values()){
+			obj.removeFromWM();
+		}
+		if(objectsId != null){
+			objectsId.DestroyWME();
+			objectsId = null;
+		}
+		robot.removeFromWM();
+		updateSVS();
 	}
-    
+	
     // Currently no commands relevant to perception
 	protected void onOutputEvent(String attName, Identifier id) { }
 }

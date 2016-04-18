@@ -42,8 +42,8 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     private int targetID;
     private String classType;
     private Object classyLock = new Object();
-    private ExpiringMessageCache<classification_t> lastClassification =
-        new ExpiringMessageCache<classification_t>(0.5);
+    private ExpiringMessageCache<tag_classification_t> lastClassification =
+        new ExpiringMessageCache<tag_classification_t>(0.5);
     private ExpiringMessageCache<pose_t> poseCache =
         new ExpiringMessageCache<pose_t>(0.2);
     private ExpiringMessageCache<grid_map_t> gmCache =
@@ -84,7 +84,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
         }
     }
 
-    public void handleClassification(classification_t curr, long utime)
+    public void handleClassification(tag_classification_t curr, long utime)
     {
         if (!curr.name.equals(classType))
             return;
@@ -92,8 +92,8 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
             if (lastClassification.get() == null) {
                 lastClassification.put(curr, utime);
             }
-            classification_t classy = lastClassification.get();
-            if (curr.id == classy.id) {
+            tag_classification_t classy = lastClassification.get();
+            if (curr.tag_id == classy.tag_id) {
                 lastClassification.put(curr, utime);
                 return;
             }
@@ -109,7 +109,7 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
 
     public diff_drive_t drive(DriveParams params)
     {
-        classification_t classy = params.classy;
+        tag_classification_t classy = params.classy;
         double dt = params.dt;
 
         diff_drive_t dd = new diff_drive_t();
@@ -206,10 +206,10 @@ public class DriveTowardsTag implements LCMSubscriber, ControlLaw
     {
         try {
             if (channel.equals("CLASSIFICATIONS")) {
-                classification_list_t cl = new classification_list_t(ins);
+                tag_classification_list_t cl = new tag_classification_list_t(ins);
 
                 for (int i = 0; i < cl.num_classifications; i++) {
-                    classification_t curr = cl.classifications[i];
+                    tag_classification_t curr = cl.classifications[i];
                     handleClassification(curr, cl.utime);
                 }
             } else if (mapChannel.equals(channel)) {

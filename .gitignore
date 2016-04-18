@@ -5,3 +5,7 @@
 *.project
 *.classpath
 
+*.pyc
+
+scripts/gen_maps/temp*
+

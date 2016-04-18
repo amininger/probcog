@@ -38,7 +38,7 @@ public class TagHistory
         history = new HashMap<Integer, Record>();
     }
 
-    public void addObservations(ArrayList<classification_t> classies)
+    public void addObservations(ArrayList<tag_classification_t> classies)
     {
         if (classies.size() < 1)
             return;
@@ -49,17 +49,17 @@ public class TagHistory
      *  the first observation ever/since expiry, else false. Either way, updates
      *  timestamp of last observation from classy.
      */
-    public void addObservations(ArrayList<classification_t> classies, long utime)
+    public void addObservations(ArrayList<tag_classification_t> classies, long utime)
     {
         HashMap<Integer, ArrayList<String> > labelMap = new HashMap<Integer, ArrayList<String> >();
         HashMap<Integer, ArrayList<Double> > rangeMap = new HashMap<Integer, ArrayList<Double> >();
-        for (classification_t classy: classies) {
-            if (!labelMap.containsKey(classy.id)) {
-                labelMap.put(classy.id, new ArrayList<String>());
-                rangeMap.put(classy.id, new ArrayList<Double>());
+        for (tag_classification_t classy: classies) {
+            if (!labelMap.containsKey(classy.tag_id)) {
+                labelMap.put(classy.tag_id, new ArrayList<String>());
+                rangeMap.put(classy.tag_id, new ArrayList<Double>());
             }
-            labelMap.get(classy.id).add(classy.name);
-            rangeMap.get(classy.id).add(classy.range);
+            labelMap.get(classy.tag_id).add(classy.name);
+            rangeMap.get(classy.tag_id).add(classy.range);
         }
 
         for (int id: labelMap.keySet()) {
@@ -77,7 +77,7 @@ public class TagHistory
         }
     }
 
-    public ArrayList<classification_t> getLabels(int id, double[] xyzrpy)
+    public ArrayList<tag_classification_t> getLabels(int id, double[] xyzrpy)
     {
         return getLabels(id, xyzrpy, TimeUtil.utime());
     }
@@ -87,11 +87,11 @@ public class TagHistory
      *  empty string, which we take to be the same as the object not having any
      *  label.
      **/
-    public ArrayList<classification_t> getLabels(int id, double[] xyzrpy, long utime)
+    public ArrayList<tag_classification_t> getLabels(int id, double[] xyzrpy, long utime)
     {
         double range = LinAlg.magnitude(LinAlg.resize(xyzrpy, 2));
 
-        ArrayList<classification_t> classies = new ArrayList<classification_t>();
+        ArrayList<tag_classification_t> classies = new ArrayList<tag_classification_t>();
         Record r = history.get(id);
         if (r == null)
             return classies;
@@ -102,9 +102,9 @@ public class TagHistory
         for (int i = 0; i < r.labels.size(); i++) {
             if (range > r.ranges.get(i))
                 continue;
-            classification_t classy = new classification_t();
+            tag_classification_t classy = new tag_classification_t();
             classy.utime = utime;
-            classy.id = id;
+            classy.tag_id = id;
             classy.name = r.labels.get(i);
             classy.range = range;       // XXX This really shouldn't exist...
             classy.xyzrpy = xyzrpy;
