@@ -28,12 +28,12 @@ public class ControlLawFactory
      **/
     private void init()
     {
-        registerControlLaw("turn", Turn.class.getName());
-        registerControlLaw("drive-forward", DriveForward.class.getName());
+        //registerControlLaw("turn", Turn.class.getName());
+        //registerControlLaw("drive-forward", DriveForward.class.getName());
         registerControlLaw("follow-wall", FollowWall.class.getName());
         //registerControlLaw("follow-heading", FollowHeading.class.getName());
         //registerControlLaw("follow-hall", FollowHall.class.getName());
-        registerControlLaw("drive-to-tag", DriveTowardsTag.class.getName());
+        //registerControlLaw("drive-to-tag", DriveTowardsTag.class.getName());
         registerControlLaw("orient", Orient.class.getName());
         registerControlLaw("drive-xy", DriveToXY.class.getName());
     }
