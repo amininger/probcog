@@ -26,8 +26,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private static final double FW_HZ = 40;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
-    private static final double BACK_THETA = 16*Math.PI/36;
-    private static final double FRONT_THETA = 6*Math.PI/36;
+    private double BACK_THETA = 16*Math.PI/36;
+    private double FRONT_THETA = 10*Math.PI/36;
     private static final double MAX_RANGE_M = 10.0;
     private static final double MAX_V = 0.6;
     private static final double MIN_V = 0.4;
@@ -68,9 +68,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         public void run(double dt)
         {
             laser_t laser = laserCache.get();
-            if (laser == null) {
-                return;
-            }
+            //if (laser == null) {
+            //    return;
+            //}
 
             grid_map_t gm = gmCache.get();
             if (gm == null) {
@@ -232,8 +232,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
                                                                      params.pose.pos));
 
         // Look for points in front of the robot
-        double rWidth = 0.3;
-        double hazardDist = Math.max(goalDistance, 1.0);
+        double rWidth = 0.225;
+        double hazardDist = Math.max(goalDistance, 0.5);
+        if (sim)
+            hazardDist = 1.25;
         double rc = Math.cos(poseXYT[2]);
         double rs = Math.sin(poseXYT[2]);
         for (double y = -rWidth; y < rWidth; y += gm.metersPerPixel/2) {
@@ -279,20 +281,27 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         lastRange = rSide;
 
         // Hand tuned controller
+        // Normalize distance
         double G_weight = Math.pow(goalDistance, 1.0);
-        //double K_p = (1.0 - rSide/G_weight);
-        double K_p = 1.0 - Math.pow(rSide/G_weight, 0.5);
+        double rSideNorm = rSide-G_weight;
+        int goalSign = rSideNorm > 0 ? 1 : -1;
+        double K_p = -MathUtil.clamp(goalSign*Math.pow(Math.abs(rSideNorm)/G_weight, 1.0/2), -1, 1);
+        //double K_p = 1.0 - Math.pow(rSide/G_weight, 0.5);
         if (!sim) {
-            K_p *= 2.5;
+            //K_p *= 5.0;
+            K_p *= 1.0;
+            K_d = 0.1;
         } else {
-            K_d = 0.4;
+            K_d = 0.5;
         }
-        //double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
-        double prop = 0.5 + K_p;
+        double prop = MathUtil.clamp(0.5 + K_p, -1.0, 1.0);//0.65);
+        //double prop = 0.5 + K_p;
 
-        double farSpeed = 0.5;
-        //double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0.0, 1.0);
-        double nearSpeed = prop - K_d*deriv;
+        double farSpeed = 0.3 - (prop - K_d*deriv);
+        double nearSpeed = 0.3 + (prop - K_d*deriv);
+        //double nearSpeed = MathUtil.clamp(prop - K_d*deriv, -1.0, 1.0);
+        //double nearSpeed = MathUtil.clamp(prop - K_d*deriv, 0, 1.0);
+        //double nearSpeed = prop - K_d*deriv;
         double max = Math.max(Math.abs(nearSpeed), Math.abs(farSpeed));
         if (max < 0.01) {
             nearSpeed = farSpeed = 0;
@@ -312,6 +321,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
                 break;
         }
 
+        //System.out.printf("{%f %f}\n", K_p, K_d*deriv);
+        //System.out.printf("[%f %f] [%f %f]\n", nearSpeed, farSpeed, dd.left, dd.right);
         return dd;
     }
 
@@ -423,6 +434,10 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     public FollowWall(Map<String, TypedValue> parameters)
     {
         //System.out.println("FOLLOW WALL");
+        String rid = System.getenv("ROBOT_ID");
+        if (rid == null)
+            rid = "3";
+        mapChannel += "_"+rid;
 
         assert (parameters.containsKey("side"));
         if (parameters.get("side").getInt() < 0)
@@ -439,6 +454,9 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         if (parameters.containsKey("sim"))
             sim = true;
 
+        if (sim) {
+            FRONT_THETA = 8*Math.PI/36;
+        }
         tasks.addFixedRate(new UpdateTask(), 1.0/FW_HZ);
     }
 

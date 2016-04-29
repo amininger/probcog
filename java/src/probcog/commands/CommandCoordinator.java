@@ -126,6 +126,8 @@ public class CommandCoordinator
                     sl.statuses[idx++] = s;
                 }
                 lcm.publish("CONTROL_LAW_STATUS", sl);
+                lcm.publish("CONTROL_LAW_STATUS", sl);
+                lcm.publish("CONTROL_LAW_STATUS", sl);
             }
         }
     }
@@ -135,6 +137,11 @@ public class CommandCoordinator
         int hz = 40;
         tasks.addFixedRate(new UpdateTask(), 1.0/hz);
         tasks.setRunning(true);
+    }
+
+    public void setRunning(boolean run)
+    {
+        tasks.setRunning(run);  // Is this coordinator active?
     }
 
     /** Register a control law with the Coordinator.

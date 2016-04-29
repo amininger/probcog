@@ -36,7 +36,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     static final int ROBOT_MAP_DATA_HZ = 10;
     long lastMapData = 0;
 
-    int ROBOT_ID = 6;
+    int ROBOT_ID = 3;
     SimWorld sw;
     DifferentialDrive drive;
 
@@ -46,6 +46,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     boolean drawSensor;
     int robotID;
 
+    CommandInterpreter ci;
     TagHistory tagHistory = new TagHistory();
     LCM lcm = LCM.getSingleton();
 
@@ -81,7 +82,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         // visObj = new VzSphere(.5, new VzMesh.Style(Color.RED));
 
         boolean sim = true;
-        CommandInterpreter ci = new CommandInterpreter(sim);
+        ci = new CommandInterpreter(sim);
 
         // Reproduce this in monte-carlo bot
         drive = new DifferentialDrive(sw, this, new double[3]);
@@ -397,7 +398,7 @@ public class SimRobot implements SimObject, LCMSubscriber
                 rmd.latlon_deg = new double[] {Double.NaN, Double.NaN};
                 rmd.xyt_local = xyt;
 
-                lcm.publish(Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA"), rmd);
+                lcm.publish(Util.getConfig().getString("robot.lcm.map_channel", "ROBOT_MAP_DATA")+"_"+ROBOT_ID, rmd);
 
                 lastMapData = laser.utime;
             }
@@ -524,11 +525,24 @@ public class SimRobot implements SimObject, LCMSubscriber
             lcm.publish("CLASSIFICATIONS", classy_list);
         }
 
+        /** Publish april tag detections. Also directly publishes classifications
+         *  right now.
+         **/
         private void detectApriltags(Collection<SimObject> sos, double[] xyzrpyBot)
         {
             ArrayList<classification_t> classies = new ArrayList<classification_t>();
             classification_list_t classy_list = new classification_list_t();
             classy_list.utime = TimeUtil.utime();
+
+            ArrayList<tag_detection_t> dets = new ArrayList<tag_detection_t>();
+            tag_detection_list_t tdl = new tag_detection_list_t();
+            tdl.utime = TimeUtil.utime();
+
+            double iw = Util.getConfig().requireDouble("cameraCalibration.imWidth");
+            double ih = Util.getConfig().requireDouble("cameraCalibration.imHeight");
+
+            double cx = iw/2.0;
+            double cy = ih/2.0;
 
             for (SimObject so: sos) {
                 if (!(so instanceof SimAprilTag))
@@ -540,6 +554,17 @@ public class SimRobot implements SimObject, LCMSubscriber
                 double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
                 if (dist > sensingThreshold)
                     continue;
+
+                // Fake tag detections for 36h11 by a chameleon
+                //tag_detection_t td = new tag_detection_t();
+                //td.tag_family_bit_width = (byte) 6;
+                //td.tag_family_min_hamming_dist = (byte) 11;
+                //td.id = tag.getID();
+                //td.hamming_dist = 0;
+                //td.goodness = 0.0f;
+
+
+                //dets.add(td);
 
                 // Position relative to robot. For now, tossing away orientation data,
                 // but may be relevant later.
@@ -582,15 +607,26 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         public void run(double dt)
         {
-            pose_t pose;
-            if (!perfectPose) {
-                pose = LCMUtil.a2mPose(drive.poseOdom);
-            } else {
-                pose = LCMUtil.a2mPose(drive.poseTruth);
-            }
-            lcm.publish("POSE", pose);
-            //lcm.publish("POSE", drive.poseOdom);
-            //lcm.publish("POSE_TRUTH", drive.poseTruth);
+            //pose_t pose;
+            //if (!perfectPose) {
+            //    pose = LCMUtil.a2mPose(drive.poseOdom);
+            //} else {
+            //    pose = LCMUtil.a2mPose(drive.poseTruth);
+            //}
+            drive.poseOdom.utime = TimeUtil.utime();
+            lcm.publish("POSE", drive.poseOdom);
+
+            // Compute L2G
+            double[] gxyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(drive.poseTruth.orientation,
+                                                                      drive.poseTruth.pos));
+            double[] lxyt = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
+                                                                      drive.poseOdom.pos));
+            double[] l2g_ = getL2G();
+            lcmdoubles_t l2g = new lcmdoubles_t();
+            l2g.utime = drive.poseOdom.utime;
+            l2g.ndata = 3;
+            l2g.data = l2g_;
+            lcm.publish("L2G", l2g);
         }
     }
 
@@ -683,5 +719,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     {
         drive.setRunning(b);
         tasks.setRunning(b);
+        ci.setRunning(b);
     }
 }

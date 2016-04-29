@@ -20,12 +20,14 @@ public class CommandInterpreter
 		public int lawID;
 		public int testID;
 		public int commandID;
+        public String name;
 		public Status status;
 		public boolean running;
-		public CommandInfo(int lawID_, int testID_, int commandID_, Status status_){
+		public CommandInfo(int lawID_, int testID_, int commandID_, String name_, Status status_){
 			lawID = lawID_;
 			testID = testID_;
 			commandID = commandID_;
+            name = name_;
 			setStatus(status_);
 		}
 		public void setStatus(Status newStatus){
@@ -34,6 +36,7 @@ public class CommandInterpreter
 		}
 	}
 
+    private boolean running;
 	protected static LCM lcm = LCM.getSingleton();
 	private static int LCM_FPS = 60;
 	private static int CMD_FPS = 20;
@@ -66,9 +69,16 @@ public class CommandInterpreter
 		//waitingCommands = new LinkedList<control_law_t>();
         this.sim = sim;
 
+        running = true;
 		new ListenerThread().start();
 		new CommandThread().start();
 	}
+
+    public void setRunning(boolean run)
+    {
+        running = run;
+        coordinator.setRunning(run);
+    }
 
 	protected void interpretCommand(control_law_t controlLaw)
 	{
@@ -99,7 +109,7 @@ public class CommandInterpreter
 				// Stop current command
 				if (activeCommand != null && activeCommand.running){
 					stopActiveCommand();
-					activeCommand = new CommandInfo(-1, -1, controlLaw.id, Status.SUCCESS);
+					activeCommand = new CommandInfo(-1, -1, controlLaw.id, "stop", Status.SUCCESS);
 				}
 			} else {
 				// Other Control Law
@@ -140,15 +150,15 @@ public class CommandInterpreter
 					int testID = coordinator.registerConditionTest(test);
 					int lawID = coordinator.registerControlLaw(law);
 					coordinator.registerTerminationCondition(testID, lawID, CommandCoordinator.Status.SUCCESS);
-					activeCommand = new CommandInfo(lawID, testID, newCommand.id, Status.RECEIVED);
+					activeCommand = new CommandInfo(lawID, testID, newCommand.id, law.getName(), Status.RECEIVED);
 				} else {
 					System.err.println("WRN: Error constructing law/test");
-					activeCommand = new CommandInfo(-1, -1, newCommand.id, Status.FAILURE);
+					activeCommand = new CommandInfo(-1, -1, newCommand.id,"NULL", Status.FAILURE);
 				}
 			} catch (ClassNotFoundException ex) {
 				System.err.println("ERR: "+ex);
 				ex.printStackTrace();
-				activeCommand = new CommandInfo(-1, -1, newCommand.id, Status.FAILURE);
+				activeCommand = new CommandInfo(-1, -1, newCommand.id, "ERR", Status.FAILURE);
 			}
 		}
 	}
@@ -169,28 +179,30 @@ public class CommandInterpreter
 		}
 	}
 
-	protected void sendCommandStatus(control_law_t controlLaw)
+	protected void sendCommandStatus()
 	{
-		String clName = controlLaw.name.toLowerCase();
-		if(clName.equals("none") || clName.equals("restart")){
-			// No commands being sent, no need to reply with a status
-			return;
-		}
+        if (activeCommand != null) {
+            String clName = activeCommand.name.toLowerCase();
+            if(clName.equals("none") || clName.equals("restart")){
+                // No commands being sent, no need to reply with a status
+                return;
+            }
+        }
+		control_law_status_t clStatus = new control_law_status_t();
+        clStatus.utime = TimeUtil.utime();
+        clStatus.id = 0;
+        clStatus.status = Status.SUCCESS.toString();
+        clStatus.name = "stop";
+
 		if(activeCommand == null){
 			// No command to report on
-			if(controlLaw.name.toLowerCase().equals("stop")){
-				control_law_status_t clStatus = new control_law_status_t();
-				clStatus.id = controlLaw.id;
-				clStatus.status = Status.SUCCESS.toString(); 
-				clStatus.name = controlLaw.name;
-				lcm.publish("SOAR_COMMAND_STATUS_TX", clStatus);
-			}
+            lcm.publish("SOAR_COMMAND_STATUS_TX", clStatus);
 			return;
 		}
-		control_law_status_t clStatus = new control_law_status_t();
+
 		clStatus.id = activeCommand.commandID;
 		clStatus.status = activeCommand.status.toString();
-		clStatus.name = controlLaw.name;
+		clStatus.name = activeCommand.name;
 		lcm.publish("SOAR_COMMAND_STATUS_TX", clStatus);
 	}
 
@@ -237,6 +249,9 @@ public class CommandInterpreter
 
 		public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
 		{
+            if (!running)
+                return;
+
 			try {
 				messageReceivedEx(lcm, channel, ins);
 			} catch (IOException ioex) {
@@ -251,7 +266,7 @@ public class CommandInterpreter
 			if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")) {
 				control_law_t controlLaw = new control_law_t(ins);
 				interpretCommand(controlLaw);
-				sendCommandStatus(controlLaw);
+				sendCommandStatus();
 			} else if (channel.startsWith("CONTROL_LAW_STATUS")) {
 				synchronized(commandLock){
 					control_law_status_list_t sl = new control_law_status_list_t(ins);
@@ -263,6 +278,7 @@ public class CommandInterpreter
 								stopActiveCommand();
 							}
 							activeCommand.setStatus(newStatus);
+                            sendCommandStatus();
 						}
 					}
 				}
