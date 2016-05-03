@@ -255,7 +255,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             new magic2.lcmtypes.robot_command_t();
         msg.robotid = robotid;
         msg.task = new magic2.lcmtypes.robot_task_t();
-        msg.task.task = magic2.lcmtypes.robot_task_t.TASK_FREEZE;
+        msg.task.task = magic2.lcmtypes.robot_task_t.FREEZE;
         msg.taskid = robotDriveID++;
 
         msg.ndparams = 0;
@@ -283,7 +283,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         //msg.utime = TimeUtil.utime();
         msg.robotid = robotid;
         msg.task = new magic2.lcmtypes.robot_task_t();
-        msg.task.task = magic2.lcmtypes.robot_task_t.TASK_GOTO_LOCAL;
+        msg.task.task = magic2.lcmtypes.robot_task_t.GOTO_GLOBAL;
         msg.taskid = robotDriveID++;
 
         msg.ndparams = 4;
