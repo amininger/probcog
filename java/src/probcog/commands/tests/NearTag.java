@@ -44,9 +44,9 @@ public class NearTag implements ConditionTest, LCMSubscriber
         return nt;
     }
 
-    public void processTag(classification_t c)
+    public void processTag(tag_classification_t c)
     {
-        if (c == null || c.id != tagID)
+        if (c == null || c.tag_id != tagID)
             return;
 
         closestDistance = LinAlg.magnitude(LinAlg.resize(c.xyzrpy, 2));
@@ -66,11 +66,11 @@ public class NearTag implements ConditionTest, LCMSubscriber
     {
         try {
             if (channel.startsWith("CLASSIFICATIONS")) {
-                classification_list_t cl = new classification_list_t(ins);
+                tag_classification_list_t cl = new tag_classification_list_t(ins);
 
-                classification_t c = null;
+                tag_classification_t c = null;
                 for (int i = 0; i < cl.num_classifications; i++) {
-                    if (tagID == cl.classifications[i].id) {
+                    if (tagID == cl.classifications[i].tag_id) {
                         c = cl.classifications[i];
                         break;
                     }

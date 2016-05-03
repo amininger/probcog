@@ -5,13 +5,14 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.*;
+
 import javax.swing.*;
+
 import java.text.*;
 import java.util.*;
 import java.util.Timer;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
@@ -19,15 +20,14 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 import april.vis.VisCameraManager.CameraPosition;
-
 import probcog.arm.*;
 import probcog.classify.*;
-import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
-import probcog.perception.*;
+import probcog.old.classify.Features.FeatureCategory;
+import probcog.old.perception.*;
+import probcog.old.sim.SimLocation;
+import probcog.old.sim.SimObjectPC;
 import probcog.sensor.*;
-import probcog.sim.SimLocation;
-import probcog.sim.SimObjectPC;
 import probcog.util.*;
 import probcog.vis.*;
 
@@ -250,7 +250,7 @@ long time = 0;
 		VisWorld.Buffer buffer = vw.getBuffer("perc-objects");
 		for(object_data_t objDat : perceptionObjects){
         	// Draw box outline
-            BoundingBox bbox = new BoundingBox(objDat.bbox_dim, objDat.bbox_xyzrpy);
+            BoundingBox bbox = new BoundingBox(objDat.xyzrpy, objDat.lenxyz);
 			double[] s = bbox.lenxyz;
 			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);
 			double[][] trans = LinAlg.xyzrpyToMatrix(bbox.xyzrpy);
@@ -268,17 +268,17 @@ long time = 0;
     		labelString += String.format("%s%d\n", tf, objDat.id);
 
     		if(drawPropertyLabels){
-        		for(categorized_data_t catDat : objDat.cat_dat){
-        			if(catDat.len == 0 || catDat.cat.cat == category_t.CAT_LOCATION){
-        				continue;
-        			}
-        			String label = catDat.label[0];
-        			double conf = catDat.confidence[0];
-            		labelString += String.format("%s%s:%.2f\n", tf, label, conf);
-        		}
+//        		for(categorized_data_t catDat : objDat.cat_dat){
+//        			if(catDat.len == 0 || catDat.cat.cat == category_t.CAT_LOCATION){
+//        				continue;
+//        			}
+//        			String label = catDat.label[0];
+//        			double conf = catDat.confidence[0];
+//            		labelString += String.format("%s%s:%.2f\n", tf, label, conf);
+//        		}
     		}
 
-    		double[] pos = objDat.bbox_xyzrpy;
+    		double[] pos = objDat.xyzrpy;
 
     		VzText text = new VzText(labelString);
     		double[] textLoc = new double[]{pos[0], pos[1], pos[2] + .1};
@@ -291,7 +291,7 @@ long time = 0;
     	VisWorld.Buffer buffer = vw.getBuffer("belief-objects");
 		for(object_data_t objDat : beliefObjects){
         	// Draw box outline
-            BoundingBox bbox = new BoundingBox(objDat.bbox_dim, objDat.bbox_xyzrpy);
+            BoundingBox bbox = new BoundingBox(objDat.lenxyz, objDat.xyzrpy);
 			double[] s = bbox.lenxyz;
 			double[][] scale = LinAlg.scale(s[0], s[1], s[2]);
 			double[][] trans = LinAlg.xyzrpyToMatrix(bbox.xyzrpy);
@@ -304,7 +304,7 @@ long time = 0;
     private synchronized void drawBeliefLabels(double[][] faceCamera){
     	VisWorld.Buffer buffer = vw.getBuffer("belief-labels");
     	for(object_data_t objDat : beliefObjects){
-            BoundingBox bbox = new BoundingBox(objDat.bbox_dim, objDat.bbox_xyzrpy);
+            BoundingBox bbox = new BoundingBox(objDat.lenxyz, objDat.xyzrpy);
     		String tf="<<monospaced,black,dropshadow=#FFFFFFFF>>";
     		String labelString = String.format("%s%d\n", tf, objDat.id);
     		VzText text = new VzText(labelString);

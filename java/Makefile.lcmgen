@@ -2,17 +2,31 @@ LCM = lcm-gen
 
 LCMTYPES_NAMES := $(shell cd ../lcmtypes && ls *.lcm)
 
-# Construct the pathnames to the java types.
+# Construct the pathnames to the java types
 LCMTYPES_JAVA := $(LCMTYPES_NAMES:%.lcm=%.java)
 LCMTYPES_JAVA := $(addprefix src/probcog/lcmtypes/,$(LCMTYPES_JAVA))
 
-SUFFIXES += .java .lcm
+LCMTYPES_JAR = lcmtypes.jar
+
+BUILD_PATH = build
+
+JAVAC = javac
+LCM_JAR = /usr/local/share/java/lcm.jar
 
 all: $(LCMTYPES_JAVA)
 
-
 src/probcog/lcmtypes/%.java: ../lcmtypes/%.lcm
-	$(LCM) -j  --jpath=src --jdefaultpkg=probcog.lcmtypes $<
+	@echo "\t$<"
+	@$(LCM) -j --jpath=src --jdefaultpkg=probcog.lcmtypes $<
+
+$(LCMTYPES_JAR): | builddir
+	@echo "[$(LCMTYPES_JAR)]"
+	@javac -cp $(LCM_JAR) -d $(BUILD_PATH) $(LCMTYPES_JAVA)
+	@jar cf $(LCMTYPES_JAR) -C $(BUILD_PATH) .
+
+builddir:
+	@echo "[$(BUILD_PATH)]"
+	@mkdir -p $(BUILD_PATH)
 
 clean:
-	rm -rf *~ src/probcog/lcmtypes/*
+	@rm -rf *~ src/probcog/lcmtypes/* *.jar

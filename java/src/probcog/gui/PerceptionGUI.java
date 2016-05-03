@@ -4,13 +4,14 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+
 import javax.swing.*;
+
 import java.text.*;
 import java.util.*;
 import java.util.Timer;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
@@ -18,15 +19,17 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 import april.vis.VisCameraManager.CameraPosition;
-
 import probcog.arm.*;
 import probcog.classify.*;
-import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
-import probcog.perception.*;
+import probcog.old.classify.Classifications;
+import probcog.old.classify.ClassifierManager;
+import probcog.old.classify.Features;
+import probcog.old.classify.Features.FeatureCategory;
+import probcog.old.perception.*;
+import probcog.old.sim.SimLocation;
+import probcog.old.sim.SimObjectPC;
 import probcog.sensor.*;
-import probcog.sim.SimLocation;
-import probcog.sim.SimObjectPC;
 import probcog.util.*;
 import probcog.vis.*;
 

@@ -142,6 +142,11 @@ public class CommandCoordinator
     public void setRunning(boolean run)
     {
         tasks.setRunning(run);  // Is this coordinator active?
+    	synchronized(conditionTests){
+    		for(ConditionTest test : conditionTests.values()){
+    			test.setRunning(run);
+    		}
+    	}
     }
 
     /** Register a control law with the Coordinator.

@@ -44,6 +44,7 @@ public class Stabilized implements ConditionTest, LCMSubscriber
         if (run) {
             // XXX LCM Subscription explosion
             lcm.subscribe("POSE", this);
+            begun = false;
         } else {
             lcm.unsubscribe("POSE", this);
         }

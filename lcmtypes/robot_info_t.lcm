@@ -1,0 +1,10 @@
+struct robot_info_t
+{
+    int64_t utime;
+    
+    // Global pose of the robot
+    double xyzrpy[6];
+    
+    // True if the robot is holding something
+    int32_t held_object;
+}

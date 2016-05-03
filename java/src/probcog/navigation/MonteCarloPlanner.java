@@ -9,7 +9,6 @@ import april.jmat.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;
-
 import probcog.classify.*;
 import probcog.commands.*;
 import probcog.commands.controls.*;
