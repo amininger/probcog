@@ -5,6 +5,7 @@ import lcm.lcm.*;
 import java.util.*;
 import java.io.IOException;
 
+import april.jmat.*;
 import april.util.*;
 
 import probcog.lcmtypes.*;
@@ -19,13 +20,39 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
 {
     LCM lcm = LCM.getSingleton();
 
+    Object poseLock = new Object();
+    double[] lastL2G = new double[3];
+    pose_t lastPose;
+
     public void run()
     {
         lcm.subscribe("SOAR_COMMAND_TX", this);
         lcm.subscribe("MAGIC2_CONTROL_POLICY_STATUS", this);
+        lcm.subscribe("POSE", this);
+        lcm.subscribe("L2G", this);
 
+        // LCM publishing loop
+        robot_info_t robot_info = new robot_info_t();
         while (true) {
-            TimeUtil.sleep(1000/20);
+            TimeUtil.sleep(100);
+
+            if (lastPose == null)
+                continue;
+
+            synchronized (poseLock) {
+                robot_info.utime = TimeUtil.utime();
+                robot_info.held_object = 0;
+
+                // Pose stuff
+                double[] lxyt = LinAlg.quatPosToXYT(lastPose.orientation,
+                                                    lastPose.pos);
+                double[] gxyt = LinAlg.xytMultiply(lastL2G, lxyt);
+
+                double[][] M = LinAlg.xytToMatrix(gxyt);
+                robot_info.xyzrpy = LinAlg.matrixToXyzrpy(M);
+            }
+
+            lcm.publish("ROBOT_INFO", robot_info);
         }
     }
 
@@ -116,6 +143,18 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
             }
 
             lcm.publish("SOAR_COMMAND_STATUS_TX", soar_status);
+        } else if (channel.equals("POSE")) {
+            pose_t pose = new pose_t(ins);
+
+            synchronized (poseLock) {
+                lastPose = pose;
+            }
+        } else if (channel.equals("L2G")) {
+            lcmdoubles_t l2g = new lcmdoubles_t(ins);
+
+            synchronized (poseLock) {
+                System.arraycopy(l2g.data, 0, lastL2G, 0, 3);
+            }
         }
     }
 
