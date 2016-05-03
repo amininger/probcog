@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.*;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 //import april.lcmtypes.*;
@@ -14,8 +13,8 @@ import april.tag.TagDetection;
 //import probcog.lcmtypes.*;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
+import probcog.lcmtypes.tag_classification_t;
 import probcog.util.*;
-
 import magic2.lcmtypes.*;
 
 public class TagClassifier
@@ -59,7 +58,7 @@ public class TagClassifier
 
             String[] labels = config.getStrings("classes.c"+i+".labels", null);
             double[] probs = config.getDoubles("classes.c"+i+".probs", null);
-            int[] ids = config.getInts("classes.c"+i+".ids", null);
+            int[] ids  = config.getInts("classes.c"+i+".ids", null);
             double mean = config.getDouble("classes.c"+i+".mean", 0);
             double stddev = config.getDouble("classes.c"+i+".stddev", 0);
             double minRange = config.getDouble("classes.c"+i+".minRange", 0);
@@ -67,7 +66,7 @@ public class TagClassifier
 
             if (labels == null)
                 break;
-
+            
             // The first label detected is assumed to be the ground truth
             // labeling of this object. This is used to map ground truth
             // classes to IDs in tagClassToIDs. If this is the first such
@@ -97,7 +96,7 @@ public class TagClassifier
             // remember to add all the IDs to the ground truth class-to-IDs
             // structure.
             TagClass tag = new TagClass(labelList, probList, mean, stddev, minRange, maxRange);
-            for(int id : ids) {
+            for(Integer id : ids) {
                 ArrayList<TagClass> allTags;
                 if(idToTag.containsKey(id))
                     allTags = idToTag.get(id);
@@ -226,7 +225,7 @@ public class TagClassifier
         return tc.maxRange;
     }
 
-    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy)
+    public ArrayList<tag_classification_t> classifyTag(int id, double[] xyzrpy)
     {
         return classifyTag(id, xyzrpy, false);
     }
@@ -235,9 +234,9 @@ public class TagClassifier
      *  relative to the robot. This actually supports multiple detections,
      *  to some extent.
      **/
-    public ArrayList<classification_t> classifyTag(int id, double[] xyzrpy, boolean perfect)
+    public ArrayList<tag_classification_t> classifyTag(int id, double[] xyzrpy, boolean perfect)
     {
-        ArrayList<classification_t> classies = new ArrayList<classification_t>();
+        ArrayList<tag_classification_t> classies = new ArrayList<tag_classification_t>();
         ArrayList<TagClass> tcs = idToTag.get(id);
         if (tcs == null)
             return classies;    // No config entries
@@ -257,10 +256,11 @@ public class TagClassifier
                 }
             }
 
-            classification_t classy = new classification_t();
+            tag_classification_t classy = new tag_classification_t();
+            classy.utime = TimeUtil.utime();
             classy.name = label;
             classy.range = sampleRange(tc); // When perfect, what should this do?
-            classy.id = id;
+            classy.tag_id = id;
             classy.xyzrpy = xyzrpy;
             classy.confidence = sampleConfidence(tc.mean, tc.stddev);
             classies.add(classy);
@@ -271,7 +271,7 @@ public class TagClassifier
 
     private void publishDetections(tag_detection_list_t tagList)
     {
-        ArrayList<classification_t> classies = new ArrayList<classification_t>();
+        ArrayList<tag_classification_t> classies = new ArrayList<tag_classification_t>();
 
         for (int n=0; n < tagList.ndetections; n++) {
             tag_detection_t td = tagList.detections[n];
@@ -302,7 +302,7 @@ public class TagClassifier
             double[] xyzrpy = LinAlg.matrixToXyzrpy(T2B);
 
 
-            ArrayList<classification_t> cs = classifyTag(tag.id, xyzrpy);
+            ArrayList<tag_classification_t> cs = classifyTag(tag.id, xyzrpy);
 
             // Incorporate tag history stuff
             history.addObservations(cs, tagList.utime);

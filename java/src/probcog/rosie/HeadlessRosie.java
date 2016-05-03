@@ -7,7 +7,9 @@ import java.util.Properties;
 import probcog.rosie.actuation.MobileActuationConnector;
 import probcog.rosie.perception.MobilePerceptionConnector;
 
+import edu.umich.rosie.language.IMessagePasser;
 import edu.umich.rosie.language.LanguageConnector;
+import edu.umich.rosie.language.Message.MessageServer;
 import edu.umich.rosie.soar.SoarAgent;
 import april.util.GetOpt;
 import april.util.StringUtil;
@@ -30,7 +32,15 @@ public class HeadlessRosie
     	perception = new MobilePerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
     	
-    	language = new LanguageConnector(soarAgent, props);
+    	IMessagePasser messagePasser;
+    	if(!props.getProperty("message-source", "lcm").equals("tablet")){
+    		messagePasser = new LcmMessagePasser("robot");
+    		new MessageServer();
+    	} else {
+    		messagePasser = new MessageServer();
+    	}
+    	
+    	language = new LanguageConnector(soarAgent, props, messagePasser);
     	soarAgent.setLanguageConnector(language);
 
     	soarAgent.createAgent();

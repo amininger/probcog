@@ -2,18 +2,12 @@ struct object_data_t
 {
     int64_t utime;
 
-    int32_t id;
+    string id;
 
-    int32_t num_cat;
-    categorized_data_t cat_dat[num_cat];
+    // Bounding Box
+    double xyzrpy[6];
+    double lenxyz[3]; 
 
-    double pos[6]; // xyzrpy
-
-		int32_t num_states;
-		string state_values[num_states];
-
-    // Bounding box.
-    double bbox_dim[3];         // Bounding box dimensions
-    double bbox_xyzrpy[6];      // Transformation of box centered at origin to
-                                // position in world
+    int32_t num_classifications;
+    classification_t classifications[num_classifications];
 }

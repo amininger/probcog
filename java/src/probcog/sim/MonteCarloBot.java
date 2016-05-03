@@ -5,13 +5,11 @@ import java.io.*;
 import java.util.*;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 import april.sim.*;
 import april.vis.*;
 import april.util.*;
-
 import probcog.vis.*;
 import probcog.classify.*;
 import probcog.commands.*;
@@ -19,7 +17,6 @@ import probcog.commands.controls.*;
 import probcog.commands.tests.*;
 import probcog.util.*;
 import probcog.navigation.*;
-
 import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
@@ -168,7 +165,7 @@ public class MonteCarloBot implements SimObject
         for (SimAprilTag tag: getSeenTags()) {
             double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
             double[] relXyzrpy = relativePose(getPose(), xyzrpy);
-            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy, perfect);
+            ArrayList<tag_classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy, perfect);
             tagHistory.addObservations(classies, currentUtime);
             //tagHistory.markTagObserved(tag.getID());
         }
@@ -255,7 +252,7 @@ public class MonteCarloBot implements SimObject
                     double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
                     double[] relXyzrpy = relativePose(getPose(), xyzrpy);
 
-                    classification_t classy = tc.classifyTag(tag.getID(), relXyzrpy).get(0);
+                    tag_classification_t classy = tc.classifyTag(tag.getID(), relXyzrpy).get(0);
                     classy.name = tc.correctClass(tag.getID());
                     double dist = LinAlg.magnitude(LinAlg.resize(relXyzrpy, 2));
                     if (classy.name.equals(dtt.getClassType()) && dist < minDist) {
@@ -313,7 +310,7 @@ public class MonteCarloBot implements SimObject
             for (SimAprilTag tag: seenTags) {
                 double[] xyzrpy = LinAlg.matrixToXyzrpy(tag.getPose());
                 double[] relXyzrpy = relativePose(getPose(), xyzrpy);
-                ArrayList<classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy, perfect);
+                ArrayList<tag_classification_t> classies = tc.classifyTag(tag.getID(), relXyzrpy, perfect);
 
                 if (classies.size() < 1)
                     continue;
@@ -335,7 +332,7 @@ public class MonteCarloBot implements SimObject
                 //}
                 //tagHistory.markTagObserved(tag.getID());
                 //
-                ArrayList<classification_t> cs = tagHistory.getLabels(tag.getID(), relXyzrpy, currentUtime);
+                ArrayList<tag_classification_t> cs = tagHistory.getLabels(tag.getID(), relXyzrpy, currentUtime);
                 if (cs.size() < 1)
                     continue;
                 String label = cs.get(0).name;
@@ -417,7 +414,7 @@ public class MonteCarloBot implements SimObject
         HashMap<String, Integer> labelCount = new HashMap<String, Integer>();
         for (int i = 0; i < NUM_TAG_SAMPLES; i++) {
             // As done elsewhere, only use the first classy if it exists
-            ArrayList<classification_t> classies = tc.classifyTag(tag.getID(),
+            ArrayList<tag_classification_t> classies = tc.classifyTag(tag.getID(),
                                                                   relXyzrpy,
                                                                   perfect);
             if (classies.size() < 1)

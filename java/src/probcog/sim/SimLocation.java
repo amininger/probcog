@@ -1,136 +1,123 @@
-package probcog.sim; // XXX - Should it go here? XXX Probably not
+package probcog.sim;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
-import april.jmat.*;
-import april.sim.*;
-import april.util.*;
-import april.vis.*;
-
-import probcog.classify.Classifications;
-import probcog.classify.Features.FeatureCategory;
-import probcog.perception.*;
-import probcog.util.*;
+import probcog.old.classify.Classifications;
+import probcog.old.classify.Features;
+import probcog.old.classify.Features.FeatureCategory;
+import probcog.old.perception.Obj;
+import probcog.old.sim.SimObjectPC;
+import probcog.util.BoundingBox;
+import april.jmat.LinAlg;
+import april.sim.BoxShape;
+import april.sim.Shape;
+import april.sim.SimObject;
+import april.sim.SimWorld;
+import april.util.StructureReader;
+import april.util.StructureWriter;
+import april.vis.VisChain;
+import april.vis.VisObject;
+import april.vis.VzMesh;
+import april.vis.VzRectangle;
+import april.vis.VzText;
 
 public class SimLocation extends SimObjectPC implements SimObject
 {
-    boolean table = false; // XXX -- Get this info from config file?
-    boolean mobile = true;
-
-    String name = "";
-    double[] sxyz = new double[]{1, 1, .1};
-    protected double[] lwh = new double[]{1, 1, 1};
+    protected double T[][] = LinAlg.identity(4);  // position
+	protected static Color  color = Color.gray;
+	
+	protected double[] minPoint = new double[]{ -1.0, -1.0 };
+	protected double[] maxPoint = new double[]{  1.0,  1.0 };
+	
+	protected String handle = null;
 
     public SimLocation(SimWorld sw)
     {
     	super(sw);
     }
+    
+    public String getHandle(){
+    	return handle;
+    }
+    public void setHandle(String handle){
+    	this.handle = handle;
+    }
 
+    public double[][] getPose()
+    {
+        return LinAlg.copy(T);
+    }
+
+    public void setPose(double T[][])
+    {
+        this.T = LinAlg.copy(T);
+    }    
+    
+    public boolean posIsInside(double[] xyzrpy){
+    	return xyzrpy[0] >= minPoint[0] && xyzrpy[1] >= minPoint[1] &&
+    	       xyzrpy[0] <= maxPoint[0] && xyzrpy[1] <= maxPoint[1];
+    }
+    
     public VisObject getVisObject()
     {
         ArrayList<Object> objs = new ArrayList<Object>();
 
-        // The larger box making up the background of the object
-        if(table) {
-            objs.add(LinAlg.scale(scale));
+        double len = (maxPoint[0] - minPoint[0]);
+        double wid = (maxPoint[1] - minPoint[1]);
+        
+        // Actual Rectangle
+        objs.add(new VisChain(new VzRectangle(len, wid, new VzMesh.Style(color))));
 
-            objs.add(new VisChain(LinAlg.translate(0, 0, 1), new VzRectangle(new VzMesh.Style(color))));
-
-            // The smaller inner box is only drawn if there is a door and it's open
-            if(currentState.containsKey("door") && currentState.get("door").equals("open")) {
-                objs.add(new VisChain(LinAlg.translate(0,0,1.001),
-                                      LinAlg.scale(.9),
-                                      new VzRectangle(new VzMesh.Style(Color.DARK_GRAY))));
-            }
-
-            // The name of the location
-            objs.add(new VisChain(LinAlg.rotateZ(Math.PI/2), LinAlg.translate(0,-.8,1.002),
-                                  LinAlg.scale(0.02),
-                                  new VzText(VzText.ANCHOR.CENTER,
-                                             String.format("<<black>> %s", name))));
-        }
-        else if (mobile) {
-            objs.add(new VisChain(LinAlg.translate(0,0,-.5),
-                                  new VzRectangle(sxyz[0], sxyz[1], new VzMesh.Style(color))));
-
-            // The name of the location
-            objs.add(new VisChain(LinAlg.translate(0,0,-.5),
-                                  LinAlg.scale(0.1),
-                                  new VzText(VzText.ANCHOR.CENTER,
-                                             String.format("<<black>> %s", name))));
-
-        }
+        // The handle of the location
+        objs.add(new VisChain(LinAlg.translate(0,0,0),
+                              LinAlg.scale(0.05),
+                              new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle))));
 
         return new VisChain(objs.toArray());
     }
 
     public Shape getShape()
     {
-        if(table) {
-            return new BoxShape(sxyz[0]*2, sxyz[1]*2, sxyz[2]*2);
-        }
-        return new BoxShape(sxyz[0], sxyz[1], -sxyz[2]);
+    	return new april.sim.SphereShape(0.0);
     }
 
-    public void setName(String name)
-    {
-        this.name = name;
-    }
-
-    public String getName()
-    {
-        return name;
-    }
-
-    public Obj getObj(boolean assignID)
-    {
-        Obj locObj;
-        if(assignID && id < 0) {
-            locObj = new Obj(assignID);
-            id = locObj.getID();
-        }
-        else {
-            locObj = new Obj(id);
-        }
-
-        lwh = new double[]{scale, scale, scale};
-
-        double[] pose = LinAlg.matrixToXyzrpy(T);
-
-        locObj.setPose(pose);
-        locObj.setCentroid(new double[]{pose[0], pose[1], pose[2]});
-        locObj.setBoundingBox(new BoundingBox(LinAlg.scale(lwh, 2), pose));
-
-        locObj.setVisObject(getVisObject());
-        locObj.setShape(getShape());
-        locObj.setSourceSimObject(this);
-        Classifications location = new Classifications();
-        location.add(name, 1.0);
-        locObj.addClassifications(FeatureCategory.LOCATION, location);
-
-        return locObj;
-    }
-
+    /** Restore state that was previously written **/
     public void read(StructureReader ins) throws IOException
     {
-    	super.read(ins);
-
-        sxyz = ins.readDoubles();
-        name = ins.readString();
+    	// handle for the location
+    	handle = ins.readString();
+    	
+    	// 1st corner [x, y]
+        double c1[] = ins.readDoubles();
+    	
+    	// 2nd corner [x, y]
+        double c2[] = ins.readDoubles();
+        
+        minPoint[0] = Math.min(c1[0], c2[0]);
+        minPoint[1] = Math.min(c1[1], c2[1]);
+        maxPoint[0] = Math.max(c1[0], c2[0]);
+        maxPoint[1] = Math.max(c1[1], c2[1]);
+        
+        double x = (minPoint[0] + maxPoint[0])/2;
+        double y = (minPoint[1] + maxPoint[1])/2;
+        double[] xyzrpy = new double[]{x, y, 0.001, 0.0, 0.0, 0.0};
+        this.T = LinAlg.xyzrpyToMatrix(xyzrpy);
     }
 
+    /** Write one or more lines that serialize this instance. No line
+     * is allowed to consist of just an asterisk. **/
     public void write(StructureWriter outs) throws IOException
     {
-    	super.write(outs);
-
-        outs.writeDoubles(sxyz);
-        outs.writeString(name);
+    	outs.writeString(handle);
+    	outs.writeDoubles(minPoint);
+    	outs.writeDoubles(maxPoint);
     }
 
-    // Override for SimObject
-    public void setRunning(boolean arg0)
-    {
+    public void setRunning(boolean b){
+    	
     }
 }

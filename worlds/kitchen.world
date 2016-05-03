@@ -1,0 +1,106 @@
+"probcog.sim.SimFlatSurface"
+{
+	.4
+	.4
+}
+"probcog.sim.SimLocation"
+{
+	1
+	vec 6
+	-0.3 0.2 -0.1 0.0 0.0 0.0
+	0.2
+	vec 4
+	0.0 0.0 1.0 1.0
+	1
+	door=closed,open
+	pantry
+}
+"probcog.sim.SimStove"
+{
+	2
+	vec 6
+	-0.3 -0.2 -0.1 0.0 0.0 0.0
+	0.2
+	vec 4
+	1.0 1.0 0.0 1.0
+	0
+	stove
+}
+"probcog.sim.SimLocation"
+{
+	3
+	vec 6
+	0.0 -0.2 -0.1 0.0 0.0 0.0
+	0.2
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	table
+}
+"probcog.sim.SimLocation"
+{
+	4
+	vec 6
+	0.0 0.2 -0.1 0.0 0.0 0.0
+	0.2
+	vec 4
+	1.0 0.0 0.0 1.0
+	0
+	garbage
+}
+"probcog.sim.SimSteak"
+{
+	5
+	vec 6
+	0.25 0.30 0.05 0.00 0.00 0.00
+	0.08
+	vec 4
+	1.0 1.0 1.0 1.0
+	2
+	size=size-large
+	shape=shape-steak
+	vec 3
+	1.0 1.0 1.0
+	false
+}
+"probcog.sim.SimSteak"
+{
+	6
+	vec 6
+	0.25 0.10 0.03 0.00 0.00 0.00
+	0.04
+	vec 4
+	1.0 1.0 1.0 1.0
+	2
+	size=size-small
+	shape=shape-steak
+	vec 3
+	1.0 1.0 1.0
+	false
+}
+"probcog.sim.SimSpherePC"
+{
+	7	
+	vec 6
+	0.25 -0.10 0.06 0.00 0.00 0.00
+	0.05
+	vec 4
+	0.00 1.00 0.00 1.00
+	2
+	color=color-green
+	shape=shape-ball
+}
+"probcog.sim.SimBoxPC"
+{
+	8
+	vec 6
+	0.25 -0.30 0.03 0.00 0.00 0.00
+	0.05
+	vec 4
+	1.00 0.00 0.00 1.00
+	2
+	color=color-red
+	shape=shape-box
+	vec 3
+	1 1 1
+}

@@ -3,17 +3,16 @@ package probcog.arm;
 import java.io.*;
 import java.util.*;
 import java.awt.*;
+
 import javax.swing.*;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.jmat.*;
 import april.util.*;
 import april.vis.*;
-
 import probcog.lcmtypes.*;
-import probcog.perception.*;
+import probcog.old.perception.*;
 import probcog.util.*;
 
 /** The command interpreter takes in a robot_command_t from

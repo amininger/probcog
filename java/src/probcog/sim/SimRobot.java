@@ -7,10 +7,10 @@ import java.util.*;
 import java.util.zip.*;
 import java.awt.event.*;
 import java.awt.*;
+
 import javax.swing.*;
 
 import lcm.lcm.*;
-
 import april.config.Config;
 import april.jmat.LinAlg;
 import april.jmat.MathUtil;
@@ -19,20 +19,25 @@ import april.vis.*;
 import april.lcm.*;
 import april.util.*;
 import april.sim.*;
-
 import probcog.classify.*;
 import probcog.commands.CommandInterpreter;
+import probcog.commands.CommandCoordinator.Status;
 import probcog.util.*;
 import probcog.vis.*;
+import probcog.old.sim.SimDoor;
+import probcog.perception.SimObjectDetector;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
-
 import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 public class SimRobot implements SimObject, LCMSubscriber
 {
-    static Random classifierRandom = new Random(3611871);
+	static final double OBJECT_VIEW_DIST = 5.0;  // max distant it can see objects at
+	static final double OBJECT_VIEW_DIST_SQ = OBJECT_VIEW_DIST * OBJECT_VIEW_DIST;
+	static final double OBJECT_VIEW_ANGLE = Math.PI/2;  // max angle it can see objects at
+	static final double OBJECT_VIEW_ANGLE_COS = Math.cos(OBJECT_VIEW_ANGLE/2);
+	
     static final int ROBOT_MAP_DATA_HZ = 10;
     long lastMapData = 0;
 
@@ -47,8 +52,9 @@ public class SimRobot implements SimObject, LCMSubscriber
     int robotID;
 
     CommandInterpreter ci;
-    TagHistory tagHistory = new TagHistory();
     LCM lcm = LCM.getSingleton();
+    
+    SimObjectDetector objDetector;
 
     CompoundShape shape;
     VisObject visObj;
@@ -61,6 +67,8 @@ public class SimRobot implements SimObject, LCMSubscriber
     // static variables ..
     static Random r = new Random();
     static Model4 model4 = new Model4();
+    
+    private SimObjectPC grabbedObject = null;
 
     public SimRobot(SimWorld sw)
     {
@@ -109,14 +117,17 @@ public class SimRobot implements SimObject, LCMSubscriber
         double K_drag = 1.0;    // XXX Hand-picked drag [Nm / (rad/s)], always >= 0
         drive.leftMotor.drag_constant = K_drag;
         drive.rightMotor.drag_constant = K_drag;
+        
+        objDetector = new SimObjectDetector(this, sw);
 
         lcm.subscribe("GAMEPAD", this);
         lcm.subscribe("DIFF_DRIVE", this);
+        lcm.subscribe("SOAR_COMMAND.*", this);
 
-        tasks.addFixedDelay(new ImageTask(), 0.04);
+        tasks.addFixedDelay(new ImageTask(sw.objects), 0.04);
         tasks.addFixedDelay(new PoseTask(), 0.04);
         tasks.addFixedDelay(new ControlTask(), 0.01);
-        tasks.addFixedDelay(new ClassifyTask(), 0.04);
+//        tasks.addFixedDelay(new ClassifyTask(), 0.04);
     }
 
     public april.sim.Shape getShape()
@@ -246,7 +257,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.poseTruth.orientation = LinAlg.matrixToQuat(T);
         drive.poseTruth.pos = new double[] { T[0][3], T[1][3], 0 };
     }
-
+    
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
@@ -267,11 +278,93 @@ public class SimRobot implements SimObject, LCMSubscriber
             gamepad_t msg = new gamepad_t(ins);
             gamepadCache.put(msg, msg.utime);
         }
+
+        // AM: Added so that simulated drive-xy commands teleport the robot
+		if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")) {
+			control_law_t controlLaw = new control_law_t(ins);
+			if(controlLaw.name.equals("drive-xy")){
+				double newx = 0.0;
+				double newy = 0.0;
+				for(int p = 0; p < controlLaw.num_params; p++){
+					if(controlLaw.param_names[p].equals("x")){
+						newx = Double.parseDouble(controlLaw.param_values[p].value);
+					} else if(controlLaw.param_names[p].equals("y")){
+						newy = Double.parseDouble(controlLaw.param_values[p].value);
+					}
+				}
+				drive.poseTruth.pos[0] = newx;
+				drive.poseTruth.pos[1] = newy;
+			} else if (controlLaw.name.toLowerCase().equals("pause")){
+				this.setRunning(false);
+			} else if (controlLaw.name.toLowerCase().equals("resume")){
+				this.setRunning(true);
+			}
+		}
+    }
+    
+    public SimObjectPC getGrabbedObject(){
+    	return grabbedObject;
+    }
+    
+    public void pickUpObject(SimObjectPC obj){
+    	if(grabbedObject != null && obj != grabbedObject){
+    		System.err.println("ERROR: already holding different object");
+    		return;
+    	}
+    	double[] objPos = LinAlg.copy(LinAlg.matrixToXyzrpy(obj.getPose()), 3);
+    	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
+    	double dist = LinAlg.distance(robPos, objPos);
+    	
+//    	if(dist <= .1){
+    		grabbedObject = obj;
+    		double[][] robPose = LinAlg.xyzrpyToMatrix(LinAlg.quatPosToXyzrpy(this.drive.poseTruth.orientation, robPos));
+    		obj.setPose(robPose);
+//    	}
+    }
+    
+    public void putDownObject(){
+    	if(grabbedObject == null){
+    		return;
+    	}
+    	double[] robotPos = LinAlg.copy(this.drive.poseTruth.pos);
+    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
+    	forward = LinAlg.scale(forward, 1.5);
+    	double[] newPos = LinAlg.add(robotPos, forward);
+    	double[] xyzrpy = new double[]{ newPos[0], newPos[1], newPos[2], 0, 0, 0 };
+    	grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+    	grabbedObject = null;
+    }
+    
+    public boolean inViewRange(double[] xyz){
+    	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
+    	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
+    	
+    	// Check if point is within view distance
+    	double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
+    	if(sqDist > OBJECT_VIEW_DIST_SQ){
+    		return false;
+    	}
+    	if(sqDist < 1.5){
+    		// Within 10 cm of object, report as seen
+    		return true;
+    	}
+
+    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
+    	forward = LinAlg.copy(forward, 3);
+    	double dp = LinAlg.dotProduct(forward, toPoint);
+    	double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
+    	if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
+    		return true;
+    	}
+    	return false;
     }
 
     public void setNoise(boolean noise)
     {
         useNoise = noise;
+    }
+    public boolean usesNoise(){
+    	return useNoise;
     }
 
     public void setPerfectPose(boolean pp)
@@ -284,15 +377,23 @@ public class SimRobot implements SimObject, LCMSubscriber
         double gridmap_range = 10;
         double gridmap_meters_per_pixel = 0.1;
 
-        HashSet<SimObject> ignore = new HashSet<SimObject>();
+        HashSet<SimObject> ignore = null;
 
-        public ImageTask()
+        public ImageTask(Collection<SimObject> objects)
         {
-            ignore.add(SimRobot.this);
         }
 
         public void run(double dt)
         {
+        	if(ignore == null){
+        		ignore = new HashSet<SimObject>();
+        		ignore.add(SimRobot.this);
+        		for(SimObject obj : sw.objects){
+        			if(obj instanceof SimObjectPC){
+        				ignore.add(obj);
+        			}
+        		}
+        	}
             double radstep = Math.atan2(gridmap_meters_per_pixel, gridmap_range);
             double minDeg = -135;
             double maxDeg = 135;
@@ -307,6 +408,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             double T_odom[][] = LinAlg.matrixAB(LinAlg.quatPosToMatrix(drive.poseOdom.orientation,
                                                                        drive.poseOdom.pos),
                                                 LinAlg.translate(0.3, 0, 0.25));
+
 
             double ranges[] = Sensors.laser(sw, ignore, T_truth, (int) ((rad1-rad0)/radstep),
                                             rad0, radstep, maxRange);
@@ -406,198 +508,9 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
     }
 
-    // XXX Temporary existence inside robot. Longer term, classifications are
-    // likely to be spun up outside the robot, but this allows us to quite easily
-    // turn noise on and off
-    class ClassifyTask implements PeriodicTasks.Task
-    {
-        TagClassifier tc;
+    // Aaron Mininger: Implementaton of this task moved to probcog.perception.SimObjectDetector
 
-        public ClassifyTask()
-        {
-            try {
-                tc = new TagClassifier(false);
-            } catch (IOException ioex) {
-                System.err.println("ERR: Could not create TagClassifier");
-                ioex.printStackTrace();
-            }
-        }
-
-        public void run(double dt)
-        {
-            // Look through all objects in the world and if one is
-            // a door and it's within a set distance of us, "classify" it
-            double[] xyzrpyBot = LinAlg.matrixToXyzrpy(getPose());
-
-            for(SimObject so : sw.objects) {
-                detectDoor(so, xyzrpyBot);
-                detectHallway(so, xyzrpyBot);
-            }
-            detectApriltags(sw.objects, xyzrpyBot);
-        }
-
-        private void detectDoor(SimObject so, double[] xyzrpyBot)
-        {
-            if (!(so instanceof SimDoor || so instanceof SimFalseDoor))
-                return;
-            double sensingThreshold = 1.5;
-
-            double[] xyzrpyDoor = LinAlg.matrixToXyzrpy(so.getPose());
-            double dist = LinAlg.distance(xyzrpyBot, xyzrpyDoor, 2);
-            if (dist > sensingThreshold)
-                return;
-
-            classification_t classies = new classification_t();
-            classies.utime = TimeUtil.utime();
-            classies.name = "door";
-
-            // Position relative to robot. For now, tossing away orientation data,
-            // but may be relevant later.
-            double[] relXyzrpy = relativePose(getPose(), xyzrpyDoor);
-            classies.xyzrpy = relXyzrpy;
-
-            if (useNoise) {
-                // Object detections imperfect. Based on classification confidence
-                if (so instanceof SimDoor) {
-                    SimDoor door = (SimDoor)so;
-                    classies.id = door.id;
-                    classies.confidence = sampleConfidence(door.mean, door.stddev);
-                } else {
-                    SimFalseDoor door = (SimFalseDoor)so;
-                    classies.id = door.id;
-                    classies.confidence = sampleConfidence(door.mean, door.stddev);
-                }
-            } else {
-                // Object detections perfect. Object MUST be a real door
-                if (!(so instanceof SimDoor))
-                    return;
-                SimDoor door = (SimDoor)so;
-                classies.id = door.id;
-                classies.confidence = 1.0;
-            }
-
-            classification_list_t classy_list = new classification_list_t();
-            classy_list.utime = TimeUtil.utime();
-            classy_list.num_classifications = 1;
-            classy_list.classifications = new classification_t[]{classies};
-            lcm.publish("CLASSIFICATIONS", classy_list);
-        }
-
-        // Only detect hallways that we can "see". That means that
-        // 1) They are not behind the robot
-        // 2) The portal opens in an appropriate direction
-        private void detectHallway(SimObject so, double[] xyzrpyBot)
-        {
-            if (!(so instanceof SimHallway))
-                return;
-            SimHallway hall = (SimHallway)so;
-
-            // Imperfect and probably over generous
-            double SENSING_THRESHOLD = 5.0;
-            double ORIENTATION_THRESHOLD = Math.toRadians(-5);
-
-            double[] xyzrpyHall = LinAlg.matrixToXyzrpy(so.getPose());
-            double[] relXyzrpy = relativePose(getPose(), xyzrpyHall);
-            double yawHall = xyzrpyHall[5];
-            double yawBot = xyzrpyBot[5];
-            double dotp = Math.cos(yawBot)*Math.cos(yawHall) + Math.sin(yawBot)*Math.sin(yawHall);
-            double dist = LinAlg.distance(xyzrpyBot, xyzrpyHall, 2);
-            // Object must be in range, correctly oriented, and in front of the robot (XXX)
-            if (dist > SENSING_THRESHOLD|| dotp < ORIENTATION_THRESHOLD || relXyzrpy[0] < -0.5)
-                return;
-
-            classification_t classies = new classification_t();
-            classies.utime = TimeUtil.utime();
-            classies.name = "hallway";
-            classies.xyzrpy = relXyzrpy;
-            classies.id = hall.id;
-
-            if (useNoise) {
-                classies.confidence = sampleConfidence(hall.mean, hall.stddev);
-            } else {
-                classies.confidence = 1.0;
-            }
-
-            classification_list_t classy_list = new classification_list_t();
-            classy_list.utime = TimeUtil.utime();
-            classy_list.num_classifications = 1;
-            classy_list.classifications = new classification_t[]{classies};
-            lcm.publish("CLASSIFICATIONS", classy_list);
-        }
-
-        /** Publish april tag detections. Also directly publishes classifications
-         *  right now.
-         **/
-        private void detectApriltags(Collection<SimObject> sos, double[] xyzrpyBot)
-        {
-            ArrayList<classification_t> classies = new ArrayList<classification_t>();
-            classification_list_t classy_list = new classification_list_t();
-            classy_list.utime = TimeUtil.utime();
-
-            ArrayList<tag_detection_t> dets = new ArrayList<tag_detection_t>();
-            tag_detection_list_t tdl = new tag_detection_list_t();
-            tdl.utime = TimeUtil.utime();
-
-            double iw = Util.getConfig().requireDouble("cameraCalibration.imWidth");
-            double ih = Util.getConfig().requireDouble("cameraCalibration.imHeight");
-
-            double cx = iw/2.0;
-            double cy = ih/2.0;
-
-            for (SimObject so: sos) {
-                if (!(so instanceof SimAprilTag))
-                    continue;
-                SimAprilTag tag = (SimAprilTag)so;
-                double sensingThreshold = 2;
-
-                double[] xyzrpyTag = LinAlg.matrixToXyzrpy(so.getPose());
-                double dist = LinAlg.distance(xyzrpyBot, xyzrpyTag, 2);
-                if (dist > sensingThreshold)
-                    continue;
-
-                // Fake tag detections for 36h11 by a chameleon
-                //tag_detection_t td = new tag_detection_t();
-                //td.tag_family_bit_width = (byte) 6;
-                //td.tag_family_min_hamming_dist = (byte) 11;
-                //td.id = tag.getID();
-                //td.hamming_dist = 0;
-                //td.goodness = 0.0f;
-
-
-                //dets.add(td);
-
-                // Position relative to robot. For now, tossing away orientation data,
-                // but may be relevant later.
-                double[] relXyzrpy = relativePose(getPose(), xyzrpyTag);
-
-                long now = TimeUtil.utime();
-                ArrayList<classification_t> temp = tc.classifyTag(tag.getID(), relXyzrpy);
-                tagHistory.addObservations(temp, now);
-                classies.addAll(tagHistory.getLabels(tag.getID(), relXyzrpy, now));
-            }
-            classy_list.num_classifications = classies.size();
-            classy_list.classifications = classies.toArray(new classification_t[0]);
-            lcm.publish("CLASSIFICATIONS", classy_list);
-        }
-
-        private double sampleConfidence(double u, double s)
-        {
-            return MathUtil.clamp(u + classifierRandom.nextGaussian()*s, 0, 1);
-        }
-
-        private double[] relativePose(double[][] A, double[] xyzrpy)
-        {
-            double[] xyzrpy_A = LinAlg.matrixToXyzrpy(A);
-            double[] p = LinAlg.resize(xyzrpy, 3);
-            p = LinAlg.transform(LinAlg.inverse(A), p);
-            p = LinAlg.resize(p, 6);
-
-            // Relative yaw difference.
-            p[5] = MathUtil.mod2pi(xyzrpy[5] - xyzrpy_A[5]);
-
-            return p;
-        }
-    }
+    // class ClassifyTask implements PeriodicTasks.Task
 
     class PoseTask implements PeriodicTasks.Task
     {
@@ -627,6 +540,18 @@ public class SimRobot implements SimObject, LCMSubscriber
             l2g.ndata = 3;
             l2g.data = l2g_;
             lcm.publish("L2G", l2g);
+
+            double[] xyzrpy = LinAlg.quatPosToXyzrpy(drive.poseTruth.orientation, drive.poseTruth.pos);
+            if(grabbedObject != null){
+            	double[][] robPose = LinAlg.xyzrpyToMatrix(xyzrpy);
+    		    grabbedObject.setPose(robPose);
+            }
+            
+            robot_info_t robotInfo = new robot_info_t();
+            robotInfo.utime = TimeUtil.utime();
+            robotInfo.xyzrpy = xyzrpy;
+            robotInfo.held_object = (grabbedObject == null ? -1 : grabbedObject.getID());
+            lcm.publish("ROBOT_INFO", robotInfo);
         }
     }
 
@@ -640,6 +565,9 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
 
         public void run(double dt) {
+
+        	
+        	
             double[] mcmd = new double[2];
 
             double center_xyz[] = LinAlg.add(drive.poseOdom.pos, LinAlg.quatRotate(drive.poseOdom.orientation, drive.centerOfRotation));
@@ -720,5 +648,6 @@ public class SimRobot implements SimObject, LCMSubscriber
         drive.setRunning(b);
         tasks.setRunning(b);
         ci.setRunning(b);
+        objDetector.setRunning(b);
     }
 }

@@ -3,11 +3,12 @@ package probcog.sensor;
 import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
+
 import javax.swing.*;
+
 import java.util.*;
 
 import lcm.lcm.*;
-
 import april.camera.*;
 import april.camera.models.*;
 import april.config.*;
@@ -15,11 +16,10 @@ import april.jmat.*;
 import april.sim.SimObject;
 import april.util.*;
 import april.vis.*;
-
 import probcog.lcmtypes.*;
-import probcog.perception.PointCloud;
+import probcog.old.perception.PointCloud;
+import probcog.old.sim.SimLocation;
 import probcog.sensor.SimKinectSensor.SimPixel;
-import probcog.sim.SimLocation;
 import probcog.util.Util;
 
 /** Provides access to the frames taken by the kinect. Only

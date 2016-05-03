@@ -2,12 +2,13 @@ package probcog.arm;
 
 import java.awt.*;
 import java.awt.event.*;
+
 import javax.swing.*;
+
 import java.util.*;
 import java.io.*;
 
 import lcm.lcm.*;
-
 import april.config.*;
 import april.dynamixel.*;
 import april.jserial.*;
@@ -16,11 +17,10 @@ import april.jmat.geom.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;
-
 import probcog.classify.*;
-import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
-import probcog.perception.*;
+import probcog.old.classify.Features.FeatureCategory;
+import probcog.old.perception.*;
 
 public class ArmDemo implements LCMSubscriber
 {
@@ -100,7 +100,7 @@ public class ArmDemo implements LCMSubscriber
             pg.addListener(new ParameterListener() {
                 public void parameterChanged(ParameterGUI pg, String name) {
                     if (name.equals("reset")) {
-                        lcm.publish("ROBOT_COMMAND", getRobotCommand(null, ActionState.RESET));
+                        lcm.publish("ROBOT_COMMAND", getRobotCommand("", ActionState.RESET));
                     }
                 }
             });
@@ -217,37 +217,29 @@ public class ArmDemo implements LCMSubscriber
                     observations_t obs = observations.get();
                     if (obs != null) {
                         for (object_data_t od : obs.observations) {
-                            Color color = Color.cyan;
-                            for (categorized_data_t cat_data: od.cat_dat) {
-                                if (cat_data.cat.cat != category_t.CAT_COLOR)
-                                    continue;
-                                if(cat_data.len > 0){
-                                    String label = cat_data.label[0];
-                                    if (label.contains("red")) {
-                                        color = Color.red;
-                                    } else if (label.contains("orange")) {
-                                        color = Color.orange;
-                                    } else if (label.contains("yellow")) {
-                                        color = Color.yellow;
-                                    } else if (label.contains("green")) {
-                                        color = Color.green;
-                                    } else if (label.contains("blue")) {
-                                        color = Color.blue;
-                                    } else if (label.contains("purple")) {
-                                        color = Color.magenta;
-                                    } else if (label.contains("black")) {
-                                        color = Color.black;
-                                    }
-                                }
-                                else{
-                                    color = Color.gray;
-                                }
+                            Color color = Color.gray;
+                            for (classification_t cl : od.classifications){
+                            	if (cl.name.contains("red")) {
+                            	    color = Color.red;
+                            	} else if (cl.name.contains("orange")) {
+                            	    color = Color.orange;
+                            	} else if (cl.name.contains("yellow")) {
+                            	    color = Color.yellow;
+                            	} else if (cl.name.contains("green")) {
+                            	    color = Color.green;
+                            	} else if (cl.name.contains("blue")) {
+                            	    color = Color.blue;
+                            	} else if (cl.name.contains("purple")) {
+                            	    color = Color.magenta;
+                            	} else if (cl.name.contains("black")) {
+                            	    color = Color.black;
+                            	}
                             }
                             if (color.equals(Color.black))
                                 continue;
                             Formatter f = new Formatter();
                             f.format("ID: %d", od.id);
-                            double[] obj_xyz = LinAlg.resize(od.pos, 3);
+                            double[] obj_xyz = LinAlg.resize(od.xyzrpy, 3);
                             vb.addBack(new VisChain(LinAlg.translate(obj_xyz),
                                                     LinAlg.scale(0.02),
                                                     new VzSphere(new VzMesh.Style(color))));
@@ -287,11 +279,11 @@ public class ArmDemo implements LCMSubscriber
             observations_t obs = observations.get();
             double minDist = Double.MAX_VALUE;
             double maxSelectionDistance = 0.075;
-            int id = 0;
+            String id = "";
             double[] objPos = null;
             if (obs != null) {
                 for (object_data_t obj_dat : obs.observations) {
-                    double[] pos = LinAlg.resize(obj_dat.pos, 2);
+                    double[] pos = LinAlg.resize(obj_dat.xyzrpy, 2);
                     double mag = LinAlg.distance(pos, xy);
                     if (mag < minDist && mag < maxSelectionDistance) {
                         minDist = mag;
@@ -336,7 +328,7 @@ public class ArmDemo implements LCMSubscriber
         }
     }
 
-    private robot_command_t getRobotCommand(int id, ActionState state)
+    private robot_command_t getRobotCommand(String id, ActionState state)
     {
         action = state;
         robot_command_t cmd = new robot_command_t();

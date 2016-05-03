@@ -4,8 +4,7 @@ import java.awt.*;
 
 import april.jmat.*;
 import april.vis.*;
-
-import probcog.perception.Obj;
+import probcog.old.perception.Obj;
 import probcog.util.*;
 
 public class SelectionAnimation implements VisObject

@@ -2,83 +2,89 @@ package probcog.sim;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
 
-import april.jmat.*;
+import april.jmat.LinAlg;
+import april.util.StructureReader;
+import april.util.StructureWriter;
 import april.sim.*;
-import april.util.*;
 import april.vis.*;
 
-import probcog.util.*;
+public class SimDoor implements SimObject {
+	 protected static Color  color = Color.gray;
+	 
+	 protected static double width = 1.5;
+	 protected static double thickness = 0.2;
+	 protected static double height = 1.5;
+	 
+	 protected double T[][] = LinAlg.identity(4);  // position
+	 protected double xyzrpy[] = new double[]{ 0.0, 0.0, height/2, 0.0, 0.0, 0.0 };
+	 
+	 protected boolean open = true;
+	 protected String loc1 = null;
+	 protected String loc2 = null;
 
-public class SimDoor implements SimObject
-{
-	protected double[][] T = LinAlg.identity(4);  // position
-    protected Color color = new Color(51, 25, 0);
-    protected double[] scale = new double[]{.9, 0.1, 1.5};
-
-    protected int id;
-
-    // Characteristics of classification confidence distribution
-    protected double mean = 0.9;
-    protected double stddev = 0.05;
-
-    public SimDoor(SimWorld sw)
-    {
-        id = Util.nextID();
-    }
-
-    public void setPose(double[][] T)
-    {
-        this.T = T;
-    }
+	 public SimDoor(SimWorld sw)
+	 {
+		 
+	 }
 
     public double[][] getPose()
     {
-        return T;
+    	return LinAlg.xyzrpyToMatrix(xyzrpy);
     }
 
+    public void setPose(double T[][])
+    {
+        this.xyzrpy = LinAlg.matrixToXyzrpy(T);
+    }    
+    
+    public boolean isOpen(){
+    	return open;
+    }
+    
     public VisObject getVisObject()
     {
         ArrayList<Object> objs = new ArrayList<Object>();
+        
+        if(!open){
+        	return new VzBox(thickness, width, height, new VzMesh.Style(color));
+        }
 
-        objs.add(new VisChain(LinAlg.scale(scale[0], scale[1], scale[2]),
-                              LinAlg.translate(0, 0, scale[2]/9),
-                              new VzBox(new VzMesh.Style(color))));
-
-        return new VisChain(objs.toArray());
+        return null;
     }
 
     public Shape getShape()
     {
-        // BoxShape shape = new BoxShape(0, 0, 0);
-        // return shape.transform(LinAlg.translate(0, 0, 1));
-        return new BoxShape(scale[0], scale[1], -scale[2]); // Negative z scale makes box invisible to LIDAR
+    	if(!open){
+    		return new BoxShape(thickness, width, height);
+    	}
+    	return new SphereShape(0);
     }
 
+    /** Restore state that was previously written **/
     public void read(StructureReader ins) throws IOException
     {
-    	// 6 doubles for pose information (XYZRPY)
-        double xyzrpy[] = ins.readDoubles();
-        this.T = LinAlg.xyzrpyToMatrix(xyzrpy);
-
-        // IDs are automatically generated upon creation. Right now, don't
-        // care which door has which ID.
-
-        this.mean = ins.readDouble();
-        this.stddev = ins.readDouble();
+    	xyzrpy = ins.readDoubles();
+    	xyzrpy[2] = height/2;
+    	
+    	loc1 = ins.readString();
+    	loc2 = ins.readString();
+    	
+    	open = (ins.readString().toLowerCase().equals("open"));
     }
 
+    /** Write one or more lines that serialize this instance. No line
+     * is allowed to consist of just an asterisk. **/
     public void write(StructureWriter outs) throws IOException
     {
-        outs.writeDoubles(LinAlg.matrixToXyzrpy(T));
-        outs.writeComment("mean and stddev of confidence measure");
-        outs.writeDouble(mean);
-        outs.writeDouble(stddev);
+    	outs.writeDoubles(xyzrpy);
+    	outs.writeString(loc1);
+    	outs.writeString(loc2);
+    	outs.writeString(open ? "open" : "closed");
     }
 
-    // Override for SimObject
-    public void setRunning(boolean arg0)
-    {
+    public void setRunning(boolean b){
+            
     }
 }

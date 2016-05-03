@@ -273,6 +273,9 @@ public class RobotNavigator implements LCMSubscriber
                 for (SimObject obj: world.objects) {
                     if (!(obj instanceof SimBox))
                         continue;
+                    if (obj instanceof SimObjectPC){
+                      continue;
+                    }
                     if (Collisions.collisionDistance(new double[] {x, y, 100}, down, obj.getShape(), obj.getPose()) < Double.MAX_VALUE) {
                         gm.setValue(x, y, (byte)0);
                     }

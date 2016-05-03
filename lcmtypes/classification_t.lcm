@@ -1,11 +1,7 @@
 struct classification_t
 {
-    int64_t utime;
+    string category; // e.g. 'color'
+    string name; // e.g. 'red'
 
-    string name; // E..g "Red"
-    int32_t id;
-    double xyzrpy[6];
-
-    double confidence; // [0-1] e.g. .7
-    double range; // Range of detection
+    double confidence; // [0-1]
 }

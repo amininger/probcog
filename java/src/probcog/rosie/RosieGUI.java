@@ -19,6 +19,7 @@ import probcog.rosie.actuation.MobileActuationConnector;
 import probcog.rosie.perception.MobilePerceptionConnector;
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
+import edu.umich.rosie.language.InternalMessagePasser;
 import edu.umich.rosie.language.InstructorMessagePanel;
 import edu.umich.rosie.language.LanguageConnector;
 import edu.umich.rosie.soar.SoarAgent;
@@ -57,11 +58,13 @@ public class RosieGUI extends JFrame
 
     	perception = new MobilePerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
-
-    	language = new LanguageConnector(soarAgent, props);
+    	
+    	InternalMessagePasser messagePasser = new InternalMessagePasser();
+    	
+    	language = new LanguageConnector(soarAgent, props, messagePasser);
     	soarAgent.setLanguageConnector(language);
 
-    	ChatPanel chat = new ChatPanel(soarAgent, this);
+    	ChatPanel chat = new ChatPanel(soarAgent, this, messagePasser);
 
     	setupMenu();
 
@@ -69,14 +72,7 @@ public class RosieGUI extends JFrame
 
     	add(chat);
 
-    	String[] messages = new String[]{
-    			"Deliver the soda to the bedroom",
-                "You are in the bedroom",
-                "Find a soda",
-                "Fetch a soda"
-
-    	};
-    	add(new InstructorMessagePanel(chat, messages));
+    	add(new InstructorMessagePanel(chat, props));
 
 //    	CommandPanel commandPanel = new CommandPanel(soarAgent);
 //

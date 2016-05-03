@@ -4,13 +4,10 @@ import java.io.*;
 import java.util.*;
 
 import lcm.lcm.*;
-
 import april.jmat.*;
 import april.util.*;
-
-import probcog.commands.*;
 import probcog.classify.TagHistory;
-
+import probcog.commands.*;
 import probcog.lcmtypes.*;
 import magic2.lcmtypes.*;
 
@@ -50,7 +47,7 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
                 metOrientation = false;
         }
 
-        public void addSample(classification_t classy)
+        public void addSample(tag_classification_t classy)
         {
             n++;
             mean = mean + 1.0*(classy.confidence-mean)/n;
@@ -242,21 +239,21 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
     }
 
     // === Sample adding/tracking ============================================
-    synchronized public void addSample(classification_t classy)
+    synchronized public void addSample(tag_classification_t classy)
     {
         // XXX On real robot, will we need independent tag tracking here, or
         // in multiple places? Probably want a unified front...for now, hacking
         // stuff in.
 
-        if (ignore.contains(classy.id))
+        if (ignore.contains(classy.tag_id))
             return;
 
         synchronized (observed) {
             if (classType.equals(classy.name)) {
-                if (!observed.containsKey(classy.id)) {
-                    observed.put(classy.id, new DetectionRecord());
+                if (!observed.containsKey(classy.tag_id)) {
+                    observed.put(classy.tag_id, new DetectionRecord());
                 }
-                observed.get(classy.id).addSample(classy);
+                observed.get(classy.tag_id).addSample(classy);
             }
         }
     }
@@ -315,9 +312,9 @@ public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
             LCMDataInputStream ins) throws IOException
     {
         if (channel.equals("CLASSIFICATIONS")) {
-            classification_list_t msg = new classification_list_t(ins);
+            tag_classification_list_t msg = new tag_classification_list_t(ins);
 
-            for(classification_t classy : msg.classifications) {
+            for(tag_classification_t classy : msg.classifications) {
                 // Keep running average of "quality" of detection, with a penalty
                 // for not having multiple observations coming into play during
                 // evaluation in conditionMet()

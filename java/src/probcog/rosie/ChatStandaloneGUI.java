@@ -1,7 +1,9 @@
 package probcog.rosie;
 
 import javax.swing.JFrame;
+
 import edu.umich.rosie.language.ChatPanel;
+
 
 public class ChatStandaloneGUI extends JFrame
 {
@@ -12,7 +14,9 @@ public class ChatStandaloneGUI extends JFrame
     	this.setSize(800, 400);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    	ChatPanel chat = new ChatPanel(null, this);
+        LcmMessagePasser messagePasser = new LcmMessagePasser("instructor");
+        
+    	ChatPanel chat = new ChatPanel(null, this, messagePasser);
     	this.add(chat);
 
     	//CommandPanel commandPanel = new CommandPanel(soarAgent);
