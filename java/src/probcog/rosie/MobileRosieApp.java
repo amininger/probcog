@@ -6,24 +6,48 @@ import java.util.Properties;
 
 import probcog.rosie.actuation.MobileActuationConnector;
 import probcog.rosie.perception.MobilePerceptionConnector;
-
 import edu.umich.rosie.language.IMessagePasser;
+import edu.umich.rosie.language.IMessagePasser.IMessageListener;
+import edu.umich.rosie.language.IMessagePasser.RosieMessage;
 import edu.umich.rosie.language.LanguageConnector;
 import edu.umich.rosie.language.Message.MessageServer;
 import edu.umich.rosie.soar.SoarAgent;
 import april.util.GetOpt;
 import april.util.StringUtil;
 
-public class HeadlessRosie
+public class MobileRosieApp implements IMessageListener
 {
 	private SoarAgent soarAgent;
 
 	private MobilePerceptionConnector perception;
 	private MobileActuationConnector actuation;
 	private LanguageConnector language;
+	
+	private Properties props;
+	
+	private IMessagePasser messagePasser;
 
-    public HeadlessRosie(Properties props)
+    public MobileRosieApp(Properties props)
     {
+    	this.props = props;
+    	
+    	if(!props.getProperty("message-source", "lcm").equals("tablet")){
+    		messagePasser = new LcmMessagePasser("robot");
+    	} else {
+    		messagePasser = new MessageServer("192.168.10.101", 7679);
+    		messagePasser.addMessageListener(this);
+    	}
+    	
+    	createSoarAgent(props);
+
+    	while(true){
+    		try{
+    			Thread.sleep(1000);
+    		} catch(InterruptedException e){}
+    	}
+    }
+    
+    private void createSoarAgent(Properties props){
     	soarAgent = new SoarAgent(props);
     	
     	actuation = new MobileActuationConnector(soarAgent, props);
@@ -32,26 +56,31 @@ public class HeadlessRosie
     	perception = new MobilePerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
     	
-    	IMessagePasser messagePasser;
-    	if(!props.getProperty("message-source", "lcm").equals("tablet")){
-    		messagePasser = new LcmMessagePasser("robot");
-    		//new MessageServer();
-    	} else {
-    		messagePasser = new MessageServer("192.168.10.102", 7679);
-    	}
-    	
     	language = new LanguageConnector(soarAgent, props, messagePasser);
     	soarAgent.setLanguageConnector(language);
 
     	soarAgent.createAgent();
     	soarAgent.start();
-    	
-    	while(true){
-    		try{
-    			Thread.sleep(1000);
-    		} catch(InterruptedException e){}
-    	}
     }
+
+	@Override
+	public void receiveMessage(RosieMessage message) {
+		System.out.println("GOT MESSAGE: " + message.message);
+		if(message.message.startsWith("CMD: ")){
+			String command = message.message.substring(5);
+			if(command.equals("PAUSE") && soarAgent.isRunning()){
+				soarAgent.stop();
+			} else if (command.equals("RESUME") && !soarAgent.isRunning()){
+				soarAgent.start();
+			} else if(command.equals("RESTART")){
+				soarAgent.kill();
+				createSoarAgent(props);
+			} else {
+				System.out.println(soarAgent.sendCommand(command));
+			}
+		}
+    	return;
+	}
 
     public static void main(String[] args) {
 
@@ -90,6 +119,6 @@ public class HeadlessRosie
 			return;
 		}
 
-        new HeadlessRosie(props);
+        new MobileRosieApp(props);
     }
 }

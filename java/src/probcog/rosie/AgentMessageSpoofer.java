@@ -9,7 +9,7 @@ public class AgentMessageSpoofer implements IMessageListener{
 	
 	MessageServer server;
 	public AgentMessageSpoofer(){
-		server = new MessageServer();
+		server = new MessageServer("192.168.10.101", 7679);
 		server.addMessageListener(this);
 	}
 
