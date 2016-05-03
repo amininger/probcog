@@ -3,6 +3,7 @@ package probcog.rosie.perception;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Arrays;
 
 import april.jmat.LinAlg;
 import probcog.lcmtypes.classification_t;
@@ -77,9 +78,12 @@ public class WorldObject implements ISoarObject {
 				this.pos[d] = pose[d];
 				updatePos = true;
 			}
+    }
+    double[] rpy = LinAlg.quatToRollPitchYaw(Arrays.copyOfRange(pose, 3, 7));
+		for(int d = 0; d < 3; d++){
 			// Only update rot if it has changed by a significant amount
-			if(Math.abs(rot[d] - pose[3+d]) > 0.05){
-				rot[d] = pose[3+d];
+			if(Math.abs(rot[d] - rpy[d]) > 0.05){
+				rot[d] = rpy[d];
 				updateRot = true;
 			}
 //			// Only update scale if it was changed by a significant amount
