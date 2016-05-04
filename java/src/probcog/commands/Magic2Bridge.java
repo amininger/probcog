@@ -29,7 +29,7 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
         lcm.subscribe("SOAR_COMMAND_TX", this);
         lcm.subscribe("MAGIC2_CONTROL_POLICY_STATUS", this);
         lcm.subscribe("POSE", this);
-        lcm.subscribe("L2G_SCANMATH", this);
+        lcm.subscribe("L2G_SCANMATCH", this);
 
         // LCM publishing loop
         robot_info_t robot_info = new robot_info_t();
