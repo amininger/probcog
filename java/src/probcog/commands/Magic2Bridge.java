@@ -149,7 +149,7 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
             synchronized (poseLock) {
                 lastPose = pose;
             }
-        } else if (channel.equals("L2G")) {
+        } else if (channel.equals("L2G_SCANMATCH")) {
             lcmdoubles_t l2g = new lcmdoubles_t(ins);
 
             synchronized (poseLock) {
