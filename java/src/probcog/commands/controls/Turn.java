@@ -18,7 +18,8 @@ public class Turn implements ControlLaw, LCMSubscriber
     LCM lcm = LCM.getSingleton();
 
     static final int DD_HZ = 100;
-    static final double ROBOT_SPEED = 0.5;
+    static final double MAX_SPEED = 0.5;
+    static final double MIN_SPEED = 0.3;
     static final double SIM_SPEED = 0.1;
 
     Object poseLock = new Object();
@@ -27,7 +28,11 @@ public class Turn implements ControlLaw, LCMSubscriber
 
     boolean sim = false;
 
-    private double yaw = 0;
+    private boolean started = false;
+    private double startYaw;
+    private double prevYaw;
+    private double accYaw;
+
     private double goalYaw = Double.MAX_VALUE;
 	enum Direction { LEFT, RIGHT };
 	Direction dir;
@@ -43,36 +48,13 @@ public class Turn implements ControlLaw, LCMSubscriber
 
         public void run(double dt)
         {
-            DriveParams params = new DriveParams();
-            params.dt = dt;
-            diff_drive_t dd = drive(params);
-
-            publishDiff(dd);
-        }
-    }
-
-    public void update(pose_t pose)
-    {
-        synchronized (poseLock) {
-            lastPose = currPose;
-            currPose = pose.copy();
-
-            if (lastPose == null) {
-                return;
+            synchronized (poseLock) {
+                DriveParams params = new DriveParams();
+                params.dt = dt;
+                params.pose = currPose;
+                diff_drive_t dd = drive(params);
+                publishDiff(dd);
             }
-            assert (lastPose != null);
-
-            double[] rpyLast = LinAlg.quatToRollPitchYaw(lastPose.orientation);
-            double[] rpyNow = LinAlg.quatToRollPitchYaw(currPose.orientation);
-
-            // Deal with wraparound.
-            if (rpyLast[2]<-Math.PI/4 && rpyNow[2]>Math.PI/4) {
-                rpyLast[2] += 2*Math.PI;
-            } else if(rpyLast[2]>Math.PI/4 && rpyNow[2]<-Math.PI/4) {
-                rpyNow[2] += 2*Math.PI;
-            }
-
-            yaw += Math.abs(rpyNow[2]-rpyLast[2]);
         }
     }
 
@@ -87,18 +69,33 @@ public class Turn implements ControlLaw, LCMSubscriber
         dd.left = 0;
         dd.right = 0;
 
-        double speed = ROBOT_SPEED;
-        if (sim)
-            speed = SIM_SPEED;
+        if (params.pose == null)
+            return dd;
 
-        // Change left and right wheels depending on turn direction
-        if (dir.equals(Direction.RIGHT)) {
-            dd.left = speed;
-            dd.right = -speed;
+        double[] rpy =  LinAlg.quatToRollPitchYaw(params.pose.orientation);
+
+        if (!started) {
+            startYaw = rpy[2];
+            prevYaw = rpy[2];
+            started = true;
         }
-        else if (dir.equals(Direction.LEFT)) {
-            dd.left = -speed;
-            dd.right = speed;
+
+        accYaw += MathUtil.mod2pi(rpy[2] - prevYaw);
+        prevYaw = rpy[2];
+
+        // Determine turn strength
+        double dtheta = goalYaw - accYaw;
+        dtheta = MathUtil.clamp(dtheta, -Math.PI/2, Math.PI/2);
+
+        double st = Math.sin(dtheta);
+        int sign = st >= 0 ? 1 : -1;
+        double signal = Math.max(MIN_SPEED, Math.abs(st)*MAX_SPEED);
+        if (sim)
+            signal = SIM_SPEED;
+
+        if (Math.abs(dtheta) > Math.toRadians(3)) {
+            dd.left = -sign*signal;
+            dd.right = sign*signal;
         }
 
         return dd;
@@ -108,7 +105,7 @@ public class Turn implements ControlLaw, LCMSubscriber
     {
         currPose = null;
         lastPose = null;
-        yaw = 0;
+        accYaw = 0;
     }
 
     /** Strictly for use for parameter checking */
@@ -129,8 +126,10 @@ public class Turn implements ControlLaw, LCMSubscriber
         	dir = Direction.LEFT;
         }
 
-        if (parameters.containsKey("yaw"))
-            goalYaw = Math.abs(parameters.get("yaw").getDouble());
+        if (parameters.containsKey("yaw")) {
+            int sign = (dir == Direction.LEFT) ? 1 : -1;
+            goalYaw = sign*Math.abs(parameters.get("yaw").getDouble());
+        }
 
         if (parameters.containsKey("sim"))
             sim = true;
@@ -201,7 +200,9 @@ public class Turn implements ControlLaw, LCMSubscriber
     {
         if (channel.equals("POSE")) {
             pose_t msg = new pose_t(ins);
-            update(msg);
+            synchronized (poseLock) {
+                currPose = msg;
+            }
         }
     }
 
