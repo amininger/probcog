@@ -24,6 +24,7 @@ import april.vis.VisObject;
 import april.vis.VzMesh;
 import april.vis.VzRectangle;
 import april.vis.VzText;
+import april.vis.VzLines;
 
 public class SimRegion extends SimObjectPC implements SimObject
 {
@@ -62,7 +63,7 @@ public class SimRegion extends SimObjectPC implements SimObject
         ArrayList<Object> objs = new ArrayList<Object>();
 
         // Actual Rectangle
-        objs.add(new VisChain(new VzRectangle(width, length, new VzMesh.Style(color))));
+        objs.add(new VisChain(new VzRectangle(width, length, new VzMesh.Style(color)), new VzRectangle(width, length, new VzLines.Style(Color.black, 2))));
 
         // The handle of the location
         objs.add(new VisChain(LinAlg.translate(0,0,0.01),

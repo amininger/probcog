@@ -34,7 +34,7 @@ public class MobileRosieApp implements IMessageListener
     	if(!props.getProperty("message-source", "lcm").equals("tablet")){
     		messagePasser = new LcmMessagePasser("robot");
     	} else {
-    		messagePasser = new MessageServer("192.168.10.101", 7679);
+    		messagePasser = new MessageServer("192.168.2.1", 7679);
     		messagePasser.addMessageListener(this);
     	}
     	

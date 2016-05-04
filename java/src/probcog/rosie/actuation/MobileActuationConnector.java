@@ -119,15 +119,15 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     }
     
     private void handleCommandStatusMessage(control_law_status_t status){
-		if(activeCommand != null && activeCommand.id == status.id){
-			Status newStatus = Status.valueOf(status.status);
-			if(newStatus == Status.FAILURE || newStatus == Status.SUCCESS || newStatus == Status.UNKNOWN){
-				activeCommand = SoarCommandParser.createEmptyControlLaw("NONE");
-				activeCommand.id = nextControlLawId++;
-				movingState = "stopped";
-			}
-			commandStatus = newStatus.toString().toLowerCase();
-		}
+      if(activeCommand != null && activeCommand.id == status.id){
+        Status newStatus = Status.valueOf(status.status);
+        if(newStatus == Status.FAILURE || newStatus == Status.SUCCESS || newStatus == Status.UNKNOWN){
+          activeCommand = null;//SoarCommandParser.createEmptyControlLaw("NONE");
+          //activeCommand.id = nextControlLawId++;
+          movingState = "stopped";
+        }
+        commandStatus = newStatus.toString().toLowerCase();
+		  }
     }
 
     

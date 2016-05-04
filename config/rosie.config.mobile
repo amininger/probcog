@@ -1,17 +1,15 @@
 agent-name = rosie
-#agent-source = /home/april/probcog/agent/_agent_source.soar
-#smem-source = /home/april/probcog/agent/init-smem/init-smem_source.soar
-agent-source = /home/mininger/shared-folders/research/rosie-project/rosie/agent/_agent/_agent_source.soar
-smem-source = /home/mininger/shared-folders/research/rosie-project/rosie/agent/_agent/init-smem/init-smem_source.soar
+agent-source = /home/april/probcog/agent/_agent_source.soar
+smem-source = /home/april/probcog/agent/init-smem/init-smem_source.soar
 
-decision-throttle-ms = 0
+decision-throttle-ms = 5
 
-verbose = false
-write-to-stdout = false
+verbose = true
+write-to-stdout = true
 enable-log = false
-spawn-debugger = true
+spawn-debugger = false
 
 message-source = tablet
 
-object-info-file = /home/mininger/shared-folders/research/rosie-project/probcog/worlds/objects/H-layout.info
-map-info-file = /home/mininger/shared-folders/research/rosie-project/probcog/worlds/maps/H-layout.map
+object-info-file = /home/april/probcog/worlds/objects/H-layout.info
+map-info-file = /home/april/probcog/worlds/maps/H-layout.map

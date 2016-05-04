@@ -83,8 +83,8 @@ class Edge:
 			self.side = -1
 		self.has_door = edge.has_door
 		if edge.has_door:
-			dx = cos(edge.door_rot)
-			dy = sin(edge.door_rot)
+			dx = cos(edge.door_rot) * .8
+			dy = sin(edge.door_rot) * .8
 			if forward:
 				self.door_sx = edge.door_x - dx
 				self.door_sy = edge.door_y - dy
