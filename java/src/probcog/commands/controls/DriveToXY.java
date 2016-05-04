@@ -356,11 +356,12 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         double[] poseXYT = LinAlg.matrixToXYT(LinAlg.quatPosToMatrix(params.pose.orientation,
                                                                      params.pose.pos));
+        poseXYT = LinAlg.xytMultiply(l2g, poseXYT);
         // Convert global goal to robot local goal
-        double[] goalXYT;
-        synchronized (l2g) {
-            goalXYT = LinAlg.xytInvMul31(l2g, globalXYT);
-        }
+        double[] goalXYT = globalXYT;
+        //synchronized (l2g) {
+        //    goalXYT = LinAlg.xytInvMul31(l2g, globalXYT);
+        //}
 
         // Medium drive speed
         double driveGain = 0.0;
@@ -379,7 +380,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             driveGain = 0.0;
             repulsiveDistance = 2.0;
             turnGain = 2.0;
-            maxSpeed = 0.7;
+            maxSpeed = 0.5;
             lookahead = 0.4;
         }
 
