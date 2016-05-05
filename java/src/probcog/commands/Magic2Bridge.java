@@ -20,16 +20,23 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
 {
     LCM lcm = LCM.getSingleton();
 
+    GetOpt opts;
+
     Object poseLock = new Object();
     double[] lastL2G = new double[3];
     pose_t lastPose;
 
+    public Magic2Bridge(GetOpt opts)
+    {
+        this.opts = opts;
+    }
+
     public void run()
     {
-        lcm.subscribe("SOAR_COMMAND_TX", this);
-        lcm.subscribe("MAGIC2_CONTROL_POLICY_STATUS", this);
-        lcm.subscribe("POSE", this);
-        lcm.subscribe("L2G_SCANMATCH", this);
+        lcm.subscribe(opts.getString("soar-cmd-channel"), this);
+        lcm.subscribe(opts.getString("magic2-cmd-channel"), this);
+        lcm.subscribe(opts.getString("pose-channel"), this);
+        lcm.subscribe(opts.getString("l2g-channel"), this);
 
         // LCM publishing loop
         robot_info_t robot_info = new robot_info_t();
@@ -52,7 +59,7 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
                 robot_info.xyzrpy = LinAlg.matrixToXyzrpy(M);
             }
 
-            lcm.publish("ROBOT_INFO", robot_info);
+            lcm.publish(opts.getString("robot-info-channel"), robot_info);
         }
     }
 
@@ -69,7 +76,7 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
     public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
         throws IOException
     {
-        if (channel.equals("SOAR_COMMAND_TX")) {
+        if (channel.equals(opts.getString("soar-cmd-channel"))) {
             control_law_t controlLaw = new control_law_t(ins);
 
             // Forward the control law on to magic2
@@ -111,11 +118,11 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
             rcp.conditions[0] = tc;
             rcp.statuses[0] = status;
 
-            lcm.publish("MAGIC2_CONTROL_POLICY", rcp);
+            lcm.publish(opts.getString("magic2-cmd-channel"), rcp);
 
             //interpretCommand(controlLaw);
             //sendCommandStatus(controlLaw);
-        } else if (channel.startsWith("MAGIC2_CONTROL_POLICY_STATUS")) {
+        } else if (channel.startsWith(opts.getString("magic2-status-channel"))) {
             // Grab status messages from magic2 and shove them back to soar
             robot_control_policy_status_t status = new robot_control_policy_status_t(ins);
 
@@ -142,14 +149,14 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
                     break;
             }
 
-            lcm.publish("SOAR_COMMAND_STATUS_TX", soar_status);
-        } else if (channel.equals("POSE")) {
+            lcm.publish(opts.getString("soar-status-channel"), soar_status);
+        } else if (channel.equals(opts.getString("pose-channel"))) {
             pose_t pose = new pose_t(ins);
 
             synchronized (poseLock) {
                 lastPose = pose;
             }
-        } else if (channel.equals("L2G_SCANMATCH")) {
+        } else if (channel.equals(opts.getString("l2g-channel"))) {
             lcmdoubles_t l2g = new lcmdoubles_t(ins);
 
             synchronized (poseLock) {
@@ -160,6 +167,26 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
 
     public static void main(String[] args)
     {
-        new Thread(new Magic2Bridge()).run();
+        GetOpt opts = new GetOpt();
+        opts.addBoolean('h',"help",false,"Show usage");
+        opts.addString('\0',"soar-cmd-channel","SOAR_COMMAND_TX","Soar command channel");
+        opts.addString('\0',"soar-status-channel","SOAR_COMMAND_STATUS_TX","Soar status channel");
+        opts.addString('\0',"magic2-cmd-channel","MAGIC2_CONTROL_POLICY","Magic2 command channel");
+        opts.addString('\0',"magic2-status-channel","MAGIC2_CONTROL_POLICY_STATUS","Magic2 status channel");
+        opts.addString('\0',"pose-channel","POSE","Pose channel");
+        opts.addString('\0',"l2g-channel","L2G","L2G channel");
+        opts.addString('\0',"robot-info-channel","ROBOT_INFO","Robot info channel");
+
+        if (!opts.parse(args)) {
+            System.out.println("ERR: options - "+opts.getReason());
+            System.exit(1);
+        }
+
+        if (opts.getBoolean("help")) {
+            opts.doHelp();
+            System.exit(1);
+        }
+
+        new Thread(new Magic2Bridge(opts)).run();
     }
 }
