@@ -70,8 +70,24 @@ public class WorldObject implements ISoarObject {
 		this.handle.setValue(handle);
 		changed = true;
 	}
+
+  public static double[] toDoubleArray(byte[] byteArray){
+    int times = Double.SIZE / Byte.SIZE;
+    double[] doubles = new double[byteArray.length / times];
+    for(int i=0;i<doubles.length;i++){
+      doubles[i] = ByteBuffer.wrap(byteArray, i*times, times).getDouble();
+    }
+    return doubles;
+  }
 	
-	public synchronized void update(double[] pose){
+	public synchronized void update(byte[] data){
+    System.out.println("============");
+    double[] pose = toDoubleArray(data);
+    for(double d : pose){
+      System.out.println(d);
+    }
+    pose = new double[]{ 0, 0, 0, 0, 1, 0, 0 };
+
 		for(int d = 0; d < 3; d++){
 			// Only update pos if it has changed by a significant amount
 			if(Math.abs(this.pos[d] - pose[d]) > 0.02){

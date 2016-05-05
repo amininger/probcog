@@ -126,6 +126,9 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	oldIds.addAll(objects.keySet());
     	
     	for (ooi_msg_t newObj : newObjs.observations){
+        if (newObj.ooi_type != ooi_msg_t.TAG_POSE_QUAT){
+          continue;
+        }
     		Integer tagID = newObj.ooi_id;
     		WorldObject obj = objects.get(tagID);
     		if(obj != null){
@@ -150,7 +153,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     			}
     			objects.put(tagID, obj);
     		}
-    		obj.update(newObj.z);
+    		obj.update(newObj.data);
     	}
     	
     	for(Integer oldID : oldIds){
