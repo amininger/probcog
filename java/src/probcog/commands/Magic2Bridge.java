@@ -34,7 +34,7 @@ public class Magic2Bridge implements LCMSubscriber, Runnable
     public void run()
     {
         lcm.subscribe(opts.getString("soar-cmd-channel"), this);
-        lcm.subscribe(opts.getString("magic2-cmd-channel"), this);
+        lcm.subscribe(opts.getString("magic2-status-channel"), this);
         lcm.subscribe(opts.getString("pose-channel"), this);
         lcm.subscribe(opts.getString("l2g-channel"), this);
 
