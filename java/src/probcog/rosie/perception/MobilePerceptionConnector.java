@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
 
+import java.nio.ByteBuffer;
+
 import javax.swing.JMenuBar;
 
 import edu.umich.rosie.soar.AgentConnector;
@@ -34,36 +36,36 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 	private HashMap<Integer, WorldObject> objects;
 	private HashMap<Integer, WorldObject> objsToRemove;
 	private boolean newObjectsMessage = false;
-	
+
 	private Integer nextID = 1;
 
     private LCM lcm;
-    
+
     private Identifier objectsId = null;
-    
+
     private Robot robot;
-    
+
     public MobilePerceptionConnector(SoarAgent agent, Properties props){
     	super(agent);
-    	
+
     	objects = new HashMap<Integer, WorldObject>();
     	objsToRemove = new HashMap<Integer, WorldObject>();
-    	
+
     	objectManager = new WorldObjectManager(props);
-    	
+
     	robot = new Robot(props);
-    	
+
     	// Setup LCM events
         lcm = LCM.getSingleton();
     }
-    
+
     @Override
     public void connect(){
     	super.connect();
         lcm.subscribe("ROBOT_INFO", this);
         lcm.subscribe("DETECTED_OBJECTS", this);
     }
-    
+
     @Override
     public void disconnect(){
     	super.disconnect();
@@ -75,12 +77,12 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 	public void createMenu(JMenuBar menuBar) {}
 
 	/***************************
-	 * 
+	 *
 	 * LCM HANDLING
-	 * 
+	 *
 	 **************************/
-	
-	
+
+
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
 		try {
@@ -118,14 +120,17 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 //    		}
 //    		obj.update(objMsg.z);
 //    	}
-    	
-    	
+
+
     	// Set of objects that didn't appear in the new update
     	// (remove ids as we see them)
     	HashSet<Integer> oldIds = new HashSet<Integer>();
     	oldIds.addAll(objects.keySet());
-    	
+
     	for (ooi_msg_t newObj : newObjs.observations){
+            if (newObj.ooi_type != ooi_msg_t.TAG_POSE_QUAT)
+                continue;
+
     		Integer tagID = newObj.ooi_id;
     		WorldObject obj = objects.get(tagID);
     		if(obj != null){
@@ -150,35 +155,35 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     			}
     			objects.put(tagID, obj);
     		}
-    		obj.update(newObj.z);
+    		obj.update(newObj.data);
     	}
-    	
+
     	for(Integer oldID : oldIds){
     		WorldObject oldObj = objects.get(oldID);
     		objects.remove(oldID);
     		objsToRemove.put(oldID, oldObj);
     	}
     }
-    
+
 	/***************************
-	 * 
+	 *
 	 * INPUT PHASE HANDLING
-	 * 
+	 *
 	 **************************/
-    
+
     protected synchronized void onInputPhase(Identifier inputLink){
     	// Update the information about the robot
     	updateRobot();
 
     	// Update information about objects
     	updateObjects();
-    	
+
     	// Update SVS
     	updateSVS();
-    	
+
     	objsToRemove.clear();
     }
-    
+
     private void updateRobot(){
     	robot.updateMovingState(((MobileActuationConnector)soarAgent.getActuationConnector()).getMovingState());
     	if(!robot.isAdded()){
@@ -187,7 +192,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     		robot.updateWM();
     	}
     }
-    
+
     private void updateObjects(){
     	if(objectsId == null){
     		objectsId = soarAgent.getAgent().GetInputLink().CreateIdWME("objects");
@@ -209,9 +214,9 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 //    					obj.removeFromWM();
 //    				}
 //    			}
-//    
+//
 //    		}
-//    		
+//
 //    	}
     	for(WorldObject obj : objects.values()){
     		if(obj.isAdded()){
@@ -224,7 +229,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     		obj.removeFromWM();
     	}
     }
-    
+
     private void updateSVS(){
     	StringBuilder svsCommands = new StringBuilder();
     	svsCommands.append(robot.getSVSCommands());
@@ -254,7 +259,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 		robot.removeFromWM();
 		updateSVS();
 	}
-	
+
     // Currently no commands relevant to perception
 	protected void onOutputEvent(String attName, Identifier id) { }
 }

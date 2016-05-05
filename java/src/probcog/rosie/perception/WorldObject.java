@@ -3,6 +3,9 @@ package probcog.rosie.perception;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Arrays;
+
+import java.nio.ByteBuffer;
 
 import april.jmat.LinAlg;
 import probcog.lcmtypes.classification_t;
@@ -18,20 +21,20 @@ public class WorldObject implements ISoarObject {
 	private IntWME tagWME;
 	private StringWME handle;
 	private HashMap<String, StringWME> classifications;
-	
+
 	private boolean updatePos = true;
 	private double[] pos = new double[3];
-	
+
 	private boolean updateRot = true;
 	private double[] rot = new double[3];
-	
+
 //	private boolean updateScale = true;
 	private double[] scale = new double[3];
-	
+
 	private StringBuilder svsCommands;
-	
+
 	private boolean changed = false;
-	
+
 	public WorldObject(Integer tagID, double[] scale, HashMap<String, String> classifications){
 		this.tagID = tagID;
 		this.scale = scale;
@@ -44,15 +47,15 @@ public class WorldObject implements ISoarObject {
 		}
 		svsCommands = new StringBuilder();
 	}
-	
+
 	public Integer getTagID(){
 		return tagID;
 	}
-	
+
 	public double[] getPos(){
 		return pos;
 	}
-	
+
 	public synchronized void addClassification(String name, String value){
 		if(classifications.containsKey(name)){
 			return;
@@ -60,17 +63,25 @@ public class WorldObject implements ISoarObject {
 		classifications.put(name, new StringWME(name, value));
 		changed = true;
 	}
-	
+
 	public String getHandle(){
 		return handle.getValue();
 	}
-	
+
 	public synchronized void setHandle(String handle){
 		this.handle.setValue(handle);
 		changed = true;
 	}
-	
-	public synchronized void update(double[] pose){
+
+	public synchronized void update(byte[] data){
+        double[] pose = new double[7];
+        ByteBuffer bb = ByteBuffer.wrap(data);
+        for (int i = 0; i < pose.length; i++) {
+            pose[i] = bb.getDouble();
+        }
+
+        double[] rpy = LinAlg.quatToRollPitchYaw(Arrays.copyOfRange(pose, 3, 7));
+
 		for(int d = 0; d < 3; d++){
 			// Only update pos if it has changed by a significant amount
 			if(Math.abs(this.pos[d] - pose[d]) > 0.02){
@@ -78,8 +89,8 @@ public class WorldObject implements ISoarObject {
 				updatePos = true;
 			}
 			// Only update rot if it has changed by a significant amount
-			if(Math.abs(rot[d] - pose[3+d]) > 0.05){
-				rot[d] = pose[3+d];
+			if(Math.abs(rot[d] - rpy[d]) > 0.05){
+				rot[d] = rpy[d];
 				updateRot = true;
 			}
 //			// Only update scale if it was changed by a significant amount
@@ -89,21 +100,21 @@ public class WorldObject implements ISoarObject {
 //			}
 		}
 	}
-	
-	
+
+
 	public synchronized String getSVSCommands(){
 		String commands = svsCommands.toString();
 		svsCommands = new StringBuilder();
 		return commands;
 	}
-	
+
 	 /******************************************************************
      * Methods for Modifying Working Memory
      *****************************************************************/
 	private Identifier rootID = null;
 	private Identifier classificationsID = null;
     private boolean added = false;
-    
+
     public boolean isAdded(){
     	return added;
     }
@@ -112,7 +123,7 @@ public class WorldObject implements ISoarObject {
     	if(added){
     		removeFromWM();
     	}
-    	
+
     	rootID = parentID.CreateIdWME("object");
     	handle.addToWM(rootID);
     	tagWME.addToWM(rootID);
@@ -120,7 +131,7 @@ public class WorldObject implements ISoarObject {
     	for (Map.Entry<String, StringWME> e : classifications.entrySet()){
     		e.getValue().addToWM(classificationsID);
     	}
-    	
+
 //    	double[] defaultRot = new double[]{ 0.0, 0.0, 0.0 };
 //    	double[] defaultScale = new double[]{ .5, .5, .5 };
     	svsCommands.append(SVSCommands.addBox(handle.getValue(), pos, rot, scale));
@@ -132,7 +143,7 @@ public class WorldObject implements ISoarObject {
         added = true;
     	changed = false;
     }
-    
+
     public synchronized void updateWM(){
     	if(!added){
     		return;
@@ -160,11 +171,11 @@ public class WorldObject implements ISoarObject {
     				svsCommands.append(SVSCommands.addTag(handle.getValue(), wme.getAttribute(), wme.getValue()));
     			}
     		}
-    		
+
     		changed = false;
     	}
     }
-    
+
     public synchronized void removeFromWM(){
     	if(!added){
     		return;
@@ -178,7 +189,7 @@ public class WorldObject implements ISoarObject {
     	tagWME.removeFromWM();
     	rootID.DestroyWME();
     	rootID = null;
-    	
+
     	svsCommands.append(SVSCommands.delete(handle.getValue()));
     	added = false;
     }

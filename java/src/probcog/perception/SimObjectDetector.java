@@ -7,19 +7,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import java.nio.ByteBuffer;
+
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
+
 import magic2.lcmtypes.ooi_msg_list_t;
 import magic2.lcmtypes.ooi_msg_t;
 import magic2.lcmtypes.tag_detection_list_t;
 import magic2.lcmtypes.tag_detection_t;
+
 import april.jmat.LinAlg;
 import april.jmat.MathUtil;
 import april.sim.SimObject;
 import april.sim.SimWorld;
 import april.util.PeriodicTasks;
 import april.util.TimeUtil;
+
 import probcog.classify.TagClassifier;
 import probcog.classify.TagHistory;
 import probcog.lcmtypes.classification_list_t;
@@ -40,31 +45,31 @@ import probcog.util.Util;
 
 public class SimObjectDetector implements LCMSubscriber{
 	private static double MSG_PER_SEC = 10.0;
-	
+
 	protected SimRobot robot;
 	protected SimWorld world;
-	
+
 	protected HashMap<Integer, SimObjectPC> detectedObjects;
 
     TagHistory tagHistory = new TagHistory();
     static Random classifierRandom = new Random(3611871);
-	
+
     PeriodicTasks tasks = new PeriodicTasks(2);
-	
+
 	public SimObjectDetector(SimRobot robot, SimWorld world){
 		this.robot = robot;
 		this.world = world;
 		this.detectedObjects = new HashMap<Integer, SimObjectPC>();
-		
+
 		tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
-		
+
 		LCM.getSingleton().subscribe("SOAR_COMMAND.*", this);
 	}
-	
+
 	public void setRunning(boolean b){
 		tasks.setRunning(b);
 	}
-	
+
 
 	@Override
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins) {
@@ -76,8 +81,8 @@ public class SimObjectDetector implements LCMSubscriber{
         } catch (IOException ex) {
             System.out.println("WRN: "+ex);
         }
-    }	
-	
+    }
+
 	private void handleSoarCommand(control_law_t controlLaw){
 		if(controlLaw.name.equals("pick-up")){
 			for(int p = 0; p < controlLaw.num_params; p++){
@@ -93,7 +98,7 @@ public class SimObjectDetector implements LCMSubscriber{
 			robot.putDownObject();
 		}
 	}
-	
+
 	protected class DetectorTask implements PeriodicTasks.Task {
         TagClassifier tc;
 
@@ -106,17 +111,17 @@ public class SimObjectDetector implements LCMSubscriber{
                 ioex.printStackTrace();
             }
         }
-        
+
         public void run(double dt){
             ArrayList<SimObject> simObjects;
             synchronized(world.objects){
             	simObjects = (ArrayList<SimObject>)world.objects.clone();
             }
-            
+
             sendObjectMessage(simObjects);
             detectAprilTags(simObjects, LinAlg.matrixToXyzrpy(robot.getPose()));
         }
-        
+
         private void sendObjectMessage(ArrayList<SimObject> simObjects){
             for(SimObject so : simObjects){
             	if (so instanceof SimObjectPC){
@@ -136,7 +141,7 @@ public class SimObjectDetector implements LCMSubscriber{
             		}
             	}
             }
-            
+
             ooi_msg_list_t objects = new ooi_msg_list_t();
             objects.utime = TimeUtil.utime();
             objects.num_observations = detectedObjects.size();
@@ -154,29 +159,41 @@ public class SimObjectDetector implements LCMSubscriber{
             	objData.local_pose.pos = new double[3];
             	objData.local_pose.rotation_rate = new double[3];
             	objData.local_pose.vel = new double[3];
-            	
-            	objData.z = new double[7];
-            	double[] pose = LinAlg.matrixToXyzrpy(e.getValue().getPose());
-            	for(int d = 0; d < 6; d++){
-            		objData.z[d] = pose[d];
-            	}
+
+                double[] xyzrpy = LinAlg.matrixToXyzrpy(e.getValue().getPose());
+            	double[] quat = LinAlg.matrixToQuat(e.getValue().getPose());
+                double[] z = new double[] {xyzrpy[0],
+                                           xyzrpy[1],
+                                           xyzrpy[2],
+                                           quat[0],
+                                           quat[1],
+                                           quat[2],
+                                           quat[3]};
+                objData.ndata = 8*z.length;
+                objData.data = new byte[objData.ndata];
+
+                ByteBuffer bb = ByteBuffer.wrap(objData.data);
+                for (int i = 0; i < z.length; i++) {
+                    bb.putDouble(z[i]);
+                }
+
             	// TODO: figure out this transform
-            	
+
 //            	BoundingBox bbox = e.getKey().getBoundingBox();
 //            	objData.xyzrpy = bbox.xyzrpy;
 //            	objData.lenxyz = bbox.lenxyz;
-            	
+
             	objects.observations[obj_index++] = objData;
             }
             LCM.getSingleton().publish("DETECTED_OBJECTS", objects);
         }
-        
+
 //		public void run(double dt)
 //        {
 //            // Look through all objects in the world and if one is
 //            // a door and it's within a set distance of us, "classify" it
 //            double[] xyzrpyBot = LinAlg.matrixToXyzrpy(robot.getPose());
-//            
+//
 //            ArrayList<SimObject> simObjects;
 //            synchronized(world.objects){
 //            	simObjects = (ArrayList<SimObject>)world.objects.clone();
@@ -217,7 +234,7 @@ public class SimObjectDetector implements LCMSubscriber{
 //                    SimDoor door = (SimDoor)so;
 //                    classies.id = 0; // XXX: door.id;
 //                    classies.confidence = 1.0;
-//                    // XXX: DOOR: 
+//                    // XXX: DOOR:
 //                   // classies.id = door.id;
 //                   // classies.confidence = sampleConfidence(door.mean, door.stddev);
 //                } else {
@@ -266,7 +283,7 @@ public class SimObjectDetector implements LCMSubscriber{
 //            } else {
 //                classies.confidence = 1.0;
 //            }
-//            
+//
 //            return classies;
 //        }
 //
