@@ -127,6 +127,8 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	HashSet<Integer> oldIds = new HashSet<Integer>();
     	oldIds.addAll(objects.keySet());
 
+      double[] robotPose = robot.getXyzrpy();
+
     	for (ooi_msg_t newObj : newObjs.observations){
         if (newObj.ooi_type != ooi_msg_t.TAG_POSE_QUAT){
            continue;
@@ -151,12 +153,12 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     					System.err.println("Bad object tag id from SOAR_OBJECTS: " + tagID.toString());
     					continue;
     				}
-    				obj.setHandle(nextID.toString());
-    				nextID++;
+    				//obj.setHandle(nextID.toString());
+    				//nextID++;
     			}
     			objects.put(tagID, obj);
     		}
-    		obj.update(newObj.data);
+    		obj.update(robotPose, newObj.data);
     	}
 
     	for(Integer oldID : oldIds){

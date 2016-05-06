@@ -38,7 +38,7 @@ public class WorldObject implements ISoarObject {
 	public WorldObject(Integer tagID, double[] scale, HashMap<String, String> classifications){
 		this.tagID = tagID;
 		this.scale = scale;
-		this.handle = new StringWME("handle", "none");
+		this.handle = new StringWME("handle", tagID.toString());
 		this.tagWME = new IntWME("tag-id", (long)tagID);
 
 		this.classifications = new HashMap<String, StringWME>();
@@ -73,7 +73,7 @@ public class WorldObject implements ISoarObject {
 		changed = true;
 	}
 
-	public synchronized void update(byte[] data){
+	public synchronized void update(double[] robotPose, byte[] data){
         double[] pose = new double[7];
         ByteBuffer bb = ByteBuffer.wrap(data);
         for (int i = 0; i < pose.length; i++) {
@@ -82,26 +82,32 @@ public class WorldObject implements ISoarObject {
 
         double[] rpy = LinAlg.quatToRollPitchYaw(Arrays.copyOfRange(pose, 3, 7));
 
+        double yaw = robotPose[5];
+        double ct = Math.cos(yaw);
+        double st = Math.sin(yaw);
+        double x = robotPose[0] + ct * pose[0] - st*pose[1];
+        double y = robotPose[1] + st * pose[0] + ct*pose[1];
+        double z = pose[2] + robotPose[2];
+        double[] pos = new double[]{ x, y, z };
+
 		for(int d = 0; d < 3; d++){
 			// Only update pos if it has changed by a significant amount
-			if(Math.abs(this.pos[d] - pose[d]) > 0.02){
-				this.pos[d] = pose[d];
+			if(Math.abs(this.pos[d] - pos[d]) > 0.02){
+				this.pos[d] = pos[d];
 				updatePos = true;
 			}
     }
-    double[] rpy = LinAlg.quatToRollPitchYaw(Arrays.copyOfRange(pose, 3, 7));
-		for(int d = 0; d < 3; d++){
-			// Only update rot if it has changed by a significant amount
-			if(Math.abs(rot[d] - rpy[d]) > 0.05){
-				rot[d] = rpy[d];
-				updateRot = true;
-			}
+		//for(int d = 0; d < 3; d++){
+		//	// Only update rot if it has changed by a significant amount
+		//	if(Math.abs(rot[d] - rpy[d]) > 0.05){
+		//		rot[d] = rpy[d];
+		//		updateRot = true;
+		//	}
 //			// Only update scale if it was changed by a significant amount
 //			if(Math.abs(scale[d] - newData.lenxyz[d]) > 0.01){
 //				scale[d] = newData.lenxyz[d];
 //				updateScale = true;
 //			}
-		}
 	}
 
 

@@ -9,6 +9,90 @@
   vec 6
     0.00   0.00   0.00   0.00   0.00   0.00
 }
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  150
+  # Object xyzrpy
+  vec 6
+    0.00   0.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.20   0.20   0.20
+  # Color rgb (int 0-255)
+  vec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  151
+  # Object xyzrpy
+  vec 6
+    0.00   0.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.20   0.20   0.20
+  # Color rgb (int 0-255)
+  vec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  152
+  # Object xyzrpy
+  vec 6
+    0.00   0.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.20   0.20   0.20
+  # Color rgb (int 0-255)
+  vec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  153
+  # Object xyzrpy
+  vec 6
+    0.00   0.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  vec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  154
+  # Object xyzrpy
+  vec 6
+    0.00   0.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  vec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  155
+  # Object xyzrpy
+  vec 6
+    0.00   0.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  vec 3
+  255 0 0
+}
 "probcog.sim.SimRegion"
 {
   # Region ID

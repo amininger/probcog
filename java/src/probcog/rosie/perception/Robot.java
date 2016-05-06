@@ -53,6 +53,13 @@ public class Robot implements ISoarObject {
 	public void setHeldObject(String handle){
 		this.heldObject.setValue(handle == null ? "none" : handle);
 	}
+
+  public double[] getXyzrpy(){
+    double[] xyzrpy = new double[]{
+      pos[0], pos[1], pos[2], rot[0], rot[1], rot[2]
+    };
+    return xyzrpy;
+  }
 	
 	public void update(robot_info_t info){
 		for(int d = 0; d < 3; d++){

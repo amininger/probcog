@@ -11,5 +11,5 @@ spawn-debugger = false
 
 message-source = tablet
 
-object-info-file = /home/april/probcog/worlds/objects/H-layout.info
-map-info-file = /home/april/probcog/worlds/maps/H-layout.map
+object-info-file = /home/april/probcog/worlds/objects/muscatatuck.info
+map-info-file = /home/april/probcog/worlds/maps/muscatatuck.map
