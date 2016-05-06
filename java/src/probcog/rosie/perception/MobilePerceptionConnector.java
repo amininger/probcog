@@ -45,8 +45,13 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 
     private Robot robot;
 
+    private boolean sendSvsInfo = false;
+    private long lastUpdateSent = 0;
+
     public MobilePerceptionConnector(SoarAgent agent, Properties props){
     	super(agent);
+
+      sendSvsInfo = props.getProperty("send-svs-info", "false").equals("true");
 
     	objects = new HashMap<Integer, WorldObject>();
     	objsToRemove = new HashMap<Integer, WorldObject>();
@@ -184,6 +189,10 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	// Update SVS
     	updateSVS();
 
+      if(sendSvsInfo){
+        sendObservations();
+      }
+
     	objsToRemove.clear();
     }
 
@@ -232,6 +241,77 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     		obj.removeFromWM();
     	}
     }
+
+    private void sendObservations(){
+      if (TimeUtil.utime() - lastUpdateSent < 200000){
+        return;
+      }
+    	ArrayList<svs_object_data_t> objDatas = new ArrayList<svs_object_data_t>();
+    	
+    	String[] objs = soarAgent.getAgent().SVSQuery("list-all-objs\n").split(" ");
+    	for(int i = 2; i < objs.length; i++){
+    		String id = objs[i].trim();
+    		if(id.length() == 0){
+    			continue;
+    		}
+    		String obj = soarAgent.getAgent().SVSQuery("obj-info " + id);
+        objDatas.add(parseObject(obj));
+    	}
+
+    	svs_info_t svsInfo = new svs_info_t();
+    	svsInfo.utime = TimeUtil.utime();
+    	svsInfo.nobjects = objDatas.size();
+      svsInfo.objects = objDatas.toArray(new object_data_t[objDatas.size()]);
+    	
+    	LCM.getSingleton().publish("SVS_INFO", svsInfo);
+
+      lastUpdateSent = TimeUtil.utime();
+    }
+    
+    public object_data_t parseObject(String objInfo){
+      svs_object_data_t objData = new svs_object_data_t();
+
+    	objData.utime = TimeUtil.utime();
+    	objData.xyzrpy = new double[6];
+    	objData.lwh = new double[3];
+
+      ArrayList<String> tags = new ArrayList<String>();
+    	
+    	String[] fields = objInfo.split(" ");
+    	int i = 0;
+    	while(i < fields.length){
+    		String field = fields[i++];
+    		if(field.equals("o")){
+    			// Parse ID: Should be in format bel-#
+          objData.id = fields[i++;
+    		} else if (field.equals("p") || field.equals("r") || field.equals("s")){
+    			// Parse position, rotation, or scaling
+          for(int d = 0; d < 3; d++){
+            double val = Double.parseDouble(fields[i++]);
+            if(field.equals("p")){
+              objData.xyzrpy[d] = val;
+            } else if(field.equals("r")){
+              objData.xyzrpy[3+d] = val;
+            } else if(field.equals("s")){
+              objData.lwh[d] = val;
+            }
+    			}
+    		} else if(field.equals("t")){
+    			Integer numTags = Integer.parseInt(fields[i++]);
+          for(int t = 0; t < numTags; t++){
+            tags.add(fields[i++] + "=" + fields[i++]);  // "tag_name=tag_value"
+          }
+    			objData.cat_dat = catDats.toArray(new categorized_data_t[catDats.size()]);
+    			objData.num_cat = objData.cat_dat.length;
+    		}
+    	}
+
+      objData.num_labels = tags.size();
+      objData.labels = tags.toArray(new String[tags.size()]);
+    	
+    	return objData;
+    }
+    	
 
     private void updateSVS(){
     	StringBuilder svsCommands = new StringBuilder();

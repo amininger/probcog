@@ -4,12 +4,14 @@ smem-source = /home/april/probcog/agent/init-smem/init-smem_source.soar
 
 decision-throttle-ms = 5
 
-verbose = true
-write-to-stdout = true
+verbose = false
+write-to-stdout = false
 enable-log = false
 spawn-debugger = false
 
 message-source = tablet
+broadcast-output = true
+
 
 object-info-file = /home/april/probcog/worlds/objects/muscatatuck.info
 map-info-file = /home/april/probcog/worlds/maps/muscatatuck.map

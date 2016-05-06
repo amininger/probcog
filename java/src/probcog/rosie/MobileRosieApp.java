@@ -14,8 +14,10 @@ import edu.umich.rosie.language.Message.MessageServer;
 import edu.umich.rosie.soar.SoarAgent;
 import april.util.GetOpt;
 import april.util.StringUtil;
+import sml.*;
+import sml.Agent.PrintEventInterface;
 
-public class MobileRosieApp implements IMessageListener
+public class MobileRosieApp implements IMessageListener, PrintEventInterface
 {
 	private SoarAgent soarAgent;
 
@@ -24,6 +26,8 @@ public class MobileRosieApp implements IMessageListener
 	private LanguageConnector language;
 	
 	private Properties props;
+
+  private boolean broadcasting = false;
 	
 	private IMessagePasser messagePasser;
 
@@ -34,11 +38,16 @@ public class MobileRosieApp implements IMessageListener
     	if(!props.getProperty("message-source", "lcm").equals("tablet")){
     		messagePasser = new LcmMessagePasser("robot");
     	} else {
-    		messagePasser = new MessageServer("192.168.2.1", 7679);
+    		messagePasser = new MessageServer(7679);
     		messagePasser.addMessageListener(this);
     	}
     	
     	createSoarAgent(props);
+
+      broadcasting = props.getProperty("broadcast-output", "false").equals("true");
+      if(broadcasting){
+        soarAgent.getAgent().RegisterForPrintEvent(smlPrintEventId.smlEVENT_PRINT, this, null);
+      }
 
     	while(true){
     		try{
@@ -76,10 +85,20 @@ public class MobileRosieApp implements IMessageListener
 				soarAgent.kill();
 				createSoarAgent(props);
 			} else {
-				System.out.println(soarAgent.sendCommand(command));
+        String output = soarAgent.sendCommand(command);
+        if(broadcasting && messagePasser != null){
+          messagePasser.sendMessage(output, LanguageConnector.MessageType.SOAR_OUTPUT);
+        }
 			}
 		}
     	return;
+	}
+
+	@Override
+	public void printEventHandler(int eventID, Object data, Agent agent, String message) {
+    if(messagePasser != null){
+      messagePasser.sendMessage(message, LanguageConnector.MessageType.SOAR_OUTPUT);
+    }
 	}
 
     public static void main(String[] args) {
