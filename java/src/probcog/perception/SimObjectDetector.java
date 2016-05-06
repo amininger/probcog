@@ -142,6 +142,9 @@ public class SimObjectDetector implements LCMSubscriber{
             	}
             }
 
+            double[][] M_robot = robot.getPose();
+            double[][] M_robot_inv = LinAlg.inverse(M_robot);
+
             ooi_msg_list_t objects = new ooi_msg_list_t();
             objects.utime = TimeUtil.utime();
             objects.num_observations = detectedObjects.size();
@@ -160,8 +163,11 @@ public class SimObjectDetector implements LCMSubscriber{
             	objData.local_pose.rotation_rate = new double[3];
             	objData.local_pose.vel = new double[3];
 
-                double[] xyzrpy = LinAlg.matrixToXyzrpy(e.getValue().getPose());
-            	double[] quat = LinAlg.matrixToQuat(e.getValue().getPose());
+                double[][] M_obj = e.getValue().getPose();
+                double[][] M_rel = LinAlg.matrixAB(M_robot_inv, M_obj);
+
+                double[] xyzrpy = LinAlg.matrixToXyzrpy(M_rel);
+            	double[] quat = LinAlg.matrixToQuat(M_rel);
                 double[] z = new double[] {xyzrpy[0],
                                            xyzrpy[1],
                                            xyzrpy[2],
