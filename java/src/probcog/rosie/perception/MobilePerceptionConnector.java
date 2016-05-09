@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import java.nio.ByteBuffer;
@@ -16,14 +17,16 @@ import edu.umich.rosie.soar.SoarUtil;
 import edu.umich.rosie.soarobjects.Pose;
 import april.jmat.LinAlg;
 import april.lcmtypes.pose_t;
+import april.util.*;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
 import magic2.lcmtypes.ooi_msg_list_t;
 import magic2.lcmtypes.ooi_msg_t;
+import magic2.lcmtypes.svs_info_t;
+import magic2.lcmtypes.svs_object_data_t;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
-import probcog.lcmtypes.object_data_t;
 import probcog.lcmtypes.robot_info_t;
 import probcog.lcmtypes.tag_classification_list_t;
 import probcog.lcmtypes.tag_classification_t;
@@ -45,6 +48,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 
     private Robot robot;
 
+    private final int SVS_UPDATE_INTERVAL_USEC = 100000; // 100 ms update rate
     private boolean sendSvsInfo = false;
     private long lastUpdateSent = 0;
 
@@ -243,7 +247,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     }
 
     private void sendObservations(){
-      if (TimeUtil.utime() - lastUpdateSent < 200000){
+      if ((TimeUtil.utime() - lastUpdateSent) < SVS_UPDATE_INTERVAL_USEC){
         return;
       }
     	ArrayList<svs_object_data_t> objDatas = new ArrayList<svs_object_data_t>();
@@ -261,14 +265,14 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	svs_info_t svsInfo = new svs_info_t();
     	svsInfo.utime = TimeUtil.utime();
     	svsInfo.nobjects = objDatas.size();
-      svsInfo.objects = objDatas.toArray(new object_data_t[objDatas.size()]);
+      svsInfo.objects = objDatas.toArray(new svs_object_data_t[objDatas.size()]);
     	
     	LCM.getSingleton().publish("SVS_INFO", svsInfo);
 
       lastUpdateSent = TimeUtil.utime();
     }
     
-    public object_data_t parseObject(String objInfo){
+    public svs_object_data_t parseObject(String objInfo){
       svs_object_data_t objData = new svs_object_data_t();
 
     	objData.utime = TimeUtil.utime();
@@ -276,14 +280,14 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	objData.lwh = new double[3];
 
       ArrayList<String> tags = new ArrayList<String>();
-    	
-    	String[] fields = objInfo.split(" ");
+
+    	String[] fields = objInfo.trim().split(" ");
     	int i = 0;
     	while(i < fields.length){
     		String field = fields[i++];
     		if(field.equals("o")){
     			// Parse ID: Should be in format bel-#
-          objData.id = fields[i++;
+          objData.id = fields[i++];
     		} else if (field.equals("p") || field.equals("r") || field.equals("s")){
     			// Parse position, rotation, or scaling
           for(int d = 0; d < 3; d++){
@@ -301,12 +305,10 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
           for(int t = 0; t < numTags; t++){
             tags.add(fields[i++] + "=" + fields[i++]);  // "tag_name=tag_value"
           }
-    			objData.cat_dat = catDats.toArray(new categorized_data_t[catDats.size()]);
-    			objData.num_cat = objData.cat_dat.length;
     		}
     	}
 
-      objData.num_labels = tags.size();
+      objData.nlabels = tags.size();
       objData.labels = tags.toArray(new String[tags.size()]);
     	
     	return objData;

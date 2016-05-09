@@ -127,7 +127,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
           movingState = "stopped";
         }
         commandStatus = newStatus.toString().toLowerCase();
-		  }
+	  }
     }
 
     

@@ -92,7 +92,7 @@ public class WorldObject implements ISoarObject {
 
 		for(int d = 0; d < 3; d++){
 			// Only update pos if it has changed by a significant amount
-			if(Math.abs(this.pos[d] - pos[d]) > 0.02){
+			if(Math.abs(this.pos[d] - pos[d]) > 0.2){
 				this.pos[d] = pos[d];
 				updatePos = true;
 			}

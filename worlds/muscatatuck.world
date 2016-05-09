@@ -21,7 +21,7 @@
     0.20   0.20   0.20
   # Color rgb (int 0-255)
   vec 3
-  255 0 0
+  200 200 0
 }
 "probcog.sim.SimBoxObject"
 {
@@ -49,7 +49,7 @@
     0.20   0.20   0.20
   # Color rgb (int 0-255)
   vec 3
-  255 0 0
+  0 255 0
 }
 "probcog.sim.SimBoxObject"
 {
@@ -60,10 +60,10 @@
     0.00   0.00   0.00   0.00   0.00   0.00
   # Length xyz
   vec 3
-    0.50   0.50   2.00
+    0.20   0.20   0.20
   # Color rgb (int 0-255)
   vec 3
-  255 0 0
+  0 0 255
 }
 "probcog.sim.SimBoxObject"
 {
@@ -91,7 +91,21 @@
     0.50   0.50   2.00
   # Color rgb (int 0-255)
   vec 3
-  255 0 0
+  0 255 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  156
+  # Object xyzrpy
+  vec 6
+    0.00   0.00   0.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  vec 3
+  0 0 255
 }
 "probcog.sim.SimRegion"
 {
