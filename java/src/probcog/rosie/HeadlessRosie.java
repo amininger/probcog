@@ -37,7 +37,7 @@ public class HeadlessRosie
     		messagePasser = new LcmMessagePasser("robot");
     		//new MessageServer();
     	} else {
-    		messagePasser = new MessageServer("192.168.10.102", 7679);
+    		messagePasser = new MessageServer(7679);
     	}
     	
     	language = new LanguageConnector(soarAgent, props, messagePasser);
