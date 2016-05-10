@@ -32,6 +32,10 @@ public class MapInfo {
 		}
 		return regionSet;
 	}
+
+    public HashSet<Region> getAllRegions(){
+        return regions;
+    }
 	
 	private void readMapInfoFile(String filename){
         // This will reference one line at a time

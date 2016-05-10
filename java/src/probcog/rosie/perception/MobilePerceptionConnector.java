@@ -25,6 +25,7 @@ import magic2.lcmtypes.ooi_msg_list_t;
 import magic2.lcmtypes.ooi_msg_t;
 import magic2.lcmtypes.svs_info_t;
 import magic2.lcmtypes.svs_object_data_t;
+import magic2.lcmtypes.svs_location_data_t;
 import probcog.lcmtypes.classification_list_t;
 import probcog.lcmtypes.classification_t;
 import probcog.lcmtypes.robot_info_t;
@@ -258,14 +259,35 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     		if(id.length() == 0){
     			continue;
     		}
-    		String obj = soarAgent.getAgent().SVSQuery("obj-info " + id);
-        objDatas.add(parseObject(obj));
+    		String objInfo = soarAgent.getAgent().SVSQuery("obj-info " + id);
+            svs_object_data_t obj = parseObject(objInfo);
+            if(obj.id.equals("world") || obj.id.equals("robot_pos") || 
+                    obj.id.equals("robot_view") || obj.id.equals("robot_body")){
+                continue;
+            }
+            Boolean loc = false;
+            for(String label : obj.labels){
+                if(label.equals("category=location")){
+                    loc = true;
+                }
+            }
+            if(!loc){
+                objDatas.add(obj);
+            }
     	}
+
+        ArrayList<svs_location_data_t> locDatas = new ArrayList<svs_location_data_t>();
+        HashSet<Region> regions = robot.getMapInfo().getAllRegions();
+        for(Region reg : regions){
+            locDatas.add(reg.getLcmData());
+        }
 
     	svs_info_t svsInfo = new svs_info_t();
     	svsInfo.utime = TimeUtil.utime();
     	svsInfo.nobjects = objDatas.size();
-      svsInfo.objects = objDatas.toArray(new svs_object_data_t[objDatas.size()]);
+        svsInfo.objects = objDatas.toArray(new svs_object_data_t[objDatas.size()]);
+    	svsInfo.nlocations = locDatas.size();
+        svsInfo.locations = locDatas.toArray(new svs_location_data_t[locDatas.size()]);
     	
     	LCM.getSingleton().publish("SVS_INFO", svsInfo);
 

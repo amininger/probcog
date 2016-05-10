@@ -2,6 +2,9 @@ package probcog.rosie.perception;
 
 import java.text.ParseException;
 
+import april.util.*;
+import magic2.lcmtypes.svs_location_data_t;
+
 public class Region{
 	public String id;
 	public double x;
@@ -80,4 +83,13 @@ public class Region{
 		double yproj = dist * Math.sin(localTheta);
 		return (Math.abs(xproj) < width/2 && Math.abs(yproj) < length/2);
 	}
+
+    public svs_location_data_t getLcmData(){
+        svs_location_data_t locData = new svs_location_data_t();
+        locData.utime = TimeUtil.utime();
+        locData.id = id;
+        locData.xyt = new double[]{ x, y, rot };
+        locData.lw = new double[]{ width, length };
+        return locData;
+    }
 }
