@@ -1,5 +1,7 @@
 package probcog.rosie;
 
+import java.util.*;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -13,42 +15,13 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.TargetDataLine;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTextField;
-import javax.swing.JTextPane;
-import javax.swing.JPanel;
-import javax.swing.JMenuBar;
-import javax.swing.JMenu;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultCaret;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
-import javax.swing.JPanel;
+import javax.swing.*;
+import javax.swing.text.*;
 
-import edu.umich.rosie.language.*;
 import edu.umich.rosie.language.LanguageConnector.MessageType;
-import edu.umich.rosie.language.Message.MessageClient;
-import edu.umich.rosie.language.IMessagePasser.IMessageListener;
-import edu.umich.rosie.language.IMessagePasser.RosieMessage;
-import edu.umich.rosie.soar.SoarAgent;
 
-public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageListener{
+public abstract class TextInputPanel extends JPanel {
     protected final JTextField inputText;
     protected final JButton sendButton;
     protected final JTextPane textPane;
@@ -69,22 +42,24 @@ public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageLis
         index = 0;
       }
 
+      // Returns the current string in the text field
       public String getCurrent(){
-          if(index < history.size()){
-              return history.get(index).trim();
-          } else {
-              return "";
-          }
+          return textField.getText().trim();
       }
 
+      // Adds the current textfield string to the history,
+      // Clears the textField, and set the index to the end
       public void advance(){
-          if(index < history.size()){
-              history.add(history.get(index));
-              index = history.size();
-              textField.setText("");
+          String message = textField.getText().trim();
+          if(index >= history.size() || !history.get(index).equals(message)){
+              history.add(textField.getText());
           }
+          index = history.size();
+          textField.setText("");
       }
 
+      // Sets the textfield to the next item in the history
+      // (or empty if at the end)
       public void next(){
         if(index + 1 < history.size()){
           index++;
@@ -94,6 +69,7 @@ public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageLis
         }
       }
 
+      // Sets the textfield to the previous item in the history
       public void prev(){
         if(index > 0){
           index--;
@@ -122,11 +98,7 @@ public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageLis
         } else if(arg0.getKeyCode() == KeyEvent.VK_DOWN){
             history.next();
         } else if(arg0.getKeyCode() == KeyEvent.VK_ENTER){
-            String message = history.getCurrent();
-            if(message.length() > 0){
-                sendMessage(message);
-                history.advance();
-            }
+            onSendClicked();
         }
       }
 
@@ -134,23 +106,29 @@ public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageLis
       }
     }; 
 
-    public TextInputPanel(String server) {
+    public TextInputPanel(String title, int width, int height) {
       inputText = new JTextField();
       sendButton = new JButton("Send");
-      textField = new JTextPane();
+      textPane = new JTextPane();
       history = new ChatHistory(inputText);
 
-      doc = (StyledDocument)textField.getDocument();
-      setupStyles(doc);
+      doc = (StyledDocument)textPane.getDocument();
+      setupStyles();
 
-      setupGUI();
+      setupGUI(title, width, height);
     }
 
-    private void 
+    private void onSendClicked(){
+        String message = history.getCurrent();
+        if(message.length() > 0){
+            history.advance();
+            sendMessage(message);
+        }
+    }
 
-    protected abstract void sendMessage(String message);
+    public abstract void sendMessage(String message);
 
-    public abstract void receiveMessage(RosieMessage message);
+    public abstract void receiveMessage(String message, MessageType type);
 
     protected void addMessageToDocument(String message, MessageType type){
         synchronized(doc){
@@ -169,7 +147,7 @@ public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageLis
 
             // AM: Will make it auto scroll to bottom
             int end = doc.getLength();
-            textField.select(end, end);
+            textPane.select(end, end);
         }
     }
 
@@ -177,54 +155,54 @@ public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageLis
      * Code for setting up the Panel and its GUI elements
      */
     
-    private void setupGUI(){
-        textField.setEditable(false);
-        inputText.setFont(new Font("Serif", Font.PLAIN, 18));
+    private void setupGUI(String title, int width, int height){
+        // size
+        width = (width < 200 ? 200 : width);    // width at least 200
+        height = (height < 150 ? 150 : height); // height at least 150
+        this.setSize(width, height);
 
-        DefaultCaret caret = (DefaultCaret)textField.getCaret();
+        // inputText
+        inputText.setFont(new Font("Serif", Font.PLAIN, 18));
+        inputText.setText("");
+        inputText.requestFocus();
+
+        // textPane
+        textPane.setEditable(false);
+        DefaultCaret caret = (DefaultCaret)textPane.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
-        JScrollPane pane = new JScrollPane(textField);
-        pane.setViewportView(textField);
+        JScrollPane pane = new JScrollPane(textPane);
+        pane.setViewportView(textPane);
 
-        sendSoarButton.setBackground(new Color(150, 255, 150));
-
-        ChatKeyAdapter keyAdapter = new ChatKeyAdapter(soarHistory);
-        textField.addKeyListener(keyAdapter);
-        inputText.addKeyListener(keyAdapter);
-        sendButton.addKeyListener(keyAdapter);
-        this.getRootPane().setDefaultButton(sendButton);
-              inputText.setText("");
-              inputText.requestFocus();
-
+        // sendButton
+        sendButton.setBackground(new Color(150, 255, 150));
         sendButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
             {
-
-            String msg = textField.getText().trim();
-            if(msg.length() == 0){
-              return;
-            }
-            add(msg);
-            sendMessageToRosie("CMD: " + msg);
+                onSendClicked();
             }
         });
 
+        // keyAdapter and listeners
+        ChatKeyAdapter keyAdapter = new ChatKeyAdapter(history);
+        textPane.addKeyListener(keyAdapter);
+        inputText.addKeyListener(keyAdapter);
+        sendButton.addKeyListener(keyAdapter);
+
+        // layout and split panes
         JSplitPane pane2 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
                 inputText, sendButton);
         JSplitPane pane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, pane,
                 pane2);
 
-        pane1.setDividerLocation(325);
-        pane2.setDividerLocation(600);
+        pane1.setDividerLocation(height-100);
+        pane2.setDividerLocation(width-100);
         
         this.setLayout(new BorderLayout());
         this.add(pane1, BorderLayout.CENTER);
-        this.setSize(800, 450);
 
-        this.setVisible(true);
-
+        this.add(new JLabel(title), BorderLayout.PAGE_START);
     }
 
     
@@ -262,5 +240,6 @@ public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageLis
         Style soarOutputStyle = doc.addStyle(MessageType.SOAR_OUTPUT.toString(), defaultStyle);
         StyleConstants.setForeground(soarOutputStyle,  Color.BLACK);
         StyleConstants.setFontSize(soarOutputStyle, 16);
+        StyleConstants.setFontFamily(soarOutputStyle, "Monospaced");
     }    
 }

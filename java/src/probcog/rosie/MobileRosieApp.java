@@ -12,13 +12,13 @@ import edu.umich.rosie.language.IMessagePasser.RosieMessage;
 import edu.umich.rosie.language.LanguageConnector;
 import edu.umich.rosie.language.Message.MessageServer;
 import edu.umich.rosie.soar.SoarAgent;
-import april.util.GetOpt;
-import april.util.StringUtil;
+import april.util.*;
 import sml.*;
 import sml.Agent.PrintEventInterface;
 
 public class MobileRosieApp implements IMessageListener, PrintEventInterface
 {
+    private final int PORT = 7679;
 	private SoarAgent soarAgent;
 
 	private MobilePerceptionConnector perception;
@@ -27,20 +27,20 @@ public class MobileRosieApp implements IMessageListener, PrintEventInterface
 	
 	private Properties props;
 
-  private boolean broadcasting = false;
+    private boolean broadcasting = false;
 	
 	private IMessagePasser messagePasser;
+
+    private StringBuilder soarOutputBuffer = new StringBuilder();
+    private long lastOutputSent = 0;
+    private final int MIN_SEND_TIME = 100000;
 
     public MobileRosieApp(Properties props)
     {
     	this.props = props;
     	
-    	if(!props.getProperty("message-source", "lcm").equals("tablet")){
-    		messagePasser = new LcmMessagePasser("robot");
-    	} else {
-    		messagePasser = new MessageServer(7679);
-    		messagePasser.addMessageListener(this);
-    	}
+    	messagePasser = new MessageServer(PORT);
+    	messagePasser.addMessageListener(this);
     	
     	createSoarAgent(props);
 
@@ -74,31 +74,38 @@ public class MobileRosieApp implements IMessageListener, PrintEventInterface
 
 	@Override
 	public void receiveMessage(RosieMessage message) {
-		System.out.println("GOT MESSAGE: " + message.message);
-		if(message.message.startsWith("CMD: ")){
-			String command = message.message.substring(5);
-			if(command.equals("PAUSE") && soarAgent.isRunning()){
-				soarAgent.stop();
-			} else if (command.equals("RESUME") && !soarAgent.isRunning()){
-				soarAgent.start();
-			} else if(command.equals("RESTART")){
-				soarAgent.kill();
-				createSoarAgent(props);
-			} else {
-        String output = soarAgent.sendCommand(command);
-        if(broadcasting && messagePasser != null){
-          messagePasser.sendMessage(output, LanguageConnector.MessageType.SOAR_OUTPUT);
+        switch(message.type){
+            case AGENT_COMMAND:
+                handleAgentCommand(message.message);
+                break;
+            case SOAR_COMMAND:
+                String output = soarAgent.sendCommand(message.message);
+                if(messagePasser != null && output.trim().length() > 0){
+                    messagePasser.sendMessage(output, LanguageConnector.MessageType.SOAR_OUTPUT);
+                }
+                break;
         }
-			}
-		}
-    	return;
 	}
+
+    private void handleAgentCommand(String cmd){
+        if(cmd.equals("run")){
+			soarAgent.start();
+        } else if(cmd.equals("stop")){
+			soarAgent.stop();
+        }
+    }
 
 	@Override
 	public void printEventHandler(int eventID, Object data, Agent agent, String message) {
-    if(messagePasser != null){
-      messagePasser.sendMessage(message, LanguageConnector.MessageType.SOAR_OUTPUT);
-    }
+        if(messagePasser != null){
+            long now = TimeUtil.utime();
+            soarOutputBuffer.append(message);
+            if(now - lastOutputSent > MIN_SEND_TIME){
+                messagePasser.sendMessage(soarOutputBuffer.toString(), LanguageConnector.MessageType.SOAR_OUTPUT);
+                soarOutputBuffer = new StringBuilder();
+                lastOutputSent = now;
+            }
+        }
 	}
 
     public static void main(String[] args) {
