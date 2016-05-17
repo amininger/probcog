@@ -134,6 +134,14 @@ public class RemoteTerminal extends JFrame implements IMessagePasser.IMessageLis
         });
         buttonPanel.add(watchOnButton);
 
+        JButton resetButton = new JButton("RESET");
+        resetButton.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e){
+                sendMessageToRosie("reset", MessageType.AGENT_COMMAND);
+            }
+        });
+        buttonPanel.add(resetButton);
+
         soarInputPanel.add(buttonPanel, BorderLayout.PAGE_END);
     }
 

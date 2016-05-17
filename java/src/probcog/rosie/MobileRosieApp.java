@@ -92,6 +92,9 @@ public class MobileRosieApp implements IMessageListener, PrintEventInterface
 			soarAgent.start();
         } else if(cmd.equals("stop")){
 			soarAgent.stop();
+        } else if(cmd.equals("reset")){
+            soarAgent.kill();
+            createSoarAgent(props);
         }
     }
 
