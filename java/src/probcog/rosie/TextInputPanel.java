@@ -48,47 +48,40 @@ import edu.umich.rosie.language.IMessagePasser.IMessageListener;
 import edu.umich.rosie.language.IMessagePasser.RosieMessage;
 import edu.umich.rosie.soar.SoarAgent;
 
-public class RemoteTerminal extends JFrame implements IMessagePasser.IMessageListener{
-    public final int PORT = 7679;
-
-    private final JPanel soarPanel;
-    private final JTextField soarInputText;
-    private final JButton soarSendButton;
-    private final JTextPane soarTextField;
-    private StyledDocument soarDoc;
-    
-    // OTHER
-    private Object outputLock = new Object();
-
-    private MessageClient client;
-    private String server;
-    
+public class RemoteTerminal extends JPanel implements IMessagePasser.IMessageListener{
+    protected final JTextField inputText;
+    protected final JButton sendButton;
+    protected final JTextPane textPane;
+    protected final ChatHistory history;
+    protected StyledDocument doc;
 
     /***********************************************
      * ChatHistory
      *   Manages the message history of a textField
      ***********************************************/
     class ChatHistory{
-      public final JTextField textField;
-      public ArrayList<String> history;
-      public int index;
+      private final JTextField textField;
+      private ArrayList<String> history;
+      private int index;
       public ChatHistory(JTextField field){
         textField = field;
         history = new ArrayList<String>();
         index = 0;
       }
 
-      public void add(String message){
-        history.add(message);
-        index = history.size();
-        textField.setText("");
-      }
-
       public String getCurrent(){
           if(index < history.size()){
-              return history.get(index);
+              return history.get(index).trim();
           } else {
               return "";
+          }
+      }
+
+      public void advance(){
+          if(index < history.size()){
+              history.add(history.get(index));
+              index = history.size();
+              textField.setText("");
           }
       }
 
@@ -125,11 +118,15 @@ public class RemoteTerminal extends JFrame implements IMessagePasser.IMessageLis
 
       public void keyPressed(KeyEvent arg0) {
         if(arg0.getKeyCode() == KeyEvent.VK_UP) {
-          history.prev();
+            history.prev();
         } else if(arg0.getKeyCode() == KeyEvent.VK_DOWN){
-          history.next();
-        } else if(arg0.getKeyCode() == KeyEvent.VK_RETURN){b
-
+            history.next();
+        } else if(arg0.getKeyCode() == KeyEvent.VK_ENTER){
+            String message = history.getCurrent();
+            if(message.length() > 0){
+                sendMessage(message);
+                history.advance();
+            }
         }
       }
 
@@ -137,85 +134,25 @@ public class RemoteTerminal extends JFrame implements IMessagePasser.IMessageLis
       }
     }; 
 
-    public RemoteTerminal(String server) {
-      soarPanel = new JPanel();
-      soarInputText = new JTextField();
-      soarSendButton = new JButton("Send Command");
-      soarTextField = new JTextPane();
-      soarDoc = (StyledDocument)soarTextField.getDocument();
-      setupStyles(soarDoc);
+    public TextInputPanel(String server) {
+      inputText = new JTextField();
+      sendButton = new JButton("Send");
+      textField = new JTextPane();
+      history = new ChatHistory(inputText);
+
+      doc = (StyledDocument)textField.getDocument();
+      setupStyles(doc);
 
       setupGUI();
-      createClient(server, PORT);
     }
 
-    private void connectToClient(String server, int port){
-        System.out.println("RemoteTerminal: Connecting to " + server);
-        try {
-            client = new MessageClient();
-            client.newConnection(Inet4Address.getByName(server), port);
-            System.out.println("RemoteTerminal: Successfully connected");
-        } catch (UnknownHostException e){
-            System.out.println("RemoteTerminal: Tried connecting to unknown host");
-            client = null;
-        } catch (IOException e){
-            System.out.println("RemoteTerminal: Could not establish a server connection");
-            client = null;
-        }
-  
-        if (client != null){
-          client.addMessageListener(this);
-        }
-    }
-    
-    /**********************************************************
-     * Public Interface for interacting with the chat frame
-     * 
-     * registerNewMessage(String message, MessageSource src)
-     *   Use to add a new message to the chat text field
-     * clearMessages()
-     *   Remove all messages from the text field
-     */
+    private void 
 
-    private void sendMessageToRosie(String message){
-        if(client != null && client.isConnected()){
-            client.sendMessage(message, LanguageConnector.MessageType.INSTRUCTOR_MESSAGE);
-        }
-    }
-    
-    @Override
-    public void receiveMessage(RosieMessage message){
-        synchronized(outputLock){
-            StyledDocument doc;
-            String message;
-            String timestamp = (new SimpleDateFormat("mm:ss:SSS")).format(new Date());
+    protected abstract void sendMessage(String message);
 
-            switch(message.type){
-                case INSTRUCTOR_MESSAGE:
-                    doc = chatDoc;
-                    message = "I: " + message.message + "\n";
-                    break;
+    public abstract void receiveMessage(RosieMessage message);
 
-                case AGENT_MESSAGE:
-                    doc = chatDoc;
-                    message = "R: " + message.message + "\n";
-                    break;
-
-                case SOAR_OUTPUT:
-                    doc = soarDoc;
-                    message = message.message;
-                    break;
-
-                default:
-                    // Don't handle other messages
-                    return;
-            }
-
-            addMessageToDocument(doc, message, message.type);
-        }
-    }
-
-    private void addMessageToDocument(StyledDocument doc, String message, MessageType type){
+    protected void addMessageToDocument(String message, MessageType type){
         synchronized(doc){
             Style msgStyle = doc.getStyle(type.toString());
             if(msgStyle == null){
@@ -232,7 +169,7 @@ public class RemoteTerminal extends JFrame implements IMessagePasser.IMessageLis
 
             // AM: Will make it auto scroll to bottom
             int end = doc.getLength();
-            soarTextField.select(end, end);
+            textField.select(end, end);
         }
     }
 
@@ -241,45 +178,41 @@ public class RemoteTerminal extends JFrame implements IMessagePasser.IMessageLis
      */
     
     private void setupGUI(){
-        soarTextField.setEditable(false);
-        soarInputText.setFont(new Font("Serif", Font.PLAIN, 18));
+        textField.setEditable(false);
+        inputText.setFont(new Font("Serif", Font.PLAIN, 18));
 
-        DefaultCaret caret = (DefaultCaret)soarTextField.getCaret();
+        DefaultCaret caret = (DefaultCaret)textField.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
-        JScrollPane pane = new JScrollPane(soarTextField);
-        pane.setViewportView(soarTextField);
+        JScrollPane pane = new JScrollPane(textField);
+        pane.setViewportView(textField);
 
         sendSoarButton.setBackground(new Color(150, 255, 150));
 
-        ChatHistory soarHistory = new ChatHistory(soarInputText);
         ChatKeyAdapter keyAdapter = new ChatKeyAdapter(soarHistory);
-        soarTextField.addKeyListener(keyAdapter);
-        soarInputText.addKeyListener(keyAdapter);
-        soarSendButton.addKeyListener(keyAdapter);
-        this.getRootPane().setDefaultButton(soarSendButton);
-              soarInputText.setText("");
-              soarInputText.requestFocus();
+        textField.addKeyListener(keyAdapter);
+        inputText.addKeyListener(keyAdapter);
+        sendButton.addKeyListener(keyAdapter);
+        this.getRootPane().setDefaultButton(sendButton);
+              inputText.setText("");
+              inputText.requestFocus();
 
-
-
-
-
-        soarSendButton.addActionListener(new ActionListener()
+        sendButton.addActionListener(new ActionListener()
         {
-          public void actionPerformed(ActionEvent e)
-          {
+            public void actionPerformed(ActionEvent e)
+            {
+
             String msg = textField.getText().trim();
             if(msg.length() == 0){
               return;
             }
             add(msg);
             sendMessageToRosie("CMD: " + msg);
-          }
+            }
         });
 
         JSplitPane pane2 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                soarInputText, soarSendButton);
+                inputText, sendButton);
         JSplitPane pane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, pane,
                 pane2);
 
@@ -299,7 +232,7 @@ public class RemoteTerminal extends JFrame implements IMessagePasser.IMessageLis
      * Setup Styles for how messages look
      */
     
-    private void setupStyles(StyledDocument doc) {
+    private void setupStyles() {
       // defaultStyle - Base style used by others
       Style defaultStyle = doc.addStyle("DEFAULT", null);
         StyleConstants.setForeground(defaultStyle, Color.BLACK);
@@ -316,19 +249,18 @@ public class RemoteTerminal extends JFrame implements IMessagePasser.IMessageLis
       // instructorStyle - Messages typed by the user
         Style instructorStyle = doc.addStyle(MessageType.INSTRUCTOR_MESSAGE.toString(), defaultStyle);
         StyleConstants.setForeground(instructorStyle, Color.BLACK);
+      
+      // agentCommand - Special commands sent to the Rosie program
+        Style agentCommandStyle = doc.addStyle(MessageType.AGENT_COMMAND.toString(), defaultStyle);
+        StyleConstants.setForeground(agentCommandStyle, Color.BLACK);
+      
+      // soarCommand - Messages typed by the user
+        Style soarCommandStyle = doc.addStyle(MessageType.SOAR_COMMAND.toString(), defaultStyle);
+        StyleConstants.setForeground(soarCommandStyle, Color.BLACK);
 
       // soarOutputStyle - output from soar
-        Style soarOutputStyle = doc.addStyle(MessageType.SOAR_COMMAND.toString(), defaultStyle);
+        Style soarOutputStyle = doc.addStyle(MessageType.SOAR_OUTPUT.toString(), defaultStyle);
         StyleConstants.setForeground(soarOutputStyle,  Color.BLACK);
         StyleConstants.setFontSize(soarOutputStyle, 16);
     }    
-
-    public static void main(String[] args){
-      System.out.println(args.length);
-      if(args.length < 1){
-        new RemoteTerminal("localhost");
-      } else {
-        new RemoteTerminal(args[0]);
-      }
-    }
 }
