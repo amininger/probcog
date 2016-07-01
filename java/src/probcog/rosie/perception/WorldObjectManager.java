@@ -41,6 +41,8 @@ public class WorldObjectManager {
             	parseObjectInfo(line);
             }   
 
+            System.out.println("WorldObjectManager: Loaded " + objects.size() + " objects\n");
+
             // Always close files.
             bufferedReader.close();         
         }
@@ -79,7 +81,7 @@ public class WorldObjectManager {
 			classifications.put(name, value);
 		}
 		objects.put(tagID, new WorldObject(tagID, size, classifications));
-		System.out.println("Added object " + tagID.toString());
-		System.out.println("  " + classifications.toString());
+		//System.out.println("Added object " + tagID.toString());
+		//System.out.println("  " + classifications.toString());
 	}
 }

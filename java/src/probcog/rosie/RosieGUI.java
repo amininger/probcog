@@ -46,6 +46,7 @@ public class RosieGUI extends JFrame
     	getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.LINE_AXIS));
         addWindowListener(new WindowAdapter() {
         	public void windowClosing(WindowEvent w) {
+                System.out.println("WINDOW CLOSING");
         		soarAgent.kill();
         	}
      	});
