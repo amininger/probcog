@@ -67,11 +67,11 @@ print("Success!\n")
 
 # Write the soar map file
 map_folder = rosie_path + "/rosie/agent/_agent/manage-world-state/world/maps/"
-map_filename = rosie_path + world_stem + ".soar"
+map_filename = map_folder + world_stem + ".soar"
 
 print("Writing soar map file: " + map_filename)
 create_soar_map(world_info, "temp.soar")
-shutil.copyfile("temp.soar", map_folder + "map_source.soar")
+shutil.copyfile("temp.soar", map_filename)
 
 print("Writing maps_source.soar file")
 fout = open("maps_source.soar", 'w')
