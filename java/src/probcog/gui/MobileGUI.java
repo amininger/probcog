@@ -134,10 +134,10 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                 drawTrajectory(dt);
                 drawClassifications();
                 drawGraph(graph);
+                drawObjectLabels();
                 TimeUtil.sleep(1000/fps);
             }
         }
-
         public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
         {
             try {
@@ -326,6 +326,43 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         }
     	buffer.swap();
     }
+
+    public double[][] calcFaceCameraMatrix(){
+        // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
+    	CameraPosition camera = vl.cameraManager.getCameraTarget();
+		double[] forward = LinAlg.normalize(LinAlg.subtract(camera.eye, camera.lookat));
+		// Spherical coordinates
+        double psi = Math.PI/2.0 - Math.asin(forward[2]);   // psi = Pi/2 - asin(z)
+        double theta = Math.atan2(forward[1], forward[0]);  // theta = atan(y/x)
+        if(forward[0] == 0 && forward[1] == 0){
+        	theta = -Math.PI/2;
+        }
+        double[][] tilt = LinAlg.rotateX(psi); 				// tilt up or down to face the camera vertically
+        double[][] rot = LinAlg.rotateZ(theta + Math.PI/2); // rotate flat to face the camera horizontally
+        double[][] faceCamera = LinAlg.matrixAB(rot, tilt);
+        return faceCamera;
+    }
+
+    private void drawObjectLabels(){
+        double[][] faceCamera = calcFaceCameraMatrix();
+		VisWorld.Buffer buffer = vw.getBuffer("obj-labels");
+        synchronized (simulator) {
+            for (SimObject obj: simulator.getWorld().objects) {
+                if (!(obj instanceof probcog.sim.SimObjectPC))
+                    continue;
+                probcog.sim.SimObjectPC pcobj = (probcog.sim.SimObjectPC)obj;
+
+        		String tf="<<monospaced,black,dropshadow=false>>";
+        		String text = String.format("%s%s\n", tf, pcobj.getDescription());
+
+        		VzText vzText = new VzText(text);
+        		double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.0};
+                buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.05), vzText));
+            }
+    	}
+        buffer.swap();
+    }
+
 
     private void drawGraph(MultiGraph<CommandNode, CommandEdge> graph)
     {

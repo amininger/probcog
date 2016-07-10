@@ -167,6 +167,7 @@ class ObjectInfo:
 		self.rgb = [ 0, 0, 0 ]
 		self.cats = []
 		self.labels = []
+		self.desc = ""
 
 	def read_info(self, reader):
 		self.obj_id = int(reader.nextWord())
@@ -183,5 +184,6 @@ class ObjectInfo:
 		for i in range(num_labels):
 			self.cats.append(reader.nextWord())
 			self.labels.append(reader.nextWord())
+		self.desc = reader.nextWord()
 		return self
 

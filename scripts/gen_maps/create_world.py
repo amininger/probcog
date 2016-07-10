@@ -50,6 +50,8 @@ def printObject(obj_info, fout):
 	fout.write("{\n")
 	fout.write("  # Object id\n")
 	fout.write("  " + str(obj_info.obj_id) + "\n")
+	fout.write("  # Object Description\n")
+	fout.write("  " + str(obj_info.desc) + "\n")
 	fout.write("  # Object xyzrpy\n")
 	fout.write("  vec 6\n")
 	fout.write("  %(x)s %(y)s %(z)s %(roll)s %(pitch)s %(yaw)s\n" % \

@@ -18,12 +18,21 @@ public abstract class SimObjectPC implements SimObject{
 	protected double scale_xyz[] = new double[]{ 1, 1, 1 };
 	protected Color  color = Color.gray;
 	protected Integer id;
+    protected String desc;
 
     public SimObjectPC(SimWorld sw){
     }
     
     public Integer getID(){
     	return id;
+    }
+
+    public String getDescription(){
+        return desc;
+    }
+
+    public double[] getXYZRPY(){
+        return xyzrpy;
     }
 
     public double[][] getPose()
@@ -49,6 +58,9 @@ public abstract class SimObjectPC implements SimObject{
     {
     	// id of the object (used to generate a tag classification)
     	id = ins.readInt();
+
+        // descriptio
+        desc = ins.readString();
     	
     	// xyzrpy
     	xyzrpy = ins.readDoubles();
