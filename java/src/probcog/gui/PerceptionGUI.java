@@ -6,12 +6,13 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 
 import javax.swing.*;
+import edu.wpi.rail.jrosbridge.*;
 
 import java.text.*;
 import java.util.*;
 import java.util.Timer;
 
-import lcm.lcm.*;
+//x import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
@@ -19,10 +20,10 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 import april.vis.VisCameraManager.CameraPosition;
-import probcog.arm.*;
+//x import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
-import probcog.lcmtypes.*;
+//x import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.perception.Tracker.TrackerSettings;
 import probcog.sensor.*;
@@ -31,22 +32,17 @@ import probcog.sim.SimObjectPC;
 import probcog.util.*;
 import probcog.vis.*;
 
-// import abolt.collision.ShapeToVisObject;
-// import abolt.sim.SimSensable;
-// import abolt.util.SimUtil;
-// import abolt.objects.SensableManager;
-
-public class PerceptionGUI extends JFrame implements LCMSubscriber
+public class PerceptionGUI extends JFrame
 {
-    private ArmStatus arm;
-    private ArmController controller;
+    //x private ArmStatus arm;
+    //x private ArmController controller;
     private Tracker tracker;
     private ClassifierManager classifierManager;
     private KinectView kinectView;
     private ProbCogSimulator simulator;
 
     // LCM
-    static LCM lcm = LCM.getSingleton();
+    //x static LCM lcm = LCM.getSingleton();
     private Timer sendObservationTimer;
     private static final int OBSERVATION_RATE = 10; // # sent per second
 
@@ -114,8 +110,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
 
         // Arm control and arm monitor for rendering purposes
-        controller = new ArmController(config);//
-        arm = new ArmStatus(config);
+        //x controller = new ArmController(config);//
+        //x arm = new ArmStatus(config);
 
         // Initialize sensable manager
         //sensableManager = SensableManager.getSingleton();
@@ -140,16 +136,16 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         }
         tracker = new Tracker(config, trackerSettings, simulator.getWorld());
 
-        if (opts.getBoolean("arm")) {
-            ArmDriver driver = new ArmDriver(config);
-            (new Thread(driver)).start();
-        } else {
-            SimArm simArm = new SimArm(config, simulator.getWorld());
-        }
+        //x if (opts.getBoolean("arm")) {
+        //     ArmDriver driver = new ArmDriver(config);
+        //     (new Thread(driver)).start();
+        // } else {
+        //     SimArm simArm = new SimArm(config, simulator.getWorld());
+        //}
 
-        if (opts.getBoolean("debug")) {
-            ArmDemo demo = new ArmDemo(config, tracker);
-        }
+        //x if (opts.getBoolean("debug")) {
+        //    ArmDemo demo = new ArmDemo(config, tracker);
+        //}
 
 
         // Initialize the JMenuBar
@@ -164,8 +160,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         showSegmentedObjects = false;
 
         // Subscribe to LCM
-        lcm.subscribe("TRAINING_DATA", this);
-        lcm.subscribe("GUI_COMMAND", this);
+        //x lcm.subscribe("TRAINING_DATA", this);
+        //x lcm.subscribe("GUI_COMMAND", this);
 
         this.setVisible(true);
         class SendObservationTask extends TimerTask{
@@ -241,89 +237,89 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
     }
 
 
-    @Override
-    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-    {
-       if(channel.equals("TRAINING_DATA")){
-            try{
-                training_data_t training = new training_data_t(ins);
+    //x @Override
+    // public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+    // {
+    //    if(channel.equals("TRAINING_DATA")){
+    //         try{
+    //             training_data_t training = new training_data_t(ins);
 
-                for(int i=0; i<training.num_labels; i++){
-                    training_label_t tl = training.labels[i];
-                    if(tl.utime <= soarTime){
-                    	// already seen this label, don't train a second time
-                    	continue;
-                    }
-                    
-                    Obj objTrain;
-                    synchronized(tracker.stateLock){
-                        objTrain = tracker.getObject(tl.id);
-                    }
-                    if(objTrain != null){
-                        FeatureCategory cat = Features.getFeatureCategory(tl.cat.cat);
-                        ArrayList<Double> features = objTrain.getFeatures(cat);
-                        if(features != null){
-                            tracker.addTraining(cat, features, tl.label);
-                        }
-                    }
-                }
-                for(int i = 0; i < training.num_labels; i++){
-                	soarTime = Math.max(soarTime, training.labels[i].utime);
-                }
-            }catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-        } else if(channel.equals("GUI_COMMAND")){
-        	try {
-        		perception_command_t command = new perception_command_t(ins);
-        		String[] args = command.command.toLowerCase().split("=");
-        		if(args.length > 1){
-        			if(args[0].equals("select")){
-        				selectedId = Integer.parseInt(args[1]);
-                		animation = null;
-        			} else if(args[0].equals("reset")){
-        				soarTime = 0;
-        			}
-        		}
-        	} catch (IOException e){
-        		e.printStackTrace();
-        		return;
-        	}
-        }
-    }
+    //             for(int i=0; i<training.num_labels; i++){
+    //                 training_label_t tl = training.labels[i];
+    //                 if(tl.utime <= soarTime){
+    //                 	// already seen this label, don't train a second time
+    //                 	continue;
+    //                 }
+
+    //                 Obj objTrain;
+    //                 synchronized(tracker.stateLock){
+    //                     objTrain = tracker.getObject(tl.id);
+    //                 }
+    //                 if(objTrain != null){
+    //                     FeatureCategory cat = Features.getFeatureCategory(tl.cat.cat);
+    //                     ArrayList<Double> features = objTrain.getFeatures(cat);
+    //                     if(features != null){
+    //                         tracker.addTraining(cat, features, tl.label);
+    //                     }
+    //                 }
+    //             }
+    //             for(int i = 0; i < training.num_labels; i++){
+    //             	soarTime = Math.max(soarTime, training.labels[i].utime);
+    //             }
+    //         }catch (IOException e) {
+    //             e.printStackTrace();
+    //             return;
+    //         }
+    //     } else if(channel.equals("GUI_COMMAND")){
+    //     	try {
+    //     		perception_command_t command = new perception_command_t(ins);
+    //     		String[] args = command.command.toLowerCase().split("=");
+    //     		if(args.length > 1){
+    //     			if(args[0].equals("select")){
+    //     				selectedId = Integer.parseInt(args[1]);
+    //             		animation = null;
+    //     			} else if(args[0].equals("reset")){
+    //     				soarTime = 0;
+    //     			}
+    //     		}
+    //     	} catch (IOException e){
+    //     		e.printStackTrace();
+    //     		return;
+    //     	}
+    //     }
+    // }
 
 
     public void sendMessage()
     {
-        observations_t obs = new observations_t();
-        obs.utime = TimeUtil.utime();
-        obs.soar_utime = soarTime;
-        synchronized(tracker.stateLock){
-        	obs.click_id = getSelectedId();
-        }
+        // observations_t obs = new observations_t();
+        // obs.utime = TimeUtil.utime();
+        // obs.soar_utime = soarTime;
+        // synchronized(tracker.stateLock){
+        // 	obs.click_id = getSelectedId();
+        // }
 
-        obs.observations = tracker.getObjectData();
-        obs.nobs = obs.observations.length;
+        // obs.observations = tracker.getObjectData();
+        // obs.nobs = obs.observations.length;
 
         ArrayList<Sensor> sensors = tracker.getSensors();
-        if(sensors.size() == 0){
-        	obs.eye = new double[]{ 0.6, 0.0, 1.0};
-        	obs.lookat = new double[]{ 0.0, 0.0, 0.0 };
-        	obs.up = new double[]{ -1.0, 0.0, 1.0 };
-        } else {
-        	Sensor s = sensors.get(0);
-        	CameraPosition camera = Util.getSensorPos(s);
-        	obs.eye = camera.eye;
-        	obs.lookat = camera.lookat;
-        	obs.up = camera.up;
-        }
+        // if(sensors.size() == 0){
+        // 	obs.eye = new double[]{ 0.6, 0.0, 1.0};
+        // 	obs.lookat = new double[]{ 0.0, 0.0, 0.0 };
+        // 	obs.up = new double[]{ -1.0, 0.0, 1.0 };
+        // } else {
+        // 	Sensor s = sensors.get(0);
+        // 	CameraPosition camera = Util.getSensorPos(s);
+        // 	obs.eye = camera.eye;
+        // 	obs.lookat = camera.lookat;
+        // 	obs.up = camera.up;
+        // }
 
-        try{
-        	lcm.publish("OBSERVATIONS",obs);
-        } catch (NullPointerException e){
-        	System.out.println("ERROR PUBLISHING STUFF");
-        }
+        // try{
+        // 	lcm.publish("OBSERVATIONS",obs);
+        // } catch (NullPointerException e){
+        // 	System.out.println("ERROR PUBLISHING STUFF");
+        // }
     }
 
     /** AutoSave the classifier state */
@@ -621,7 +617,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
                 	drawPerceptionLabels(faceCamera);
                 }
 
-                arm.render(vw);
+                //x arm.render(vw);
 
                 TimeUtil.sleep(1000/fps);
 
@@ -853,24 +849,6 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         vb.swap();
     }
 
-//	private void drawSoarView(VisWorld.Buffer buffer)
-//    {
-//    	synchronized(tracker.stateLock){
-//			for(Obj ob : tracker.getWorldState().values()){
-//                if(ob.getSourceSimObject() != null && ob.getSourceSimObject() instanceof SimObjectPC){
-//                	if(((SimObjectPC)ob.getSourceSimObject()).getVisible() == false){
-//                		continue;
-//                	}
-//                }
-//	    		buffer.addBack(ob.getVisObject());
-//	    	}
-//    	}
-//	}
-
-
-    // XXX END CODE DUMP
-    // ======================================
-
     public static void main(String args[])
     {
         GetOpt opts = new GetOpt();
@@ -878,7 +856,7 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
-        opts.addBoolean('a', "arm", false, "Run with a phsyical arm");
+        //opts.addBoolean('a', "arm", false, "Run with a phsyical arm");
         opts.addBoolean('k', "kinect", false, "Use a physical kinect");
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
         opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
@@ -900,6 +878,9 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
 
         // Spin up the GUI
         try {
+            //Ros ros = new Ros("localhost");
+            //ros.connect();
+
             PerceptionGUI gui = new PerceptionGUI(opts);
         } catch (IOException ioex) {
             System.err.println("ERR: Error starting GUI");

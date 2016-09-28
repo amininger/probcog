@@ -43,7 +43,7 @@ public class SimKinectSensor implements Sensor
 			point = new double[4];
 		}
 	}
-	
+
     // Sim Kinect parameters
     private static final int NUM_SUBREGIONS = 12; // To increase/decrease the resolution I recommend tuning this parameter only
     private static final int GRID_DEPTH = 3;

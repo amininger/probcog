@@ -4,18 +4,18 @@ import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
+//x import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;
-import lcm.lcm.*;
+//x import lcm.lcm.*;
 import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
-import probcog.lcmtypes.*;
+//x import probcog.lcmtypes.*;
 import probcog.sensor.*;
 import probcog.sim.ISimEffector;
 import probcog.sim.ISimStateful;
@@ -26,20 +26,20 @@ import probcog.util.*;
 
 public class Tracker
 {
-    static LCM lcm = LCM.getSingleton();
+    //x static LCM lcm = LCM.getSingleton();
     // Classification stuff
     ClassifierManager classyManager;
 
     // Soar stuff
     private Object soarLock;
-    private soar_objects_t soar_lcm;
+    //x private soar_objects_t soar_lcm;
 
     // Arm Stuff
     private Object armLock = new Object();
-    private robot_command_t robot_cmd;
-    
+    //x private robot_command_t robot_cmd;
+
     private Object worldLock = new Object();
-    
+
     private Segmenter segmenter;
     private ArmCommandInterpreter armInterpreter;
 
@@ -86,7 +86,7 @@ public class Tracker
 
         stateLock = new Object();
         soarLock = new Object();
-        soar_lcm = null;
+        //x soar_lcm = null;
 
         new ListenerThread().start();
         new TrackingThread().start();
@@ -213,31 +213,31 @@ public class Tracker
     {
         HashMap<Integer, Obj> soarObjects = new HashMap<Integer, Obj>();
 
-        synchronized(soarLock) {
-            if(soar_lcm != null) {
-                for(int i=0; i<soar_lcm.num_objects; i++) {
-                    object_data_t odt = soar_lcm.objects[i];
-                    Obj sObj = new Obj(odt.id);
-                    double[] xyzrpy = odt.pos;
-                    sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
-                    sObj.setBoundingBox(new BoundingBox(odt.bbox_dim, odt.bbox_xyzrpy));
+        //x synchronized(soarLock) {
+        //     if(soar_lcm != null) {
+        //         for(int i=0; i<soar_lcm.num_objects; i++) {
+        //             object_data_t odt = soar_lcm.objects[i];
+        //             Obj sObj = new Obj(odt.id);
+        //             double[] xyzrpy = odt.pos;
+        //             sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
+        //             sObj.setBoundingBox(new BoundingBox(odt.bbox_dim, odt.bbox_xyzrpy));
 
-                    for(int j=0; j<odt.num_cat; j++) {
-                        categorized_data_t cat = odt.cat_dat[j];
-                        FeatureCategory fc = Features.getFeatureCategory(cat.cat.cat);
-                        Classifications cs = new Classifications();
-                        for(int k=0; k<cat.len; k++)
-                            cs.add(cat.label[k], cat.confidence[k]);
+        //             for(int j=0; j<odt.num_cat; j++) {
+        //                 categorized_data_t cat = odt.cat_dat[j];
+        //                 FeatureCategory fc = Features.getFeatureCategory(cat.cat.cat);
+        //                 Classifications cs = new Classifications();
+        //                 for(int k=0; k<cat.len; k++)
+        //                     cs.add(cat.label[k], cat.confidence[k]);
 
-                        sObj.addClassifications(fc, cs);
-                    }
-                    soarObjects.put(sObj.getID(), sObj);
-                }
-            }
-        }
+        //                 sObj.addClassifications(fc, cs);
+        //             }
+        //             soarObjects.put(sObj.getID(), sObj);
+        //         }
+        //     }
+        // }
         return soarObjects;
     }
-    
+
     public void classifyObjects(HashMap<Integer, Obj> objects){
     	for(Obj obj : objects.values()){
     		obj.addAllClassifications(classyManager.classifyAll(obj));
@@ -572,71 +572,71 @@ public class Tracker
      *  in the world. Runs classifiers on the objects and builds
      *  the appropriate lcmtypes to return.
      */
-    public object_data_t[] getObjectData()
-    {
-        long utime = TimeUtil.utime();
-        ArrayList<object_data_t> objList = new ArrayList<object_data_t>();
+    //x public object_data_t[] getObjectData()
+    // {
+    //     long utime = TimeUtil.utime();
+    //     ArrayList<object_data_t> objList = new ArrayList<object_data_t>();
 
-        synchronized (stateLock) {
-            for (Obj ob: worldState.values()) {
-        		SimObject simObj = ob.getSourceSimObject();
-            	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
-            		continue;
-        		}
-            	if(!ob.isVisible()){
-            		continue;
-            	}
-            	object_data_t od = new object_data_t();
+    //     synchronized (stateLock) {
+    //         for (Obj ob: worldState.values()) {
+    //     		SimObject simObj = ob.getSourceSimObject();
+    //         	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
+    //         		continue;
+    //     		}
+    //         	if(!ob.isVisible()){
+    //         		continue;
+    //         	}
+    //         	object_data_t od = new object_data_t();
 
-                od.utime = utime;
-                od.id = ob.getID();
-                od.pos = ob.getPose();
+    //             od.utime = utime;
+    //             od.id = ob.getID();
+    //             od.pos = ob.getPose();
 
-                BoundingBox bbox = ob.getBoundingBox();
-                od.bbox_dim = bbox.lenxyz;
-                od.bbox_xyzrpy = bbox.xyzrpy;
+    //             BoundingBox bbox = ob.getBoundingBox();
+    //             od.bbox_dim = bbox.lenxyz;
+    //             od.bbox_xyzrpy = bbox.xyzrpy;
 
-                od.state_values = ob.getStates();
-                od.num_states = od.state_values.length;
+    //             od.state_values = ob.getStates();
+    //             od.num_states = od.state_values.length;
 
-                categorized_data_t[] cat_dat = ob.getCategoryData();
-                od.num_cat = cat_dat.length;
-                od.cat_dat = cat_dat;
-                
-                objList.add(od);
-            }
-        }
-        
-        object_data_t[] objArray = objList.toArray(new object_data_t[objList.size()]);
-        return objArray;
-    }
+    //             categorized_data_t[] cat_dat = ob.getCategoryData();
+    //             od.num_cat = cat_dat.length;
+    //             od.cat_dat = cat_dat;
 
-    private void handlePerceptionCommand(perception_command_t command){
-    	if(command.command.toUpperCase().contains("SAVE_CLASSIFIERS")){
-    		try {
-    			String[] args = command.command.split("=");
-    			if(args.length > 1){
-    				String filename = args[1] + ".cls";
-    				classyManager.writeState(filename);
-    			}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-    	} else if(command.command.toUpperCase().contains("LOAD_CLASSIFIERS")){
-    		try {
-    			String[] args = command.command.split("=");
-    			if(args.length > 1){
-    				String filename = args[1] + ".cls";
-    				classyManager.readState(filename);
-    			}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-    	} else if(command.command.toUpperCase().equals("CLEAR_CLASSIFIERS")){
-    		classyManager.clearData();
-    	}
+    //             objList.add(od);
+    //         }
+    //     }
 
-    }
+    //    object_data_t[] objArray = objList.toArray(new object_data_t[objList.size()]);
+    //    return objArray;
+    //}
+
+    //x private void handlePerceptionCommand(perception_command_t command){
+    // 	if(command.command.toUpperCase().contains("SAVE_CLASSIFIERS")){
+    // 		try {
+    // 			String[] args = command.command.split("=");
+    // 			if(args.length > 1){
+    // 				String filename = args[1] + ".cls";
+    // 				classyManager.writeState(filename);
+    // 			}
+	// 		} catch (IOException e) {
+	// 			e.printStackTrace();
+	// 		}
+    // 	} else if(command.command.toUpperCase().contains("LOAD_CLASSIFIERS")){
+    // 		try {
+    // 			String[] args = command.command.split("=");
+    // 			if(args.length > 1){
+    // 				String filename = args[1] + ".cls";
+    // 				classyManager.readState(filename);
+    // 			}
+	// 		} catch (IOException e) {
+	// 			e.printStackTrace();
+	// 		}
+    // 	} else if(command.command.toUpperCase().equals("CLEAR_CLASSIFIERS")){
+    // 		classyManager.clearData();
+    // 	}
+
+    // }
 
     // === Methods for interacting with the sensor(s) attached to the system === //
     // XXX This is kind of weird
@@ -651,35 +651,35 @@ public class Tracker
 
     // Given a command from soar to set the state for an object,
     //   sets the state if a valid command
-    private void processSetStateCommand(set_state_command_t setState){
-    	SimObject src = null;
-    	synchronized(stateLock){
-    		Obj obj = worldState.get(setState.obj_id);
-    		if(obj != null){
-    			src = obj.getSourceSimObject();
-    		}
-    	}
-    	if(src != null && src instanceof ISimStateful){
-    		synchronized(worldLock){
-    			((ISimStateful)src).setState(setState.state_name, setState.state_val);
-    		}
-		}
-    }
+    //x private void processSetStateCommand(set_state_command_t setState){
+    // 	SimObject src = null;
+    // 	synchronized(stateLock){
+    // 		Obj obj = worldState.get(setState.obj_id);
+    // 		if(obj != null){
+    // 			src = obj.getSourceSimObject();
+    // 		}
+    // 	}
+    // 	if(src != null && src instanceof ISimStateful){
+    // 		synchronized(worldLock){
+    // 			((ISimStateful)src).setState(setState.state_name, setState.state_val);
+    // 		}
+	// 	}
+    // }
 
     /** Class that continually listens for messages from Soar about what objects
      *  it believes exists in the world. The received lcm message is stored so it
      *  can be used upon request.
      **/
-    class ListenerThread extends Thread implements LCMSubscriber
+    class ListenerThread extends Thread //x implements LCMSubscriber
     {
-        LCM lcm = LCM.getSingleton();
+        //x  LCM lcm = LCM.getSingleton();
 
         public ListenerThread()
         {
-            lcm.subscribe("SOAR_OBJECTS", this);
-            lcm.subscribe("ROBOT_COMMAND", this);
-            lcm.subscribe("SET_STATE_COMMAND", this);
-            lcm.subscribe("PERCEPTION_COMMAND", this);
+            //x lcm.subscribe("SOAR_OBJECTS", this);
+            //x lcm.subscribe("ROBOT_COMMAND", this);
+            //x lcm.subscribe("SET_STATE_COMMAND", this);
+            //x lcm.subscribe("PERCEPTION_COMMAND", this);
         }
 
         public void run()
@@ -689,35 +689,35 @@ public class Tracker
             }
         }
 
-        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-        {
-            try {
-                messageReceivedEx(lcm, channel, ins);
-            } catch (IOException ioex) {
-                System.err.println("ERR: LCM channel -"+channel);
-                ioex.printStackTrace();
-            }
-        }
+        //x public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+        // {
+        //     try {
+        //         messageReceivedEx(lcm, channel, ins);
+        //     } catch (IOException ioex) {
+        //         System.err.println("ERR: LCM channel -"+channel);
+        //         ioex.printStackTrace();
+        //     }
+        // }
 
-        public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
-                throws IOException
-        {
-            if (channel.equals("SOAR_OBJECTS")) {
-                synchronized (soarLock) {
-                    soar_lcm = new soar_objects_t(ins);
-                }
-            } else if (channel.equals("ROBOT_COMMAND")) {
-                synchronized (armLock) {
-                    robot_cmd = new robot_command_t(ins);
-                    armInterpreter.queueCommand(robot_cmd);
-                }
-            } else if(channel.equals("SET_STATE_COMMAND")){
-            	set_state_command_t setState = new set_state_command_t(ins);
-            	processSetStateCommand(setState);
-            } else if(channel.equals("PERCEPTION_COMMAND")){
-            	perception_command_t command = new perception_command_t(ins);
-            	handlePerceptionCommand(command);
-            }
-        }
+        //x public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
+        //         throws IOException
+        // {
+        //     if (channel.equals("SOAR_OBJECTS")) {
+        //         synchronized (soarLock) {
+        //             soar_lcm = new soar_objects_t(ins);
+        //         }
+        //     } else if (channel.equals("ROBOT_COMMAND")) {
+        //         synchronized (armLock) {
+        //             robot_cmd = new robot_command_t(ins);
+        //             armInterpreter.queueCommand(robot_cmd);
+        //         }
+        //     } else if(channel.equals("SET_STATE_COMMAND")){
+        //     	set_state_command_t setState = new set_state_command_t(ins);
+        //     	processSetStateCommand(setState);
+        //     } else if(channel.equals("PERCEPTION_COMMAND")){
+        //     	perception_command_t command = new perception_command_t(ins);
+        //     	handlePerceptionCommand(command);
+        //     }
+        // }
     }
 }

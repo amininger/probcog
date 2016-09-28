@@ -6,7 +6,7 @@ import java.io.*;
 import javax.swing.*;
 import java.util.*;
 
-import lcm.lcm.*;
+//x import lcm.lcm.*;
 
 import april.camera.*;
 import april.camera.models.*;
@@ -16,11 +16,15 @@ import april.sim.SimObject;
 import april.util.*;
 import april.vis.*;
 
-import probcog.lcmtypes.*;
+//x import probcog.lcmtypes.*;
 import probcog.perception.PointCloud;
 import probcog.sensor.SimKinectSensor.SimPixel;
 import probcog.sim.SimLocation;
 import probcog.util.Util;
+
+import edu.wpi.rail.jrosbridge.*;
+import edu.wpi.rail.jrosbridge.messages.*;
+import edu.wpi.rail.jrosbridge.callback.*;
 
 /** Provides access to the frames taken by the kinect. Only
  *  keeps track of the most recently received frame from the
@@ -28,11 +32,10 @@ import probcog.util.Util;
  **/
 public class KinectSensor implements Sensor
 {
-    LCM lcm = LCM.getSingleton();
     Config config;
 
     Object kinectLock = new Object();
-    kinect_status_t ks = null;
+    //x kinect_status_t ks = null;
 
     // Calibration
     Config color = null;
@@ -51,24 +54,14 @@ public class KinectSensor implements Sensor
     april.jmat.geom.Polygon poly;
 
     // Stash
-    kinect_status_t stash_ks;
+    //x kinect_status_t stash_ks;
     BufferedImage r_rgbIm;
     BufferedImage r_depthIm;
-    
-    private boolean listenToLcm;
 
     public KinectSensor(Config config_) throws IOException{
-    	listenToLcm = true;
-    	init(config_);
-    	
-    }
-    
-    public KinectSensor(Config config_, boolean listenToLcm) throws IOException
-    {
-    	this.listenToLcm = listenToLcm;
     	init(config_);
     }
-    
+
     private void init(Config config_) throws IOException{
         config = config_;
 
@@ -131,28 +124,46 @@ public class KinectSensor implements Sensor
         }
         k2wXform_T = LinAlg.transpose(k2wXform);
 
-        if(listenToLcm){
-            // Spin up LCM listener
-            new ListenerThread().start();
-        }
+        //x Spin up LCM listener
+        new ListenerThread().start();
     }
-    
+
     public double[][] getTransform(){
     	return k2wXform;
     }
-    
+
     public double[] getParams(){
     	return new double[]{Cirx, Ciry, Firx, Firy};
     }
 
-    //static int cnt = 0;
-    class ListenerThread extends Thread implements LCMSubscriber
+    class ListenerThread extends Thread //x implements LCMSubscriber
     {
-        LCM lcm = LCM.getSingleton();
+        //x LCM lcm = LCM.getSingleton();
 
         public ListenerThread()
         {
-            lcm.subscribe("KINECT_STATUS", this);
+            Ros ros = new Ros();
+            ros.connect();
+
+            if (ros.isConnected()) {
+                System.out.println("Successfully connected to rosbridge server.");
+            }
+            else {
+                System.out.println("NOT CONNECTED TO ROSBRIDGE");
+            }
+
+            Topic kinect_data = new Topic(ros,
+                                          "/head_camera/depth_registered/points",
+                                          "sensor_msgs/PointCloud2");
+            Message test = new Message();
+            kinect_data.subscribe(new TopicCallback() {
+                    @Override
+                    public void handleMessage(Message message)
+                    {
+                        System.out.println("I received something!");
+                    }
+                });
+            //x lcm.subscribe("KINECT_STATUS", this);
         }
 
         public void run()
@@ -162,6 +173,7 @@ public class KinectSensor implements Sensor
             }
         }
 
+        /* //x
         public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
         {
             try {
@@ -181,6 +193,7 @@ public class KinectSensor implements Sensor
                 }
             }
         }
+        */
     }
 
     /** "Stash" the current kinect frame data, which will then be
@@ -192,40 +205,40 @@ public class KinectSensor implements Sensor
     public boolean stashFrame()
     {
         // Haven't received a new frame yet
-        synchronized (kinectLock) {
-            if (ks == null)
-                return false;
+        //x synchronized (kinectLock) {
+        //     if (ks == null)
+        //         return false;
 
-            stash_ks = ks;
-            ks = null;
-        }
+        //     stash_ks = ks;
+        //     ks = null;
+        // }
 
-        // Undistort data
-        BufferedImage rgbIm = new BufferedImage(stash_ks.WIDTH,
-                                                stash_ks.HEIGHT,
-                                                BufferedImage.TYPE_INT_RGB);
-        BufferedImage depthIm = new BufferedImage(stash_ks.WIDTH,
-                                                  stash_ks.HEIGHT,
-                                                  BufferedImage.TYPE_INT_RGB);
+        // // Undistort data
+        // BufferedImage rgbIm = new BufferedImage(stash_ks.WIDTH,
+        //                                         stash_ks.HEIGHT,
+        //                                         BufferedImage.TYPE_INT_RGB);
+        // BufferedImage depthIm = new BufferedImage(stash_ks.WIDTH,
+        //                                           stash_ks.HEIGHT,
+        //                                           BufferedImage.TYPE_INT_RGB);
 
-        int[] brgb = ((DataBufferInt) (rgbIm.getRaster().getDataBuffer())).getData();
-        int[] bdepth = ((DataBufferInt) (depthIm.getRaster().getDataBuffer())).getData();
+        // int[] brgb = ((DataBufferInt) (rgbIm.getRaster().getDataBuffer())).getData();
+        // int[] bdepth = ((DataBufferInt) (depthIm.getRaster().getDataBuffer())).getData();
 
-        for (int y = 0; y < stash_ks.HEIGHT; y++) {
-            for (int x = 0; x < stash_ks.WIDTH; x++) {
-                int i = y*stash_ks.WIDTH + x;
-                brgb[i] = 0xff000000 |
-                          ((stash_ks.rgb[i*3 + 2] & 0xff) << 0) |
-                          ((stash_ks.rgb[i*3 + 1] & 0xff) << 8) |
-                          ((stash_ks.rgb[i*3 + 0] & 0xff) << 16);
+        // for (int y = 0; y < stash_ks.HEIGHT; y++) {
+        //     for (int x = 0; x < stash_ks.WIDTH; x++) {
+        //         int i = y*stash_ks.WIDTH + x;
+        //         brgb[i] = 0xff000000 |
+        //                   ((stash_ks.rgb[i*3 + 2] & 0xff) << 0) |
+        //                   ((stash_ks.rgb[i*3 + 1] & 0xff) << 8) |
+        //                   ((stash_ks.rgb[i*3 + 0] & 0xff) << 16);
 
-                bdepth[i] = ((stash_ks.depth[i*2 + 0] & 0xff) << 0) |
-                            ((stash_ks.depth[i*2 + 1] & 0xff) << 8);
-            }
-        }
+        //         bdepth[i] = ((stash_ks.depth[i*2 + 0] & 0xff) << 0) |
+        //                     ((stash_ks.depth[i*2 + 1] & 0xff) << 8);
+        //     }
+        // }
 
-        r_rgbIm = rasterizer.rectifyImage(rgbIm);
-        r_depthIm = rasterizer.rectifyImage(depthIm); // XXX This is wrong
+        // r_rgbIm = rasterizer.rectifyImage(rgbIm);
+        //r_depthIm = rasterizer.rectifyImage(depthIm); // XXX This is wrong
         //r_rgbIm = rgbIm;
         //r_depthIm = depthIm;
         //
@@ -236,11 +249,11 @@ public class KinectSensor implements Sensor
 
         return true;
     }
-    
-    public void stashFrame(kinect_status_t stash_ks){
-    	ks = stash_ks;
-    	stashFrame();
-    }
+
+    //x public void stashFrame(kinect_status_t stash_ks){
+    // 	ks = stash_ks;
+    // 	stashFrame();
+    // }
 
     /** Get the stashed RGB Image */
     public BufferedImage getImage()
