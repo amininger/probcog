@@ -26,6 +26,7 @@ import edu.wpi.rail.jrosbridge.*;
 import edu.wpi.rail.jrosbridge.messages.*;
 import edu.wpi.rail.jrosbridge.callback.*;
 import javax.json.*;
+import javax.xml.bind.DatatypeConverter;
 
 /** Provides access to the frames taken by the kinect. Only
  *  keeps track of the most recently received frame from the
@@ -36,11 +37,11 @@ public class KinectSensor implements Sensor
     Config config;
 
     Object kinectLock = new Object();
-    String kinectData = null;
+    byte[] kinectData = null;
     int dataWidth, dataHeight;
 
     // Stash
-    String dataStash;
+    byte[] dataStash;
     int stashWidth, stashHeight;
     BufferedImage r_rgbIm;
     BufferedImage r_depthIm;
@@ -167,9 +168,10 @@ public class KinectSensor implements Sensor
                         try {
                             synchronized(kinectLock) {
                                 JsonObject jobj = message.toJsonObject();
-                                kinectData = jobj.getString("data");
                                 dataWidth = jobj.getInt("width");
                                 dataHeight = jobj.getInt("height");
+
+                                kinectData = DatatypeConverter.parseBase64Binary(jobj.getString("data"));
                             }
                         } catch (ClassCastException e) {
                             System.out.println("Could not extract data from ROS message");
@@ -200,10 +202,29 @@ public class KinectSensor implements Sensor
                 return false;
 
             dataStash = kinectData;
+            System.out.println(dataStash.length);
             stashWidth = dataWidth;
             stashHeight = dataHeight;
             kinectData = null;
-         }
+        }
+
+        // try {
+        //     byte[] rawData = dataStash.getBytes("UTF-8");
+        //     for (int i = 0; i < 5; i ++) {
+        //         System.out.print(rawData[i] + " ");
+        //     }
+        // } catch (UnsupportedEncodingException e) {
+        //     System.out.println("Couldn't decode");
+        // }
+
+        // System.out.println(dataStash.length());
+        // byte[] test = new byte[100];
+        // dataStash.getBytes(0, 31, test, 0);
+
+        // for (int i = 0; i < 5; i ++) {
+        //     System.out.print(dataStash.charAt(i) + " ");
+        //}
+
 
         // // Undistort data
         // BufferedImage rgbIm = new BufferedImage(stash_ks.WIDTH,
