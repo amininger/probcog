@@ -52,7 +52,7 @@ public class Tracker
     ArrayList<Double> frameTimes = new ArrayList<Double>();
     int frameIdx = 0;
     final int frameTotal = 10;
-    
+
     public static class TrackerSettings{
     	public TrackerSettings(){};
     	public TrackerSettings(boolean useKinect, boolean useSegmenter, boolean usePointClouds){
@@ -65,7 +65,7 @@ public class Tracker
     	public boolean usePC = true;
     }
     private TrackerSettings settings;
-    
+
     public Tracker(Config config_, TrackerSettings settings, SimWorld world) throws IOException{
     	this.settings = settings;
 
@@ -73,7 +73,7 @@ public class Tracker
         worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
         armInterpreter = new ArmCommandInterpreter(config_, false);  // Debug off
-        
+
         if(settings.useKinect){
         	segmenter = new KinectSegment(config_);
         } else if(settings.useSeg){
@@ -91,7 +91,7 @@ public class Tracker
         new ListenerThread().start();
         new TrackingThread().start();
     }
-    
+
     public HashMap<Integer, Obj> getWorldState()
     {
     	synchronized(stateLock){
@@ -106,9 +106,9 @@ public class Tracker
     		return worldState.get(id);
     	}
     }
-    
+
     /********************************************************************
-     * 
+     *
      * Tracking Thread
      * This is responsible for running each frame and updating perception by:
      * 1. Getting objects from the kinect/segmenter
@@ -117,7 +117,7 @@ public class Tracker
      * 4. Classifying the objects
      * 5. Applying any simulated environmental dynamics
      * 6. Notifying the arm command interpreter of the new world state
-     * 
+     *
      ********************************************************************/
 
     /** Runs in the background, updating our knowledge of the scene */
@@ -128,39 +128,39 @@ public class Tracker
             while (true) {
             	Tic tic = new Tic();
             	HashMap<Integer, Obj> newWorldState = new HashMap<Integer, Obj>();
-            	
+
             	// 1. Get objects from the kinect/segmenter
             	ArrayList<Obj> visibleObjects = getSegmentedObjects();
             	adjustBoundingBoxes(visibleObjects);
-            	
+
             	// 2. Track those objects by assigning ids
            		HashMap<Obj, Integer> trackedObjects = assignObjectIds(visibleObjects);
             	for(Map.Entry<Obj, Integer> e : trackedObjects.entrySet()){
             		e.getKey().setID(e.getValue());
             		newWorldState.put(e.getValue(), e.getKey());
             	}
-            	
+
             	// 3. Get simulated objects
             	ArrayList<Obj> simObjects = getSimulatedObjects();
             	for(Obj obj : simObjects){
             		newWorldState.put(obj.getID(), obj);
             	}
-            	
+
             	// 4. Classify the objects
             	classifyObjects(newWorldState);
-            	
+
             	// 5. Apply Simulated Dynamics
             	simulateDynamics(newWorldState);
-            	
+
             	// 6. Report new info to arm interpreter
             	synchronized(armLock){
             		armInterpreter.updateWorld(new ArrayList<Obj>(newWorldState.values()));
             	}
-            	
+
             	synchronized(stateLock){
             		worldState = newWorldState;
             	}
-            	
+
             	double frameTime = tic.toc();
             	updateFPS(frameTime);
 
@@ -168,9 +168,9 @@ public class Tracker
             }
         }
     }
-    
-    /** Returns a list of objects that the kinect sees on the table. 
-     * The objects are returned as Obj's from the segmenter, 
+
+    /** Returns a list of objects that the kinect sees on the table.
+     * The objects are returned as Obj's from the segmenter,
      **/
     private ArrayList<Obj> getSegmentedObjects() {
     	if(!settings.usePC){
@@ -179,7 +179,7 @@ public class Tracker
     	}
         return segmenter.getSegmentedObjects();
     }
-    
+
     /** Returns a list of objects that are purely simulated
      *    and not extracted from a kinect point cloud (e.g. locations)
      */
@@ -243,7 +243,7 @@ public class Tracker
     		obj.addAllClassifications(classyManager.classifyAll(obj));
     	}
     }
-    
+
     public void simulateDynamics(HashMap<Integer, Obj> objects){
     	synchronized(worldLock){
     		for(SimObject so : world.objects){
@@ -264,7 +264,7 @@ public class Tracker
             frameTimes.set(frameIdx, frameTime);
             frameIdx = (frameIdx+1)%frameTotal;
         }
-        
+
         double sum = 0;
         for (Double time: frameTimes)
         {

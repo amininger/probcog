@@ -54,7 +54,7 @@ public class KinectSegment implements Segmenter
     {
     	this(config_, null);
     }
-    
+
     public KinectSegment(Config config_, SimWorld world) throws IOException
     {
     	// Get stuff ready for moving arms
@@ -81,7 +81,7 @@ public class KinectSegment implements Segmenter
     public synchronized ArrayList<Obj> getSegmentedObjects()
     {
         if (!kinect.stashFrame())
-            return null;
+            return new ArrayList<Obj>();
 
         width = kinect.getWidth();
         height = kinect.getHeight();

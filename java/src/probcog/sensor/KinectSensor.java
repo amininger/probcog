@@ -25,6 +25,7 @@ import probcog.util.Util;
 import edu.wpi.rail.jrosbridge.*;
 import edu.wpi.rail.jrosbridge.messages.*;
 import edu.wpi.rail.jrosbridge.callback.*;
+import javax.json.*;
 
 /** Provides access to the frames taken by the kinect. Only
  *  keeps track of the most recently received frame from the
@@ -35,7 +36,14 @@ public class KinectSensor implements Sensor
     Config config;
 
     Object kinectLock = new Object();
-    //x kinect_status_t ks = null;
+    String kinectData = null;
+    int dataWidth, dataHeight;
+
+    // Stash
+    String dataStash;
+    int stashWidth, stashHeight;
+    BufferedImage r_rgbIm;
+    BufferedImage r_depthIm;
 
     // Calibration
     Config color = null;
@@ -52,11 +60,6 @@ public class KinectSensor implements Sensor
     double[][] k2wXform;
     double[][] k2wXform_T;
     april.jmat.geom.Polygon poly;
-
-    // Stash
-    //x kinect_status_t stash_ks;
-    BufferedImage r_rgbIm;
-    BufferedImage r_depthIm;
 
     public KinectSensor(Config config_) throws IOException{
     	init(config_);
@@ -160,10 +163,19 @@ public class KinectSensor implements Sensor
                     @Override
                     public void handleMessage(Message message)
                     {
-                        System.out.println("I received something!");
+                        System.out.println("Received message.");
+                        try {
+                            synchronized(kinectLock) {
+                                JsonObject jobj = message.toJsonObject();
+                                kinectData = jobj.getString("data");
+                                dataWidth = jobj.getInt("width");
+                                dataHeight = jobj.getInt("height");
+                            }
+                        } catch (ClassCastException e) {
+                            System.out.println("Could not extract data from ROS message");
+                        }
                     }
                 });
-            //x lcm.subscribe("KINECT_STATUS", this);
         }
 
         public void run()
@@ -172,28 +184,6 @@ public class KinectSensor implements Sensor
                 TimeUtil.sleep(1000/60);    // Just chewing up CPU time...
             }
         }
-
-        /* //x
-        public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-        {
-            try {
-                messageReceivedEx(lcm, channel, ins);
-            } catch (IOException ioex) {
-                System.err.println("ERR: LCM channel ="+channel);
-                ioex.printStackTrace();
-            }
-        }
-
-        private void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins) throws IOException
-        {
-            if (channel.equals("KINECT_STATUS")) {
-                synchronized (kinectLock) {
-                //    System.out.println(cnt++);
-                    ks = new kinect_status_t(ins);
-                }
-            }
-        }
-        */
     }
 
     /** "Stash" the current kinect frame data, which will then be
@@ -205,13 +195,15 @@ public class KinectSensor implements Sensor
     public boolean stashFrame()
     {
         // Haven't received a new frame yet
-        //x synchronized (kinectLock) {
-        //     if (ks == null)
-        //         return false;
+        synchronized (kinectLock) {
+            if (kinectData == null)
+                return false;
 
-        //     stash_ks = ks;
-        //     ks = null;
-        // }
+            dataStash = kinectData;
+            stashWidth = dataWidth;
+            stashHeight = dataHeight;
+            kinectData = null;
+         }
 
         // // Undistort data
         // BufferedImage rgbIm = new BufferedImage(stash_ks.WIDTH,
@@ -247,7 +239,7 @@ public class KinectSensor implements Sensor
         //                                          r_depthIm.getWidth(),
         //                                          r_depthIm.getHeight());
 
-        return true;
+        return false;
     }
 
     //x public void stashFrame(kinect_status_t stash_ks){
