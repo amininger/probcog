@@ -39,7 +39,11 @@ public class SimKinectSegment implements Segmenter
         sensors.add(kinect);    // XXX
     }
 
-    
+
+    public ArrayList<double[]> getPointCloud() {
+        return new ArrayList<double[]>();
+    }
+
     public synchronized ArrayList<Obj> getSegmentedObjects(){
     	SimPixel[] pixels = kinect.getPixels(true);
 

@@ -596,26 +596,28 @@ public class PerceptionGUI extends JFrame
                 double dt = tic.toctic();
 
                 drawFPS();
-                if(drawPointClouds){
+                //if(drawPointClouds){
                     drawPointCloud();
-                } else {
+                    //} else {
                 	//drawObjectBoxes();
-                }
+                    //}
 
-                drawSelection(dt);
-                if(drawPerceptionObjects){
-                	drawPerceptionObjects();
-                }
+                // drawSelection(dt);
+                // if(drawPerceptionObjects){
+                // 	drawPerceptionObjects();
+                //}
                 double[][] faceCamera = calcFaceCameraMatrix();
-                if(drawBeliefObjects){
-                	drawBeliefObjects();
-                }
-                if(drawBeliefObjects){
-                	drawBeliefLabels(faceCamera);
-                }
-                if(drawPropertyLabels){
-                	drawPerceptionLabels(faceCamera);
-                }
+                // if(drawBeliefObjects){
+                // 	drawBeliefObjects();
+                // }
+                // if(drawBeliefObjects){
+                // 	drawBeliefLabels(faceCamera);
+                // }
+                // if(drawPropertyLabels){
+                // 	drawPerceptionLabels(faceCamera);
+                // }
+
+                drawSensors();
 
                 //x arm.render(vw);
 
@@ -672,21 +674,30 @@ public class PerceptionGUI extends JFrame
     {
     	VisWorld.Buffer buffer = vw.getBuffer("object-view");
     	synchronized(tracker.stateLock){
-			for(Obj ob : tracker.getWorldState().values()){
-				ArrayList<double[]> points = ob.getPointCloud().getPoints();
+            //for(Obj ob : tracker.getWorldState().values()){
+            ArrayList<double[]> points = tracker.getPointCloud();
+            if (points == null) return;
+
+            System.out.println(points.get(0)[0] + " " + points.get(0)[1] + " " +
+                               points.get(0)[2]);
+
+            Color test = new Color((int)points.get(0)[3]);
+            System.out.println(test.getRed() + " " + test.getGreen() + " " +
+                               test.getBlue());
+
                 //System.out.printf("Drawing object %d with %d pts\n", ob.getID(), points.size());
 				if(points != null && points.size() > 0){
 	    			VisColorData colors = new VisColorData();
 	    			VisVertexData vertexData = new VisVertexData();
 	    			for(double[] pt : points){
 	    				vertexData.add(new double[]{pt[0], pt[1], pt[2]});
-		    			colors.add(ColorUtil.swapRedBlue((int)pt[3]));
+		    			colors.add(new Color((int)pt[3]).getRGB());
 	    			}
 	    			VzPoints visPts = new VzPoints(vertexData, new VzPoints.Style(colors, 2));
 	    			buffer.addBack(visPts);
 				}
 			}
-    	}
+    	//}
     	buffer.swap();
 	}
 

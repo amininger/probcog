@@ -107,6 +107,11 @@ public class Tracker
     	}
     }
 
+    public ArrayList<double[]> getPointCloud()
+    {
+        return segmenter.getPointCloud();
+    }
+
     /********************************************************************
      *
      * Tracking Thread

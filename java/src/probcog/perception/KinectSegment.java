@@ -91,7 +91,7 @@ public class KinectSegment implements Segmenter
         points = kinect.getAllXYZRGB(true);
 
         // Remove floor and arm points
-        removeFloorAndArmPoints();
+        //removeFloorAndArmPoints();
 
         // Do a union find to do segmentation
         ArrayList<PointCloud> pointClouds = unionFind();
@@ -103,6 +103,10 @@ public class KinectSegment implements Segmenter
         return segmentedObjects;
     }
 
+    public ArrayList<double[]> getPointCloud()
+    {
+        return kinect.getAllXYZRGB(false);
+    }
 
     /** "Remove" points that are too close to the floor by setting them to
      ** empty arrays.

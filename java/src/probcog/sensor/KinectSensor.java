@@ -38,14 +38,16 @@ public class KinectSensor implements Sensor
     Config config;
 
     Object kinectLock = new Object();
+    Object pointsLock = new Object();
     byte[] kinectData = null;
     int dataWidth, dataHeight;
 
     // Stash
     byte[] dataStash;
     int stashWidth, stashHeight;
-    BufferedImage r_rgbIm;
-    BufferedImage r_depthIm;
+    //BufferedImage r_rgbIm;
+    //BufferedImage r_depthIm;
+    ArrayList<double[]> points;
 
     // Calibration
     Config color = null;
@@ -104,6 +106,7 @@ public class KinectSensor implements Sensor
         rasterizer = new NearestNeighborRasterizer(input, output);
 
         // Initialize kinect-to-world transform
+        robot = null;
         if (robot != null) {
             System.out.println("Loading robot calibration from file...");
             // Create the k2w transform
@@ -116,13 +119,13 @@ public class KinectSensor implements Sensor
             }
 
             // Build bounding poly
-            ArrayList<double[]> points = new ArrayList<double[]>();
+            ArrayList<double[]> polypoints = new ArrayList<double[]>();
             double[] dim = robot.getDoubles("calibration.dim");
             double[] polyArray = robot.getDoubles("calibration.poly");
             for (int i = 0; i < polyArray.length; i+=2) {
-                points.add(new double[] {polyArray[i], polyArray[i+1]});
+                polypoints.add(new double[] {polyArray[i], polyArray[i+1]});
             }
-            poly = new april.jmat.geom.Polygon(points);
+            poly = new april.jmat.geom.Polygon(polypoints);
         } else {
             k2wXform = LinAlg.identity(4);
             poly = null;    // A null polygon will not filter out any points
@@ -210,45 +213,49 @@ public class KinectSensor implements Sensor
             kinectData = null;
         }
 
-        byte[] test = {dataStash[3], dataStash[2], dataStash[1], dataStash[0]};
-        float t2 = ByteBuffer.wrap(test).getFloat();
-        System.out.println(t2);
-
-        byte[] test2 = {dataStash[7], dataStash[6], dataStash[5], dataStash[4]};
-        t2 = ByteBuffer.wrap(test2).getFloat();
-        System.out.println(t2);
-
-        byte[] test3 = {dataStash[11], dataStash[10], dataStash[9], dataStash[8]};
-        t2 = ByteBuffer.wrap(test3).getFloat();
-        System.out.println(t2);
-
-        test = Arrays.copyOfRange(dataStash, 16, 20);
-        int t3 = ByteBuffer.wrap(test).getInt();
-        Color c = new Color((dataStash[16]&0xff),
-                            (dataStash[17]&0xff),
-                            (dataStash[18]&0xff));
-        System.out.println(c.getRed() + " " + c.getGreen() + " " + c.getBlue());
-        //for (int i = 0; i < 32*dataWidth*dataHeight; i+=32) {
-        //}
-
-        // // Undistort data
-        // BufferedImage rgbIm = new BufferedImage(stash_ks.WIDTH,
-        //                                         stash_ks.HEIGHT,
+        // BufferedImage rgbIm = new BufferedImage(dataWidth,
+        //                                         dataHeight,
         //                                         BufferedImage.TYPE_INT_RGB);
-        // BufferedImage depthIm = new BufferedImage(stash_ks.WIDTH,
-        //                                           stash_ks.HEIGHT,
-        //                                           BufferedImage.TYPE_INT_RGB);
+        // BufferedImage depthIm = new BufferedImage(dataWidth,
+        //                                           dataHeight,
+        //                                          BufferedImage.TYPE_INT_RGB);
 
         // int[] brgb = ((DataBufferInt) (rgbIm.getRaster().getDataBuffer())).getData();
         // int[] bdepth = ((DataBufferInt) (depthIm.getRaster().getDataBuffer())).getData();
 
+        synchronized (pointsLock) {
+            points = new ArrayList<double[]>();
+
+            for (int i = 0; i < 32*dataWidth*dataHeight; i+=32) {
+                byte[] x_raw = {dataStash[i+3], dataStash[i+2],
+                                dataStash[i+1], dataStash[i+0]};
+                float x = ByteBuffer.wrap(x_raw).getFloat();
+
+                byte[] y_raw = {dataStash[i+7], dataStash[i+6],
+                                dataStash[i+5], dataStash[i+4]};
+                float y = ByteBuffer.wrap(y_raw).getFloat();
+
+                byte[] z_raw = {dataStash[i+11], dataStash[i+10],
+                                dataStash[i+9], dataStash[i+8]};
+                float z = ByteBuffer.wrap(z_raw).getFloat();
+
+                int red = dataStash[i+16] & 0xff;
+                int green = dataStash[i+17] & 0xff;
+                int blue = dataStash[i+18] & 0xff;
+                int rgb = (red << 16 | green << 8 | blue);
+
+                double[] pt = {x, y, z, rgb};
+                points.add(pt);
+            }
+        }
+
+        // // Undistort data
+
+
         // for (int y = 0; y < stash_ks.HEIGHT; y++) {
         //     for (int x = 0; x < stash_ks.WIDTH; x++) {
         //         int i = y*stash_ks.WIDTH + x;
-        //         brgb[i] = 0xff000000 |
-        //                   ((stash_ks.rgb[i*3 + 2] & 0xff) << 0) |
-        //                   ((stash_ks.rgb[i*3 + 1] & 0xff) << 8) |
-        //                   ((stash_ks.rgb[i*3 + 0] & 0xff) << 16);
+
 
         //         bdepth[i] = ((stash_ks.depth[i*2 + 0] & 0xff) << 0) |
         //                     ((stash_ks.depth[i*2 + 1] & 0xff) << 8);
@@ -265,7 +272,7 @@ public class KinectSensor implements Sensor
         //                                          r_depthIm.getWidth(),
         //                                          r_depthIm.getHeight());
 
-        return false;
+        return true;
     }
 
     //x public void stashFrame(kinect_status_t stash_ks){
@@ -273,13 +280,13 @@ public class KinectSensor implements Sensor
     // 	stashFrame();
     // }
 
-    /** Get the stashed RGB Image */
-    public BufferedImage getImage()
-    {
-        if (r_rgbIm == null)
-            return new BufferedImage(0,0,BufferedImage.TYPE_INT_RGB);
-        return r_rgbIm;
-    }
+    // /** Get the stashed RGB Image */
+    // public BufferedImage getImage()
+    // {
+    //     if (r_rgbIm == null)
+    //         return new BufferedImage(0,0,BufferedImage.TYPE_INT_RGB);
+    //     return r_rgbIm;
+    // }
 
     /** Get the bounding polygon */
     public april.jmat.geom.Polygon getPoly()
@@ -290,16 +297,14 @@ public class KinectSensor implements Sensor
     /** Get the width of our rectified images */
     public int getWidth()
     {
-        if (r_rgbIm == null)
-            return 0;
-        return r_rgbIm.getWidth();
+        if (dataStash == null) return 0;
+        return stashWidth;
     }
 
     public int getHeight()
     {
-        if (r_rgbIm == null)
-            return 0;
-        return r_rgbIm.getHeight();
+        if (dataStash == null) return 0;
+        return stashHeight;
     }
     // === Get points in the world coordinate system ===
 
@@ -319,112 +324,119 @@ public class KinectSensor implements Sensor
     }
 
     public ArrayList<double[]> getAllXYZRGB(boolean fastScan){
-    	return Util.extractPoints(this);
+        synchronized (pointsLock) {
+            return points;
+        }
     }
 
     /** Sensor interface to colored points */
     public double[] getXYZRGB(int ix, int iy)
     {
-        return getXYZRGB(ix, iy, true);
+        synchronized(pointsLock) {
+            return points.get(ix*dataWidth + iy);
+        }
     }
 
-    public double[] getXYZRGB(int ix, int iy, boolean filter)
-    {
-        if (ix < 0 || ix >= getWidth() ||
-            iy < 0 || iy >= getHeight())
-            return new double[4];
+    // public double[] getXYZRGB(int ix, int iy, boolean filter)
+    // {
+    //     return new double[4];
+        // if (ix < 0 || ix >= getWidth() ||
+        //     iy < 0 || iy >= getHeight())
+        //     return new double[4];
 
-        if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
-            return new double[4];
+        // if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
+        //     return new double[4];
 
-        double[] xyzc = getXYZ(ix, iy, new double[4], false);
-        xyzc[3] = getRGB(ix, iy, false);
+        // double[] xyzc = getXYZ(ix, iy, new double[4], false);
+        // xyzc[3] = getRGB(ix, iy, false);
 
-        return xyzc;
-    }
+        // return xyzc;
+    //    }
 
-    public double[] getXYZ(int ix, int iy)
-    {
-        return getXYZ(ix, iy, new double[3], false);
-    }
+    // public double[] getXYZ(int ix, int iy)
+    // {
+    //     return getXYZ(ix, iy, new double[3], false);
+    // }
 
-    public double[] getXYZ(int ix, int iy, boolean filter)
-    {
-        return getXYZ(ix, iy, new double[3], filter);
-    }
+    // public double[] getXYZ(int ix, int iy, boolean filter)
+    // {
+    //     return getXYZ(ix, iy, new double[3], filter);
+    // }
 
-    public double[] getXYZ(int ix, int iy, double[] xyz, boolean filter)
-    {
-        if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
-            return xyz;
+    // public double[] getXYZ(int ix, int iy, double[] xyz, boolean filter)
+    // {
+    //     return xyz;
+    //     // if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
+    //     //     return xyz;
 
-        double[] l_xyz = getLocalXYZ(ix, iy, xyz);
-        if (l_xyz == null)
-            return xyz;
-        return k2w(l_xyz);
-    }
+    //     // double[] l_xyz = getLocalXYZ(ix, iy, xyz);
+    //     // if (l_xyz == null)
+    //     //     return xyz;
+    //     // return k2w(l_xyz);
+    // }
 
-    public int getRGB(int ix, int iy)
-    {
-        return getRGB(ix, iy, true);
-    }
+    // public int getRGB(int ix, int iy)
+    // {
+    //     return 0;
+    // }
 
-    /** Get the color of the point at (ix, iy) in the stashed frame */
-    public int getRGB(int ix, int iy, boolean filter)
-    {
-        if (ix < 0 || ix >= r_rgbIm.getWidth() ||
-            iy < 0 || iy >= r_rgbIm.getHeight())
-            return 0;
+    // /** Get the color of the point at (ix, iy) in the stashed frame */
+    // public int getRGB(int ix, int iy, boolean filter)
+    // {
+    //     if (ix < 0 || ix >= r_rgbIm.getWidth() ||
+    //         iy < 0 || iy >= r_rgbIm.getHeight())
+    //         return 0;
 
-        if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
-            return 0;
+    //     if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
+    //         return 0;
 
-        assert (r_rgbIm != null);
-        int[] buf = ((DataBufferInt)(r_rgbIm.getRaster().getDataBuffer())).getData();
+    //     assert (r_rgbIm != null);
+    //     int[] buf = ((DataBufferInt)(r_rgbIm.getRaster().getDataBuffer())).getData();
 
-        return buf[iy*r_rgbIm.getWidth() + ix];
-    }
+    //     return buf[iy*r_rgbIm.getWidth() + ix];
+    // }
 
     // === Get points from the raw kinect data. No filtering provided ===
 
-    /** Get the colored point at (ix, iy) in the stashed frame */
-    public double[] getLocalXYZRGB(int ix, int iy)
-    {
-        if (ix < 0 || ix >= getWidth() ||
-            iy < 0 || iy >= getHeight())
-            return new double[4];
+    // /** Get the colored point at (ix, iy) in the stashed frame */
+    // public double[] getLocalXYZRGB(int ix, int iy)
+    // {
+    //     if (ix < 0 || ix >= getWidth() ||
+    //         iy < 0 || iy >= getHeight())
+    //         return new double[4];
 
-        double[] xyzc = getLocalXYZ(ix, iy, new double[4]);
-        xyzc[3] = getRGB(ix, iy);
+    //     double[] xyzc = getLocalXYZ(ix, iy, new double[4]);
+    //     xyzc[3] = getRGB(ix, iy);
 
-        return xyzc;
-    }
+    //     return xyzc;
+    // }
 
     /** Get the 3D point at (ix, iy) in the stashed frame */
     public double[] getLocalXYZ(int ix, int iy)
     {
-        return getLocalXYZ(ix, iy, new double[3]);
+        return new double[6];
+        //x        return getLocalXYZ(ix, iy, new double[3]);
     }
 
-    public double[] getLocalXYZ(int ix, int iy, double[] xyz)
-    {
-        assert (xyz != null && xyz.length >= 3);
-        assert (r_depthIm != null);
-        int[] buf = ((DataBufferInt)(r_depthIm.getRaster().getDataBuffer())).getData();
+    // public double[] getLocalXYZ(int ix, int iy, double[] xyz)
+    // {
+    //     assert (xyz != null && xyz.length >= 3);
+    //     assert (r_depthIm != null);
+    //     int[] buf = ((DataBufferInt)(r_depthIm.getRaster().getDataBuffer())).getData();
 
-        if (ix < 0 || ix >= getWidth() ||
-            iy < 0 || iy >= getHeight())
-            return xyz;
+    //     if (ix < 0 || ix >= getWidth() ||
+    //         iy < 0 || iy >= getHeight())
+    //         return xyz;
 
-        int d = buf[iy*getWidth() + ix];
-        double depth = d/1000.0;   // millimeters to meters
+    //     int d = buf[iy*getWidth() + ix];
+    //     double depth = d/1000.0;   // millimeters to meters
 
-        xyz[0] = (ix - Cirx) * depth / Firx;
-        xyz[1] = (iy - Ciry) * depth / Firy;
-        xyz[2] = depth;
+    //     xyz[0] = (ix - Cirx) * depth / Firx;
+    //     xyz[1] = (iy - Ciry) * depth / Firy;
+    //     xyz[2] = depth;
 
-        return xyz;
-    }
+    //     return xyz;
+    //}
 
     // === Debug GUI ==============
     public static void main(String[] args)
@@ -477,30 +489,30 @@ public class KinectSensor implements Sensor
         }
 
         int fps = 30;
-        while (true) {
-            TimeUtil.sleep(1000/fps);
-            if (!kinect.stashFrame())
-                continue;
+        // while (true) {
+        //     TimeUtil.sleep(1000/fps);
+        //     if (!kinect.stashFrame())
+        //         continue;
 
-            ArrayList<double[]> points = new ArrayList<double[]>();
-            VisColorData vcd = new VisColorData();
-            for (int y = 0; y < kinect.getHeight(); y++) {
-                for (int x = 0; x < kinect.getWidth(); x++) {
-                    double[] xyz = kinect.getXYZ(x,y);
-                    int rgb = kinect.getRGB(x,y);
+        //     ArrayList<double[]> points = new ArrayList<double[]>();
+        //     VisColorData vcd = new VisColorData();
+        //     for (int y = 0; y < kinect.getHeight(); y++) {
+        //         for (int x = 0; x < kinect.getWidth(); x++) {
+        //             double[] xyz = kinect.getXYZ(x,y);
+        //             int rgb = kinect.getRGB(x,y);
 
-                    if (xyz == null)
-                        continue;
+        //             if (xyz == null)
+        //                 continue;
 
-                    points.add(xyz);
-                    vcd.add(rgb);   // XXX these colors are flipped
-                }
-            }
+        //             points.add(xyz);
+        //             vcd.add(rgb);   // XXX these colors are flipped
+        //         }
+        //     }
 
-            VisWorld.Buffer vb = vw.getBuffer("kinect");
-            vb.addBack(new VzPoints(new VisVertexData(points),
-                                    new VzPoints.Style(vcd, 2)));
-            vb.swap();
-        }
+        //     VisWorld.Buffer vb = vw.getBuffer("kinect");
+        //     vb.addBack(new VzPoints(new VisVertexData(points),
+        //                             new VzPoints.Style(vcd, 2)));
+        //     vb.swap();
+        //}
     }
 }
