@@ -244,7 +244,9 @@ public class KinectSensor implements Sensor
                 int blue = dataStash[i+18] & 0xff;
                 int rgb = (red << 16 | green << 8 | blue);
 
-                double[] pt = {x, y, z, rgb};
+                double[] worldpt = k2w(new double[]{x, y, z});
+
+                double[] pt = {worldpt[0], worldpt[1], worldpt[2], rgb};
                 points.add(pt);
             }
         }

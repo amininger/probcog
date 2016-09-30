@@ -677,14 +677,6 @@ public class PerceptionGUI extends JFrame
             //for(Obj ob : tracker.getWorldState().values()){
             ArrayList<double[]> points = tracker.getPointCloud();
             if (points == null) return;
-
-            System.out.println(points.get(0)[0] + " " + points.get(0)[1] + " " +
-                               points.get(0)[2]);
-
-            Color test = new Color((int)points.get(0)[3]);
-            System.out.println(test.getRed() + " " + test.getGreen() + " " +
-                               test.getBlue());
-
                 //System.out.printf("Drawing object %d with %d pts\n", ob.getID(), points.size());
 				if(points != null && points.size() > 0){
 	    			VisColorData colors = new VisColorData();
