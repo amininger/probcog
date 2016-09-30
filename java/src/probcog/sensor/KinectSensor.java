@@ -127,10 +127,11 @@ public class KinectSensor implements Sensor
             }
             poly = new april.jmat.geom.Polygon(polypoints);
         } else {
-            k2wXform = LinAlg.identity(4);
+            k2wXform = LinAlg.translate(0, 0, 1);
+            LinAlg.timesEquals(k2wXform, LinAlg.rotateX(-Math.PI/2));
             poly = null;    // A null polygon will not filter out any points
         }
-        k2wXform_T = LinAlg.transpose(k2wXform);
+        k2wXform_T = k2wXform;
 
         //x Spin up LCM listener
         new ListenerThread().start();
@@ -168,7 +169,7 @@ public class KinectSensor implements Sensor
                     @Override
                     public void handleMessage(Message message)
                     {
-                        System.out.println("Received message.");
+                        //System.out.println("Received message.");
                         try {
                             synchronized(kinectLock) {
                                 JsonObject jobj = message.toJsonObject();
@@ -244,9 +245,7 @@ public class KinectSensor implements Sensor
                 int blue = dataStash[i+18] & 0xff;
                 int rgb = (red << 16 | green << 8 | blue);
 
-                double[] worldpt = k2w(new double[]{x, y, z});
-
-                double[] pt = {worldpt[0], worldpt[1], worldpt[2], rgb};
+                double[] pt = {x, y, z, rgb};
                 points.add(pt);
             }
         }

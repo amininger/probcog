@@ -670,26 +670,44 @@ public class PerceptionGUI extends JFrame
     	buffer.swap();
     }
 
+    public void drawSensors()
+    {
+        VisWorld.Buffer vb = vw.getBuffer("kinect");
+        ArrayList<Sensor> sensors = tracker.getSensors();
+        for (Sensor s: sensors) {
+            vb.addBack(new VisChain(s.getCameraXform(),
+                                    LinAlg.scale(0.1),
+                                    new VzAxes()));
+            //CameraPosition camera = Util.getSensorPos(s);
+            //Util.printCamera(camera);
+        }
+
+        vb.swap();
+    }
+
 	private void drawPointCloud()
     {
     	VisWorld.Buffer buffer = vw.getBuffer("object-view");
     	synchronized(tracker.stateLock){
             //for(Obj ob : tracker.getWorldState().values()){
+            ArrayList<Sensor> sensors = tracker.getSensors();
+            Sensor k = sensors.get(0);
+
             ArrayList<double[]> points = tracker.getPointCloud();
             if (points == null) return;
                 //System.out.printf("Drawing object %d with %d pts\n", ob.getID(), points.size());
-				if(points != null && points.size() > 0){
-	    			VisColorData colors = new VisColorData();
-	    			VisVertexData vertexData = new VisVertexData();
-	    			for(double[] pt : points){
-	    				vertexData.add(new double[]{pt[0], pt[1], pt[2]});
-		    			colors.add(new Color((int)pt[3]).getRGB());
-	    			}
-	    			VzPoints visPts = new VzPoints(vertexData, new VzPoints.Style(colors, 2));
-	    			buffer.addBack(visPts);
-				}
-			}
-    	//}
+            if(points != null && points.size() > 0){
+                VisColorData colors = new VisColorData();
+                VisVertexData vertexData = new VisVertexData();
+                for(double[] pt : points){
+                    vertexData.add(new double[]{pt[0], pt[1], pt[2]});
+                    colors.add(new Color((int)pt[3]).getRGB());
+                }
+                VzPoints visPts = new VzPoints(vertexData, new VzPoints.Style(colors, 2));
+                VisChain pointsChain = new VisChain(k.getCameraXform(), visPts);
+                buffer.addBack(pointsChain);
+            }
+        }
     	buffer.swap();
 	}
 
@@ -835,21 +853,6 @@ public class PerceptionGUI extends JFrame
     		}
     	}
     	buffer.swap();
-    }
-
-    public void drawSensors()
-    {
-        VisWorld.Buffer vb = vw.getBuffer("kinect");
-        ArrayList<Sensor> sensors = tracker.getSensors();
-        for (Sensor s: sensors) {
-            vb.addBack(new VisChain(s.getCameraXform(),
-                                    LinAlg.scale(0.1),
-                                    new VzAxes()));
-            //CameraPosition camera = Util.getSensorPos(s);
-            //Util.printCamera(camera);
-        }
-
-        vb.swap();
     }
 
     public static void main(String args[])
