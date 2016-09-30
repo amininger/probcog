@@ -5,6 +5,7 @@ import java.awt.image.*;
 import java.io.*;
 import javax.swing.*;
 import java.util.*;
+import java.nio.ByteBuffer;
 
 //x import lcm.lcm.*;
 
@@ -172,6 +173,8 @@ public class KinectSensor implements Sensor
                                 dataHeight = jobj.getInt("height");
 
                                 kinectData = DatatypeConverter.parseBase64Binary(jobj.getString("data"));
+                                for (int i = 0; i < kinectData.length; i++)
+                                    kinectData[i] = (byte) (kinectData[i] & 0xFF);
                             }
                         } catch (ClassCastException e) {
                             System.out.println("Could not extract data from ROS message");
@@ -202,29 +205,31 @@ public class KinectSensor implements Sensor
                 return false;
 
             dataStash = kinectData;
-            System.out.println(dataStash.length);
             stashWidth = dataWidth;
             stashHeight = dataHeight;
             kinectData = null;
         }
 
-        // try {
-        //     byte[] rawData = dataStash.getBytes("UTF-8");
-        //     for (int i = 0; i < 5; i ++) {
-        //         System.out.print(rawData[i] + " ");
-        //     }
-        // } catch (UnsupportedEncodingException e) {
-        //     System.out.println("Couldn't decode");
-        // }
+        byte[] test = {dataStash[3], dataStash[2], dataStash[1], dataStash[0]};
+        float t2 = ByteBuffer.wrap(test).getFloat();
+        System.out.println(t2);
 
-        // System.out.println(dataStash.length());
-        // byte[] test = new byte[100];
-        // dataStash.getBytes(0, 31, test, 0);
+        byte[] test2 = {dataStash[7], dataStash[6], dataStash[5], dataStash[4]};
+        t2 = ByteBuffer.wrap(test2).getFloat();
+        System.out.println(t2);
 
-        // for (int i = 0; i < 5; i ++) {
-        //     System.out.print(dataStash.charAt(i) + " ");
+        byte[] test3 = {dataStash[11], dataStash[10], dataStash[9], dataStash[8]};
+        t2 = ByteBuffer.wrap(test3).getFloat();
+        System.out.println(t2);
+
+        test = Arrays.copyOfRange(dataStash, 16, 20);
+        int t3 = ByteBuffer.wrap(test).getInt();
+        Color c = new Color((dataStash[16]&0xff),
+                            (dataStash[17]&0xff),
+                            (dataStash[18]&0xff));
+        System.out.println(c.getRed() + " " + c.getGreen() + " " + c.getBlue());
+        //for (int i = 0; i < 32*dataWidth*dataHeight; i+=32) {
         //}
-
 
         // // Undistort data
         // BufferedImage rgbIm = new BufferedImage(stash_ks.WIDTH,

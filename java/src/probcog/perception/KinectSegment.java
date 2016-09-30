@@ -89,13 +89,13 @@ public class KinectSegment implements Segmenter
         // Get points from camera
         long time = TimeUtil.utime();
         points = kinect.getAllXYZRGB(true);
-        
+
         // Remove floor and arm points
         removeFloorAndArmPoints();
-        
+
         // Do a union find to do segmentation
         ArrayList<PointCloud> pointClouds = unionFind();
-        
+
         ArrayList<Obj> segmentedObjects = new ArrayList<Obj>();
         for(PointCloud pc : pointClouds){
         	segmentedObjects.add(new Obj(pc.removeTopPoints(0.05)));
