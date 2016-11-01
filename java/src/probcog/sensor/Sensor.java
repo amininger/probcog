@@ -10,6 +10,8 @@ public interface Sensor
     /** Get the number of pixels wide the data will be.**/
     public int getWidth();
 
+    public int getStashedFrameNum();
+
     /** Gets all the colored, 3D points in the view region. **/
     public ArrayList<double[]> getAllXYZRGB(boolean fastScan);
 

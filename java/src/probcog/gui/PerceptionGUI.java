@@ -597,7 +597,8 @@ public class PerceptionGUI extends JFrame
 
                 drawFPS();
                 //if(drawPointClouds){
-                    drawPointCloud();
+                drawPointCloud();
+
                     //} else {
                 	//drawObjectBoxes();
                     //}
@@ -693,7 +694,8 @@ public class PerceptionGUI extends JFrame
             ArrayList<Sensor> sensors = tracker.getSensors();
             Sensor k = sensors.get(0);
 
-            ArrayList<double[]> points = tracker.getPointCloud();
+            ArrayList<double[]> points = k.getAllXYZRGB(false);
+
             if (points == null) return;
                 //System.out.printf("Drawing object %d with %d pts\n", ob.getID(), points.size());
             if(points != null && points.size() > 0){

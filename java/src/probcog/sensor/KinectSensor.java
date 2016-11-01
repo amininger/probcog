@@ -42,6 +42,8 @@ public class KinectSensor implements Sensor
     byte[] kinectData = null;
     int dataWidth, dataHeight;
 
+    int dataSeq, stashSeq;
+
     // Stash
     byte[] dataStash;
     int stashWidth, stashHeight;
@@ -134,7 +136,39 @@ public class KinectSensor implements Sensor
         k2wXform_T = k2wXform;
 
         //x Spin up LCM listener
-        new ListenerThread().start();
+        Ros ros = new Ros();
+        ros.connect();
+
+        if (ros.isConnected()) {
+            System.out.println("Successfully connected to rosbridge server.");
+        }
+        else {
+            System.out.println("NOT CONNECTED TO ROSBRIDGE");
+        }
+
+        Topic kinect_data = new Topic(ros,
+                                      "/head_camera/depth_registered/points",
+                                      "sensor_msgs/PointCloud2", 1000);
+
+        kinect_data.subscribe(new TopicCallback() {
+                @Override
+                public void handleMessage(Message message) {
+                    try {
+                        synchronized(kinectLock) {
+                            JsonObject jobj = message.toJsonObject();
+                            dataWidth = jobj.getInt("width");
+                            dataHeight = jobj.getInt("height");
+
+                            dataSeq = jobj.getJsonObject("header").getInt("seq");
+                            kinectData = DatatypeConverter.parseBase64Binary(jobj.getString("data"));
+                            for (int i = 0; i < kinectData.length; i++)
+                               kinectData[i] = (byte) (kinectData[i] & 0xFF);
+                        }
+                    } catch (ClassCastException e) {
+                         System.out.println("Could not extract data from ROS message");
+                    }
+                }
+            });
     }
 
     public double[][] getTransform(){
@@ -145,55 +179,13 @@ public class KinectSensor implements Sensor
     	return new double[]{Cirx, Ciry, Firx, Firy};
     }
 
-    class ListenerThread extends Thread //x implements LCMSubscriber
+    public int getStashedFrameNum()
     {
-        //x LCM lcm = LCM.getSingleton();
-
-        public ListenerThread()
-        {
-            Ros ros = new Ros();
-            ros.connect();
-
-            if (ros.isConnected()) {
-                System.out.println("Successfully connected to rosbridge server.");
-            }
-            else {
-                System.out.println("NOT CONNECTED TO ROSBRIDGE");
-            }
-
-            Topic kinect_data = new Topic(ros,
-                                          "/head_camera/depth_registered/points",
-                                          "sensor_msgs/PointCloud2");
-            Message test = new Message();
-            kinect_data.subscribe(new TopicCallback() {
-                    @Override
-                    public void handleMessage(Message message)
-                    {
-                        //System.out.println("Received message.");
-                        try {
-                            synchronized(kinectLock) {
-                                JsonObject jobj = message.toJsonObject();
-                                dataWidth = jobj.getInt("width");
-                                dataHeight = jobj.getInt("height");
-
-                                kinectData = DatatypeConverter.parseBase64Binary(jobj.getString("data"));
-                                for (int i = 0; i < kinectData.length; i++)
-                                    kinectData[i] = (byte) (kinectData[i] & 0xFF);
-                            }
-                        } catch (ClassCastException e) {
-                            System.out.println("Could not extract data from ROS message");
-                        }
-                    }
-                });
-        }
-
-        public void run()
-        {
-            while (true) {
-                TimeUtil.sleep(1000/60);    // Just chewing up CPU time...
-            }
+        synchronized (kinectLock) {
+            return stashSeq;
         }
     }
+
 
     /** "Stash" the current kinect frame data, which will then be
      *  used for all subsequent frame lookups. Calling stash again will
@@ -212,17 +204,8 @@ public class KinectSensor implements Sensor
             stashWidth = dataWidth;
             stashHeight = dataHeight;
             kinectData = null;
+            stashSeq = dataSeq;
         }
-
-        // BufferedImage rgbIm = new BufferedImage(dataWidth,
-        //                                         dataHeight,
-        //                                         BufferedImage.TYPE_INT_RGB);
-        // BufferedImage depthIm = new BufferedImage(dataWidth,
-        //                                           dataHeight,
-        //                                          BufferedImage.TYPE_INT_RGB);
-
-        // int[] brgb = ((DataBufferInt) (rgbIm.getRaster().getDataBuffer())).getData();
-        // int[] bdepth = ((DataBufferInt) (depthIm.getRaster().getDataBuffer())).getData();
 
         synchronized (pointsLock) {
             points = new ArrayList<double[]>();
@@ -250,44 +233,8 @@ public class KinectSensor implements Sensor
             }
         }
 
-        // // Undistort data
-
-
-        // for (int y = 0; y < stash_ks.HEIGHT; y++) {
-        //     for (int x = 0; x < stash_ks.WIDTH; x++) {
-        //         int i = y*stash_ks.WIDTH + x;
-
-
-        //         bdepth[i] = ((stash_ks.depth[i*2 + 0] & 0xff) << 0) |
-        //                     ((stash_ks.depth[i*2 + 1] & 0xff) << 8);
-        //     }
-        // }
-
-        // r_rgbIm = rasterizer.rectifyImage(rgbIm);
-        //r_depthIm = rasterizer.rectifyImage(depthIm); // XXX This is wrong
-        //r_rgbIm = rgbIm;
-        //r_depthIm = depthIm;
-        //
-        //System.out.printf("%d x %d -- %d x %d\n", r_rgbIm.getWidth(),
-        //                                          r_rgbIm.getHeight(),
-        //                                          r_depthIm.getWidth(),
-        //                                          r_depthIm.getHeight());
-
         return true;
     }
-
-    //x public void stashFrame(kinect_status_t stash_ks){
-    // 	ks = stash_ks;
-    // 	stashFrame();
-    // }
-
-    // /** Get the stashed RGB Image */
-    // public BufferedImage getImage()
-    // {
-    //     if (r_rgbIm == null)
-    //         return new BufferedImage(0,0,BufferedImage.TYPE_INT_RGB);
-    //     return r_rgbIm;
-    // }
 
     /** Get the bounding polygon */
     public april.jmat.geom.Polygon getPoly()

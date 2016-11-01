@@ -480,4 +480,9 @@ public class SimKinectSensor implements Sensor
     {
     	return true;
     }
+
+    public int getStashedFrameNum()
+    {
+        return 0;
+    }
 }
