@@ -68,7 +68,6 @@ public class WorldModel implements ISoarObject
     	}
     	return handle;
     }
-
     
     public synchronized void linkObjects(Set<String> sourceHandles, String destHandle){
     	Integer dHandle = Integer.parseInt(destHandle);
@@ -232,7 +231,7 @@ public class WorldModel implements ISoarObject
     public categorized_data_t parseFlag(String flagName, String flagValue){
     	categorized_data_t catDat = new categorized_data_t();
     	catDat.cat = new category_t();
-    	Integer catId = PerceptualProperty.getPropertyID(flagName);
+    	Integer catId = ObjectProperty.getPropertyID(flagName);
     	if(catId == null){
     		return null;
     	}

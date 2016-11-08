@@ -180,7 +180,7 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
     			"Error (send-training-label): No ^label attribute");
     	String propHandle = SoarUtil.getValueOfAttribute(id, "property-handle", 
     			"Error (send-training-label): No ^property-handle attribute");
-    	Integer catNum = PerceptualProperty.getPropertyID(propHandle);
+    	Integer catNum = ObjectProperty.getPropertyID(propHandle);
     	if(catNum == null){
     		id.CreateStringWME("status", "error");
     		System.err.println("ArmPerceptionConnector::processSendTrainingLabelCommand - bad category");

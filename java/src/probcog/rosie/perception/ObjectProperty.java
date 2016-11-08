@@ -1,6 +1,7 @@
 package probcog.rosie.perception;
 
 import java.util.*;
+import java.util.HashMap;
 
 import edu.umich.rosie.soar.FloatWME;
 import edu.umich.rosie.soar.ISoarObject;
@@ -14,7 +15,7 @@ import sml.*;
  * @author mininger
  * 
  */
-public class PerceptualProperty implements ISoarObject
+public class ObjectProperty implements ISoarObject
 {   
 	protected static HashMap<Integer, String> propertyNames = null;
 	
@@ -76,7 +77,7 @@ public class PerceptualProperty implements ISoarObject
     
     private boolean gotUpdate = false;
 
-    public PerceptualProperty(categorized_data_t catDat){
+    public ObjectProperty(categorized_data_t catDat){
     	name = getPropertyName(catDat.cat.cat);
     	type = getPropertyType(catDat.cat.cat);
     	values = new HashMap<String, FloatWME>();
@@ -85,6 +86,15 @@ public class PerceptualProperty implements ISoarObject
     		featureVal.setValue(catDat.features[0]);
     	}
     	wmesToRemove = new HashSet<FloatWME>();
+    }
+    
+    public ObjectProperty(String propName, String type, String propValue){
+    	this.name = propName;
+    	this.type = type;
+    	this.values = new HashMap<String, FloatWME>();
+    	this.values.put(propValue, new FloatWME(propValue, 1.0));
+    	this.featureVal = new FloatWME("feature-val", 0.0);
+    	this.wmesToRemove = new HashSet<FloatWME>();
     }
     
     public String getPropertyName(){
@@ -113,6 +123,19 @@ public class PerceptualProperty implements ISoarObject
     	gotUpdate = true;
     }
     
+    public synchronized void updateProperty(String newValue){
+    	String curValue = null;
+    	// Should only be 1 entry in the map
+    	for(Map.Entry<String, FloatWME> e : this.values.entrySet()){
+    		curValue = e.getKey();
+    	}
+    	if (!curValue.equals(newValue)){
+    		wmesToRemove.add(this.values.get(curValue));
+    		this.values.remove(curValue);
+    		this.values.put(newValue, new FloatWME(newValue, 1.0));
+    	}
+    }
+    
     public void updateProperty(categorized_data_t catDat){
     	HashMap<String, Double> valueInfo = new HashMap<String, Double>();
     	for(int i = 0; i < catDat.len; i++){
@@ -128,7 +151,7 @@ public class PerceptualProperty implements ISoarObject
     public static categorized_data_t getCatDat(String propName, HashMap<String, FloatWME> values){
     	categorized_data_t catDat = new categorized_data_t();
 		catDat.cat = new category_t();
-		catDat.cat.cat = PerceptualProperty.getPropertyID(propName);
+		catDat.cat.cat = ObjectProperty.getPropertyID(propName);
 		catDat.len = values.size();
 		catDat.label = new String[catDat.len];
 		catDat.confidence = new double[catDat.len];

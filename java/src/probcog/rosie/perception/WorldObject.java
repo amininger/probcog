@@ -41,11 +41,11 @@ public class WorldObject implements ISoarObject
     
     protected ArrayList<object_data_t> lastData;
     
-    protected Map<String, PerceptualProperty> perceptualProperties;
+    protected Map<String, ObjectProperty> perceptualProperties;
+    protected Map<String, ObjectProperty> stateProperties;
     
-    protected HashSet<PerceptualProperty> propsToRemove;
+    protected HashSet<ObjectProperty> propsToRemove;
     
-    protected StateProperties stateProperties;
     
     private WorldModel world;
     
@@ -60,9 +60,9 @@ public class WorldObject implements ISoarObject
         bboxRot = new double[3];
         bboxSize = new double[3];
         centroid = new double[3];
-        perceptualProperties = new HashMap<String, PerceptualProperty>();
-        propsToRemove = new HashSet<PerceptualProperty>();
-        stateProperties = new StateProperties();
+        perceptualProperties = new HashMap<String, ObjectProperty>();
+        stateProperties = new HashMap<String, ObjectProperty>();
+        propsToRemove = new HashSet<ObjectProperty>();
         
         lastData = objDatas;
         updateBbox(objDatas);
@@ -152,34 +152,57 @@ public class WorldObject implements ISoarObject
     		HashMap<String, Double> unknownValues = new HashMap<String, Double>();
     		unknownValues.put("unknown", 0.0);
 
-    		for(PerceptualProperty p : perceptualProperties.values()){
+    		for(ObjectProperty p : perceptualProperties.values()){
     			p.updateProperty(unknownValues);
     		}
     		
-    		stateProperties.updateProperties(new String[0]);
+    		for(ObjectProperty p : stateProperties.values()){
+    			p.updateProperty("unknown");
+    		}
     	} else {
     		// Just one object, update using that
     		object_data_t objectData = objDatas.get(0);
     		ArrayList<String> propsToDelete = new ArrayList<String>(perceptualProperties.keySet());
     		
     		for(categorized_data_t category : objectData.cat_dat){
-             	String propName = PerceptualProperty.getPropertyName(category.cat.cat);
+             	String propName = ObjectProperty.getPropertyName(category.cat.cat);
              	if(perceptualProperties.containsKey(propName)){
              		propsToDelete.remove(propName);
              		perceptualProperties.get(propName).updateProperty(category);
              	} else {
-             		PerceptualProperty pp = new PerceptualProperty(category);
+             		ObjectProperty pp = new ObjectProperty(category);
              		perceptualProperties.put(propName, pp);
              	}
             }
     		
     		for(String propName : propsToDelete){
-    			PerceptualProperty pp = perceptualProperties.get(propName);
+    			ObjectProperty pp = perceptualProperties.get(propName);
     			propsToRemove.add(pp);
     			perceptualProperties.remove(propName);
     		}
-
-    		stateProperties.updateProperties(objectData.state_values);
+    		
+    		propsToDelete = new ArrayList<String>(stateProperties.keySet());
+    		
+    		for(String stateProp : objectData.state_values){
+        		String[] nameValSplit = stateProp.split("=");
+        		if(nameValSplit.length < 2){
+        			continue;
+        		}
+        		String propName = nameValSplit[0].toLowerCase();
+        		String propVal = nameValSplit[1].toLowerCase();
+        		if(stateProperties.containsKey(propName)){
+        			propsToDelete.remove(propName);
+        			stateProperties.get(propName).updateProperty(propVal);
+        		} else {
+        			ObjectProperty sp = new ObjectProperty(propName, ObjectProperty.STATE_TYPE, propVal);
+        			stateProperties.put(propName, sp);
+        		}
+    		}
+    		for (String propName : propsToDelete){
+    			ObjectProperty sp = stateProperties.get(propName);
+    			propsToRemove.add(sp);
+    			stateProperties.remove(propName);
+    		}
     	}
     	gotPropUpdate = true;
     }
@@ -252,10 +275,12 @@ public class WorldObject implements ISoarObject
 		objId = parentId.CreateIdWME("object");
     	objId.CreateIntWME("object-handle", handle);
 
-    	for(PerceptualProperty pp : perceptualProperties.values()){
+    	for(ObjectProperty pp : perceptualProperties.values()){
     		pp.addToWM(objId);
     	}
-    	stateProperties.addToWM(objId);
+    	for(ObjectProperty sp : stateProperties.values()){
+    		sp.addToWM(objId);
+    	}
 
     	StringBuilder svsCommands = new StringBuilder();
     	svsCommands.append(SVSCommands.addBox(getHandleStr(), bboxPos, bboxRot, bboxSize));
@@ -272,20 +297,24 @@ public class WorldObject implements ISoarObject
     	
     	if(gotPropUpdate){
 	    	// Update Perceptual Properties
-	    	for(PerceptualProperty pp : perceptualProperties.values()){
+	    	for(ObjectProperty pp : perceptualProperties.values()){
 	    		if(pp.isAdded()){
 	    			pp.updateWM();
 	    		} else {
 	    			pp.addToWM(objId);
 	    		}
 	    	}
-	    	for(PerceptualProperty pp : propsToRemove){
+	    	for(ObjectProperty sp : stateProperties.values()){
+	    		if(sp.isAdded()){
+	    			sp.updateWM();
+	    		} else {
+	    			sp.addToWM(objId);
+	    		}
+	    	}
+	    	for(ObjectProperty pp : propsToRemove){
 	    		pp.removeFromWM();
 	    	}
 	    	propsToRemove.clear();
-	
-	    	// Update State Properties
-	    	stateProperties.updateWM();
 
 	    	gotPropUpdate = false;
     	}
@@ -316,10 +345,12 @@ public class WorldObject implements ISoarObject
     	svsCommands.append(SVSCommands.delete(getHandleStr()));
     	world.getAgent().SendSVSInput(svsCommands.toString());
     	
-    	for(PerceptualProperty pp : perceptualProperties.values()){
+    	for(ObjectProperty pp : perceptualProperties.values()){
     		pp.removeFromWM();
     	}
-    	stateProperties.removeFromWM();
+    	for(ObjectProperty sp : stateProperties.values()){
+    		sp.removeFromWM();
+    	}
     	objId.DestroyWME();
     	objId = null;
     	added = false;
