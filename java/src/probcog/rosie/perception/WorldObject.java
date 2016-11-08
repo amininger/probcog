@@ -20,7 +20,7 @@ public class WorldObject implements ISoarObject {
 	private Integer tagID;
 	private IntWME tagWME;
 	private StringWME handle;
-	private HashMap<String, StringWME> classifications;
+	private HashMap<String, ObjectProperty> properties;
 
 	private boolean updatePos = true;
 	private double[] pos = new double[3];
@@ -40,10 +40,11 @@ public class WorldObject implements ISoarObject {
 		this.scale = scale;
 		this.handle = new StringWME("handle", tagID.toString());
 		this.tagWME = new IntWME("tag-id", (long)tagID);
-
-		this.classifications = new HashMap<String, StringWME>();
+		
+		this.properties = new HashMap<String, ObjectProperty>();
 		for(Map.Entry<String, String> e : classifications.entrySet()){
-			addClassification(e.getKey(), e.getValue());
+			ObjectProperty p = new ObjectProperty(e.getKey(), ObjectProperty.VISUAL_TYPE, e.getValue());
+			this.properties.put(e.getKey(), p);
 		}
 		svsCommands = new StringBuilder();
 	}
@@ -56,11 +57,12 @@ public class WorldObject implements ISoarObject {
 		return pos;
 	}
 
-	public synchronized void addClassification(String name, String value){
-		if(classifications.containsKey(name)){
+	public synchronized void addProperty(String name, String value){
+		if(properties.containsKey(name)){
 			return;
 		}
-		classifications.put(name, new StringWME(name, value));
+		ObjectProperty p = new ObjectProperty(name, ObjectProperty.VISUAL_TYPE, value);
+		properties.put(name, p);
 		changed = true;
 	}
 
@@ -121,7 +123,6 @@ public class WorldObject implements ISoarObject {
      * Methods for Modifying Working Memory
      *****************************************************************/
 	private Identifier rootID = null;
-	private Identifier classificationsID = null;
     private boolean added = false;
 
     public boolean isAdded(){
@@ -136,18 +137,17 @@ public class WorldObject implements ISoarObject {
     	rootID = parentID.CreateIdWME("object");
     	handle.addToWM(rootID);
     	tagWME.addToWM(rootID);
-    	classificationsID = rootID.CreateIdWME("classifications");
-    	for (Map.Entry<String, StringWME> e : classifications.entrySet()){
-    		e.getValue().addToWM(classificationsID);
+    	for (Map.Entry<String, ObjectProperty> e : properties.entrySet()){
+    		e.getValue().addToWM(rootID);
     	}
 
 //    	double[] defaultRot = new double[]{ 0.0, 0.0, 0.0 };
 //    	double[] defaultScale = new double[]{ .5, .5, .5 };
     	svsCommands.append(SVSCommands.addBox(handle.getValue(), pos, rot, scale));
     	svsCommands.append(SVSCommands.addTag(handle.getValue(), "object-source", "perception"));
-    	for (StringWME wme : classifications.values()){
-    		svsCommands.append(SVSCommands.addTag(handle.getValue(), wme.getAttribute(), wme.getValue()));
-    	}
+//    	for (ObjectProperty prop : properties.values()){
+//    		svsCommands.append(SVSCommands.addTag(handle.getValue(), prop.getPropertyName(), wme.getAttribute(), wme.getValue()));
+//    	}
 
         added = true;
     	changed = false;
@@ -174,10 +174,10 @@ public class WorldObject implements ISoarObject {
     	if(changed){
     		handle.updateWM();
 
-    		for(StringWME wme : classifications.values()){
-    			if(!wme.isAdded()){
-    				wme.addToWM(classificationsID);
-    				svsCommands.append(SVSCommands.addTag(handle.getValue(), wme.getAttribute(), wme.getValue()));
+    		for(ObjectProperty prop : properties.values()){
+    			if(!prop.isAdded()){
+    				prop.addToWM(rootID);
+    				//svsCommands.append(SVSCommands.addTag(handle.getValue(), wme.getAttribute(), wme.getValue()));
     			}
     		}
 
@@ -190,10 +190,9 @@ public class WorldObject implements ISoarObject {
     		return;
     	}
         // Remove the object from the input link
-    	for(StringWME wme : classifications.values()){
-    		wme.removeFromWM();
+    	for(ObjectProperty prop : properties.values()){
+    		prop.removeFromWM();
     	}
-    	classificationsID = null;
     	handle.removeFromWM();
     	tagWME.removeFromWM();
     	rootID.DestroyWME();

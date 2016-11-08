@@ -30,6 +30,7 @@ public class Robot implements ISoarObject {
 	private StringBuilder svsCommands = new StringBuilder();
 	
 	private Identifier selfId = null;
+	private Identifier armId = null;
 	
 	private StringWME movingState;
 	private StringWME heldObject;
@@ -40,8 +41,8 @@ public class Robot implements ISoarObject {
 	private MapInfo mapInfo;
 	
 	public Robot(Properties props){
-		movingState = new StringWME("moving-state", "stopped");
-		heldObject = new StringWME("held-object", "none");
+		movingState = new StringWME("moving-status", "stopped");
+		heldObject = new StringWME("holding-object", "none");
 		pose = new Pose();
 		mapInfo = new MapInfo(props);
 	}
@@ -142,7 +143,10 @@ public class Robot implements ISoarObject {
 		selfId = parentId.CreateIdWME("self");
 		pose.addToWM(selfId);
 		movingState.addToWM(selfId);
-		heldObject.addToWM(selfId);
+
+		armId = selfId.CreateIdWME("arm");
+		armId.CreateStringWME("moving-status", "wait");
+		heldObject.addToWM(armId);
 		
 		svsCommands.append(String.format("add robot world p %s r %s\n", 
 				SVSCommands.posToStr(pos), SVSCommands.rotToStr(rot)));
@@ -205,6 +209,7 @@ public class Robot implements ISoarObject {
 
 		selfId.DestroyWME();
 		selfId = null;
+		armId = null;
 		
 		svsCommands.append(String.format("delete robot\n"));
 		added = false;
