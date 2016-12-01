@@ -169,7 +169,7 @@ public class Tracker
             	double frameTime = tic.toc();
             	updateFPS(frameTime);
 
-                TimeUtil.sleep(1000/30);
+                TimeUtil.sleep(1000/5);
             }
         }
     }

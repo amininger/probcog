@@ -123,7 +123,7 @@ public class KinectSegment implements Segmenter
         }
 
         // Figure out where each of the joints are
-        armPoints = arm.getArmPoints();
+        armPoints = new ArrayList<double[]>(); //arm.getArmPoints();
 
         // Remove points that are either on the floor plane, below the plane,
         // or along the arm's position
@@ -133,15 +133,9 @@ public class KinectSegment implements Segmenter
             double distToPlane = RANSAC.pointToPlaneDist(p, floorPlane);
             if(distToPlane < MIN_FROM_FLOOR_PLANE ||
                distToPlane > wristHeight ||
-               belowPlane(p, floorPlane) ||
-               inArmRange(p))
+               belowPlane(p, floorPlane))
+                //inArmRange(p))
             {
-                points.set(i, new double[4]);
-            } else if(p[0] < .1 && p[1] > -.15 && p[1] < .15){
-            	// XXX: HACK: ONLY FOR AAAI DEMO
-                points.set(i, new double[4]);
-            } else if(p[2] > .3){
-            	// XXX: HACK: ONLY FOR AAAI DEMO
                 points.set(i, new double[4]);
             }
         }

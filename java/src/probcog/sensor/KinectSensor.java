@@ -139,7 +139,7 @@ public class KinectSensor implements Sensor
             }
             poly = new april.jmat.geom.Polygon(polypoints);
         }
-        k2wXform_T = k2wXform;
+        k2wXform_T = LinAlg.transpose(k2wXform);
 
         //x Spin up LCM listener
         Ros ros = new Ros();
@@ -234,7 +234,9 @@ public class KinectSensor implements Sensor
                 int blue = dataStash[i+18] & 0xff;
                 int rgb = (red << 16 | green << 8 | blue);
 
-                double[] pt = {x, y, z, rgb};
+                double[] xyz = {x, y, z};
+                double[] wp = k2w(xyz);
+                double[] pt = {wp[0], wp[1], wp[2], rgb};
                 points.add(pt);
             }
         }
@@ -268,13 +270,13 @@ public class KinectSensor implements Sensor
         double[] pt = LinAlg.resize(p, 4);
         pt[3] = 1;
 
-        return LinAlg.resize(LinAlg.matrixAB(pt, k2wXform), p.length);
+        return LinAlg.resize(LinAlg.matrixAB(k2wXform, pt), p.length);
     }
 
     /** Return the real world position/orientation of the camera */
     public double[][] getCameraXform()
     {
-        return k2wXform_T;
+        return k2wXform;
     }
 
     public ArrayList<double[]> getAllXYZRGB(boolean fastScan){

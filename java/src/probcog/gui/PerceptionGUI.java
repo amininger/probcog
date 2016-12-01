@@ -706,7 +706,7 @@ public class PerceptionGUI extends JFrame
                     colors.add(new Color((int)pt[3]).getRGB());
                 }
                 VzPoints visPts = new VzPoints(vertexData, new VzPoints.Style(colors, 2));
-                VisChain pointsChain = new VisChain(k.getCameraXform(), visPts);
+                VisChain pointsChain = new VisChain(visPts);
                 buffer.addBack(pointsChain);
             }
         }
