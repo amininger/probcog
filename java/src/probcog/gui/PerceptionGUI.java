@@ -605,7 +605,7 @@ public class PerceptionGUI extends JFrame
 
                 // drawSelection(dt);
                 // if(drawPerceptionObjects){
-                // 	drawPerceptionObjects();
+                drawPerceptionObjects();
                 //}
                 double[][] faceCamera = calcFaceCameraMatrix();
                 // if(drawBeliefObjects){

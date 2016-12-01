@@ -129,9 +129,15 @@ public class KinectSensor implements Sensor
             }
             poly = new april.jmat.geom.Polygon(polypoints);
         } else {
-            k2wXform = LinAlg.translate(0, 0, 1);
-            LinAlg.timesEquals(k2wXform, LinAlg.rotateX(-Math.PI/2));
-            poly = null;    // A null polygon will not filter out any points
+            k2wXform = LinAlg.translate(0, -0.8, 0.7);
+            LinAlg.timesEquals(k2wXform, LinAlg.rotateX(-2.42));
+
+            double[] polyArray = new double[] {6, 459, 105, 258, 469, 257, 566, 454};
+            ArrayList<double[]> polypoints = new ArrayList<double[]>();
+            for (int i = 0; i < polyArray.length; i+=2) {
+                polypoints.add(new double[] {polyArray[i], polyArray[i+1]});
+            }
+            poly = new april.jmat.geom.Polygon(polypoints);
         }
         k2wXform_T = k2wXform;
 
@@ -280,111 +286,25 @@ public class KinectSensor implements Sensor
     /** Sensor interface to colored points */
     public double[] getXYZRGB(int ix, int iy)
     {
-        synchronized(pointsLock) {
-            return points.get(ix*dataWidth + iy);
+         if (ix < 0 || ix >= getWidth() ||
+             iy < 0 || iy >= getHeight())
+             return new double[4];
+
+
+        if (poly != null && !poly.contains(new double[]{ix,iy}))
+            return new double[4];
+
+         synchronized(pointsLock) {
+             return points.get(ix*dataWidth + iy);
         }
     }
 
-    // public double[] getXYZRGB(int ix, int iy, boolean filter)
-    // {
-    //     return new double[4];
-        // if (ix < 0 || ix >= getWidth() ||
-        //     iy < 0 || iy >= getHeight())
-        //     return new double[4];
-
-        // if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
-        //     return new double[4];
-
-        // double[] xyzc = getXYZ(ix, iy, new double[4], false);
-        // xyzc[3] = getRGB(ix, iy, false);
-
-        // return xyzc;
-    //    }
-
-    // public double[] getXYZ(int ix, int iy)
-    // {
-    //     return getXYZ(ix, iy, new double[3], false);
-    // }
-
-    // public double[] getXYZ(int ix, int iy, boolean filter)
-    // {
-    //     return getXYZ(ix, iy, new double[3], filter);
-    // }
-
-    // public double[] getXYZ(int ix, int iy, double[] xyz, boolean filter)
-    // {
-    //     return xyz;
-    //     // if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
-    //     //     return xyz;
-
-    //     // double[] l_xyz = getLocalXYZ(ix, iy, xyz);
-    //     // if (l_xyz == null)
-    //     //     return xyz;
-    //     // return k2w(l_xyz);
-    // }
-
-    // public int getRGB(int ix, int iy)
-    // {
-    //     return 0;
-    // }
-
-    // /** Get the color of the point at (ix, iy) in the stashed frame */
-    // public int getRGB(int ix, int iy, boolean filter)
-    // {
-    //     if (ix < 0 || ix >= r_rgbIm.getWidth() ||
-    //         iy < 0 || iy >= r_rgbIm.getHeight())
-    //         return 0;
-
-    //     if (filter && poly != null && !poly.contains(new double[]{ix,iy}))
-    //         return 0;
-
-    //     assert (r_rgbIm != null);
-    //     int[] buf = ((DataBufferInt)(r_rgbIm.getRaster().getDataBuffer())).getData();
-
-    //     return buf[iy*r_rgbIm.getWidth() + ix];
-    // }
-
-    // === Get points from the raw kinect data. No filtering provided ===
-
-    // /** Get the colored point at (ix, iy) in the stashed frame */
-    // public double[] getLocalXYZRGB(int ix, int iy)
-    // {
-    //     if (ix < 0 || ix >= getWidth() ||
-    //         iy < 0 || iy >= getHeight())
-    //         return new double[4];
-
-    //     double[] xyzc = getLocalXYZ(ix, iy, new double[4]);
-    //     xyzc[3] = getRGB(ix, iy);
-
-    //     return xyzc;
-    // }
 
     /** Get the 3D point at (ix, iy) in the stashed frame */
     public double[] getLocalXYZ(int ix, int iy)
     {
         return new double[6];
-        //x        return getLocalXYZ(ix, iy, new double[3]);
     }
-
-    // public double[] getLocalXYZ(int ix, int iy, double[] xyz)
-    // {
-    //     assert (xyz != null && xyz.length >= 3);
-    //     assert (r_depthIm != null);
-    //     int[] buf = ((DataBufferInt)(r_depthIm.getRaster().getDataBuffer())).getData();
-
-    //     if (ix < 0 || ix >= getWidth() ||
-    //         iy < 0 || iy >= getHeight())
-    //         return xyz;
-
-    //     int d = buf[iy*getWidth() + ix];
-    //     double depth = d/1000.0;   // millimeters to meters
-
-    //     xyz[0] = (ix - Cirx) * depth / Firx;
-    //     xyz[1] = (iy - Ciry) * depth / Firy;
-    //     xyz[2] = depth;
-
-    //     return xyz;
-    //}
 
     // === Debug GUI ==============
     public static void main(String[] args)

@@ -100,6 +100,7 @@ public class KinectSegment implements Segmenter
         for(PointCloud pc : pointClouds){
         	segmentedObjects.add(new Obj(pc.removeTopPoints(0.05)));
         }
+        System.out.println("Segmented " + segmentedObjects.size() + " objects");
         return segmentedObjects;
     }
 
@@ -197,7 +198,7 @@ public class KinectSegment implements Segmenter
                 idToPoints.put(ufID, ptCloud);
             }
         }
-        
+
         HashMap<Integer, Integer> mappings = new HashMap<Integer, Integer>();
         ArrayList<PointCloud> clouds = new ArrayList<PointCloud>();
         ArrayList<BoundingBox> boxes = new ArrayList<BoundingBox>();
@@ -208,7 +209,7 @@ public class KinectSegment implements Segmenter
         	mappings.put(i, i);
         	i++;
         }
-        
+
         for(i = 0; i < clouds.size(); i++){
         	PointCloud c1 = clouds.get(i);
         	BoundingBox bbox1 = boxes.get(i);
@@ -249,10 +250,10 @@ public class KinectSegment implements Segmenter
         		}
         	}
         }
-        
+
         HashMap<Integer, PointCloud> mergedClouds = new HashMap<Integer, PointCloud>();
         for(Map.Entry<Integer, Integer> e : mappings.entrySet()){
-        	
+
 //        	System.out.println("Mapping " + e.getKey() + "=" + e.getValue());
         	PointCloud pc = clouds.get(e.getKey());
         	if(pc.getPoints().size() < MIN_OBJECT_SIZE){
@@ -264,7 +265,7 @@ public class KinectSegment implements Segmenter
         		mergedClouds.put(e.getValue(), pc); 
         	}
         }
-        
+
         for(Map.Entry<Integer, PointCloud> e : mergedClouds.entrySet()){
         	objects.add(e.getValue());
         }
@@ -275,7 +276,7 @@ public class KinectSegment implements Segmenter
 
         return objects;
     }
-    
+
     double calcContainment(ArrayList<double[]> points, Polyhedron3D poly, int numSamples){
     	double numContained = 0;
     	double[] pt = new double[3];
