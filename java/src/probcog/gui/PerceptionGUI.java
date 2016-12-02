@@ -690,11 +690,7 @@ public class PerceptionGUI extends JFrame
     {
     	VisWorld.Buffer buffer = vw.getBuffer("object-view");
     	synchronized(tracker.stateLock){
-            //for(Obj ob : tracker.getWorldState().values()){
-            ArrayList<Sensor> sensors = tracker.getSensors();
-            Sensor k = sensors.get(0);
-
-            ArrayList<double[]> points = k.getAllXYZRGB(false);
+            ArrayList<double[]> points = tracker.getPointCloud();
 
             if (points == null) return;
                 //System.out.printf("Drawing object %d with %d pts\n", ob.getID(), points.size());

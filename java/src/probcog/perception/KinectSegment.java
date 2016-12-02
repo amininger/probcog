@@ -44,6 +44,8 @@ public class KinectSegment implements Segmenter
     private ArrayList<Double> armWidths;
     private ArrayList<double[]> armPoints;
 
+    private Object pcLock;
+
     // Set up some "Random" colors to draw the segments
     static int[] colors = new int[]{0xff3300CC, 0xff9900CC, 0xffCC0099, 0xffCC0033,
         0xff0033CC, 0xff470AFF, 0xff7547FF, 0xffCC3300,
@@ -70,6 +72,7 @@ public class KinectSegment implements Segmenter
         	kinect = new SimKinectSensor(world);
         }
 
+        pcLock = new Object();
         sensors.add(kinect);    // XXX
     }
 
@@ -80,33 +83,38 @@ public class KinectSegment implements Segmenter
      **/
     public synchronized ArrayList<Obj> getSegmentedObjects()
     {
-        if (!kinect.stashFrame())
-            return new ArrayList<Obj>();
+        while (!kinect.stashFrame()) continue;
 
         width = kinect.getWidth();
         height = kinect.getHeight();
 
         // Get points from camera
-        long time = TimeUtil.utime();
-        points = kinect.getAllXYZRGB(true);
-
-        // Remove floor and arm points
-        //removeFloorAndArmPoints();
-
-        // Do a union find to do segmentation
-        ArrayList<PointCloud> pointClouds = unionFind();
-
         ArrayList<Obj> segmentedObjects = new ArrayList<Obj>();
-        for(PointCloud pc : pointClouds){
-        	segmentedObjects.add(new Obj(pc.removeTopPoints(0.05)));
+
+        synchronized(pcLock) {
+            long time = TimeUtil.utime();
+            points = kinect.getAllXYZRGB(true);
+
+            // Remove floor and arm points
+            removeFloorAndArmPoints();
+
+            // Do a union find to do segmentation
+            ArrayList<PointCloud> pointClouds = unionFind();
+
+            for(PointCloud pc : pointClouds){
+                segmentedObjects.add(new Obj(pc.removeTopPoints(0.05)));
+            }
         }
+
         System.out.println("Segmented " + segmentedObjects.size() + " objects");
         return segmentedObjects;
     }
 
     public ArrayList<double[]> getPointCloud()
     {
-        return kinect.getAllXYZRGB(false);
+        synchronized(pcLock) {
+            return points;
+        }
     }
 
     /** "Remove" points that are too close to the floor by setting them to

@@ -154,7 +154,7 @@ public class KinectSensor implements Sensor
 
         Topic kinect_data = new Topic(ros,
                                       "/head_camera/depth_registered/points",
-                                      "sensor_msgs/PointCloud2", 1000);
+                                      "sensor_msgs/PointCloud2", 500);
 
         kinect_data.subscribe(new TopicCallback() {
                 @Override
