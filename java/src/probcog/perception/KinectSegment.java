@@ -106,7 +106,6 @@ public class KinectSegment implements Segmenter
             }
         }
 
-        System.out.println("Segmented " + segmentedObjects.size() + " objects");
         return segmentedObjects;
     }
 
