@@ -23,11 +23,11 @@ public class SimStove extends SimLocation implements ISimEffector{
 		}
 
 		// Door must be closed
-		if(!currentState.containsKey("door") || !currentState.get("door").equals("closed")){
+		if(!currentState.containsKey(SoarConcepts.DOOR) || !currentState.get(SoarConcepts.DOOR).equals(SoarConcepts.CLOSED)){
 			return;
 		}
 		// Heat must be on
-		if(!currentState.containsKey("heat") || !currentState.get("heat").equals("on")){
+		if(!currentState.containsKey(SoarConcepts.HEAT) || !currentState.get(SoarConcepts.HEAT).equals(SoarConcepts.ON)){
 			return;
 		}
 
@@ -47,11 +47,11 @@ public class SimStove extends SimLocation implements ISimEffector{
     {
 		super.read(ins);
 		
-		if(!currentState.containsKey("door")){
-			this.addNewState("door", new String[]{"closed", "open"});
+		if(!currentState.containsKey(SoarConcepts.DOOR)){
+			this.addNewState(SoarConcepts.DOOR, new String[]{SoarConcepts.CLOSED, SoarConcepts.OPEN});
 		}
-		if(!currentState.containsKey("heat")){
-			this.addNewState("heat", new String[]{"off", "on"});
+		if(!currentState.containsKey(SoarConcepts.HEAT)){
+			this.addNewState(SoarConcepts.HEAT, new String[]{SoarConcepts.OFF, SoarConcepts.ON});
 		}
     }
 }

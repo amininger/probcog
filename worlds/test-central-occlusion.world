@@ -1,0 +1,35 @@
+# This world is used to test Rosie on being able to handle central occlusions
+# There are two long skinny blocks, one vertical and one horizontal
+# The vertical one can go above the horizontal one and centrally occlude it
+
+"probcog.sim.SimFlatSurface"
+{
+	.4 
+	.4
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	0.2 -0.2 0.03 0.0 0.0 0.0
+	0.04
+	vec 4
+  1.0 0.0 0.0 1.0
+	1
+  color=color-red
+	vec 3
+	1 6 1
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+	0.2 0.0 0.08 0.0 0.0 0.0
+	0.04
+	vec 4
+  0.0 1.0 0.0 1.0
+	1
+  color=color-green
+	vec 3
+	6 1 1
+}

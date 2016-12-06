@@ -1,0 +1,58 @@
+"probcog.sim.SimFlatSurface"
+{
+	.4 
+	.4
+}
+"probcog.sim.SimLocation"
+{
+	1
+	vec 6
+	0.2 0.0 -.1 0.0 0.0 0.0
+	0.2
+	vec 4
+	0.0 1.0 0.0 1.0
+	0
+	table
+}
+"probcog.sim.SimBoxPC"
+{
+	-1
+	vec 6
+  0.0 -0.2 0.02 0.0 0.0 0.0
+	0.1
+	vec 4
+	1.00000000000000 0.00000000000000 0.00000000000000 1.00000000000000
+	2
+  shape=rectangle1
+	color=red1
+  vec 3
+  0.2 1.0 0.2 
+}
+"probcog.sim.SimBoxPC"
+{
+  -1	
+	vec 6
+  -0.2 -0.2 0.02 0.0 0.0 0.0
+  0.1
+	vec 4
+	0.00000000000000 1.00000000000000 0.00000000000000 1.00000000000000
+	2
+	shape=rectangle1
+	color=green1
+  vec 3
+  0.2 1.0 0.2
+}
+"probcog.sim.SimBoxPC"
+{
+  -1
+	vec 6
+  0.0 0.2 0.02 0.0 0.0 0.0
+  0.1
+	vec 4
+	0.00000000000000 0.00000000000000 1.00000000000000 1.00000000000000
+	2
+	shape=square1
+	color=blue1
+  vec 3
+  1.0 1.0 0.2
+}
