@@ -28,15 +28,15 @@ public class RosieGUI extends JFrame
 	private SoarAgent soarAgent;
 
 	private JButton startStopButton;
-	
+
 	private ArmPerceptionConnector perception;
-	private ArmActuationConnector actuation;
+	//x private ArmActuationConnector actuation;
 	private LanguageConnector language;
 
     public RosieGUI(Properties props)
     {
 		super("Rosie Chat");
-		
+
     	this.setSize(1000, 450);
     	getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.LINE_AXIS));
         addWindowListener(new WindowAdapter() {
@@ -48,13 +48,13 @@ public class RosieGUI extends JFrame
 
 
     	soarAgent = new SoarAgent(props);
-    	
-    	actuation = new ArmActuationConnector(soarAgent, props);
-    	soarAgent.setActuationConnector(actuation);
-    	
+
+    	//x actuation = new ArmActuationConnector(soarAgent, props);
+    	//x soarAgent.setActuationConnector(actuation);
+
     	perception = new ArmPerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
-    	
+
     	InternalMessagePasser messagePasser = new InternalMessagePasser();
     	language = new LanguageConnector(soarAgent, props, messagePasser);
     	soarAgent.setLanguageConnector(language);
@@ -66,9 +66,9 @@ public class RosieGUI extends JFrame
 
 //    	this.add(new CommandPanel(soarAgent));
     	this.add(new InstructorMessagePanel(chat, props));
-    	
+
     	soarAgent.createAgent();
-    	
+
     	this.setVisible(true);
     }
 
@@ -91,10 +91,10 @@ public class RosieGUI extends JFrame
 
     	menuBar.add(new AgentMenu(soarAgent));
     	menuBar.add(EnvironmentMenu.createMenu());
-    	
+
     	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
-    	actuation.createMenu(menuBar);
+    	//x actuation.createMenu(menuBar);
 
     	this.setJMenuBar(menuBar);
     }
