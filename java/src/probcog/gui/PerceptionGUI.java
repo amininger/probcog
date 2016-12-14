@@ -33,6 +33,10 @@ import probcog.sim.SoarConcepts;
 import probcog.util.*;
 import probcog.vis.*;
 
+import edu.wpi.rail.jrosbridge.*;
+import edu.wpi.rail.jrosbridge.messages.*;
+import javax.json.*;
+
 public class PerceptionGUI extends JFrame
 {
     //x private ArmStatus arm;
@@ -84,6 +88,9 @@ public class PerceptionGUI extends JFrame
     Boolean drawPointClouds = true;
 
     long soarTime = 0;
+
+    Ros ros;
+    Topic observations;
 
     public PerceptionGUI(GetOpt opts) throws IOException
     {
@@ -148,6 +155,20 @@ public class PerceptionGUI extends JFrame
         //    ArmDemo demo = new ArmDemo(config, tracker);
         //}
 
+        ros = new Ros();
+        ros.connect();
+
+        if (ros.isConnected()) {
+            System.out.println("Publisher connected to rosbridge server.");
+        }
+        else {
+            System.out.println("PUBLISHER NOT CONNECTED TO ROSBRIDGE");
+        }
+
+        observations = new Topic(ros,
+                                 "/rosie_observations",
+                                 "rosie_msgs/Observations",
+                                 500);
 
         // Initialize the JMenuBar
         createMenuBar();
@@ -311,18 +332,30 @@ public class PerceptionGUI extends JFrame
     // }
 
     public void sendMessage()
+
     {
+        StringBuilder obs = new StringBuilder();
+        obs.append("{");
+
+        long utime = TimeUtil.utime();
+        obs.append("\"header\": {\"stamp\": " + utime + "}, ");
+
         // observations_t obs = new observations_t();
-        // obs.utime = TimeUtil.utime();
+
         // obs.soar_utime = soarTime;
         // synchronized(tracker.stateLock){
         // 	obs.click_id = getSelectedId();
         // }
 
-        // obs.observations = tracker.getObjectData();
+        String od = tracker.getObjectData();
+        obs.append(od);
+
+        obs.append("}");
+        System.out.println(obs.toString());
+        System.out.println("===================================");
         // obs.nobs = obs.observations.length;
 
-        ArrayList<Sensor> sensors = tracker.getSensors();
+        //ArrayList<Sensor> sensors = tracker.getSensors();
         // if(sensors.size() == 0){
         // 	obs.eye = new double[]{ 0.6, 0.0, 1.0};
         // 	obs.lookat = new double[]{ 0.0, 0.0, 0.0 };
@@ -335,11 +368,8 @@ public class PerceptionGUI extends JFrame
         // 	obs.up = camera.up;
         // }
 
-        // try{
-        // 	lcm.publish("OBSERVATIONS",obs);
-        // } catch (NullPointerException e){
-        // 	System.out.println("ERROR PUBLISHING STUFF");
-        // }
+        Message m = new Message(obs.toString());
+        observations.publish(m);
     }
 
     /** AutoSave the classifier state */

@@ -577,44 +577,63 @@ public class Tracker
      *  in the world. Runs classifiers on the objects and builds
      *  the appropriate lcmtypes to return.
      */
-    //x public object_data_t[] getObjectData()
-    // {
-    //     long utime = TimeUtil.utime();
-    //     ArrayList<object_data_t> objList = new ArrayList<object_data_t>();
+    public String getObjectData()
+    {
+        StringBuilder objArray = new StringBuilder();
+        objArray.append("\"observations\": [");
+        long utime = TimeUtil.utime();
+        int objCount = 0;
 
-    //     synchronized (stateLock) {
-    //         for (Obj ob: worldState.values()) {
-    //     		SimObject simObj = ob.getSourceSimObject();
-    //         	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
-    //         		continue;
-    //     		}
-    //         	if(!ob.isVisible()){
-    //         		continue;
-    //         	}
-    //         	object_data_t od = new object_data_t();
+        synchronized (stateLock) {
+            for (Obj ob: worldState.values()) {
+        		SimObject simObj = ob.getSourceSimObject();
+            	if(simObj != null && simObj instanceof SimObjectPC && !((SimObjectPC)simObj).getVisible()){
+            		continue;
+        		}
+            	if(!ob.isVisible()){
+            		continue;
+            	}
 
-    //             od.utime = utime;
-    //             od.id = ob.getID();
-    //             od.pos = ob.getPose();
+                objCount++;
+                StringBuilder curObj = new StringBuilder();
+                if (objCount > 1) curObj.append(", ");
+                curObj.append("{\"obj_id\": " + ob.getID() + ", ");
+                curObj.append("\"pos\": {\"translation\": {");
+                double[] tmpPos = ob.getPose();
+                curObj.append("\"x\": " + tmpPos[0] + ", ");
+                curObj.append("\"y\": " + tmpPos[1] + ", ");
+                curObj.append("\"z\": " + tmpPos[2] + "}, ");
 
-    //             BoundingBox bbox = ob.getBoundingBox();
-    //             od.bbox_dim = bbox.lenxyz;
-    //             od.bbox_xyzrpy = bbox.xyzrpy;
+                double[] tmpRot = new double[]{tmpPos[3], tmpPos[4], tmpPos[5]};
+                double[] q = LinAlg.rollPitchYawToQuat(tmpRot);
+                curObj.append("\"rotation\": {");
+                curObj.append("\"x\": " + q[0] + ", ");
+                curObj.append("\"y\": " + q[1] + ", ");
+                curObj.append("\"z\": " + q[2] + ", ");
+                curObj.append("\"w\": " + q[3] + "}}, ");
 
-    //             od.state_values = ob.getStates();
-    //             od.num_states = od.state_values.length;
+                // BoundingBox bbox = ob.getBoundingBox();
+                // od.bbox_dim = bbox.lenxyz;
+                // od.bbox_xyzrpy = bbox.xyzrpy;
 
-    //             categorized_data_t[] cat_dat = ob.getCategoryData();
-    //             od.num_cat = cat_dat.length;
-    //             od.cat_dat = cat_dat;
+                // od.state_values = ob.getStates();
+                // od.num_states = od.state_values.length;
+                curObj.append("\"num_states\": " + ob.getStates().length);
 
-    //             objList.add(od);
-    //         }
-    //     }
+                // categorized_data_t[] cat_dat = ob.getCategoryData();
+                // od.num_cat = cat_dat.length;
+                // od.cat_dat = cat_dat;
 
-    //    object_data_t[] objArray = objList.toArray(new object_data_t[objList.size()]);
-    //    return objArray;
-    //}
+                curObj.append("}");
+                objArray.append(curObj.toString());
+            }
+        }
+
+        objArray.append("], ");
+        objArray.append("\"nobs\": " + objCount);
+
+        return objArray.toString();
+    }
 
     //x private void handlePerceptionCommand(perception_command_t command){
     // 	if(command.command.toUpperCase().contains("SAVE_CLASSIFIERS")){

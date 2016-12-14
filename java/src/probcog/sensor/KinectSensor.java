@@ -146,10 +146,10 @@ public class KinectSensor implements Sensor
         ros.connect();
 
         if (ros.isConnected()) {
-            System.out.println("Successfully connected to rosbridge server.");
+            System.out.println("Subscriber connected to rosbridge server.");
         }
         else {
-            System.out.println("NOT CONNECTED TO ROSBRIDGE");
+            System.out.println("SUBSCRIBER NOT CONNECTED TO ROSBRIDGE");
         }
 
         Topic kinect_data = new Topic(ros,
