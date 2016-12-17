@@ -346,26 +346,32 @@ public class PerceptionGUI extends JFrame
 
         obs.append("\"soar_utime\": " + soarTime + ", ");
 
+        ArrayList<Sensor> sensors = tracker.getSensors();
+        if(sensors.size() == 0){
+            obs.append("\"eye\": [" + 0.6 + ", " + 0.0 + ", " + 1.0 + "],");
+            obs.append("\"lookat\": [" + 0.0 + ", " + 0.0 + ", " + 0.0 + "],");
+            obs.append("\"up\": [" + -1.0 + ", " + 0.0 + ", " + 1.0 + "],");
+
+        } else {
+            Sensor s = sensors.get(0);
+            CameraPosition camera = Util.getSensorPos(s);
+            obs.append("\"eye\": [" + camera.eye[0] + ", " +
+                       camera.eye[1] + ", " +
+                       camera.eye[2] + "],");
+            obs.append("\"lookat\": [" + camera.lookat[0] + ", " +
+                       camera.lookat[1] + ", " +
+                       camera.lookat[2] + "],");
+            obs.append("\"up\": [" + camera.up[0] + ", " +
+                       camera.up[1] + ", " +
+                       camera.up[2] + "],");
+        }
+
         String od = tracker.getObjectData();
         obs.append(od);
 
         obs.append("}");
         System.out.println(obs.toString());
         System.out.println("===================================");
-        // obs.nobs = obs.observations.length;
-
-        //ArrayList<Sensor> sensors = tracker.getSensors();
-        // if(sensors.size() == 0){
-        // 	obs.eye = new double[]{ 0.6, 0.0, 1.0};
-        // 	obs.lookat = new double[]{ 0.0, 0.0, 0.0 };
-        // 	obs.up = new double[]{ -1.0, 0.0, 1.0 };
-        // } else {
-        // 	Sensor s = sensors.get(0);
-        // 	CameraPosition camera = Util.getSensorPos(s);
-        // 	obs.eye = camera.eye;
-        // 	obs.lookat = camera.lookat;
-        // 	obs.up = camera.up;
-        // }
 
         Message m = new Message(obs.toString());
         observations.publish(m);

@@ -104,8 +104,9 @@ public class ArmPerceptionConnector extends AgentConnector {
                 public void handleMessage(Message message) {
                     JsonObject jobj = message.toJsonObject();
                     pointedHandle = jobj.getInt("click_id");
-                    // world.newObservation(obs);
                     receiveAckTime(jobj.getInt("soar_utime"));
+
+                    // world.newObservation(obs);
                 }
             });
     }
@@ -116,9 +117,6 @@ public class ArmPerceptionConnector extends AgentConnector {
 
     	world.removeFromWM();
     	sendTrainingTimer.cancel();
-
-        // ROSBRIDGE
-        //x lcm.unsubscribe("OBSERVATIONS", this);
     }
 
     /*************************************************
