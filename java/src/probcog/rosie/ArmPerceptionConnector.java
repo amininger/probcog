@@ -33,6 +33,11 @@ import april.util.TimeUtil;
 import edu.umich.rosie.soar.*;
 import probcog.rosie.perception.*;
 
+import edu.wpi.rail.jrosbridge.*;
+import edu.wpi.rail.jrosbridge.messages.*;
+import edu.wpi.rail.jrosbridge.callback.*;
+import javax.json.*;
+
 public class ArmPerceptionConnector extends AgentConnector {
 	private static int SEND_TRAINING_FPS = 10;
 	Timer sendTrainingTimer;
@@ -47,6 +52,8 @@ public class ArmPerceptionConnector extends AgentConnector {
 
     protected WorldModel world;
     private String classifiersFile;
+
+    Ros ros;
 
     public ArmPerceptionConnector(SoarAgent soarAgent, Properties props)
     {
@@ -63,6 +70,16 @@ public class ArmPerceptionConnector extends AgentConnector {
 
         String[] outputHandlerNames = new String[]{ "send-training-label", "modify-scene" };
         this.setOutputHandlerNames(outputHandlerNames);
+
+        ros = new Ros();
+        ros.connect();
+
+        if (ros.isConnected()) {
+            System.out.println("ArmPerceptionConnector connected to rosbridge server.");
+        }
+        else {
+            System.out.println("ArmPerceptionConnector NOT CONNECTED TO ROSBRIDGE");
+        }
     }
 
     public WorldModel getWorld(){
@@ -80,7 +97,17 @@ public class ArmPerceptionConnector extends AgentConnector {
         }, 1000, 1000/SEND_TRAINING_FPS);
 
         // ROSBRIDGE
-        //x lcm.subscribe("OBSERVATIONS", this);
+        Topic observe = new Topic(ros,
+                                 "/rosie_observations",
+                                  "rosie_msgs/Observations");
+        observe.subscribe(new TopicCallback() {
+                public void handleMessage(Message message) {
+                    JsonObject jobj = message.toJsonObject();
+                    pointedHandle = jobj.getInt("click_id");
+                    // world.newObservation(obs);
+                    receiveAckTime(jobj.getInt("soar_utime"));
+                }
+            });
     }
 
     @Override
@@ -215,28 +242,6 @@ public class ArmPerceptionConnector extends AgentConnector {
     	}
     	rootId.CreateStringWME("status", "complete");
     }
-
-    /*****************************************************
-     * messageReceived
-     * Gets a new observations_t message from LCM and sends it to the world
-     ****************************************************/
-    // x
-    // public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-    // {
-    // 	if(channel.equals("OBSERVATIONS")){
-    //         observations_t obs = null;
-    //         try {
-    //             obs = new observations_t(ins);
-    //             pointedHandle = obs.click_id;
-    //             world.newObservation(obs);
-    //             receiveAckTime(obs.soar_utime);
-    //         }
-    //         catch (IOException e){
-    //             e.printStackTrace();
-    //             return;
-    //         }
-    // 	}
-    // }
 
     public void createMenu(JMenuBar menuBar){
     	JMenu perceptionMenu = new JMenu("Perception");

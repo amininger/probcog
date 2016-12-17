@@ -159,10 +159,10 @@ public class PerceptionGUI extends JFrame
         ros.connect();
 
         if (ros.isConnected()) {
-            System.out.println("Publisher connected to rosbridge server.");
+            System.out.println("PerceptionGUI connected to rosbridge server.");
         }
         else {
-            System.out.println("PUBLISHER NOT CONNECTED TO ROSBRIDGE");
+            System.out.println("PerceptionGUI NOT CONNECTED TO ROSBRIDGE");
         }
 
         observations = new Topic(ros,
@@ -340,12 +340,11 @@ public class PerceptionGUI extends JFrame
         long utime = TimeUtil.utime();
         obs.append("\"header\": {\"stamp\": " + utime + "}, ");
 
-        // observations_t obs = new observations_t();
+        synchronized(tracker.stateLock){
+            obs.append("\"click_id\": " + getSelectedId() + ", ");
+        }
 
-        // obs.soar_utime = soarTime;
-        // synchronized(tracker.stateLock){
-        // 	obs.click_id = getSelectedId();
-        // }
+        obs.append("\"soar_utime\": " + soarTime + ", ");
 
         String od = tracker.getObjectData();
         obs.append(od);

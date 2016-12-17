@@ -125,7 +125,7 @@ public class RosieGUI extends JFrame
           System.err.println("ERR: No $ROSIE_CONFIG environment variable set");
           System.exit(1);
         }
-        
+
         // Load the properties file
         Properties props = new Properties();
         try {
