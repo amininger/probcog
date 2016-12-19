@@ -47,26 +47,40 @@ public class ObjectData {
             System.out.println("ERROR: Reading ObjectData state_values");
         }
 
-        //x reading failing here
         pos = new double[6];
+        JsonObject xform = null;
+
         try {
-            JsonObject xform = msg.getJsonObject("pos");
+            xform = msg.getJsonObject("pos");
+        } catch (Exception e) {
+            System.out.println("ERROR: Reading ObjectData pos");
+        }
+
+        try {
             JsonObject xyz = xform.getJsonObject("translation");
             pos[0] = xyz.getJsonNumber("x").doubleValue();
             pos[1] = xyz.getJsonNumber("y").doubleValue();
             pos[2] = xyz.getJsonNumber("z").doubleValue();
+        } catch (Exception e) {
+            System.out.println("ERROR: Reading ObjectData pose translation");
+        }
 
-            double[] quat = new double[4];
+        double[] quat = new double[4];
+        try{
             JsonObject q = xform.getJsonObject("rotation");
             quat[0] = q.getJsonNumber("x").doubleValue();
             quat[1] = q.getJsonNumber("y").doubleValue();
             quat[2] = q.getJsonNumber("z").doubleValue();
             quat[3] = q.getJsonNumber("w").doubleValue();
-
-            double[] rpy = LinAlg.quatToRollPitchYaw(quat);
-            for (int i = 3; i < 6; i++) pos[i] = rpy[i];
         } catch (Exception e) {
-            System.out.println("ERROR: Reading ObjectData pos");
+            System.out.println("ERROR: Reading ObjectData pose rotation");
+        }
+
+        try {
+            double[] rpy = LinAlg.quatToRollPitchYaw(quat);
+            for (int i = 3; i < 6; i++) pos[i] = rpy[i-3];
+        } catch (Exception e) {
+            System.out.println("ERROR: Converting quat to rpy.");
         }
 
         bboxDim = new double[3];
