@@ -103,11 +103,12 @@ public class WorldModel implements ISoarObject
     }
 
     public synchronized void newObservation(JsonObject observation) {
-        System.out.println("ProcessingObs");
         JsonArray i = observation.getJsonArray("eye");
         for (int n = 0; n < 3; n++) {
             eyePos[n] = i.getJsonNumber(n).doubleValue();
         }
+
+        System.out.println("Read eye");
 
     	Set<Integer> staleObjects = new HashSet<Integer>();
     	for(WorldObject object : objects.values()){
@@ -118,14 +119,24 @@ public class WorldModel implements ISoarObject
     	HashMap<Integer, ArrayList<ObjectData>> newData =
             new HashMap<Integer, ArrayList<ObjectData>>();
 
-        JsonArray obses = observation.getJsonArray("observations");
         ArrayList<ObjectData> tmp = new ArrayList<ObjectData>();
-        for (int j = 0; j < obses.size(); j++) {
-            tmp.add(new ObjectData(obses.getJsonObject(j)));
+
+        try {
+            JsonArray obses = observation.getJsonArray("observations");
+            System.out.println(obses.size());
+            for (int j = 0; j < obses.size(); j++) {
+                System.out.println("**" + j);
+                tmp.add(new ObjectData(obses.getJsonObject(j)));
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR: Reading JSON observations");
         }
+
+        System.out.println("Read json objs");
 
     	for(ObjectData objData : tmp){
     		Integer handle = objData.getID();
+            System.out.println(handle);
     		if(objectLinks.containsKey(handle)){
     			handle = objectLinks.get(handle);
     		}
