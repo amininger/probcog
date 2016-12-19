@@ -80,7 +80,7 @@ public class ArmPerceptionConnector extends AgentConnector {
         else {
             System.out.println("ArmPerceptionConnector NOT CONNECTED TO ROSBRIDGE");
         }
-    }
+      }
 
     public WorldModel getWorld(){
     	return world;
@@ -88,7 +88,7 @@ public class ArmPerceptionConnector extends AgentConnector {
 
     @Override
     public void connect(){
-    	super.connect();
+        super.connect();
 
         sendTrainingTimer.schedule(new TimerTask(){
         	public void run(){
@@ -100,13 +100,14 @@ public class ArmPerceptionConnector extends AgentConnector {
         Topic observe = new Topic(ros,
                                  "/rosie_observations",
                                   "rosie_msgs/Observations");
+        System.out.println("Subscribing to observations!");
         observe.subscribe(new TopicCallback() {
                 public void handleMessage(Message message) {
                     JsonObject jobj = message.toJsonObject();
                     pointedHandle = jobj.getInt("click_id");
-                    receiveAckTime(jobj.getInt("soar_utime"));
+                    //receiveAckTime(jobj.getInt("soar_utime"));
 
-                    // world.newObservation(obs);
+                    world.newObservation(jobj);
                 }
             });
     }
@@ -155,21 +156,20 @@ public class ArmPerceptionConnector extends AgentConnector {
     	// }
     }
 
-    private void receiveAckTime(long time){
-        return;
-    	// synchronized(outstandingTraining){
-	    // 	Set<training_label_t> finishedLabels = new HashSet<training_label_t>();
-	    // 	for(Map.Entry<training_label_t, Identifier> e : outstandingTraining.entrySet()){
-	    // 		if(e.getKey().utime <= time){
-	    // 			finishedLabels.add(e.getKey());
-	    // 			e.getValue().CreateStringWME("status", "complete");
-	    // 		}
-	    // 	}
-	    // 	for(training_label_t label : finishedLabels){
-	    // 		outstandingTraining.remove(label);
-	    // 	}
-    	// }
-    }
+    // private void receiveAckTime(long time){
+    // 	synchronized(outstandingTraining){
+	//     	Set<training_label_t> finishedLabels = new HashSet<training_label_t>();
+	//     	for(Map.Entry<training_label_t, Identifier> e : outstandingTraining.entrySet()){
+	//     		if(e.getKey().utime <= time){
+	//     			finishedLabels.add(e.getKey());
+	//     			e.getValue().CreateStringWME("status", "complete");
+	//     		}
+	//     	}
+	//     	for(training_label_t label : finishedLabels){
+	//     		outstandingTraining.remove(label);
+	//     	}
+    // 	}
+    // }
 
     /*************************************************
      * runEventHandler

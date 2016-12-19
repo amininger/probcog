@@ -17,6 +17,8 @@ import edu.umich.rosie.soar.ISoarObject;
 import edu.umich.rosie.soar.SVSCommands;
 import edu.umich.rosie.soar.SoarAgent;
 
+import javax.json.*;
+
 public class WorldModel implements ISoarObject
 {
     private SoarAgent soarAgent;
@@ -100,49 +102,62 @@ public class WorldModel implements ISoarObject
         needsUpdate = true;
     }
 
-    // public synchronized void newObservation(observations_t observation){
-    // 	eyePos = observation.eye;
+    public synchronized void newObservation(JsonObject observation) {
+        System.out.println("ProcessingObs");
+        JsonArray i = observation.getJsonArray("eye");
+        for (int n = 0; n < 3; n++) {
+            eyePos[n] = i.getJsonNumber(n).doubleValue();
+        }
 
-    // 	Set<Integer> staleObjects = new HashSet<Integer>();
-    // 	for(WorldObject object : objects.values()){
-    // 		staleObjects.add(object.getHandle());
-    // 	}
+    	Set<Integer> staleObjects = new HashSet<Integer>();
+    	for(WorldObject object : objects.values()){
+    		staleObjects.add(object.getHandle());
+    	}
 
-    // 	// Combine multiple observations that correspond to the same object into a list per id
-    // 	HashMap<Integer, ArrayList<object_data_t>> newData = new HashMap<Integer, ArrayList<object_data_t>>();
-    // 	for(object_data_t objData : observation.observations){
-    // 		Integer handle = objData.id;
-    // 		if(objectLinks.containsKey(handle)){
-    // 			handle = objectLinks.get(handle);
-    // 		}
-    // 		if(!newData.containsKey(handle)){
-    // 			newData.put(handle, new ArrayList<object_data_t>());
-    // 		}
-    // 		newData.get(handle).add(objData);
-    // 	}
+    	// Combine multiple observations that correspond to the same object into a list per id
+    	HashMap<Integer, ArrayList<ObjectData>> newData =
+            new HashMap<Integer, ArrayList<ObjectData>>();
 
-    // 	// For each object, either update existing or create if new
-    // 	for(Map.Entry<Integer, ArrayList<object_data_t>> e : newData.entrySet()){
-    // 		Integer handle = e.getKey();
-    // 		WorldObject object = objects.get(handle);
-    // 		if(object == null){
-    // 			object = new WorldObject(this, handle, e.getValue());
-    // 			objects.put(handle, object);
-    // 		} else {
-    // 			staleObjects.remove(handle);
-    // 			object.update(e.getValue());
-    // 		}
-    // 	}
+        JsonArray obses = observation.getJsonArray("observations");
+        ArrayList<ObjectData> tmp = new ArrayList<ObjectData>();
+        for (int j = 0; j < obses.size(); j++) {
+            tmp.add(new ObjectData(obses.getJsonObject(j)));
+        }
 
-    // 	// Remove all stale objects from WM
-    //     for(Integer handle : staleObjects){
-    //     	WorldObject object = objects.get(handle);
-    //     	objsToRemove.add(object);
-    //     	objects.remove(handle);
-    //     }
+    	for(ObjectData objData : tmp){
+    		Integer handle = objData.getID();
+    		if(objectLinks.containsKey(handle)){
+    			handle = objectLinks.get(handle);
+    		}
+    		if(!newData.containsKey(handle)){
+    			newData.put(handle, new ArrayList<ObjectData>());
+    		}
+    		newData.get(handle).add(objData);
+    	}
 
-    //     needsUpdate = true;
-    // }
+    	// // For each object, either update existing or create if new
+    	for(Map.Entry<Integer, ArrayList<ObjectData>> e : newData.entrySet()){
+    		Integer handle = e.getKey();
+    		WorldObject object = objects.get(handle);
+    		if(object == null){
+    			object = new WorldObject(this, handle, e.getValue());
+    			objects.put(handle, object);
+    		} else {
+    			staleObjects.remove(handle);
+    			object.update(e.getValue());
+    		}
+    	}
+
+    	// // Remove all stale objects from WM
+        for(Integer handle : staleObjects){
+        	WorldObject object = objects.get(handle);
+        	objsToRemove.add(object);
+        	objects.remove(handle);
+        }
+
+        needsUpdate = true;
+        System.out.println("Processed obs");
+    }
 
     // private void sendObservation(){
     // 	ArrayList<object_data_t> objDatas = new ArrayList<object_data_t>();
