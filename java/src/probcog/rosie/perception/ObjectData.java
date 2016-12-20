@@ -171,6 +171,16 @@ public class ObjectData {
         pos = npos;
     }
 
+    public double[] getPos()
+    {
+        return pos;
+    }
+
+    public double getPos(int i)
+    {
+        return pos[i];
+    }
+
     public void setBBoxPos(double[] npos)
     {
         if (npos.length != 6) {
@@ -179,12 +189,32 @@ public class ObjectData {
         bboxPos = npos;
     }
 
+    public double[] getBBoxPos()
+    {
+        return bboxPos;
+    }
+
+    public double getBBoxPos(int i)
+    {
+        return bboxPos[i];
+    }
+
     public void setBBoxDim(double[] ndim)
     {
         if (ndim.length != 3) {
             System.out.println("ERROR: Setting invalid object pos for ObjectData.");
         }
         bboxDim = ndim;
+    }
+
+    public double[] getBBoxDim()
+    {
+        return bboxDim;
+    }
+
+    public double getBBoxDim(int i)
+    {
+        return bboxDim[i];
     }
 
     public void setPos(int i, double val)

@@ -64,6 +64,7 @@ public class WorldObject implements ISoarObject
         stateProperties = new StateProperties();
 
         lastData = objDatas;
+        // WTF.
         updateBbox(objDatas);
         updateProperties(objDatas);
     }
@@ -140,7 +141,7 @@ public class WorldObject implements ISoarObject
 
     public void update(ArrayList<ObjectData> objDatas){
     	lastData = objDatas;
-        updateBbox(objDatas);
+        //updateBbox(objDatas);
         updateProperties(objDatas);
     }
 
@@ -184,54 +185,60 @@ public class WorldObject implements ISoarObject
     }
 
     private void updateBbox(ArrayList<ObjectData> objDatas){
-    	// if(objDatas.size() == 1){
-    	// 	// Nothing fancy, just update using the given information
+    	if(objDatas.size() == 1){
+    		// Nothing fancy, just update using the given information
 
-    	// 	object_data_t objectData = objDatas.get(0);
+    		ObjectData objectData = objDatas.get(0);
 
-   	    //  	setBBox(objectData.bbox_xyzrpy, objectData.bbox_dim);
-   	    //  	for(int i = 0; i < 3; i++){
-   	    //  		centroid[i] = objectData.pos[i];
-   	    //  	}
-    	// } else {
-    	// 	// Combine multiple bounding boxes into 1,
-    	// 	// we generate all the points on the corners of each bbox
-    	// 	// then calculate a new oriented bbox based on those
+   	     	setBBox(objectData.getBBoxPos(), objectData.getBBoxDim());
+   	     	for(int i = 0; i < 3; i++){
+   	     		centroid[i] = objectData.getBBoxPos(i);
+   	     	}
+    	} else {
+    		// Combine multiple bounding boxes into 1,
+    		// we generate all the points on the corners of each bbox
+    		// then calculate a new oriented bbox based on those
 
-    	// 	ArrayList<double[]> points = new ArrayList<double[]>();
+    		ArrayList<double[]> points = new ArrayList<double[]>();
 
-    	// 	for(object_data_t objectData : objDatas){
-    	// 		// Position + Rotation Matrix
-    	// 		double[][] pr = LinAlg.xyzrpyToMatrix(objectData.bbox_xyzrpy);
-    	// 		// Position + Rotation + Scaling Matrix
-    	// 		double[][] prs = LinAlg.matrixAB(pr, LinAlg.scale(objectData.bbox_dim[0]/2, objectData.bbox_dim[1]/2, objectData.bbox_dim[2]/2));
+    		for(ObjectData objectData : objDatas){
+    			// Position + Rotation Matrix
+    			double[][] pr = LinAlg.xyzrpyToMatrix(objectData.getBBoxPos());
+    			// Position + Rotation + Scaling Matrix
+    			double[][] prs = LinAlg.matrixAB(pr,
+                                                 LinAlg.scale(objectData.getBBoxDim(0)/2,
+                                                              objectData.getBBoxDim(1)/2,
+                                                              objectData.getBBoxDim(2)/2));
 
-    	// 		// Center of the box
-    	// 		double[] p = new double[]{objectData.bbox_xyzrpy[0], objectData.bbox_xyzrpy[1], objectData.bbox_xyzrpy[2]};
-    	// 		// Each Axis of the box
-    	// 		double[] x = new double[]{prs[0][0], prs[1][0], prs[2][0]};
-    	// 		double[] y = new double[]{prs[0][1], prs[1][1], prs[2][1]};
-    	// 		double[] z = new double[]{prs[0][2], prs[1][2], prs[2][2]};
+    			// Center of the box
+    			double[] p = new double[]{objectData.getBBoxPos(0),
+                                          objectData.getBBoxPos(1),
+                                          objectData.getBBoxPos(2)};
+    			// Each Axis of the box
+    			double[] x = new double[]{prs[0][0], prs[1][0], prs[2][0]};
+    			double[] y = new double[]{prs[0][1], prs[1][1], prs[2][1]};
+    			double[] z = new double[]{prs[0][2], prs[1][2], prs[2][2]};
 
-    	// 		for(int i = -1; i <= 1; i += 2){
-    	// 			for(int j = -1; j <= 1; j += 2){
-    	// 				for(int k = -1; k <= 1; k += 2){
-    	// 					// Each corner of the box
-    	// 					double[] v = LinAlg.add(LinAlg.scale(x, i),  LinAlg.add(LinAlg.scale(y, j), LinAlg.scale(z, k)));
-    	// 					points.add(LinAlg.add(p, v));
-    	// 				}
-    	// 			}
-    	// 		}
-    	// 	}
+    			for(int i = -1; i <= 1; i += 2){
+    				for(int j = -1; j <= 1; j += 2){
+    					for(int k = -1; k <= 1; k += 2){
+    						// Each corner of the box
+    						double[] v = LinAlg.add(LinAlg.scale(x, i),
+                                                    LinAlg.add(LinAlg.scale(y, j),
+                                                               LinAlg.scale(z, k)));
+    						points.add(LinAlg.add(p, v));
+    					}
+    				}
+    			}
+    		}
 
-		// 	BoundingBox bbox = BoundingBox.getMinimalXY(points);
+			BoundingBox bbox = BoundingBox.getMinimalXY(points);
 
-    	// 	setBBox(bbox.xyzrpy, bbox.lenxyz);
-    	// 	for(int i = 0; i < 3; i++){
-    	// 		centroid[i] = bbox.xyzrpy[i];
-    	// 	}
-    	// }
-        return;
+    		setBBox(bbox.xyzrpy, bbox.lenxyz);
+    		for(int i = 0; i < 3; i++){
+    			centroid[i] = bbox.xyzrpy[i];
+    		}
+    	}
     }
 
     /***********************************************************
@@ -259,6 +266,7 @@ public class WorldObject implements ISoarObject
 
     	StringBuilder svsCommands = new StringBuilder();
     	svsCommands.append(SVSCommands.addBox(getHandleStr(), bboxPos, bboxRot, bboxSize));
+        System.out.println(svsCommands.toString());
 		svsCommands.append(SVSCommands.addTag(getHandleStr(), "object-source", "perception"));
 		world.getAgent().SendSVSInput(svsCommands.toString());
 
