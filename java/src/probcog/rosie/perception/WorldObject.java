@@ -261,15 +261,15 @@ public class WorldObject implements ISoarObject
     	svsCommands.append(SVSCommands.addBox(getHandleStr(), bboxPos, bboxRot, bboxSize));
 		svsCommands.append(SVSCommands.addTag(getHandleStr(), "object-source", "perception"));
 		world.getAgent().SendSVSInput(svsCommands.toString());
-		
+
     	added = true;
     }
-    
+
     public void updateWM(){
     	if(!added){
     		return;
     	}
-    	
+
     	if(gotPropUpdate){
 	    	// Update Perceptual Properties
 	    	for(PerceptualProperty pp : perceptualProperties.values()){

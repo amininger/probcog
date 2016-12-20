@@ -17,6 +17,9 @@ import edu.umich.rosie.soar.ISoarObject;
 import edu.umich.rosie.soar.SVSCommands;
 import edu.umich.rosie.soar.SoarAgent;
 
+import edu.wpi.rail.jrosbridge.*;
+import edu.wpi.rail.jrosbridge.messages.*;
+import edu.wpi.rail.jrosbridge.callback.*;
 import javax.json.*;
 
 public class WorldModel implements ISoarObject
@@ -34,6 +37,9 @@ public class WorldModel implements ISoarObject
 
     private boolean needsUpdate = false;
 
+    private Ros ros;
+    private Topic soarObjs;
+
     public WorldModel(SoarAgent soarAgent){
     	this.soarAgent = soarAgent;
 
@@ -42,6 +48,21 @@ public class WorldModel implements ISoarObject
         objectLinks = new HashMap<Integer, Integer>();
 
         eyePos = new double[6];
+
+        ros = new Ros();
+        ros.connect();
+
+        if (ros.isConnected()) {
+            System.out.println("WorldModel connected to rosbridge server.");
+        }
+        else {
+            System.out.println("WorldModel NOT CONNECTED TO ROSBRIDGE");
+        }
+
+        soarObjs = new Topic(ros,
+                             "/rosie_soar_obj",
+                             "rosie_msgs/SoarObjects",
+                             500);
     }
 
     public Agent getAgent(){
@@ -75,30 +96,29 @@ public class WorldModel implements ISoarObject
     public synchronized void linkObjects(Set<String> sourceHandles, String destHandle){
     	Integer dHandle = Integer.parseInt(destHandle);
 
-    	//ArrayList<object_data_t> objData = new ArrayList<object_data_t>();
+    	ArrayList<ObjectData> objData = new ArrayList<ObjectData>();
 
     	for(String sourceHandle : sourceHandles){
     		Integer sHandle = Integer.parseInt(sourceHandle);
     		objectLinks.put(sHandle, dHandle);
     		if(objects.containsKey(sHandle)){
     			WorldObject wobj = objects.get(sHandle);
-    			//objData.addAll(wobj.getLastDatas());
+    			objData.addAll(wobj.getLastDatas());
     			objsToRemove.add(wobj);
     			objects.remove(sHandle);
     		}
     	}
 
-
-        // if(objData.size() > 0){
-        // 	if(objects.containsKey(dHandle)){
-        // 		WorldObject dObj = objects.get(dHandle);
-        // 		objData.addAll(dObj.getLastDatas());
-    	// 		dObj.update(objData);
-    	// 	} else {
-    	// 		WorldObject object = new WorldObject(this, dHandle, objData);
-    	// 		objects.put(dHandle, object);
-    	// 	}
-        // }
+        if(objData.size() > 0){
+        	if(objects.containsKey(dHandle)){
+        		WorldObject dObj = objects.get(dHandle);
+        		objData.addAll(dObj.getLastDatas());
+    			dObj.update(objData);
+    		} else {
+    			WorldObject object = new WorldObject(this, dHandle, objData);
+    			objects.put(dHandle, object);
+    		}
+        }
         needsUpdate = true;
     }
 
@@ -160,92 +180,95 @@ public class WorldModel implements ISoarObject
         }
 
         needsUpdate = true;
-        System.out.println("Processed obs");
     }
 
-    // private void sendObservation(){
-    // 	ArrayList<object_data_t> objDatas = new ArrayList<object_data_t>();
+    private void sendObservation(){
+    	ArrayList<ObjectData> objDatas = new ArrayList<ObjectData>();
 
-    // 	String[] beliefObjects = soarAgent.getAgent().SVSQuery("objs-with-flag object-source belief\n").split(" ");
-    // 	for(int i = 2; i < beliefObjects.length; i++){
-    // 		String beliefId = beliefObjects[i].trim();
-    // 		if(beliefId.length() == 0){
-    // 			continue;
-    // 		}
-    // 		String obj = soarAgent.getAgent().SVSQuery("obj-info " + beliefId);
-    // 		objDatas.add(parseObject(obj));
-    // 	}
+    	String[] beliefObjects = soarAgent.getAgent().SVSQuery("objs-with-flag object-source belief\n").split(" ");
+    	for(int i = 2; i < beliefObjects.length; i++){
+    		String beliefId = beliefObjects[i].trim();
+    		if(beliefId.length() == 0){
+    			continue;
+    		}
+    		String obj = soarAgent.getAgent().SVSQuery("obj-info " + beliefId);
+    		objDatas.add(parseObject(obj));
+    	}
 
-    	// soar_objects_t outgoingObs = new soar_objects_t();
-    	// outgoingObs.utime = TimeUtil.utime();
-    	// outgoingObs.objects = objDatas.toArray(new object_data_t[objDatas.size()]);
-    	// outgoingObs.num_objects = outgoingObs.objects.length;
+        StringBuilder outgoingObs = new StringBuilder();
+        outgoingObs.append("{");
 
-    	//x LCM.getSingleton().publish("SOAR_OBJECTS", outgoingObs);
-    // }
+        long utime = TimeUtil.utime();
+        outgoingObs.append("\"header\": {\"stamp\": " + utime + "}, ");
+        outgoingObs.append("\"objects\": [");
 
-    // public object_data_t parseObject(String objInfo){
-    // 	object_data_t objData = new object_data_t();
-    // 	objData.utime = TimeUtil.utime();
-    // 	objData.bbox_xyzrpy = new double[6];
-    // 	objData.bbox_dim = new double[3];
-    // 	objData.pos = new double[6];
-    // 	objData.num_cat = 0;
-    // 	objData.cat_dat = new categorized_data_t[0];
-    // 	objData.num_states = 0;
-    // 	objData.state_values = new String[0];
+        int count = 0;
+        for (ObjectData od : objDatas) {
+            if (count > 0) outgoingObs.append(",");
+            count++;
+            outgoingObs.append(od.toJsonString());
+        }
+        outgoingObs.append("]}");
 
-    // 	String[] fields = objInfo.split(" ");
-    // 	int i = 0;
-    // 	while(i < fields.length){
-    // 		String field = fields[i++];
-    // 		if(field.equals("o")){
-    // 			// Parse ID: Should be in format bel-#
-    // 			String beliefId = fields[i++];
-    // 			Integer index = beliefId.indexOf("bel-");
-    // 			if(index == 0){
-    // 				objData.id = Integer.parseInt(beliefId.substring(4));
-    // 			} else {
-    // 				objData.id = Integer.parseInt(beliefId);
-    // 			}
-    // 		} else if (field.equals("p") || field.equals("r") || field.equals("s")){
-    // 			// Parse position, rotation, or scaling
-    // 			double x = Double.parseDouble(fields[i++]);
-    // 			double y = Double.parseDouble(fields[i++]);
-    // 			double z = Double.parseDouble(fields[i++]);
-    // 			if(field.equals("p")){
-    // 				// Position
-    // 				objData.pos = new double[]{x, y, z, 0, 0, 0};
-    // 				objData.bbox_xyzrpy[0] = x;
-    // 				objData.bbox_xyzrpy[1] = y;
-    // 				objData.bbox_xyzrpy[2] = z;
-    // 			} else if(field.equals("r")){
-    // 				// Rotation
-    // 				objData.bbox_xyzrpy[3] = x;
-    // 				objData.bbox_xyzrpy[4] = y;
-    // 				objData.bbox_xyzrpy[5] = z;
-    // 			} else {
-    // 				// Scaling
-    // 				objData.bbox_dim = new double[]{x, y, z};
-    // 			}
-    // 		} else if(field.equals("f")){
-    // 			Integer numFlags = Integer.parseInt(fields[i++]);
-    // 			ArrayList<categorized_data_t> catDats = new ArrayList<categorized_data_t>();
-    // 			for(int j = 0; j < numFlags; j++){
-    // 				String flagName = fields[i++];
-    // 				String flagVal = fields[i++];
-    // 				categorized_data_t catDat = parseFlag(flagName, flagVal);
-    // 				if(catDat != null){
-    // 					catDats.add(catDat);
-    // 				}
-    // 			}
-    // 			objData.cat_dat = catDats.toArray(new categorized_data_t[catDats.size()]);
-    // 			objData.num_cat = objData.cat_dat.length;
-    // 		}
-    // 	}
+        Message m = new Message(outgoingObs.toString());
+        soarObjs.publish(m);
+        System.out.println(outgoingObs.toString());
+    }
 
-    // 	return objData;
-    // }
+    public ObjectData parseObject(String objInfo){
+    	ObjectData objData = new ObjectData();
+
+    	String[] fields = objInfo.split(" ");
+    	int i = 0;
+    	while(i < fields.length){
+    		String field = fields[i++];
+    		if(field.equals("o")){
+    			// Parse ID: Should be in format bel-#
+    			String beliefId = fields[i++];
+    			Integer index = beliefId.indexOf("bel-");
+    			if(index == 0){
+    				objData.setID(Integer.parseInt(beliefId.substring(4)));
+    			} else {
+    				objData.setID(Integer.parseInt(beliefId));
+    			}
+    		} else if (field.equals("p") || field.equals("r") || field.equals("s")){
+    			// Parse position, rotation, or scaling
+    			double x = Double.parseDouble(fields[i++]);
+    			double y = Double.parseDouble(fields[i++]);
+    			double z = Double.parseDouble(fields[i++]);
+    			if(field.equals("p")){
+    				// Position
+    				objData.setPos(new double[]{x, y, z, 0, 0, 0});
+    				objData.setBBoxPos(0, x);
+    				objData.setBBoxPos(1, y);
+    				objData.setBBoxPos(2, z);
+    			} else if(field.equals("r")){
+    				// Rotation
+    				objData.setBBoxPos(3, x);
+    				objData.setBBoxPos(4, y);
+    				objData.setBBoxPos(5, z);
+    			} else {
+    				// Scaling
+    				objData.setBBoxDim(new double[]{x, y, z});
+    			}
+    		} //else if(field.equals("f")){
+    	// 		Integer numFlags = Integer.parseInt(fields[i++]);
+    	// 		ArrayList<categorized_data_t> catDats = new ArrayList<categorized_data_t>();
+    	// 		for(int j = 0; j < numFlags; j++){
+    	// 			String flagName = fields[i++];
+    	// 			String flagVal = fields[i++];
+    	// 			categorized_data_t catDat = parseFlag(flagName, flagVal);
+    	// 			if(catDat != null){
+    	// 				catDats.add(catDat);
+    	// 			}
+    	// 		}
+    	// 		objData.cat_dat = catDats.toArray(new categorized_data_t[catDats.size()]);
+    	// 		objData.num_cat = objData.cat_dat.length;
+    	// 	}
+    	}
+
+    	return objData;
+    }
 
     // public categorized_data_t parseFlag(String flagName, String flagValue){
     // 	categorized_data_t catDat = new categorized_data_t();
@@ -312,7 +335,7 @@ public class WorldModel implements ISoarObject
         svsCommands.append(SVSCommands.changePos("eye", eyePos));
         soarAgent.getAgent().SendSVSInput(svsCommands.toString());
 
-        //sendObservation();
+        sendObservation();
 
         needsUpdate = false;
     }

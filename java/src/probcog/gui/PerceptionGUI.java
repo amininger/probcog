@@ -89,8 +89,8 @@ public class PerceptionGUI extends JFrame
 
     long soarTime = 0;
 
-    Ros ros;
-    Topic observations;
+    private Ros ros;
+    private Topic observations;
 
     public PerceptionGUI(GetOpt opts) throws IOException
     {
@@ -370,8 +370,6 @@ public class PerceptionGUI extends JFrame
         obs.append(od);
 
         obs.append("}");
-        System.out.println(obs.toString());
-        System.out.println("===================================");
 
         Message m = new Message(obs.toString());
         observations.publish(m);

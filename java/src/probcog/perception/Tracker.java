@@ -24,15 +24,21 @@ import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
 import probcog.util.*;
 
+import edu.wpi.rail.jrosbridge.*;
+import edu.wpi.rail.jrosbridge.messages.*;
+import edu.wpi.rail.jrosbridge.callback.*;
+import javax.json.*;
+
 public class Tracker
 {
-    //x static LCM lcm = LCM.getSingleton();
+    private Ros ros;
+
     // Classification stuff
     ClassifierManager classyManager;
 
     // Soar stuff
     private Object soarLock;
-    //x private soar_objects_t soar_lcm;
+    private HashMap<Integer, Obj> soarObjects;
 
     // Arm Stuff
     private Object armLock = new Object();
@@ -86,9 +92,30 @@ public class Tracker
 
         stateLock = new Object();
         soarLock = new Object();
-        //x soar_lcm = null;
 
-        new ListenerThread().start();
+        ros = new Ros();
+        ros.connect();
+
+        if (ros.isConnected()) {
+            System.out.println("Tracker connected to rosbridge server.");
+        }
+        else {
+            System.out.println("Tracker NOT CONNECTED TO ROSBRIDGE");
+        }
+
+        // Needs to happen after WorldModel perhaps?
+        Topic soar = new Topic(ros,
+                               "/rosie_soar_obj",
+                               "rosie_msgs/SoarObjects");
+        System.out.println("Subscribing to Soar objects!");
+        soar.subscribe(new TopicCallback() {
+                public void handleMessage(Message message) {
+                    JsonObject jobj = message.toJsonObject();
+                    System.out.println("Received SoarObject msg");
+                }
+            });
+
+        //x new ListenerThread().start();
         new TrackingThread().start();
     }
 
@@ -482,13 +509,13 @@ public class Tracker
                 	}
                 	double c0 = bbox0.xyzrpy[2];		// Center
                 	double h0 = bbox0.lenxyz[2]/2;	// Height (half)
-                	
+
                 	double c1 = bbox1.xyzrpy[2]; 	// Center
                 	double h1 = bbox1.lenxyz[2]/2; 	// Height (half)
-                	
+
                     // Adjust zlens in bounding box based on separation
                     // between centroids. Don't forget to update shape!
-                	
+
                 	double dz = Math.abs(c1 - c0);
                 	// The adjustment is how much the bboxes needed to be backed up so the boxes are separated on z
                 	double adjustment = h0 + h1 + fudge - dz;
@@ -497,11 +524,11 @@ public class Tracker
                 			// Already too small to do anything about (or horizontally overlapping)
                 			continue;
                 		}
-                		
+
                 		double adj0 =  h0 / (h0 + h1) * adjustment;
                 		double adj1 =  h1 / (h0 + h1) * adjustment;
                 		bbox0.lenxyz[2] -= adj0;
-                		bbox1.lenxyz[2] -= adj1; 
+                		bbox1.lenxyz[2] -= adj1;
                 		if(bbox0.xyzrpy[2] < bbox1.xyzrpy[2]){
                 			bbox0.xyzrpy[2] -= adj0/2;
                 			bbox1.xyzrpy[2] += adj1/2;
@@ -509,7 +536,7 @@ public class Tracker
                 			bbox0.xyzrpy[2] += adj0/2;
                 			bbox1.xyzrpy[2] -= adj1/2;
                 		}
-                		
+
                 		obj0.setPose(bbox0.xyzrpy);
                 		obj1.setPose(bbox1.xyzrpy);
 
@@ -522,7 +549,7 @@ public class Tracker
                         if (Collisions.collision(obj0.getShape(), LinAlg.xyzrpyToMatrix(bbox0.xyzrpy),
                                 obj1.getShape(), LinAlg.xyzrpyToMatrix(bbox1.xyzrpy))){
                         	System.out.println("STILL A COLLISION");
-                        	
+
                         }
                 	}
                 }
@@ -696,8 +723,6 @@ public class Tracker
      **/
     class ListenerThread extends Thread //x implements LCMSubscriber
     {
-        //x  LCM lcm = LCM.getSingleton();
-
         public ListenerThread()
         {
             //x lcm.subscribe("SOAR_OBJECTS", this);

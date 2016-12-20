@@ -48,8 +48,6 @@ public class ArmPerceptionConnector extends AgentConnector {
 
     //x private HashMap<training_label_t, Identifier> outstandingTraining;
 
-    //x private LCM lcm;
-
     protected WorldModel world;
     private String classifiersFile;
 
@@ -64,7 +62,6 @@ public class ArmPerceptionConnector extends AgentConnector {
     	//x outstandingTraining = new HashMap<training_label_t, Identifier>();
 
         world = new WorldModel(soarAgent);
-        //x lcm = LCM.getSingleton();
 
         sendTrainingTimer = new Timer();
 
@@ -182,6 +179,7 @@ public class ArmPerceptionConnector extends AgentConnector {
 	@Override
     public synchronized void onInputPhase(Identifier inputLink){
         if(world.isAdded()){
+            System.out.println("InputPhase?");
         	world.updateWM();
         } else {
         	world.addToWM(inputLink);
