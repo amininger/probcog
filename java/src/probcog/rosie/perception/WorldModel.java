@@ -159,7 +159,7 @@ public class WorldModel implements ISoarObject
     		newData.get(handle).add(objData);
     	}
 
-    	// // For each object, either update existing or create if new
+    	// For each object, either update existing or create if new
     	for(Map.Entry<Integer, ArrayList<ObjectData>> e : newData.entrySet()){
     		Integer handle = e.getKey();
     		WorldObject object = objects.get(handle);
@@ -172,7 +172,7 @@ public class WorldModel implements ISoarObject
     		}
     	}
 
-    	// // Remove all stale objects from WM
+    	// Remove all stale objects from WM
         for(Integer handle : staleObjects){
         	WorldObject object = objects.get(handle);
         	objsToRemove.add(object);

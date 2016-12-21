@@ -639,9 +639,24 @@ public class Tracker
                 curObj.append("\"z\": " + q[2] + ", ");
                 curObj.append("\"w\": " + q[3] + "}}, ");
 
-                // BoundingBox bbox = ob.getBoundingBox();
-                // od.bbox_dim = bbox.lenxyz;
-                // od.bbox_xyzrpy = bbox.xyzrpy;
+                BoundingBox bbox = ob.getBoundingBox();
+                curObj.append("\"bbox_xyzrpy\": {\"translation\": {");
+                curObj.append("\"x\": " + bbox.xyzrpy[0] + ", ");
+                curObj.append("\"y\": " + bbox.xyzrpy[1] + ", ");
+                curObj.append("\"z\": " + bbox.xyzrpy[2] + "}, ");
+
+                tmpRot = new double[]{bbox.xyzrpy[3], bbox.xyzrpy[4], bbox.xyzrpy[5]};
+                q = LinAlg.rollPitchYawToQuat(tmpRot);
+                curObj.append("\"rotation\": {");
+                curObj.append("\"x\": " + q[0] + ", ");
+                curObj.append("\"y\": " + q[1] + ", ");
+                curObj.append("\"z\": " + q[2] + ", ");
+                curObj.append("\"w\": " + q[3] + "}}, ");
+
+                curObj.append("\"bbox_dim\": {");
+                curObj.append("\"x\": " + bbox.lenxyz[0] + ", ");
+                curObj.append("\"y\": " + bbox.lenxyz[1] + ", ");
+                curObj.append("\"z\": " + bbox.lenxyz[2] + "}, ");
 
                 // od.state_values = ob.getStates();
                 // od.num_states = od.state_values.length;

@@ -64,7 +64,6 @@ public class WorldObject implements ISoarObject
         stateProperties = new StateProperties();
 
         lastData = objDatas;
-        // WTF.
         updateBbox(objDatas);
         updateProperties(objDatas);
     }
@@ -141,7 +140,7 @@ public class WorldObject implements ISoarObject
 
     public void update(ArrayList<ObjectData> objDatas){
     	lastData = objDatas;
-        //updateBbox(objDatas);
+        updateBbox(objDatas);
         updateProperties(objDatas);
     }
 
@@ -187,10 +186,9 @@ public class WorldObject implements ISoarObject
     private void updateBbox(ArrayList<ObjectData> objDatas){
     	if(objDatas.size() == 1){
     		// Nothing fancy, just update using the given information
-
     		ObjectData objectData = objDatas.get(0);
-
    	     	setBBox(objectData.getBBoxPos(), objectData.getBBoxDim());
+
    	     	for(int i = 0; i < 3; i++){
    	     		centroid[i] = objectData.getBBoxPos(i);
    	     	}
@@ -198,7 +196,6 @@ public class WorldObject implements ISoarObject
     		// Combine multiple bounding boxes into 1,
     		// we generate all the points on the corners of each bbox
     		// then calculate a new oriented bbox based on those
-
     		ArrayList<double[]> points = new ArrayList<double[]>();
 
     		for(ObjectData objectData : objDatas){
