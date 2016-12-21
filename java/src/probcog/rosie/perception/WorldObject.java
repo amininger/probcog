@@ -263,10 +263,8 @@ public class WorldObject implements ISoarObject
 
     	StringBuilder svsCommands = new StringBuilder();
     	svsCommands.append(SVSCommands.addBox(getHandleStr(), bboxPos, bboxRot, bboxSize));
-        System.out.println(svsCommands.toString());
 		svsCommands.append(SVSCommands.addTag(getHandleStr(), "object-source", "perception"));
 		world.getAgent().SendSVSInput(svsCommands.toString());
-
     	added = true;
     }
 
@@ -288,13 +286,13 @@ public class WorldObject implements ISoarObject
 	    		pp.removeFromWM();
 	    	}
 	    	propsToRemove.clear();
-	
+
 	    	// Update State Properties
 	    	stateProperties.updateWM();
 
 	    	gotPropUpdate = false;
     	}
-    	
+
     	// Update SVS
 		StringBuilder svsCommands = new StringBuilder();
     	if(gotPoseUpdate || gotBboxUpdate){
