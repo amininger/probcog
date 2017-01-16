@@ -51,7 +51,6 @@ public class RosieGUI extends JFrame
 
     	//x actuation = new ArmActuationConnector(soarAgent, props);
     	//x soarAgent.setActuationConnector(actuation);
-
     	perception = new ArmPerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
 

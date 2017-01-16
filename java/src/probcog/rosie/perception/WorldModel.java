@@ -212,7 +212,6 @@ public class WorldModel implements ISoarObject
 
         Message m = new Message(outgoingObs.toString());
         soarObjs.publish(m);
-        System.out.println(outgoingObs.toString());
     }
 
     public ObjectData parseObject(String objInfo){

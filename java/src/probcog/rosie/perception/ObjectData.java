@@ -160,7 +160,7 @@ public class ObjectData {
         curObj.append("\"x\": " + q[0] + ", ");
         curObj.append("\"y\": " + q[1] + ", ");
         curObj.append("\"z\": " + q[2] + ", ");
-        curObj.append("\"w\": " + q[3] + "}}, ");
+        curObj.append("\"w\": " + q[3] + "}}");
 
         // BoundingBox bbox = ob.getBoundingBox();
         // od.bbox_dim = bbox.lenxyz;

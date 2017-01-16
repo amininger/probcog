@@ -111,7 +111,7 @@ public class Tracker
         soar.subscribe(new TopicCallback() {
                 public void handleMessage(Message message) {
                     JsonObject jobj = message.toJsonObject();
-                    System.out.println("Received SoarObject msg");
+                    //System.out.println("Received SoarObject msg: " + jobj.toString());
                 }
             });
 

@@ -179,7 +179,6 @@ public class ArmPerceptionConnector extends AgentConnector {
 	@Override
     public synchronized void onInputPhase(Identifier inputLink){
         if(world.isAdded()){
-            System.out.println("InputPhase?");
         	world.updateWM();
         } else {
         	world.addToWM(inputLink);
