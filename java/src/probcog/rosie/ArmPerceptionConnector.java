@@ -157,7 +157,7 @@ public class ArmPerceptionConnector extends AgentConnector implements LCMSubscri
         }
         
         // Update pointed object
-        SoarUtil.updateIntWME(inputLink, "pointed-object", world.getSoarHandle(pointedHandle));
+        SoarUtil.updateStringWME(inputLink, "pointed-object", String.valueOf(world.getSoarHandle(pointedHandle)));
     }
 
     /*************************************************

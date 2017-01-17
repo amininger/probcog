@@ -25,7 +25,7 @@ import april.util.TimeUtil;
 public class WorldObject implements ISoarObject
 {
     // Handle of the object 
-    protected int handle;
+    protected String handle;
     
     // Information about the bounding box
     // Center of the bounding box (XYZ)
@@ -53,7 +53,7 @@ public class WorldObject implements ISoarObject
     private boolean gotBboxUpdate = false;
     private boolean gotPoseUpdate = false;
     
-    public WorldObject(WorldModel world, Integer handle, ArrayList<object_data_t> objDatas){
+    public WorldObject(WorldModel world, String handle, ArrayList<object_data_t> objDatas){
     	this.world = world;
         this.handle = handle;
         bboxPos = new double[3];
@@ -71,17 +71,18 @@ public class WorldObject implements ISoarObject
     
     // Handle: Get
     public int getHandle(){
-        return handle;
+        return (new Integer(handle));
     }
     
     public String getHandleStr(){
-    	return (new Integer(handle)).toString();
+    	return handle;
     }
     
     public Integer getPerceptionId(){
+    	Integer pid = new Integer(handle);
     	for(object_data_t objDat : lastData){
-    		if(objDat.id == handle){
-    			return handle;
+    		if(objDat.id == pid){
+    			return pid;
     		}
     	}
     	if(lastData.size() > 0){
@@ -273,7 +274,7 @@ public class WorldObject implements ISoarObject
     		removeFromWM();
     	}
 		objId = parentId.CreateIdWME("object");
-    	objId.CreateIntWME("object-handle", handle);
+    	objId.CreateStringWME("object-handle", new String(handle));
 
     	for(ObjectProperty pp : perceptualProperties.values()){
     		pp.addToWM(objId);
