@@ -6,6 +6,9 @@ import javax.json.*;
 
 import april.jmat.*;
 
+import probcog.perception.*;
+import probcog.util.*;
+
 public class ObjectData {
 
     private int id;
@@ -24,6 +27,19 @@ public class ObjectData {
 
         bboxPos = new double[6];
     	bboxDim = new double[3];
+
+    	//objData.num_cat = 0;
+    	//objData.cat_dat = new categorized_data_t[0];
+
+    	stateValues = new ArrayList<String>();
+    }
+
+    public ObjectData(Obj o)
+    {
+        pos = o.getPose();
+
+        bboxPos = o.getBoundingBox().xyzrpy;
+    	bboxDim = o.getBoundingBox().lenxyz;
 
     	//objData.num_cat = 0;
     	//objData.cat_dat = new categorized_data_t[0];
@@ -144,30 +160,81 @@ public class ObjectData {
         /// ETC
     }
 
-    // TODO unify with Tracker?
+    public String jsonVal(String name, String object)
+    {
+        return ("\"" + name + "\": " + object);
+    }
+
+    public String jsonVal(String name, double object)
+    {
+        return ("\"" + name + "\": " + object);
+    }
+
+    public String jsonVal(String name, int object)
+    {
+        return ("\"" + name + "\": " + object);
+    }
+
+    public String jsonItem(String name, String object)
+    {
+        return ("\"" + name + "\": {" + object + "}");
+    }
+
     public String toJsonString()
     {
         StringBuilder curObj = new StringBuilder();
-        curObj.append("{\"obj_id\": " + id + ", ");
-        curObj.append("\"pos\": {\"translation\": {");
-        curObj.append("\"x\": " + pos[0] + ", ");
-        curObj.append("\"y\": " + pos[1] + ", ");
-        curObj.append("\"z\": " + pos[2] + "}, ");
-
+        curObj.append("{");
+        curObj.append(jsonVal("obj_id", id) + ", ");
         double[] tmpRot = new double[]{pos[3], pos[4], pos[5]};
         double[] q = LinAlg.rollPitchYawToQuat(tmpRot);
-        curObj.append("\"rotation\": {");
-        curObj.append("\"x\": " + q[0] + ", ");
-        curObj.append("\"y\": " + q[1] + ", ");
-        curObj.append("\"z\": " + q[2] + ", ");
-        curObj.append("\"w\": " + q[3] + "}}");
 
-        // BoundingBox bbox = ob.getBoundingBox();
-        // od.bbox_dim = bbox.lenxyz;
-        // od.bbox_xyzrpy = bbox.xyzrpy;
+        curObj.append(jsonItem("pos",
+                               jsonItem("translation",
+                                        jsonVal("x", pos[0]) + ", " +
+                                        jsonVal("y", pos[1]) + ", " +
+                                        jsonVal("z", pos[2])) +
+                               ", " +
+                               jsonItem("rotation",
+                                        jsonVal("x", q[0]) + ", " +
+                                        jsonVal("y", q[1]) + ", " +
+                                        jsonVal("z", q[2]) + ", " +
+                                        jsonVal("w", q[3]))));
+        curObj.append(",");
 
-        // od.state_values = ob.getStates();
-        // od.num_states = od.state_values.length;
+        curObj.append(jsonItem("bbox_dim",
+                               jsonVal("x", bboxDim[0]) + ", " +
+                               jsonVal("y", bboxDim[1]) + ", " +
+                               jsonVal("z", bboxDim[2])));
+        curObj.append(",");
+
+        double[] tmpRotB = new double[]{bboxPos[3], bboxPos[4], bboxPos[5]};
+        double[] qB = LinAlg.rollPitchYawToQuat(tmpRotB);
+
+        curObj.append(jsonItem("pos",
+                               jsonItem("translation",
+                                        jsonVal("x", bboxPos[0]) + ", " +
+                                        jsonVal("y", bboxPos[1]) + ", " +
+                                        jsonVal("z", bboxPos[2])) +
+                               ", " +
+                               jsonItem("rotation",
+                                        jsonVal("x", qB[0]) + ", " +
+                                        jsonVal("y", qB[1]) + ", " +
+                                        jsonVal("z", qB[2]) + ", " +
+                                        jsonVal("w", qB[3]))));
+        curObj.append(",");
+
+        curObj.append(jsonVal("num_states", stateValues.size()));
+        curObj.append(",");
+
+        curObj.append("\"state_values\": [");
+        int count = 0;
+        for (String s : stateValues) {
+            if (count > 0) curObj.append(", ");
+            count++;
+            curObj.append(s);
+        }
+        curObj.append("]");
+        //curObj.append(",");
 
         // categorized_data_t[] cat_dat = ob.getCategoryData();
         // od.num_cat = cat_dat.length;

@@ -103,8 +103,6 @@ public class Obj
         centroid = ptCloud.getCentroid();
         pose = new double[]{centroid[0], centroid[1], centroid[2], 0, 0, 0};
 
-		shape = new BoxShape(bbox.lenxyz[0], bbox.lenxyz[1], bbox.lenxyz[2]);
-
         shape = new BoxShape(bbox.lenxyz[0],
                              bbox.lenxyz[1],
                              bbox.lenxyz[2]);
