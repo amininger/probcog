@@ -251,38 +251,34 @@ public class WorldModel implements ISoarObject
     				// Scaling
     				objData.setBBoxDim(new double[]{x, y, z});
     			}
-    		} //else if(field.equals("f")){
-    	// 		Integer numFlags = Integer.parseInt(fields[i++]);
-    	// 		ArrayList<categorized_data_t> catDats = new ArrayList<categorized_data_t>();
-    	// 		for(int j = 0; j < numFlags; j++){
-    	// 			String flagName = fields[i++];
-    	// 			String flagVal = fields[i++];
-    	// 			categorized_data_t catDat = parseFlag(flagName, flagVal);
-    	// 			if(catDat != null){
-    	// 				catDats.add(catDat);
-    	// 			}
-    	// 		}
-    	// 		objData.cat_dat = catDats.toArray(new categorized_data_t[catDats.size()]);
-    	// 		objData.num_cat = objData.cat_dat.length;
-    	// 	}
+    		} else if(field.equals("f")){
+    			Integer numFlags = Integer.parseInt(fields[i++]);
+    			ArrayList<CategorizedData> catDats = new ArrayList<CategorizedData>();
+    			for(int j = 0; j < numFlags; j++){
+    				String flagName = fields[i++];
+    				String flagVal = fields[i++];
+    				CategorizedData catDat = parseFlag(flagName, flagVal);
+    				if(catDat != null){
+    					catDats.add(catDat);
+    				}
+    			}
+    	 		objData.setCatDat(catDats);
+    	 	}
     	}
 
     	return objData;
     }
 
-    // public categorized_data_t parseFlag(String flagName, String flagValue){
-    // 	categorized_data_t catDat = new categorized_data_t();
-    // 	catDat.cat = new category_t();
-    // 	Integer catId = PerceptualProperty.getPropertyID(flagName);
-    // 	if(catId == null){
-    // 		return null;
-    // 	}
-    // 	catDat.cat.cat = catId;
-    // 	catDat.label = new String[]{flagValue};
-    // 	catDat.confidence = new double[]{1};
-    // 	catDat.len = 1;
-    // 	return catDat;
-    // }
+    public CategorizedData parseFlag(String flagName, String flagValue){
+        Integer catId = PerceptualProperty.getPropertyID(flagName);
+    	if(catId == null){
+    		return null;
+    	}
+
+     	CategorizedData catDat = new CategorizedData(CategorizedData.CategoryType.values()[catId]);
+        catDat.addLabel(flagValue, 1);
+    	return catDat;
+    }
 
     /**********************************************************
      * Methods to update working memroy

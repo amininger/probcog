@@ -14,6 +14,14 @@ public class CategorizedData {
     private ArrayList<Double> confidence;
     private ArrayList<Double> features;
 
+    public CategorizedData(CategoryType t)
+    {
+        catType = t;
+        label = new ArrayList<String>();
+        confidence = new ArrayList<Double>();
+        features = new ArrayList<Double>();
+    }
+
     public CategorizedData(JsonObject msg)
     {
         catType = CategoryType.values()[msg.getInt("cat_type")];
@@ -55,6 +63,12 @@ public class CategorizedData {
     public ArrayList<String> getLabel()
     {
         return label;
+    }
+
+    public void addLabel(String l, double conf)
+    {
+        label.add(l);
+        confidence.add(conf);
     }
 
     public ArrayList<Double> getConfidence()

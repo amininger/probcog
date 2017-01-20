@@ -306,6 +306,11 @@ public class ObjectData {
         return catDat;
     }
 
+    public void setCatDat(ArrayList<CategorizedData> na)
+    {
+        catDat = na;
+    }
+
     public void setPos(double[] npos)
     {
         if (npos.length != 6) {
