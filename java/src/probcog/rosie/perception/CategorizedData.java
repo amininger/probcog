@@ -37,6 +37,11 @@ public class CategorizedData {
         }
     }
 
+    public CategoryType getCatType()
+    {
+        return catType;
+    }
+
     public int numLabels()
     {
         return label.size();

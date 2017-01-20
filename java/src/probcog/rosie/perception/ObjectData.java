@@ -28,22 +28,20 @@ public class ObjectData {
         bboxPos = new double[6];
     	bboxDim = new double[3];
 
-    	//objData.num_cat = 0;
-    	//objData.cat_dat = new categorized_data_t[0];
-
+        catDat = new ArrayList<CategorizedData>();
     	stateValues = new ArrayList<String>();
     }
 
     public ObjectData(Obj o)
     {
+        id = o.getID();
+
         pos = o.getPose();
 
         bboxPos = o.getBoundingBox().xyzrpy;
     	bboxDim = o.getBoundingBox().lenxyz;
 
-    	//objData.num_cat = 0;
-    	//objData.cat_dat = new categorized_data_t[0];
-
+        catDat = new ArrayList<CategorizedData>();
     	stateValues = new ArrayList<String>();
     }
 
@@ -234,12 +232,51 @@ public class ObjectData {
             curObj.append(s);
         }
         curObj.append("]");
-        //curObj.append(",");
+        curObj.append(",");
 
-        // categorized_data_t[] cat_dat = ob.getCategoryData();
-        // od.num_cat = cat_dat.length;
-        // od.cat_dat = cat_dat;
+        count = 0;
+        curObj.append("\"cat_dat\": [");
+        for (CategorizedData cd : catDat) {
+            if (count > 0) curObj.append(", ");
+            count++;
+            curObj.append("{");
+            curObj.append(jsonVal("cat_type", cd.getCatType().ordinal()) + ", ");
+            curObj.append(jsonVal("len", cd.numLabels()) + ", ");
+            curObj.append(jsonVal("num_features", cd.numFeatures()) + ", ");
 
+            curObj.append("\"label\": [");
+            int i = 0;
+            for (String s : cd.getLabel()) {
+                if (i > 0) curObj.append(", ");
+                i++;
+                curObj.append(s);
+            }
+            curObj.append("]");
+            curObj.append(",");
+
+            curObj.append("\"confidence\": [");
+            i = 0;
+            for (Double d : cd.getConfidence()) {
+                if (i > 0) curObj.append(", ");
+                i++;
+                curObj.append(d);
+            }
+            curObj.append("]");
+            curObj.append(",");
+
+            curObj.append("\"features\": [");
+            i = 0;
+            for (Double d : cd.getFeatures()) {
+                if (i > 0) curObj.append(", ");
+                i++;
+                curObj.append(d);
+            }
+            curObj.append("]");
+
+            curObj.append("}");
+        }
+
+        curObj.append("]");
         curObj.append("}");
         return curObj.toString();
     }

@@ -210,6 +210,7 @@ public class WorldModel implements ISoarObject
         }
         outgoingObs.append("]}");
 
+        System.out.println(outgoingObs.toString());
         Message m = new Message(outgoingObs.toString());
         soarObjs.publish(m);
     }

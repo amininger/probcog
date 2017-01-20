@@ -626,50 +626,6 @@ public class Tracker
                 if (objCount > 1) objArray.append(", ");
                 ObjectData odat = new ObjectData(ob);
                 objArray.append(odat.toJsonString());
-
-                // curObj.append("{\"obj_id\": " + ob.getID() + ", ");
-                // curObj.append("\"pos\": {\"translation\": {");
-                // double[] tmpPos = ob.getPose();
-                // curObj.append("\"x\": " + tmpPos[0] + ", ");
-                // curObj.append("\"y\": " + tmpPos[1] + ", ");
-                // curObj.append("\"z\": " + tmpPos[2] + "}, ");
-
-                // double[] tmpRot = new double[]{tmpPos[3], tmpPos[4], tmpPos[5]};
-                // double[] q = LinAlg.rollPitchYawToQuat(tmpRot);
-                // curObj.append("\"rotation\": {");
-                // curObj.append("\"x\": " + q[0] + ", ");
-                // curObj.append("\"y\": " + q[1] + ", ");
-                // curObj.append("\"z\": " + q[2] + ", ");
-                // curObj.append("\"w\": " + q[3] + "}}, ");
-
-                // BoundingBox bbox = ob.getBoundingBox();
-                // curObj.append("\"bbox_xyzrpy\": {\"translation\": {");
-                // curObj.append("\"x\": " + bbox.xyzrpy[0] + ", ");
-                // curObj.append("\"y\": " + bbox.xyzrpy[1] + ", ");
-                // curObj.append("\"z\": " + bbox.xyzrpy[2] + "}, ");
-
-                // tmpRot = new double[]{bbox.xyzrpy[3], bbox.xyzrpy[4], bbox.xyzrpy[5]};
-                // q = LinAlg.rollPitchYawToQuat(tmpRot);
-                // curObj.append("\"rotation\": {");
-                // curObj.append("\"x\": " + q[0] + ", ");
-                // curObj.append("\"y\": " + q[1] + ", ");
-                // curObj.append("\"z\": " + q[2] + ", ");
-                // curObj.append("\"w\": " + q[3] + "}}, ");
-
-                // curObj.append("\"bbox_dim\": {");
-                // curObj.append("\"x\": " + bbox.lenxyz[0] + ", ");
-                // curObj.append("\"y\": " + bbox.lenxyz[1] + ", ");
-                // curObj.append("\"z\": " + bbox.lenxyz[2] + "}, ");
-
-                // // od.state_values = ob.getStates();
-                // // od.num_states = od.state_values.length;
-                // curObj.append("\"num_states\": " + ob.getStates().length);
-
-                // // categorized_data_t[] cat_dat = ob.getCategoryData();
-                // // od.num_cat = cat_dat.length;
-                // // od.cat_dat = cat_dat;
-
-                // curObj.append("}");
             }
         }
 
