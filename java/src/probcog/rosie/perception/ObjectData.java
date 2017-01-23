@@ -41,8 +41,8 @@ public class ObjectData {
         bboxPos = o.getBoundingBox().xyzrpy;
     	bboxDim = o.getBoundingBox().lenxyz;
 
-        catDat = new ArrayList<CategorizedData>();
-    	stateValues = new ArrayList<String>();
+        catDat = o.getCategoryData();
+    	stateValues = o.getStates();
     }
 
     public ObjectData(JsonObject msg)
@@ -155,7 +155,30 @@ public class ObjectData {
             System.out.println("ERROR: Converting quat to rpy.");
         }
 
-        /// ETC
+        int numStates = -1;
+        try {
+            numStates = msg.getInt("num_states");
+        } catch (Exception e) {
+            System.out.println("ERROR: Reading num_states");
+        }
+
+        try {
+            JsonArray ja = msg.getJsonArray("state_values");
+            for (int i = 0; i < ja.size(); i++) {
+                stateValues.add(ja.getString(i));
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR: Reading ObjectData state values");
+        }
+
+        try {
+            JsonArray ja = msg.getJsonArray("cat_dat");
+            for (int i = 0; i < ja.size(); i++) {
+                catDat.add(new CategorizedData(ja.getJsonObject(i)));
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR: Reading ObjectData categorized data");
+        }
     }
 
     public String jsonVal(String name, String object)
@@ -229,12 +252,13 @@ public class ObjectData {
         for (String s : stateValues) {
             if (count > 0) curObj.append(", ");
             count++;
-            curObj.append(s);
+            curObj.append("\"" + s +"\"");
         }
         curObj.append("]");
         curObj.append(",");
 
         count = 0;
+        curObj.append(jsonVal("num_cat", numCat()) + ", ");
         curObj.append("\"cat_dat\": [");
         for (CategorizedData cd : catDat) {
             if (count > 0) curObj.append(", ");
@@ -249,7 +273,7 @@ public class ObjectData {
             for (String s : cd.getLabel()) {
                 if (i > 0) curObj.append(", ");
                 i++;
-                curObj.append(s);
+                curObj.append("\"" + s +"\"");
             }
             curObj.append("]");
             curObj.append(",");

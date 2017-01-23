@@ -369,7 +369,8 @@ public class PerceptionGUI extends JFrame
 
         obs.append("}");
 
-        //System.out.println(obs.toString());
+        // System.out.println();
+        // System.out.println(obs.toString());
         Message m = new Message(obs.toString());
         observations.publish(m);
     }

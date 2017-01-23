@@ -8,8 +8,9 @@ import java.util.Map;
 import probcog.classify.Classifications;
 import probcog.classify.Features;
 import probcog.classify.Features.FeatureCategory;
-import probcog.lcmtypes.categorized_data_t;
-import probcog.lcmtypes.category_t;
+import probcog.rosie.perception.*;
+//import probcog.lcmtypes.categorized_data_t;
+//import probcog.lcmtypes.category_t;
 import probcog.sim.ISimStateful;
 import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
@@ -220,60 +221,47 @@ public class Obj
         return labels;
     }
 
-    public categorized_data_t[] getCategoryData()
+    public ArrayList<CategorizedData> getCategoryData()
     {
-        categorized_data_t[] cat_dat = new categorized_data_t[labels.size()];
+        ArrayList<CategorizedData> cat_dat = new ArrayList<CategorizedData>();
         int j = 0;
         for (FeatureCategory fc: labels.keySet()) {
-            cat_dat[j] = new categorized_data_t();
-            cat_dat[j].cat = new category_t();
-            cat_dat[j].cat.cat = Features.getLCMCategory(fc);
-            
+            CategorizedData cd = new CategorizedData(Features.getLCMCategory(fc));
+
         	// Report the real classification(s)
             Classifications cs = labels.get(fc);
             cs.sortLabels();    // Just to be nice
-            cat_dat[j].len = cs.size();
-            cat_dat[j].confidence = new double[cat_dat[j].len];
-            cat_dat[j].label = new String[cat_dat[j].len];
 
             int k = 0;
             for (Classifications.Label label: cs.labels) {
-                cat_dat[j].confidence[k] = label.weight;
-                cat_dat[j].label[k] = label.label;
+                cd.addLabel(label.label, label.weight);
                 k++;
             }
-            
+
             ArrayList<Double> fs = this.features.get(fc);
-            if(fs == null || Features.isVisualFeature(fc)){
-            	cat_dat[j].num_features = 0;
-            	cat_dat[j].features = new double[0];
-            } else {
-	            cat_dat[j].num_features = fs.size();
-	            cat_dat[j].features = new double[cat_dat[j].num_features];
-	            for(int i = 0; i < cat_dat[j].num_features; i++){
-	            	cat_dat[j].features[i] = fs.get(i);
-	            }
+            if(!(fs == null || Features.isVisualFeature(fc))){
+                cd.setFeatures(fs);
             }
-           
+            cat_dat.add(cd);
             j++;
         }
         return cat_dat;
     }
-    
+
     public void setStates(String[][] newStates){
     	states.clear();
     	for(String[] state : newStates){
     		states.add(state);
     	}
     }
-    
-    public String[] getStates(){
+
+    public ArrayList<String> getStates(){
     	if(sourceSimObj == null || !(sourceSimObj instanceof ISimStateful)){
-    		return new String[0];
+    		return new ArrayList<String>();
     	}
-    	String[] stateVals = new String[states.size()];
+    	ArrayList<String> stateVals = new ArrayList<String>();
     	for(int i = 0; i < states.size(); i++){
-    		stateVals[i] = states.get(i)[0] + "=" + states.get(i)[1];
+    		stateVals.add(states.get(i)[0] + "=" + states.get(i)[1]);
     	}
         return stateVals;
     }

@@ -45,6 +45,11 @@ public class CategorizedData {
         }
     }
 
+    public void setFeatures(ArrayList<Double> fs)
+    {
+        features = fs;
+    }
+
     public CategoryType getCatType()
     {
         return catType;

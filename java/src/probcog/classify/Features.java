@@ -4,8 +4,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import probcog.lcmtypes.category_t;
+//import probcog.lcmtypes.category_t;
 import probcog.perception.*;
+import probcog.rosie.perception.CategorizedData.CategoryType;
 
 public class Features
 {
@@ -15,34 +16,34 @@ public class Features
 	}
 
 	// Mapping from a FeatureCategory to the category_t enum
-	private static HashMap<FeatureCategory, Integer> featureToLCMCat;
+	private static HashMap<FeatureCategory, CategoryType> featureToLCMCat;
 	static
     {
-		featureToLCMCat = new HashMap<FeatureCategory, Integer>();
-		featureToLCMCat.put(FeatureCategory.COLOR, category_t.CAT_COLOR);
-		featureToLCMCat.put(FeatureCategory.SHAPE, category_t.CAT_SHAPE);
-		featureToLCMCat.put(FeatureCategory.SIZE, category_t.CAT_SIZE);
-		featureToLCMCat.put(FeatureCategory.LOCATION, category_t.CAT_LOCATION);
-		featureToLCMCat.put(FeatureCategory.WEIGHT, category_t.CAT_WEIGHT);
-		featureToLCMCat.put(FeatureCategory.TEMPERATURE, category_t.CAT_TEMPERATURE);
+		featureToLCMCat = new HashMap<FeatureCategory, CategoryType>();
+		featureToLCMCat.put(FeatureCategory.COLOR, CategoryType.CAT_COLOR);
+		featureToLCMCat.put(FeatureCategory.SHAPE, CategoryType.CAT_SHAPE);
+		featureToLCMCat.put(FeatureCategory.SIZE, CategoryType.CAT_SIZE);
+		featureToLCMCat.put(FeatureCategory.LOCATION, CategoryType.CAT_LOCATION);
+		featureToLCMCat.put(FeatureCategory.WEIGHT, CategoryType.CAT_WEIGHT);
+		featureToLCMCat.put(FeatureCategory.TEMPERATURE, CategoryType.CAT_TEMPERATURE);
 	}
 
-	public static Integer getLCMCategory(FeatureCategory cat)
+	public static CategoryType getLCMCategory(FeatureCategory cat)
     {
 		return featureToLCMCat.get(cat);
 	}
 
 	// Mapping from the LCM category_t.cat enum to a FeatureCategory
-	private static HashMap<Integer, FeatureCategory> lcmToFeatureCat;
+	private static HashMap<CategoryType, FeatureCategory> lcmToFeatureCat;
 	static
     {
-		lcmToFeatureCat = new HashMap<Integer, FeatureCategory>();
-		lcmToFeatureCat.put(category_t.CAT_COLOR, FeatureCategory.COLOR);
-		lcmToFeatureCat.put(category_t.CAT_SHAPE, FeatureCategory.SHAPE);
-		lcmToFeatureCat.put(category_t.CAT_SIZE, FeatureCategory.SIZE);
-		lcmToFeatureCat.put(category_t.CAT_LOCATION, FeatureCategory.LOCATION);
-		lcmToFeatureCat.put(category_t.CAT_WEIGHT, FeatureCategory.WEIGHT);
-		lcmToFeatureCat.put(category_t.CAT_TEMPERATURE, FeatureCategory.TEMPERATURE);
+		lcmToFeatureCat = new HashMap<CategoryType, FeatureCategory>();
+		lcmToFeatureCat.put(CategoryType.CAT_COLOR, FeatureCategory.COLOR);
+		lcmToFeatureCat.put(CategoryType.CAT_SHAPE, FeatureCategory.SHAPE);
+		lcmToFeatureCat.put(CategoryType.CAT_SIZE, FeatureCategory.SIZE);
+		lcmToFeatureCat.put(CategoryType.CAT_LOCATION, FeatureCategory.LOCATION);
+		lcmToFeatureCat.put(CategoryType.CAT_WEIGHT, FeatureCategory.WEIGHT);
+		lcmToFeatureCat.put(CategoryType.CAT_TEMPERATURE, FeatureCategory.TEMPERATURE);
 	}
 
 	public static FeatureCategory getFeatureCategory(Integer lcmCat)
