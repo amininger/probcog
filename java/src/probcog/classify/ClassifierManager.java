@@ -282,7 +282,7 @@ public class ClassifierManager
     {
         synchronized (stateLock) {
             // Reset state
-            clearData();
+            //clearData();
 
             // Again, based on the premise than undo and redo work a certain way
             StructureReader ins = new TextStructureReader(new BufferedReader(new FileReader(filename)));

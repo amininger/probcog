@@ -42,7 +42,6 @@ public class PerceptionGUI extends JFrame
     //x private ArmStatus arm;
     //x private ArmController controller;
     private Tracker tracker;
-    private ClassifierManager classifierManager;
     private KinectView kinectView;
     private ProbCogSimulator simulator;
 
@@ -110,12 +109,6 @@ public class PerceptionGUI extends JFrame
 
         // Handle Options
         Config config = new ConfigFile(opts.getString("config"));
-        if (opts.getString("backup") != null) {
-            System.out.println("ATTN: Loading from autosave file");
-            classifierManager.readState(opts.getString("backup"));
-            System.out.println("ATTN: Successfully restored from autosave file");
-        }
-
 
         // Arm control and arm monitor for rendering purposes
         //x controller = new ArmController(config);//
@@ -143,6 +136,11 @@ public class PerceptionGUI extends JFrame
         	trackerSettings = new Tracker.TrackerSettings(false, true, true);
         }
         tracker = new Tracker(config, trackerSettings, simulator.getWorld());
+        if (opts.getString("backup") != null) {
+            System.out.println("ATTN: Loading from autosave file");
+            tracker.loadBackup(opts.getString("backup"));
+            System.out.println("ATTN: Successfully restored from autosave file");
+        }
 
         //x if (opts.getBoolean("arm")) {
         //     ArmDriver driver = new ArmDriver(config);
@@ -649,6 +647,8 @@ public class PerceptionGUI extends JFrame
             while (true) {
                 double dt = tic.toctic();
 
+                // x If anyone else is ever going to use this again...
+                // TODO FIX IT
                 drawFPS();
                 //if(drawPointClouds){
                 drawPointCloud();
@@ -666,10 +666,10 @@ public class PerceptionGUI extends JFrame
                 // 	drawBeliefObjects();
                 // }
                 // if(drawBeliefObjects){
-                // 	drawBeliefLabels(faceCamera);
+                drawBeliefLabels(faceCamera);
                 // }
                 // if(drawPropertyLabels){
-                // 	drawPerceptionLabels(faceCamera);
+                drawPerceptionLabels(faceCamera);
                 // }
 
                 drawSensors();

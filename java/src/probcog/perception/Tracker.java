@@ -564,6 +564,15 @@ public class Tracker
     
     //////////////////////////////////////////////////////////////
     // Methods for interacting with the classifierManager (used through guis)
+
+    public void loadBackup(String filename) {
+        try {
+            classyManager.readState(filename);
+        } catch (IOException e) {
+            System.out.println("ERROR: Problem reading backup file.");
+        }
+    }
+
     public void clearClassificationData()
     {
         classyManager.clearData();
