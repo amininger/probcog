@@ -154,33 +154,34 @@ public class WorldObject implements ISoarObject
     			p.updateProperty(unknownValues);
     		}
 
-    		stateProperties.updateProperties(new String[0]);
+            stateProperties.updateProperties(new ArrayList<String>());
     	} else {
     		// Just one object, update using that
     		ObjectData objectData = objDatas.get(0);
     		ArrayList<String> propsToDelete = new ArrayList<String>(perceptualProperties.keySet());
-        }
+
             //x UGH
-    	// 	for(CategorizedData category : objectData.getCatDat()){
-        //      	String propName = PerceptualProperty.getPropertyName(category.cat.cat);
-        //      	if(perceptualProperties.containsKey(propName)){
-        //      		propsToDelete.remove(propName);
-        //      		perceptualProperties.get(propName).updateProperty(category);
-        //      	} else {
-        //      		PerceptualProperty pp = new PerceptualProperty(category);
-        //      		perceptualProperties.put(propName, pp);
-        //      	}
-        //     }
+            for(CategorizedData category : objectData.getCatDat()) {
+                String propName = PerceptualProperty.getPropertyName(category.getCatType());
+                if(perceptualProperties.containsKey(propName)){
+                    propsToDelete.remove(propName);
+                    perceptualProperties.get(propName).updateProperty(category);
+                } else {
+                    PerceptualProperty pp = new PerceptualProperty(category);
+                    perceptualProperties.put(propName, pp);
+                }
+            }
 
-    	// 	for(String propName : propsToDelete){
-    	// 		PerceptualProperty pp = perceptualProperties.get(propName);
-    	// 		propsToRemove.add(pp);
-    	// 		perceptualProperties.remove(propName);
-    	// 	}
+            for(String propName : propsToDelete){
+                PerceptualProperty pp = perceptualProperties.get(propName);
+                propsToRemove.add(pp);
+                perceptualProperties.remove(propName);
+            }
 
-    	// 	stateProperties.updateProperties(objectData.state_values);
-    	// }
-    	// gotPropUpdate = true;
+            stateProperties.updateProperties(objectData.getStateValues());
+        }
+
+    	gotPropUpdate = true;
     }
 
     private void updateBbox(ArrayList<ObjectData> objDatas){
@@ -308,8 +309,9 @@ public class WorldObject implements ISoarObject
         	world.getAgent().SendSVSInput(svsCommands.toString());
         	svsCommands = new StringBuilder();
     	}
+    	world.getAgent().SendSVSInput(svsCommands.toString());
     }
-    
+
     public void removeFromWM(){
     	if(!added){
     		return;
@@ -318,7 +320,7 @@ public class WorldObject implements ISoarObject
     	StringBuilder svsCommands = new StringBuilder();
     	svsCommands.append(SVSCommands.delete(getHandleStr()));
     	world.getAgent().SendSVSInput(svsCommands.toString());
-    	
+
     	for(PerceptualProperty pp : perceptualProperties.values()){
     		pp.removeFromWM();
     	}

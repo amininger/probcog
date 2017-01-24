@@ -2,6 +2,7 @@ package probcog.rosie.perception;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ArrayList;
 
 import edu.umich.rosie.soar.ISoarObject;
 import edu.umich.rosie.soar.StringWME;
@@ -12,9 +13,9 @@ import sml.StringElement;
 public class StateProperties implements ISoarObject{
 	private HashMap<String, StringWME> stateProperties;
 	private HashSet<StringWME> wmesToRemove;
-	
+
 	private boolean gotUpdate = false;
-	
+
     public StateProperties(){
     	stateProperties = new HashMap<String, StringWME>();
     	wmesToRemove = new HashSet<StringWME>();
@@ -26,11 +27,11 @@ public class StateProperties implements ISoarObject{
     	} else {
     		return null;
     	}
-    }   
-    
-    public void updateProperties(String[] stateInfo){
+    }
+
+    public void updateProperties(ArrayList<String> stateInfo){
 		HashSet<String> propsToRemove = new HashSet<String>(stateProperties.keySet());
-		
+
     	for(String nameValPair : stateInfo){
     		String[] nameValSplit = nameValPair.split("=");
     		if(nameValSplit.length < 2){
@@ -38,7 +39,7 @@ public class StateProperties implements ISoarObject{
     		}
     		String propName = nameValSplit[0].toLowerCase();
     		String propVal = nameValSplit[1].toLowerCase();
-    		
+
     		if(stateProperties.containsKey(propName)){
     			propsToRemove.remove(propName);
     			stateProperties.get(propName).setValue(propVal);
@@ -46,14 +47,14 @@ public class StateProperties implements ISoarObject{
     			stateProperties.put(propName, new StringWME(propName, propVal));
     		}
     	}
-    	
+
     	for(String propName : propsToRemove){
     		wmesToRemove.add(stateProperties.get(propName));
     		stateProperties.remove(propName);
     	}
-    	gotUpdate = true;    
+    	gotUpdate = true;
     }
-    
+
     /**********************************************************
      * Methods for managing working memory
      **********************************************************/

@@ -210,7 +210,7 @@ public class WorldModel implements ISoarObject
         }
         outgoingObs.append("]}");
 
-        System.out.println(outgoingObs.toString());
+        //System.out.println(outgoingObs.toString());
         Message m = new Message(outgoingObs.toString());
         soarObjs.publish(m);
     }
@@ -270,12 +270,12 @@ public class WorldModel implements ISoarObject
     }
 
     public CategorizedData parseFlag(String flagName, String flagValue){
-        Integer catId = PerceptualProperty.getPropertyID(flagName);
+        CategorizedData.CategoryType catId = PerceptualProperty.getPropertyID(flagName);
     	if(catId == null){
     		return null;
     	}
 
-     	CategorizedData catDat = new CategorizedData(CategorizedData.CategoryType.values()[catId]);
+     	CategorizedData catDat = new CategorizedData(catId);
         catDat.addLabel(flagValue, 1);
     	return catDat;
     }

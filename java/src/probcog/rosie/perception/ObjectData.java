@@ -325,6 +325,11 @@ public class ObjectData {
         return stateValues.size();
     }
 
+    public ArrayList<String> getStateValues()
+    {
+        return stateValues;
+    }
+
     public ArrayList<CategorizedData> getCatDat()
     {
         return catDat;
