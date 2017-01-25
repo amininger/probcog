@@ -70,6 +70,16 @@ public class CategorizedData {
         return label;
     }
 
+    public String getLabel(int i)
+    {
+        return label.get(i);
+    }
+
+    public double getConfidence(int i)
+    {
+        return confidence.get(i);
+    }
+
     public void addLabel(String l, double conf)
     {
         label.add(l);

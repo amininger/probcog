@@ -38,8 +38,9 @@ public class ObjectData {
 
         pos = o.getPose();
 
-        bboxPos = o.getBoundingBox().xyzrpy;
-    	bboxDim = o.getBoundingBox().lenxyz;
+        BoundingBox bbox = o.getBoundingBox();
+        bboxPos = bbox.xyzrpy;
+    	bboxDim = bbox.lenxyz;
 
         catDat = o.getCategoryData();
     	stateValues = o.getStates();
@@ -231,7 +232,7 @@ public class ObjectData {
         double[] tmpRotB = new double[]{bboxPos[3], bboxPos[4], bboxPos[5]};
         double[] qB = LinAlg.rollPitchYawToQuat(tmpRotB);
 
-        curObj.append(jsonItem("pos",
+        curObj.append(jsonItem("bbox_xyzrpy",
                                jsonItem("translation",
                                         jsonVal("x", bboxPos[0]) + ", " +
                                         jsonVal("y", bboxPos[1]) + ", " +
@@ -333,6 +334,11 @@ public class ObjectData {
     public ArrayList<CategorizedData> getCatDat()
     {
         return catDat;
+    }
+
+    public CategorizedData getCatDat(int i)
+    {
+        return catDat.get(i);
     }
 
     public void setCatDat(ArrayList<CategorizedData> na)

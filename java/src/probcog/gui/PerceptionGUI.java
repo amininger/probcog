@@ -664,7 +664,7 @@ public class PerceptionGUI extends JFrame
                 //}
                 double[][] faceCamera = calcFaceCameraMatrix();
                 // if(drawBeliefObjects){
-                // 	drawBeliefObjects();
+                drawBeliefObjects();
                 // }
                 // if(drawBeliefObjects){
                 drawBeliefLabels(faceCamera);

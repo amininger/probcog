@@ -94,6 +94,8 @@ public class Tracker
         stateLock = new Object();
         soarLock = new Object();
 
+        soarObjects = new HashMap<Integer, Obj>();
+
         ros = new Ros();
         ros.connect();
 
@@ -112,7 +114,35 @@ public class Tracker
         soar.subscribe(new TopicCallback() {
                 public void handleMessage(Message message) {
                     JsonObject jobj = message.toJsonObject();
-                    //System.out.println("Received SoarObject msg: " + jobj.toString());
+
+                    synchronized(soarLock) {
+                        soarObjects = new HashMap<Integer, Obj>();
+                        JsonArray objArr = jobj.getJsonArray("objects");
+
+                        for(int i = 0; i< objArr.size(); i++) {
+                            ObjectData odt = new ObjectData(objArr.getJsonObject(i));
+                            Obj sObj = new Obj(odt.getID());
+                            double[] xyzrpy = odt.getBBoxPos();
+                            sObj.setCentroid(new double[]{xyzrpy[0],
+                                                          xyzrpy[1],
+                                                          xyzrpy[2]});
+                            sObj.setBoundingBox(new BoundingBox(odt.getBBoxDim(),
+                                                                odt.getBBoxPos()));
+
+                            for(int j=0; j<odt.numCat(); j++) {
+                                CategorizedData cat = odt.getCatDat(j);
+                                FeatureCategory fc =
+                                    Features.getFeatureCategory(cat.getCatType());
+                                Classifications cs = new Classifications();
+                                for(int k=0; k<cat.numLabels(); k++)
+                                    cs.add(cat.getLabel(k),
+                                           cat.getConfidence(k));
+
+                                sObj.addClassifications(fc, cs);
+                            }
+                            soarObjects.put(sObj.getID(), sObj);
+                        }
+                    }
                 }
             });
 
@@ -256,31 +286,9 @@ public class Tracker
      **/
     public HashMap<Integer, Obj> getSoarObjects()
     {
-        HashMap<Integer, Obj> soarObjects = new HashMap<Integer, Obj>();
-
-        //x synchronized(soarLock) {
-        //     if(soar_lcm != null) {
-        //         for(int i=0; i<soar_lcm.num_objects; i++) {
-        //             object_data_t odt = soar_lcm.objects[i];
-        //             Obj sObj = new Obj(odt.id);
-        //             double[] xyzrpy = odt.pos;
-        //             sObj.setCentroid(new double[]{xyzrpy[0], xyzrpy[1], xyzrpy[2]});
-        //             sObj.setBoundingBox(new BoundingBox(odt.bbox_dim, odt.bbox_xyzrpy));
-
-        //             for(int j=0; j<odt.num_cat; j++) {
-        //                 categorized_data_t cat = odt.cat_dat[j];
-        //                 FeatureCategory fc = Features.getFeatureCategory(cat.cat.cat);
-        //                 Classifications cs = new Classifications();
-        //                 for(int k=0; k<cat.len; k++)
-        //                     cs.add(cat.label[k], cat.confidence[k]);
-
-        //                 sObj.addClassifications(fc, cs);
-        //             }
-        //             soarObjects.put(sObj.getID(), sObj);
-        //         }
-        //     }
-        // }
-        return soarObjects;
+        synchronized(soarLock) {
+            return soarObjects;
+        }
     }
 
     public void classifyObjects(HashMap<Integer, Obj> objects){
@@ -334,14 +342,14 @@ public class Tracker
     // This returns a mapping from objects to ids
     //   for every object given to the function
     private HashMap<Obj, Integer> assignObjectIds(ArrayList<Obj> objs){
-    	HashMap<Integer, Obj> soarObjects = getSoarObjects();
+        HashMap<Integer, Obj> soarObjects = getSoarObjects();
     	HashMap<Integer, Obj> prevObjects = new HashMap<Integer, Obj>();
     	synchronized(stateLock){
     		for(Obj obj : worldState.values()){
     			prevObjects.put(obj.getID(), obj);
     		}
     	}
-    	
+
     	HashMap<Obj, Integer> idMapping = new HashMap<Obj, Integer>();
     	for(Obj obj : objs){
         	idMapping.put(obj, Obj.NULL_ID);
@@ -352,14 +360,14 @@ public class Tracker
 
         // Generate a list of soar objects that haven't been matched yet
         HashMap<Integer, Obj> unmatchedSoarObjects = (HashMap<Integer, Obj>)soarObjects.clone();
-        
+
         // Generate a list of segmented objects that haven't been matched yet
         ArrayList<Obj> unmatchedObjects = new ArrayList<Obj>();
 
         for(Map.Entry<Obj, Integer> e : idMapping.entrySet()){
         	// We check each matched object that also matches a soar object
         	// If there is a conflict (the new object doens't overlap the soar object)
-        	//   then we throw the match away. 
+        	//   then we throw the match away.
         	Obj obj = e.getKey();
         	Integer objId = e.getValue();
         	Obj soarObj = soarObjects.get(objId);
@@ -376,21 +384,21 @@ public class Tracker
         		unmatchedObjects.add(e.getKey());
         	}
         }
-        
+
         // We match any objects not already matched to soar objects against
         // all the soar objects just to see if there is a match as well
-        getBestMapping(idMapping, unmatchedObjects, unmatchedSoarObjects);	
-        
+        getBestMapping(idMapping, unmatchedObjects, unmatchedSoarObjects);
+
         // Any objects that still haven't been matched are given a newly generated id
         for(Map.Entry<Obj, Integer> e : idMapping.entrySet()){
         	if(e.getValue() == Obj.NULL_ID){
         		e.setValue(Obj.nextID());
         	}
         }
-        
+
     	return idMapping;
-    } 
-        
+    }
+
     private int matchObject(Obj obj, HashMap<Integer, Obj> candidates){
         // Iterate through our existing objects. If there is an object
         // sharing any single label within a fixed distance of an existing
@@ -398,11 +406,11 @@ public class Tracker
         // been taken by another object, take a new ID
         double thresh = 0.02;
         double overlapThresh = .04;
-        
+
     	double objVol = obj.getBoundingBox().volume();
     	double maxOverlapped = -1;
         int maxID = -1;
-        
+
        // double minDist = Double.MAX_VALUE;
         for (Obj cand: candidates.values()) {
             double candVol = cand.getBoundingBox().volume();
@@ -424,10 +432,10 @@ public class Tracker
         }
         return maxID;
     }
-    
+
     private void getBestMapping(HashMap<Obj, Integer> curMapping, ArrayList<Obj> objList, HashMap<Integer, Obj> candidates){
     	double OVERLAP_THRESH = .04;
-    	
+
     	boolean[] objAssigned = new boolean[objList.size()];
     	int i = 0;
     	for(Obj obj : objList){

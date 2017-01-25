@@ -46,11 +46,11 @@ public class Features
 		lcmToFeatureCat.put(CategoryType.CAT_TEMPERATURE, FeatureCategory.TEMPERATURE);
 	}
 
-	public static FeatureCategory getFeatureCategory(Integer lcmCat)
+	public static FeatureCategory getFeatureCategory(CategoryType lcmCat)
     {
 		return lcmToFeatureCat.get(lcmCat);
 	}
-	
+
 	// Mapping from strings to FeatureCategory
 	private static HashMap<String, FeatureCategory> nameToFeatureCat;
 	static{
