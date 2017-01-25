@@ -658,7 +658,7 @@ public class PerceptionGUI extends JFrame
                 	//drawObjectBoxes();
                     //}
 
-                // drawSelection(dt);
+                drawSelection(dt);
                 // if(drawPerceptionObjects){
                 drawPerceptionObjects();
                 //}
@@ -770,8 +770,8 @@ public class PerceptionGUI extends JFrame
 	    	if(worldState.containsKey(selectedId)){
 	    		if(animation == null){
 	        		Obj selectedObject = worldState.get(selectedId);
-	                //double[] xyz = LinAlg.resize(LinAlg.matrixToXyzrpy(selectedObject.getPoseMatrix()), 3);
-	               // double br = Math.abs(selectedObject.getShape().getBoundingRadius());
+	                double[] xyz = LinAlg.resize(LinAlg.matrixToXyzrpy(selectedObject.getPoseMatrix()), 3);
+                    double br = Math.abs(selectedObject.getShape().getBoundingRadius());
 	                //animation = new SelectionAnimation(xyz, br*1.2);
 	                animation = new SelectionAnimation(selectedObject);
 	    		}

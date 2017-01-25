@@ -112,7 +112,7 @@ public class ArmPerceptionConnector extends AgentConnector {
                 public void handleMessage(Message message) {
                     JsonObject jobj = message.toJsonObject();
                     pointedHandle = jobj.getInt("click_id");
-                    receiveAckTime(jobj.getInt("soar_utime"));
+                    //receiveAckTime(jobj.getInt("soar_utime"));
 
                     world.newObservation(jobj);
                 }
@@ -159,6 +159,7 @@ public class ArmPerceptionConnector extends AgentConnector {
     		}
             outgoingLabels.append("]}");
 
+            //System.out.println(outgoingLabels.toString());
             Message m = new Message(outgoingLabels.toString());
             training.publish(m);
     	}
