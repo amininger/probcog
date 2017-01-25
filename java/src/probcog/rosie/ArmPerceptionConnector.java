@@ -46,12 +46,14 @@ public class ArmPerceptionConnector extends AgentConnector {
 	private int pointedHandle = -1;
 	private int currentTimer = -10;
 
-    //x private HashMap<training_label_t, Identifier> outstandingTraining;
+    private HashMap<TrainingLabel, Identifier> outstandingTraining;
 
     protected WorldModel world;
     private String classifiersFile;
 
-    Ros ros;
+    private Ros ros;
+    private Topic perceptionComm;
+    private Topic training;
 
     public ArmPerceptionConnector(SoarAgent soarAgent, Properties props)
     {
@@ -59,7 +61,7 @@ public class ArmPerceptionConnector extends AgentConnector {
 
     	this.classifiersFile = props.getProperty("classifiers-file", "default");
 
-    	//x outstandingTraining = new HashMap<training_label_t, Identifier>();
+    	outstandingTraining = new HashMap<TrainingLabel, Identifier>();
 
         world = new WorldModel(soarAgent);
 
@@ -77,6 +79,14 @@ public class ArmPerceptionConnector extends AgentConnector {
         else {
             System.out.println("ArmPerceptionConnector NOT CONNECTED TO ROSBRIDGE");
         }
+        // perceptionComm = new Topic(ros,
+        //                            "/rosie_soar_obj",
+        //                            "rosie_msgs/SoarObjects",
+        //                            500);
+        training = new Topic(ros,
+                             "/rosie_training",
+                             "rosie_msgs/TrainingLabel",
+                             500);
       }
 
     public WorldModel getWorld(){
@@ -102,7 +112,7 @@ public class ArmPerceptionConnector extends AgentConnector {
                 public void handleMessage(Message message) {
                     JsonObject jobj = message.toJsonObject();
                     pointedHandle = jobj.getInt("click_id");
-                    //receiveAckTime(jobj.getInt("soar_utime"));
+                    receiveAckTime(jobj.getInt("soar_utime"));
 
                     world.newObservation(jobj);
                 }
@@ -121,52 +131,53 @@ public class ArmPerceptionConnector extends AgentConnector {
      * handling training labels
      *************************************************/
 
-    private void queueTrainingLabel(Integer objId, Integer cat, String label, Identifier id){
-        return;
-    	// training_label_t newLabel = new training_label_t();
-    	// newLabel.utime = TimeUtil.utime();
-    	// newLabel.id = objId;
-    	// newLabel.cat = new category_t();
-    	// newLabel.cat.cat = cat;
-    	// newLabel.label = label;
-    	//x synchronized(outstandingTraining){
-    	// 	outstandingTraining.put(newLabel, id);
-    	// }
+    private void queueTrainingLabel(Integer objId,
+                                    CategorizedData.CategoryType cat,
+                                    String label, Identifier id){
+    	TrainingLabel newLabel = new TrainingLabel(objId, label, cat);
+    	synchronized(outstandingTraining){
+    		outstandingTraining.put(newLabel, id);
+    	}
     }
 
     private void sendTrainingLabels(){
-        return;
-    	//x synchronized(outstandingTraining){
-    	// 	if(outstandingTraining.size() == 0){
-    	// 		return;
-    	// 	}
-    	// 	training_data_t data = new training_data_t();
-    	// 	data.utime = TimeUtil.utime();
-    	// 	data.num_labels = outstandingTraining.size();
-    	// 	data.labels = new training_label_t[data.num_labels];
-    	// 	int i = 0;
-    	// 	for(training_label_t label : outstandingTraining.keySet()){
-    	// 		data.labels[i++] = label;
-    	// 	}
-        //     // ROSBRIDGE
-    	// 	//x lcm.publish("TRAINING_DATA", data);
-    	// }
+    	synchronized(outstandingTraining){
+    		if(outstandingTraining.size() == 0){
+    			return;
+    		}
+            StringBuilder outgoingLabels = new StringBuilder();
+            outgoingLabels.append("{");
+
+            long utime = TimeUtil.utime();
+            outgoingLabels.append("\"header\": {\"stamp\": " + utime + "}, ");
+            outgoingLabels.append("\"labels\": [");
+
+            int i = 0;
+    		for(TrainingLabel label : outstandingTraining.keySet()){
+                if (i > 0) outgoingLabels.append(",");
+                outgoingLabels.append(label.toJsonString());
+    		}
+            outgoingLabels.append("]}");
+
+            Message m = new Message(outgoingLabels.toString());
+            training.publish(m);
+    	}
     }
 
-    // private void receiveAckTime(long time){
-    // 	synchronized(outstandingTraining){
-	//     	Set<training_label_t> finishedLabels = new HashSet<training_label_t>();
-	//     	for(Map.Entry<training_label_t, Identifier> e : outstandingTraining.entrySet()){
-	//     		if(e.getKey().utime <= time){
-	//     			finishedLabels.add(e.getKey());
-	//     			e.getValue().CreateStringWME("status", "complete");
-	//     		}
-	//     	}
-	//     	for(training_label_t label : finishedLabels){
-	//     		outstandingTraining.remove(label);
-	//     	}
-    // 	}
-    // }
+    private void receiveAckTime(long time){
+    	synchronized(outstandingTraining){
+	    	Set<TrainingLabel> finishedLabels = new HashSet<TrainingLabel>();
+	    	for(Map.Entry<TrainingLabel, Identifier> e : outstandingTraining.entrySet()){
+	    		if(e.getKey().getTime() <= time){
+	    			finishedLabels.add(e.getKey());
+	    			e.getValue().CreateStringWME("status", "complete");
+	    		}
+	    	}
+	    	for(TrainingLabel label : finishedLabels){
+	    		outstandingTraining.remove(label);
+	    	}
+    	}
+    }
 
     /*************************************************
      * runEventHandler
@@ -208,7 +219,7 @@ public class ArmPerceptionConnector extends AgentConnector {
     			"Error (send-training-label): No ^label attribute");
     	String propHandle = SoarUtil.getValueOfAttribute(id, "property-handle",
     			"Error (send-training-label): No ^property-handle attribute");
-    	Integer catNum = PerceptualProperty.getPropertyID(propHandle);
+    	CategorizedData.CategoryType catNum = PerceptualProperty.getPropertyID(propHandle);
     	if(catNum == null){
     		id.CreateStringWME("status", "error");
     		System.err.println("ArmPerceptionConnector::processSendTrainingLabelCommand - bad category");
