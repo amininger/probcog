@@ -289,7 +289,7 @@ public class PerceptionGUI extends JFrame
     //                 	// already seen this label, don't train a second time
     //                 	continue;
     //                 }
-                    
+
     //                 Obj objTrain;
     //                 synchronized(tracker.stateLock){
     //                     objTrain = tracker.getObject(tl.id);

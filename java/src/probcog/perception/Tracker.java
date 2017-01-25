@@ -702,6 +702,7 @@ public class Tracker
     	}
     }
 
+    // Needed for ArmActuationConnector!
     // Given a command from soar to set the state for an object,
     //   sets the state if a valid command
     //x private void processSetStateCommand(set_state_command_t setState){

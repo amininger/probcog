@@ -89,7 +89,9 @@ public class RosieGUI extends JFrame
         menuBar.add(startStopButton);
 
     	menuBar.add(new AgentMenu(soarAgent));
-    	menuBar.add(EnvironmentMenu.createMenu());
+        // This menu bar only has a reset button, which doesn't really
+        // work if your perceptual data is coming from elsewhere...
+    	//menuBar.add(EnvironmentMenu.createMenu());
 
     	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
