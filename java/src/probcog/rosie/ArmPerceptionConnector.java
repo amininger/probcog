@@ -79,10 +79,10 @@ public class ArmPerceptionConnector extends AgentConnector {
         else {
             System.out.println("ArmPerceptionConnector NOT CONNECTED TO ROSBRIDGE");
         }
-        // perceptionComm = new Topic(ros,
-        //                            "/rosie_soar_obj",
-        //                            "rosie_msgs/SoarObjects",
-        //                            500);
+        perceptionComm = new Topic(ros,
+                                   "/rosie_perception_commands",
+                                   "std_msgs/String",
+                                   500);
         training = new Topic(ros,
                              "/rosie_training",
                              "rosie_msgs/TrainingLabel",
@@ -255,12 +255,10 @@ public class ArmPerceptionConnector extends AgentConnector {
     	JMenuItem clearDataButton = new JMenuItem("Clear Classifier Data");
         clearDataButton.addActionListener(new ActionListener(){
         	public void actionPerformed(ActionEvent e){
-        		// perception_command_t cmd = new perception_command_t();
-        		// cmd.utime = TimeUtil.utime();
-        		// cmd.command = "CLEAR_CLASSIFIERS";
-                // LCM.getSingleton().publish("PERCEPTION_COMMAND", cmd);
-                System.out.println("No LCM");
-        	}
+        		String commandmsg = "{\"data\": \"CLEAR_CLASSIFIERS\"}";
+                Message m = new Message(commandmsg);
+                perceptionComm.publish(m);
+            }
         });
 
         perceptionMenu.add(clearDataButton);
@@ -268,11 +266,10 @@ public class ArmPerceptionConnector extends AgentConnector {
         JMenuItem loadDataButton = new JMenuItem("Load Classifier Data");
         loadDataButton.addActionListener(new ActionListener(){
         	public void actionPerformed(ActionEvent e){
-        		// perception_command_t cmd = new perception_command_t();
-        		// cmd.utime = TimeUtil.utime();
-        		// cmd.command = "LOAD_CLASSIFIERS=" + classifiersFile;
-                // LCM.getSingleton().publish("PERCEPTION_COMMAND", cmd);
-                System.out.println("No LCM");
+        		String commandmsg = "{\"data\": \"LOAD_CLASSIFIERS=" +
+                    classifiersFile + "\"}";
+                Message m = new Message(commandmsg);
+                perceptionComm.publish(m);
         	}
         });
 
@@ -281,11 +278,10 @@ public class ArmPerceptionConnector extends AgentConnector {
         JMenuItem saveDataButton = new JMenuItem("Save Classifier Data");
         saveDataButton.addActionListener(new ActionListener(){
         	public void actionPerformed(ActionEvent e){
-        		// perception_command_t cmd = new perception_command_t();
-        		// cmd.utime = TimeUtil.utime();
-        		// cmd.command = "SAVE_CLASSIFIERS=" + classifiersFile;
-                // LCM.getSingleton().publish("PERCEPTION_COMMAND", cmd);
-                System.out.println("No LCM");
+        		String commandmsg = "{\"data\": \"SAVE_CLASSIFIERS=" +
+                    classifiersFile + "\"}";
+                Message m = new Message(commandmsg);
+                perceptionComm.publish(m);
         	}
         });
 
@@ -294,32 +290,30 @@ public class ArmPerceptionConnector extends AgentConnector {
         JMenuItem loadDataFileButton = new JMenuItem("Load Data from File");
         loadDataFileButton.addActionListener(new ActionListener(){
         	public void actionPerformed(ActionEvent e){
-        		// String filename = JOptionPane.showInputDialog(null,
-            	// 		  "Enter the filename to load from",
-            	// 		  "Load Classifier Data From File",
-            	// 		  JOptionPane.QUESTION_MESSAGE);
-        		// perception_command_t cmd = new perception_command_t();
-        		// cmd.utime = TimeUtil.utime();
-        		// cmd.command = "LOAD_CLASSIFIERS=" + filename;
-                // LCM.getSingleton().publish("PERCEPTION_COMMAND", cmd);
-                System.out.println("No LCM");
+        		String filename = JOptionPane.showInputDialog(null,
+            			  "Enter the filename to load from",
+            			  "Load Classifier Data From File",
+            			  JOptionPane.QUESTION_MESSAGE);
+        		String commandmsg = "{\"data\": \"LOAD_CLASSIFIERS=" +
+                    filename + "\"}";
+                Message m = new Message(commandmsg);
+                perceptionComm.publish(m);
         	}
         });
 
         perceptionMenu.add(loadDataFileButton);
 
-        JMenuItem saveDataFileButton = new JMenuItem("Save Data from File");
+        JMenuItem saveDataFileButton = new JMenuItem("Save Data to File");
         saveDataFileButton.addActionListener(new ActionListener(){
         	public void actionPerformed(ActionEvent e){
-        		// String filename = JOptionPane.showInputDialog(null,
-          		// 	  "Enter the filename to save to",
-          		// 	  "Save Classifier Data To File",
-          		// 	  JOptionPane.QUESTION_MESSAGE);
-        		// perception_command_t cmd = new perception_command_t();
-        		// cmd.utime = TimeUtil.utime();
-        		// cmd.command = "SAVE_CLASSIFIERS=" + filename;
-                // LCM.getSingleton().publish("PERCEPTION_COMMAND", cmd);
-                System.out.println("No LCM");
+        		String filename = JOptionPane.showInputDialog(null,
+          			  "Enter the filename to save to",
+          			  "Save Classifier Data To File",
+          			  JOptionPane.QUESTION_MESSAGE);
+        		String commandmsg = "{\"data\": \"SAVE_CLASSIFIERS=" +
+                    filename + "\"}";
+                Message m = new Message(commandmsg);
+                perceptionComm.publish(m);
         	}
         });
 

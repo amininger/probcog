@@ -116,6 +116,18 @@ public class Tracker
                 }
             });
 
+        Topic pcs = new Topic(ros,
+                              "/rosie_perception_commands",
+                              "std_msgs/String");
+        System.out.println("Subscribing to Perception commands!");
+        pcs.subscribe(new TopicCallback() {
+                public void handleMessage(Message message) {
+                    JsonObject jobj = message.toJsonObject();
+                    String command = jobj.getString("data");
+                    handlePerceptionCommand(command);
+                }
+            });
+
         //x new ListenerThread().start();
         new TrackingThread().start();
     }
@@ -644,32 +656,32 @@ public class Tracker
         return objArray.toString();
     }
 
-    //x private void handlePerceptionCommand(perception_command_t command){
-    // 	if(command.command.toUpperCase().contains("SAVE_CLASSIFIERS")){
-    // 		try {
-    // 			String[] args = command.command.split("=");
-    // 			if(args.length > 1){
-    // 				String filename = args[1] + ".cls";
-    // 				classyManager.writeState(filename);
-    // 			}
-	// 		} catch (IOException e) {
-	// 			e.printStackTrace();
-	// 		}
-    // 	} else if(command.command.toUpperCase().contains("LOAD_CLASSIFIERS")){
-    // 		try {
-    // 			String[] args = command.command.split("=");
-    // 			if(args.length > 1){
-    // 				String filename = args[1] + ".cls";
-    // 				classyManager.readState(filename);
-    // 			}
-	// 		} catch (IOException e) {
-	// 			e.printStackTrace();
-	// 		}
-    // 	} else if(command.command.toUpperCase().equals("CLEAR_CLASSIFIERS")){
-    // 		classyManager.clearData();
-    // 	}
+    private void handlePerceptionCommand(String command){
+    	if(command.toUpperCase().contains("SAVE_CLASSIFIERS")){
+    		try {
+    			String[] args = command.split("=");
+    			if(args.length > 1){
+    				String filename = args[1];
+    				classyManager.writeState(filename);
+    			}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	} else if(command.toUpperCase().contains("LOAD_CLASSIFIERS")){
+    		try {
+    			String[] args = command.split("=");
+    			if(args.length > 1){
+    				String filename = args[1];
+    				classyManager.readState(filename);
+    			}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	} else if(command.toUpperCase().equals("CLEAR_CLASSIFIERS")){
+    		classyManager.clearData();
+    	}
 
-    // }
+    }
 
     // === Methods for interacting with the sensor(s) attached to the system === //
     // XXX This is kind of weird
