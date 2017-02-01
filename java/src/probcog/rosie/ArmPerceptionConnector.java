@@ -197,7 +197,7 @@ public class ArmPerceptionConnector extends AgentConnector {
         }
 
         // Update pointed object
-        SoarUtil.updateIntWME(inputLink, "pointed-object", world.getSoarHandle(pointedHandle));
+        SoarUtil.updateStringWME(inputLink, "pointed-object", String.valueOf(world.getSoarHandle(pointedHandle)));
     }
 
     /*************************************************
@@ -220,6 +220,7 @@ public class ArmPerceptionConnector extends AgentConnector {
     			"Error (send-training-label): No ^label attribute");
     	String propHandle = SoarUtil.getValueOfAttribute(id, "property-handle",
     			"Error (send-training-label): No ^property-handle attribute");
+
     	CategorizedData.CategoryType catNum = PerceptualProperty.getPropertyID(propHandle);
     	if(catNum == null){
     		id.CreateStringWME("status", "error");

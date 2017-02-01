@@ -1,6 +1,7 @@
 package probcog.rosie.perception;
 
 import java.util.*;
+import java.util.HashMap;
 
 import edu.umich.rosie.soar.FloatWME;
 import edu.umich.rosie.soar.ISoarObject;
@@ -14,7 +15,8 @@ import sml.*;
  * @author mininger
  *
  */
-public class PerceptualProperty implements ISoarObject
+<<<<<<< HEAD:java/src/probcog/rosie/perception/PerceptualProperty.java
+public class ObjectProperty implements ISoarObject
 {
 	protected static HashMap<CategorizedData.CategoryType, String> propertyNames = null;
 
@@ -75,7 +77,7 @@ public class PerceptualProperty implements ISoarObject
 
     private boolean gotUpdate = false;
 
-    public PerceptualProperty(CategorizedData catDat){
+    public ObjectProperty(CategorizedData catDat){
     	name = getPropertyName(catDat.getCatType());
     	type = getPropertyType(catDat.getCatType());
     	values = new HashMap<String, FloatWME>();
@@ -84,6 +86,15 @@ public class PerceptualProperty implements ISoarObject
     		featureVal.setValue(catDat.getFeatures().get(0));
     	}
     	wmesToRemove = new HashSet<FloatWME>();
+    }
+
+    public ObjectProperty(String propName, String type, String propValue){
+    	this.name = propName;
+    	this.type = type;
+    	this.values = new HashMap<String, FloatWME>();
+    	this.values.put(propValue, new FloatWME(propValue, 1.0));
+    	this.featureVal = new FloatWME("feature-val", 0.0);
+    	this.wmesToRemove = new HashSet<FloatWME>();
     }
 
     public String getPropertyName(){
@@ -110,6 +121,19 @@ public class PerceptualProperty implements ISoarObject
     		values.remove(valueName);
     	}
     	gotUpdate = true;
+    }
+
+    public synchronized void updateProperty(String newValue){
+    	String curValue = null;
+    	// Should only be 1 entry in the map
+    	for(Map.Entry<String, FloatWME> e : this.values.entrySet()){
+    		curValue = e.getKey();
+    	}
+    	if (!curValue.equals(newValue)){
+    		wmesToRemove.add(this.values.get(curValue));
+    		this.values.remove(curValue);
+    		this.values.put(newValue, new FloatWME(newValue, 1.0));
+    	}
     }
 
     public void updateProperty(CategorizedData catDat){

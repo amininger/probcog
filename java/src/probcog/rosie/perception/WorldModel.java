@@ -92,7 +92,6 @@ public class WorldModel implements ISoarObject
     	return handle;
     }
 
-
     public synchronized void linkObjects(Set<String> sourceHandles, String destHandle){
     	Integer dHandle = Integer.parseInt(destHandle);
 
@@ -115,7 +114,7 @@ public class WorldModel implements ISoarObject
         		objData.addAll(dObj.getLastDatas());
     			dObj.update(objData);
     		} else {
-    			WorldObject object = new WorldObject(this, dHandle, objData);
+    			WorldObject object = new WorldObject(this, String.valueOf(dHandle), objData);
     			objects.put(dHandle, object);
     		}
         }
@@ -164,7 +163,7 @@ public class WorldModel implements ISoarObject
     		Integer handle = e.getKey();
     		WorldObject object = objects.get(handle);
     		if(object == null){
-    			object = new WorldObject(this, handle, e.getValue());
+    			object = new WorldObject(this, String.valueOf(handle), e.getValue());
     			objects.put(handle, object);
     		} else {
     			staleObjects.remove(handle);
@@ -192,7 +191,10 @@ public class WorldModel implements ISoarObject
     			continue;
     		}
     		String obj = soarAgent.getAgent().SVSQuery("obj-info " + beliefId);
-    		objDatas.add(parseObject(obj));
+    		object_data_t objData = parseObject(obj);
+    		if(objData != null && objData.id != -1){
+    			objDatas.add(parseObject(obj));
+    		}
     	}
 
         StringBuilder outgoingObs = new StringBuilder();
@@ -226,10 +228,15 @@ public class WorldModel implements ISoarObject
     			// Parse ID: Should be in format bel-#
     			String beliefId = fields[i++];
     			Integer index = beliefId.indexOf("bel-");
-    			if(index == 0){
-    				objData.setID(Integer.parseInt(beliefId.substring(4)));
-    			} else {
-    				objData.setID(Integer.parseInt(beliefId));
+
+    			try{
+					if(index == 0){
+                        objData.setID(Integer.parseInt(beliefId.substring(4)));
+					} else {
+                        objData.setID(Integer.parseInt(beliefId));
+					}
+    			} catch (NumberFormatException e){
+    				objData.id = -1;
     			}
     		} else if (field.equals("p") || field.equals("r") || field.equals("s")){
     			// Parse position, rotation, or scaling

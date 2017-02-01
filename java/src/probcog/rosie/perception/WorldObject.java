@@ -24,7 +24,7 @@ import april.util.TimeUtil;
 public class WorldObject implements ISoarObject
 {
     // Handle of the object
-    protected int handle;
+    protected String handle;
 
     // Information about the bounding box
     // Center of the bounding box (XYZ)
@@ -40,11 +40,10 @@ public class WorldObject implements ISoarObject
 
     protected ArrayList<ObjectData> lastData;
 
-    protected Map<String, PerceptualProperty> perceptualProperties;
+    protected Map<String, ObjectProperty> perceptualProperties;
+    protected Map<String, ObjectProperty> stateProperties;
 
-    protected HashSet<PerceptualProperty> propsToRemove;
-
-    protected StateProperties stateProperties;
+    protected HashSet<ObjectProperty> propsToRemove;
 
     private WorldModel world;
 
@@ -52,16 +51,16 @@ public class WorldObject implements ISoarObject
     private boolean gotBboxUpdate = false;
     private boolean gotPoseUpdate = false;
 
-    public WorldObject(WorldModel world, Integer handle, ArrayList<ObjectData> objDatas){
+    public WorldObject(WorldModel world, String handle, ArrayList<ObjectData> objDatas){
     	this.world = world;
         this.handle = handle;
         bboxPos = new double[3];
         bboxRot = new double[3];
         bboxSize = new double[3];
         centroid = new double[3];
-        perceptualProperties = new HashMap<String, PerceptualProperty>();
-        propsToRemove = new HashSet<PerceptualProperty>();
-        stateProperties = new StateProperties();
+        perceptualProperties = new HashMap<String, ObjectProperty>();
+        stateProperties = new HashMap<String, ObjectProperty>();
+        propsToRemove = new HashSet<ObjectProperty>();
 
         lastData = objDatas;
         updateBbox(objDatas);
@@ -70,19 +69,21 @@ public class WorldObject implements ISoarObject
 
     // Handle: Get
     public int getHandle(){
-        return handle;
+        return (new Integer(handle));
     }
 
     public String getHandleStr(){
-    	return (new Integer(handle)).toString();
+    	return handle;
     }
 
     public Integer getPerceptionId(){
+        Integer pid = new Integer(handle);
     	for(ObjectData objDat : lastData){
-    		if(objDat.getID() == handle){
-    			return handle;
+    		if(objDat.getID() == pid){
+    			return pid;
     		}
     	}
+
     	if(lastData.size() > 0){
     		return lastData.get(0).getID();
     	}
@@ -150,17 +151,18 @@ public class WorldObject implements ISoarObject
     		HashMap<String, Double> unknownValues = new HashMap<String, Double>();
     		unknownValues.put("unknown", 0.0);
 
-    		for(PerceptualProperty p : perceptualProperties.values()){
+    		for(ObjectProperty p : perceptualProperties.values()){
     			p.updateProperty(unknownValues);
     		}
 
-            stateProperties.updateProperties(new ArrayList<String>());
+    		for(ObjectProperty p : stateProperties.values()){
+    			p.updateProperty("unknown");
+    		}
     	} else {
     		// Just one object, update using that
     		ObjectData objectData = objDatas.get(0);
     		ArrayList<String> propsToDelete = new ArrayList<String>(perceptualProperties.keySet());
 
-            //x UGH
             for(CategorizedData category : objectData.getCatDat()) {
                 String propName = PerceptualProperty.getPropertyName(category.getCatType());
                 if(perceptualProperties.containsKey(propName)){
@@ -178,9 +180,29 @@ public class WorldObject implements ISoarObject
                 perceptualProperties.remove(propName);
             }
 
-            stateProperties.updateProperties(objectData.getStateValues());
-        }
+    		propsToDelete = new ArrayList<String>(stateProperties.keySet());
 
+    		for(String stateProp : objectData.getStateValues()){
+        		String[] nameValSplit = stateProp.split("=");
+        		if(nameValSplit.length < 2){
+        			continue;
+        		}
+        		String propName = nameValSplit[0].toLowerCase();
+        		String propVal = nameValSplit[1].toLowerCase();
+        		if(stateProperties.containsKey(propName)){
+        			propsToDelete.remove(propName);
+        			stateProperties.get(propName).updateProperty(propVal);
+        		} else {
+        			ObjectProperty sp = new ObjectProperty(propName, ObjectProperty.STATE_TYPE, propVal);
+        			stateProperties.put(propName, sp);
+        		}
+    		}
+    		for (String propName : propsToDelete){
+    			ObjectProperty sp = stateProperties.get(propName);
+    			propsToRemove.add(sp);
+    			stateProperties.remove(propName);
+    		}
+    	}
     	gotPropUpdate = true;
     }
 
@@ -255,12 +277,14 @@ public class WorldObject implements ISoarObject
     		removeFromWM();
     	}
 		objId = parentId.CreateIdWME("object");
-    	objId.CreateIntWME("object-handle", handle);
+    	objId.CreateStringWME("object-handle", new String(handle));
 
-    	for(PerceptualProperty pp : perceptualProperties.values()){
+    	for(ObjectProperty pp : perceptualProperties.values()){
     		pp.addToWM(objId);
     	}
-    	stateProperties.addToWM(objId);
+    	for(ObjectProperty sp : stateProperties.values()){
+    		sp.addToWM(objId);
+    	}
 
     	StringBuilder svsCommands = new StringBuilder();
     	svsCommands.append(SVSCommands.addBox(getHandleStr(), bboxPos, bboxRot, bboxSize));
@@ -276,21 +300,24 @@ public class WorldObject implements ISoarObject
 
     	if(gotPropUpdate){
 	    	// Update Perceptual Properties
-	    	for(PerceptualProperty pp : perceptualProperties.values()){
+	    	for(ObjectProperty pp : perceptualProperties.values()){
 	    		if(pp.isAdded()){
 	    			pp.updateWM();
 	    		} else {
 	    			pp.addToWM(objId);
 	    		}
 	    	}
-	    	for(PerceptualProperty pp : propsToRemove){
+	    	for(ObjectProperty sp : stateProperties.values()){
+	    		if(sp.isAdded()){
+	    			sp.updateWM();
+	    		} else {
+	    			sp.addToWM(objId);
+	    		}
+	    	}
+	    	for(ObjectProperty pp : propsToRemove){
 	    		pp.removeFromWM();
 	    	}
 	    	propsToRemove.clear();
-
-	    	// Update State Properties
-	    	stateProperties.updateWM();
-
 	    	gotPropUpdate = false;
     	}
 
@@ -320,11 +347,12 @@ public class WorldObject implements ISoarObject
     	StringBuilder svsCommands = new StringBuilder();
     	svsCommands.append(SVSCommands.delete(getHandleStr()));
     	world.getAgent().SendSVSInput(svsCommands.toString());
-
-    	for(PerceptualProperty pp : perceptualProperties.values()){
+    	for(ObjectProperty pp : perceptualProperties.values()){
     		pp.removeFromWM();
     	}
-    	stateProperties.removeFromWM();
+    	for(ObjectProperty sp : stateProperties.values()){
+    		sp.removeFromWM();
+    	}
     	objId.DestroyWME();
     	objId = null;
     	added = false;

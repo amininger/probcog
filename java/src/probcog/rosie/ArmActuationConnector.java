@@ -37,6 +37,7 @@ import edu.umich.rosie.soarobjects.Pose;
 
 public class ArmActuationConnector extends AgentConnector implements LCMSubscriber{
 	private Identifier selfId;
+	private Identifier armId;
 
 	private Pose pose;
 	
@@ -168,10 +169,12 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     
     private void initIL(){
     	selfId = soarAgent.getAgent().GetInputLink().CreateIdWME("self");
-    	selfId.CreateStringWME("action", "wait");
-    	selfId.CreateStringWME("prev-action", "wait");
-    	selfId.CreateStringWME("holding-obj", "false");
-    	selfId.CreateIntWME("grabbed-object", -1);
+    	selfId.CreateStringWME("moving-status", "stopped");
+
+    	armId = selfId.CreateIdWME("arm");
+    	armId.CreateStringWME("moving-status", "wait");
+    	armId.CreateStringWME("holding-object", "none");
+
     	pose.updateWithArray(new double[]{0, 0, 0, 0, 0, 0});
     	pose.addToWM(selfId);
     	
@@ -220,15 +223,18 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     
     private void updateIL(){   	
     	heldObject = curStatus.obj_id;
-    	SoarUtil.updateStringWME(selfId, "action", curStatus.action.toLowerCase());
-    	if(prevStatus == null){
-        	SoarUtil.updateStringWME(selfId, "prev-action", "wait");
-    	} else {
-        	SoarUtil.updateStringWME(selfId, "prev-action", prevStatus.action.toLowerCase());
-    	}
-    	SoarUtil.updateStringWME(selfId, "holding-obj", (curStatus.obj_id != -1 ? "true" : "false"));
+    	SoarUtil.updateStringWME(armId, "moving-status", curStatus.action.toLowerCase());
+//    	if(prevStatus == null){
+//        	SoarUtil.updateStringWME(selfId, "prev-action", "wait");
+//    	} else {
+//        	SoarUtil.updateStringWME(selfId, "prev-action", prevStatus.action.toLowerCase());
+//    	}
     	ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
-    	SoarUtil.updateIntWME(selfId, "grabbed-object", perception.getWorld().getSoarHandle(curStatus.obj_id));
+    	if (curStatus.obj_id == -1){
+    		SoarUtil.updateStringWME(armId, "holding-object", "none");
+    	} else {
+    		SoarUtil.updateStringWME(armId, "holding-object", perception.getWorld().getSoarHandle(curStatus.obj_id).toString());
+    	}
     	pose.updateWithArray(curStatus.xyz);
     	pose.updateWM();
     }
@@ -441,6 +447,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 	protected void onInitSoar() {
 		pose.removeFromWM();
 		selfId = null;
+		armId = null;
 		waitingCommand = null;
 	}
 }
