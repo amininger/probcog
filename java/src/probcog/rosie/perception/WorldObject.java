@@ -164,18 +164,18 @@ public class WorldObject implements ISoarObject
     		ArrayList<String> propsToDelete = new ArrayList<String>(perceptualProperties.keySet());
 
             for(CategorizedData category : objectData.getCatDat()) {
-                String propName = PerceptualProperty.getPropertyName(category.getCatType());
+                String propName = ObjectProperty.getPropertyName(category.getCatType());
                 if(perceptualProperties.containsKey(propName)){
                     propsToDelete.remove(propName);
                     perceptualProperties.get(propName).updateProperty(category);
                 } else {
-                    PerceptualProperty pp = new PerceptualProperty(category);
+                    ObjectProperty pp = new ObjectProperty(category);
                     perceptualProperties.put(propName, pp);
                 }
             }
 
             for(String propName : propsToDelete){
-                PerceptualProperty pp = perceptualProperties.get(propName);
+                ObjectProperty pp = perceptualProperties.get(propName);
                 propsToRemove.add(pp);
                 perceptualProperties.remove(propName);
             }

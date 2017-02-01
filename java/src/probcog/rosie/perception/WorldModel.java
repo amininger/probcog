@@ -191,8 +191,9 @@ public class WorldModel implements ISoarObject
     			continue;
     		}
     		String obj = soarAgent.getAgent().SVSQuery("obj-info " + beliefId);
-    		object_data_t objData = parseObject(obj);
-    		if(objData != null && objData.id != -1){
+
+    		ObjectData objData = parseObject(obj);
+    		if(objData != null && objData.getID() != -1){
     			objDatas.add(parseObject(obj));
     		}
     	}
@@ -236,7 +237,7 @@ public class WorldModel implements ISoarObject
                         objData.setID(Integer.parseInt(beliefId));
 					}
     			} catch (NumberFormatException e){
-    				objData.id = -1;
+    				objData.setID(-1);
     			}
     		} else if (field.equals("p") || field.equals("r") || field.equals("s")){
     			// Parse position, rotation, or scaling

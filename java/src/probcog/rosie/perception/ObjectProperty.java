@@ -15,7 +15,7 @@ import sml.*;
  * @author mininger
  *
  */
-<<<<<<< HEAD:java/src/probcog/rosie/perception/PerceptualProperty.java
+
 public class ObjectProperty implements ISoarObject
 {
 	protected static HashMap<CategorizedData.CategoryType, String> propertyNames = null;
