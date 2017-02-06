@@ -40,7 +40,7 @@ public class TrainingLabel {
         StringBuilder json = new StringBuilder();
         json.append("{");
         json.append("\"id\": " + id + ", ");
-        json.append("\"label\": " + label + ", ");
+        json.append("\"label\": \"" + label + "\", ");
         json.append("\"cat\":" + cat.ordinal());
         json.append("}");
         return json.toString();

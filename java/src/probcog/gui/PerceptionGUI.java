@@ -168,6 +168,47 @@ public class PerceptionGUI extends JFrame
                                  "rosie_msgs/Observations",
                                  500);
 
+        // Subscribe to LCM
+        //x lcm.subscribe("TRAINING_DATA", this);
+        //x lcm.subscribe("GUI_COMMAND", this);
+
+        Topic trains = new Topic(ros,
+                                 "rosie_training",
+                                 "rosie_msgs/TrainingData",
+                                 500);
+        System.out.println("Perception subscribed to training labels!");
+        trains.subscribe(new TopicCallback() {
+                public void handleMessage(Message message) {
+                    JsonObject jobj = message.toJsonObject();
+                    JsonArray jsLabels = jobj.getJsonArray("labels");
+                    for(int i = 0; i < jsLabels.size(); i++){
+                        JsonObject tl = jsLabels.getJsonObject(i);
+    //                 if(tl.utime <= soarTime){
+    //                 	// already seen this label, don't train a second time
+    //                 	continue;
+    //                 }
+
+    //                 Obj objTrain;
+    //                 synchronized(tracker.stateLock){
+    //                     objTrain = tracker.getObject(tl.id);
+    //                 }
+    //                 if(objTrain != null){
+    //                     FeatureCategory cat = Features.getFeatureCategory(tl.cat.cat);
+    //                     ArrayList<Double> features = objTrain.getFeatures(cat);
+    //                     if(features != null){
+    //                         tracker.addTraining(cat, features, tl.label);
+    //                     }
+    //                 }
+    //             }
+    //             for(int i = 0; i < training.num_labels; i++){
+    //             	soarTime = Math.max(soarTime, training.labels[i].utime);
+    //             }
+    //         }catch (IOException e) {
+    //             e.printStackTrace();
+    //             return;
+    //         }                }
+            });
+
         // Initialize the JMenuBar
         createMenuBar();
         addToMenu(menuBar); // XXX Ew
@@ -178,10 +219,6 @@ public class PerceptionGUI extends JFrame
         clickType = ClickType.SELECT;
         showSoarObjects = false;
         showSegmentedObjects = false;
-
-        // Subscribe to LCM
-        //x lcm.subscribe("TRAINING_DATA", this);
-        //x lcm.subscribe("GUI_COMMAND", this);
 
         this.setVisible(true);
         class SendObservationTask extends TimerTask{

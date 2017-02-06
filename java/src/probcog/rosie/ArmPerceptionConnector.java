@@ -85,7 +85,7 @@ public class ArmPerceptionConnector extends AgentConnector {
                                    500);
         training = new Topic(ros,
                              "/rosie_training",
-                             "rosie_msgs/TrainingLabel",
+                             "rosie_msgs/TrainingData",
                              500);
       }
 
@@ -112,8 +112,7 @@ public class ArmPerceptionConnector extends AgentConnector {
                 public void handleMessage(Message message) {
                     JsonObject jobj = message.toJsonObject();
                     pointedHandle = jobj.getInt("click_id");
-                    //receiveAckTime(jobj.getInt("soar_utime"));
-
+                    receiveAckTime(jobj.getInt("soar_utime"));
                     world.newObservation(jobj);
                 }
             });
@@ -155,11 +154,12 @@ public class ArmPerceptionConnector extends AgentConnector {
             int i = 0;
     		for(TrainingLabel label : outstandingTraining.keySet()){
                 if (i > 0) outgoingLabels.append(",");
+                i++;
                 outgoingLabels.append(label.toJsonString());
     		}
             outgoingLabels.append("]}");
 
-            //System.out.println(outgoingLabels.toString());
+            // System.out.println(outgoingLabels.toString());
             Message m = new Message(outgoingLabels.toString());
             training.publish(m);
     	}
