@@ -23,6 +23,7 @@ import april.vis.VisCameraManager.CameraPosition;
 //x import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
+import probcog.rosie.perception.CategorizedData.CategoryType;
 //x import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.perception.Tracker.TrackerSettings;
@@ -179,30 +180,36 @@ public class PerceptionGUI extends JFrame
         System.out.println("Perception subscribed to training labels!");
         trains.subscribe(new TopicCallback() {
                 public void handleMessage(Message message) {
+                    System.out.println("Handling training msg");
                     JsonObject jobj = message.toJsonObject();
                     JsonArray arr = jobj.getJsonArray("labels");
-    //             for(int i=0; i<training.num_labels; i++){
-    //                 training_label_t tl = training.labels[i];
-    //                 if(tl.utime <= soarTime){
-    //                 	// already seen this label, don't train a second time
-    //                 	continue;
-    //                 }
+                    ArrayList<Long> times = new ArrayList<Long>();
+                    for(int i=0; i < arr.size(); i++){
+                        JsonObject tl = arr.getJsonObject(i);
+                        long t = tl.getInt("utime");
+                        times.add(t);
+                        if(t <= soarTime){
+                            // already seen this label, don't train a second time
+                            continue;
+                        }
 
-    //                 Obj objTrain;
-    //                 synchronized(tracker.stateLock){
-    //                     objTrain = tracker.getObject(tl.id);
-    //                 }
-    //                 if(objTrain != null){
-    //                     FeatureCategory cat = Features.getFeatureCategory(tl.cat.cat);
-    //                     ArrayList<Double> features = objTrain.getFeatures(cat);
-    //                     if(features != null){
-    //                         tracker.addTraining(cat, features, tl.label);
-    //                     }
-    //                 }
-    //             }
-    //             for(int i = 0; i < training.num_labels; i++){
-    //             	soarTime = Math.max(soarTime, training.labels[i].utime);
-    //             }
+                        Obj objTrain;
+                        synchronized(tracker.stateLock){
+                            objTrain = tracker.getObject(tl.getInt("id"));
+                        }
+                        if(objTrain != null){
+                            FeatureCategory cat =
+                                Features.getFeatureCategory(CategoryType.values()[tl.getInt("cat")]);
+                            ArrayList<Double> features = objTrain.getFeatures(cat);
+                            if(features != null){
+                                tracker.addTraining(cat, features,
+                                                    tl.getString("label"));
+                            }
+                        }
+                    }
+                    for(Long t : times) {
+                        soarTime = Math.max(soarTime, t);
+                    }
                 }
             });
 

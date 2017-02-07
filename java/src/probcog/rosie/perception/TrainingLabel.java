@@ -41,7 +41,7 @@ public class TrainingLabel {
         json.append("{");
         json.append("\"id\": " + id + ", ");
         json.append("\"label\": \"" + label + "\", ");
-        json.append("\"utime\": \"" + utime + "\", ");
+        json.append("\"utime\": " + utime + ", ");
         json.append("\"cat\":" + cat.ordinal());
         json.append("}");
         return json.toString();

@@ -159,7 +159,7 @@ public class ArmPerceptionConnector extends AgentConnector {
     		}
             outgoingLabels.append("]}");
 
-            // System.out.println(outgoingLabels.toString());
+            System.out.println(outgoingLabels.toString());
             Message m = new Message(outgoingLabels.toString());
             training.publish(m);
     	}
