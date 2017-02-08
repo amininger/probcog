@@ -6,7 +6,6 @@ import java.util.HashMap;
 import edu.umich.rosie.soar.FloatWME;
 import edu.umich.rosie.soar.ISoarObject;
 
-//import probcog.lcmtypes.*;
 import sml.*;
 
 /**

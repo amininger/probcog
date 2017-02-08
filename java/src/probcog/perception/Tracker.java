@@ -4,17 +4,14 @@ import java.awt.Color;
 import java.io.*;
 import java.util.*;
 
-//x import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;
-//x import lcm.lcm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
-//x import probcog.lcmtypes.*;
 import probcog.sensor.*;
 import probcog.sim.ISimEffector;
 import probcog.sim.ISimStateful;
@@ -151,7 +148,6 @@ public class Tracker
                 }
             });
 
-        //x new ListenerThread().start();
         new TrackingThread().start();
     }
 
@@ -274,7 +270,7 @@ public class Tracker
     }
 
     /** Returns a list of Obj that Soar believes exists in the world based on
-     *  their most recent lcm message. Obj have information such as their center
+     *  their most recent message. Obj have information such as their center
      *  and features they were classified with. They do not have point clouds.
      **/
     public HashMap<Integer, Obj> getSoarObjects()
@@ -625,7 +621,7 @@ public class Tracker
 
     /** Build up the object_data_t describing the observed objects
      *  in the world. Runs classifiers on the objects and builds
-     *  the appropriate lcmtypes to return.
+     *  the appropriate json to return.
      */
     public String getObjectData()
     {
@@ -712,26 +708,4 @@ public class Tracker
     // 		}
 	// 	}
     // }
-
-    /** Class that continually listens for messages from Soar about what objects
-     *  it believes exists in the world. The received lcm message is stored so it
-     *  can be used upon request.
-     **/
-    class ListenerThread extends Thread //x implements LCMSubscriber
-    {
-        public ListenerThread()
-        {
-            //x lcm.subscribe("SOAR_OBJECTS", this);
-            //x lcm.subscribe("ROBOT_COMMAND", this);
-            //x lcm.subscribe("SET_STATE_COMMAND", this);
-            //x lcm.subscribe("PERCEPTION_COMMAND", this);
-        }
-
-        public void run()
-        {
-            while (true) {
-                TimeUtil.sleep(1000/60);
-            }
-        }
-    }
 }

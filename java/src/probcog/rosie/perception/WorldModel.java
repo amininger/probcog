@@ -6,12 +6,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-//x import lcm.lcm.LCM;
 import sml.Agent.RunEventInterface;
 import sml.Agent;
 import sml.Identifier;
 import sml.smlRunEventId;
-//x import probcog.lcmtypes.*;
 import april.util.TimeUtil;
 import edu.umich.rosie.soar.ISoarObject;
 import edu.umich.rosie.soar.SVSCommands;

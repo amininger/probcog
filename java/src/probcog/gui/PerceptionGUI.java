@@ -42,7 +42,6 @@ public class PerceptionGUI extends JFrame
     //x private ArmStatus arm;
     //x private ArmController controller;
     private Tracker tracker;
-    private KinectView kinectView;
     private ProbCogSimulator simulator;
 
     private Timer sendObservationTimer;
@@ -164,7 +163,7 @@ public class PerceptionGUI extends JFrame
                                  500);
 
         //x Not sure if this is a mission-critical feature
-        //x lcm.subscribe("GUI_COMMAND", this);
+        // subscribe("GUI_COMMAND", this);
 
         Topic trains = new Topic(ros,
                                  "rosie_training",
@@ -894,7 +893,6 @@ public class PerceptionGUI extends JFrame
         //opts.addBoolean('a', "arm", false, "Run with a phsyical arm");
         opts.addBoolean('k', "kinect", false, "Use a physical kinect");
         opts.addBoolean('d', "debug", false, "Toggle debugging mode");
-        opts.addBoolean('e', "emulate", false, "Run a soar emulator that sends lcm messages");
         opts.addInt('s', "simquality", 2, "2 = full simulation, 1 = no segmentation, 0 = no sim kinect");
         opts.addString('\0', "backup", null, "Load from backup file");
 
@@ -906,10 +904,6 @@ public class PerceptionGUI extends JFrame
             opts.doHelp();
             System.exit(0);
         }
-
-        SoarEmulator soarEm;
-        if (opts.getBoolean("emulate"))
-            soarEm = new SoarEmulator();
 
         // Spin up the GUI
         try {

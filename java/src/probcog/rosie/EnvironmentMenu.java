@@ -7,10 +7,6 @@ import javax.swing.JButton;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 
-//x import lcm.lcm.LCM;
-//x import probcog.lcmtypes.perception_command_t;
-//x import probcog.lcmtypes.robot_command_t;
-//x import probcog.rosie.scripting.ResetEnvironmentState;
 import april.util.TimeUtil;
 
 public class EnvironmentMenu {
@@ -20,17 +16,7 @@ public class EnvironmentMenu {
 		JButton worldResetButton = new JButton("Reset World");
 		worldResetButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-                System.out.println("Removing LCM broke this");
-				// robot_command_t command = new robot_command_t();
-				// command.utime = TimeUtil.utime();
-				// command.dest = new double[6];
-				// command.action = "RESET";
-				// LCM.getSingleton().publish("ROBOT_COMMAND", command);
-
-				// perception_command_t pcmd = new perception_command_t();
-				// pcmd.utime = TimeUtil.utime();
-				// pcmd.command = "reset=time";
-				// LCM.getSingleton().publish("GUI_COMMAND", pcmd);
+                System.out.println("Sorry, if you want a reset world action, you'll have to reimplement it.");
 			}
 		});
 		environmentMenu.add(worldResetButton);

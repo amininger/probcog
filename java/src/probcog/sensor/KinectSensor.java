@@ -7,8 +7,6 @@ import javax.swing.*;
 import java.util.*;
 import java.nio.ByteBuffer;
 
-//x import lcm.lcm.*;
-
 import april.camera.*;
 import april.camera.models.*;
 import april.config.*;
@@ -17,7 +15,6 @@ import april.sim.SimObject;
 import april.util.*;
 import april.vis.*;
 
-//x import probcog.lcmtypes.*;
 import probcog.perception.PointCloud;
 import probcog.sensor.SimKinectSensor.SimPixel;
 import probcog.sim.SimLocation;

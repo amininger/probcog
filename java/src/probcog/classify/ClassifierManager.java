@@ -7,7 +7,6 @@ import april.config.*;
 import april.util.*;
 
 import probcog.classify.Features.FeatureCategory;
-import probcog.lcmtypes.*;
 import probcog.perception.Obj;
 
 public class ClassifierManager

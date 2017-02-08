@@ -9,8 +9,6 @@ import probcog.classify.Classifications;
 import probcog.classify.Features;
 import probcog.classify.Features.FeatureCategory;
 import probcog.rosie.perception.*;
-//import probcog.lcmtypes.categorized_data_t;
-//import probcog.lcmtypes.category_t;
 import probcog.sim.ISimStateful;
 import probcog.sim.SimLocation;
 import probcog.sim.SimObjectPC;
@@ -226,7 +224,7 @@ public class Obj
         ArrayList<CategorizedData> cat_dat = new ArrayList<CategorizedData>();
         int j = 0;
         for (FeatureCategory fc: labels.keySet()) {
-            CategorizedData cd = new CategorizedData(Features.getLCMCategory(fc));
+            CategorizedData cd = new CategorizedData(Features.getCategory(fc));
 
         	// Report the real classification(s)
             Classifications cs = labels.get(fc);

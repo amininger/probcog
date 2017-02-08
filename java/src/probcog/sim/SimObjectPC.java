@@ -10,8 +10,6 @@ import java.util.Map;
 import probcog.classify.Classifications;
 import probcog.classify.Features;
 import probcog.classify.Features.FeatureCategory;
-import probcog.lcmtypes.categorized_data_t;
-import probcog.lcmtypes.category_t;
 import probcog.perception.Obj;
 import probcog.util.BoundingBox;
 import sun.security.util.Length;
