@@ -18,16 +18,12 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
-//x import lcm.lcm.LCM;
-//x import lcm.lcm.LCMDataInputStream;
-//x import lcm.lcm.LCMSubscriber;
 import sml.Agent;
 import sml.Agent.OutputEventInterface;
 import sml.Agent.RunEventInterface;
 import sml.Identifier;
 import sml.WMElement;
 import sml.smlRunEventId;
-//x import probcog.lcmtypes.*;
 import april.util.PeriodicTasks;
 import april.util.TimeUtil;
 import edu.umich.rosie.soar.*;

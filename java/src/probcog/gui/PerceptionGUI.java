@@ -12,7 +12,6 @@ import java.text.*;
 import java.util.*;
 import java.util.Timer;
 
-//x import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
@@ -24,7 +23,6 @@ import april.vis.VisCameraManager.CameraPosition;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.rosie.perception.CategorizedData.CategoryType;
-//x import probcog.lcmtypes.*;
 import probcog.perception.*;
 import probcog.perception.Tracker.TrackerSettings;
 import probcog.sensor.*;
@@ -47,8 +45,6 @@ public class PerceptionGUI extends JFrame
     private KinectView kinectView;
     private ProbCogSimulator simulator;
 
-    // LCM
-    //x static LCM lcm = LCM.getSingleton();
     private Timer sendObservationTimer;
     private static final int OBSERVATION_RATE = 10; // # sent per second
 
@@ -144,15 +140,12 @@ public class PerceptionGUI extends JFrame
             System.out.println("ATTN: Successfully restored from autosave file");
         }
 
+        // Replace arm stuff next
         //x if (opts.getBoolean("arm")) {
         //     ArmDriver driver = new ArmDriver(config);
         //     (new Thread(driver)).start();
         // } else {
         //     SimArm simArm = new SimArm(config, simulator.getWorld());
-        //}
-
-        //x if (opts.getBoolean("debug")) {
-        //    ArmDemo demo = new ArmDemo(config, tracker);
         //}
 
         ros = new Ros();
@@ -170,7 +163,7 @@ public class PerceptionGUI extends JFrame
                                  "rosie_msgs/Observations",
                                  500);
 
-        // Subscribe to LCM
+        //x Not sure if this is a mission-critical feature
         //x lcm.subscribe("GUI_COMMAND", this);
 
         Topic trains = new Topic(ros,
@@ -296,7 +289,6 @@ public class PerceptionGUI extends JFrame
         editMenu.add(redoAction);
     }
 
-    
     public void resetSimObjects(){
         synchronized(simulator.world) {
         	for(SimObject obj : simulator.world.objects){
@@ -316,44 +308,11 @@ public class PerceptionGUI extends JFrame
         }
     }
 
-    // @Override
-    // public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-    // {
-    //    if(channel.equals("TRAINING_DATA")){
-    //         try{
-    //         }catch (IOException e) {
-    //             e.printStackTrace();
-    //             return;
-    //         }
-    //     } else if(channel.equals("GUI_COMMAND")){
-    //     	try {
-    //     		perception_command_t command = new perception_command_t(ins);
-    //     		String[] args = command.command.toLowerCase().split("=");
-    //     		if(args.length > 1){
-    //     			if(args[0].equals("select")){
-    //     				selectedId = Integer.parseInt(args[1]);
-    //             		animation = null;
-    //     			} else if(args[0].equals("reset")){
-    //     				soarTime = 0;
-    //     				resetSimObjects();
-    //     			}
-    //     		}
-    //     	} catch (IOException e){
-    //     		e.printStackTrace();
-    //     		return;
-    //     	}
-    //     }
-    // }
-
     public void sendMessage()
 
     {
         StringBuilder obs = new StringBuilder();
         obs.append("{");
-
-        // XXX THIS IS NOT HOW THIS WORKS XXX
-        // long utime = TimeUtil.utime();
-        // obs.append("\"header\": {\"stamp\": " + utime + "}, ");
 
         synchronized(tracker.stateLock){
             obs.append("\"click_id\": " + getSelectedId() + ", ");
@@ -954,9 +913,6 @@ public class PerceptionGUI extends JFrame
 
         // Spin up the GUI
         try {
-            //Ros ros = new Ros("localhost");
-            //ros.connect();
-
             PerceptionGUI gui = new PerceptionGUI(opts);
         } catch (IOException ioex) {
             System.err.println("ERR: Error starting GUI");
