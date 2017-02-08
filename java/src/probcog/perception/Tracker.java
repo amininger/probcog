@@ -51,6 +51,8 @@ public class Tracker
     int frameIdx = 0;
     final int frameTotal = 10;
 
+    private int numObj = 0;
+
     public static class TrackerSettings{
     	public TrackerSettings(){};
     	public TrackerSettings(boolean useKinect, boolean useSegmenter, boolean usePointClouds){
@@ -623,12 +625,10 @@ public class Tracker
      *  in the world. Runs classifiers on the objects and builds
      *  the appropriate json to return.
      */
-    public String getObjectData()
+    public JsonArrayBuilder getObjectData()
     {
-        StringBuilder objArray = new StringBuilder();
-        objArray.append("\"observations\": [");
-        long utime = TimeUtil.utime();
         int objCount = 0;
+        JsonArrayBuilder jab = Json.createArrayBuilder();
 
         synchronized (stateLock) {
             for (Obj ob: worldState.values()) {
@@ -641,16 +641,20 @@ public class Tracker
             	}
 
                 objCount++;
-                if (objCount > 1) objArray.append(", ");
                 ObjectData odat = new ObjectData(ob);
-                objArray.append(odat.toJsonString());
+                jab = jab.add(odat.toJson());
             }
+            numObj = objCount;
         }
 
-        objArray.append("], ");
-        objArray.append("\"nobs\": " + objCount);
+        return jab;
+    }
 
-        return objArray.toString();
+    public int getNumObj()
+    {
+        synchronized (stateLock) {
+            return numObj;
+        }
     }
 
     private void handlePerceptionCommand(String command){

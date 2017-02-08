@@ -310,43 +310,48 @@ public class PerceptionGUI extends JFrame
     public void sendMessage()
 
     {
-        StringBuilder obs = new StringBuilder();
-        obs.append("{");
-
+        int cid = -1;
         synchronized(tracker.stateLock){
-            obs.append("\"click_id\": " + getSelectedId() + ", ");
+            cid = getSelectedId();
         }
 
-        obs.append("\"soar_utime\": " + soarTime + ", ");
+        JsonArrayBuilder eyejab = Json.createArrayBuilder();
+        JsonArrayBuilder lookjab = Json.createArrayBuilder();
+        JsonArrayBuilder upjab = Json.createArrayBuilder();
 
         ArrayList<Sensor> sensors = tracker.getSensors();
         if(sensors.size() == 0){
-            obs.append("\"eye\": [" + 0.6 + ", " + 0.0 + ", " + 1.0 + "],");
-            obs.append("\"lookat\": [" + 0.0 + ", " + 0.0 + ", " + 0.0 + "],");
-            obs.append("\"up\": [" + -1.0 + ", " + 0.0 + ", " + 1.0 + "],");
+            eyejab = eyejab.add(0.6).add(0.0).add(1.0);
+            lookjab = lookjab.add(0.0).add(0.0).add(0.0);
+            upjab = upjab.add(-1.0).add(0.0).add(1.0);
 
         } else {
             Sensor s = sensors.get(0);
             CameraPosition camera = Util.getSensorPos(s);
-            obs.append("\"eye\": [" + camera.eye[0] + ", " +
-                       camera.eye[1] + ", " +
-                       camera.eye[2] + "],");
-            obs.append("\"lookat\": [" + camera.lookat[0] + ", " +
-                       camera.lookat[1] + ", " +
-                       camera.lookat[2] + "],");
-            obs.append("\"up\": [" + camera.up[0] + ", " +
-                       camera.up[1] + ", " +
-                       camera.up[2] + "],");
+            eyejab = eyejab
+                .add(camera.eye[0])
+                .add(camera.eye[1])
+                .add(camera.eye[2]);
+            lookjab = lookjab
+                .add(camera.lookat[0])
+                .add(camera.lookat[1])
+                .add(camera.lookat[2]);
+            upjab = upjab
+                .add(camera.up[0])
+                .add(camera.up[1])
+                .add(camera.up[2]);
         }
 
-        String od = tracker.getObjectData();
-        obs.append(od);
+        JsonObject jo = Json.createObjectBuilder()
+            .add("click_id", cid)
+            .add("soar_utime", soarTime)
+            .add("eye", eyejab)
+            .add("lookat", lookjab)
+            .add("up", upjab)
+            .add("observations", tracker.getObjectData())
+            .add("nobs", tracker.getNumObj()).build();
 
-        obs.append("}");
-
-        // System.out.println();
-        // System.out.println(obs.toString());
-        Message m = new Message(obs.toString());
+        Message m = new Message(jo);
         observations.publish(m);
     }
 

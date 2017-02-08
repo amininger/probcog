@@ -182,128 +182,77 @@ public class ObjectData {
         }
     }
 
-    public String jsonVal(String name, String object)
+    public JsonObject toJson()
     {
-        return ("\"" + name + "\": " + object);
-    }
-
-    public String jsonVal(String name, double object)
-    {
-        return ("\"" + name + "\": " + object);
-    }
-
-    public String jsonVal(String name, int object)
-    {
-        return ("\"" + name + "\": " + object);
-    }
-
-    public String jsonItem(String name, String object)
-    {
-        return ("\"" + name + "\": {" + object + "}");
-    }
-
-    public String toJsonString()
-    {
-        StringBuilder curObj = new StringBuilder();
-        curObj.append("{");
-        curObj.append(jsonVal("obj_id", id) + ", ");
         double[] tmpRot = new double[]{pos[3], pos[4], pos[5]};
         double[] q = LinAlg.rollPitchYawToQuat(tmpRot);
-
-        curObj.append(jsonItem("pos",
-                               jsonItem("translation",
-                                        jsonVal("x", pos[0]) + ", " +
-                                        jsonVal("y", pos[1]) + ", " +
-                                        jsonVal("z", pos[2])) +
-                               ", " +
-                               jsonItem("rotation",
-                                        jsonVal("x", q[0]) + ", " +
-                                        jsonVal("y", q[1]) + ", " +
-                                        jsonVal("z", q[2]) + ", " +
-                                        jsonVal("w", q[3]))));
-        curObj.append(",");
-
-        curObj.append(jsonItem("bbox_dim",
-                               jsonVal("x", bboxDim[0]) + ", " +
-                               jsonVal("y", bboxDim[1]) + ", " +
-                               jsonVal("z", bboxDim[2])));
-        curObj.append(",");
 
         double[] tmpRotB = new double[]{bboxPos[3], bboxPos[4], bboxPos[5]};
         double[] qB = LinAlg.rollPitchYawToQuat(tmpRotB);
 
-        curObj.append(jsonItem("bbox_xyzrpy",
-                               jsonItem("translation",
-                                        jsonVal("x", bboxPos[0]) + ", " +
-                                        jsonVal("y", bboxPos[1]) + ", " +
-                                        jsonVal("z", bboxPos[2])) +
-                               ", " +
-                               jsonItem("rotation",
-                                        jsonVal("x", qB[0]) + ", " +
-                                        jsonVal("y", qB[1]) + ", " +
-                                        jsonVal("z", qB[2]) + ", " +
-                                        jsonVal("w", qB[3]))));
-        curObj.append(",");
-
-        curObj.append(jsonVal("num_states", stateValues.size()));
-        curObj.append(",");
-
-        curObj.append("\"state_values\": [");
-        int count = 0;
+        JsonArrayBuilder jab = Json.createArrayBuilder();
         for (String s : stateValues) {
-            if (count > 0) curObj.append(", ");
-            count++;
-            curObj.append("\"" + s +"\"");
+            jab = jab.add(s);
         }
-        curObj.append("]");
-        curObj.append(",");
 
-        count = 0;
-        curObj.append(jsonVal("num_cat", numCat()) + ", ");
-        curObj.append("\"cat_dat\": [");
+        JsonArrayBuilder catjab = Json.createArrayBuilder();
         for (CategorizedData cd : catDat) {
-            if (count > 0) curObj.append(", ");
-            count++;
-            curObj.append("{");
-            curObj.append(jsonVal("cat_type", cd.getCatType().ordinal()) + ", ");
-            curObj.append(jsonVal("len", cd.numLabels()) + ", ");
-            curObj.append(jsonVal("num_features", cd.numFeatures()) + ", ");
-
-            curObj.append("\"label\": [");
-            int i = 0;
+            JsonArrayBuilder labjab = Json.createArrayBuilder();
             for (String s : cd.getLabel()) {
-                if (i > 0) curObj.append(", ");
-                i++;
-                curObj.append("\"" + s +"\"");
+                labjab = labjab.add(s);
             }
-            curObj.append("]");
-            curObj.append(",");
 
-            curObj.append("\"confidence\": [");
-            i = 0;
+            JsonArrayBuilder confjab = Json.createArrayBuilder();
             for (Double d : cd.getConfidence()) {
-                if (i > 0) curObj.append(", ");
-                i++;
-                curObj.append(d);
+                confjab = confjab.add(d);
             }
-            curObj.append("]");
-            curObj.append(",");
 
-            curObj.append("\"features\": [");
-            i = 0;
+            JsonArrayBuilder featjab = Json.createArrayBuilder();
             for (Double d : cd.getFeatures()) {
-                if (i > 0) curObj.append(", ");
-                i++;
-                curObj.append(d);
+                featjab = featjab.add(d);
             }
-            curObj.append("]");
 
-            curObj.append("}");
+            catjab = catjab.add(Json.createObjectBuilder()
+                                .add("cat_type", cd.getCatType().ordinal())
+                                .add("len", cd.numLabels())
+                                .add("num_features", cd.numFeatures())
+                                .add("label", labjab)
+                                .add("confidence", confjab)
+                                .add("features", featjab));
         }
 
-        curObj.append("]");
-        curObj.append("}");
-        return curObj.toString();
+        JsonObject jo = Json.createObjectBuilder()
+            .add("obj_id", id)
+            .add("pos", Json.createObjectBuilder()
+                 .add("translation", Json.createObjectBuilder()
+                      .add("x", pos[0])
+                      .add("y", pos[1])
+                      .add("z", pos[2]))
+                 .add("rotation", Json.createObjectBuilder()
+                      .add("x", q[0])
+                      .add("y", q[1])
+                      .add("z", q[2])
+                      .add("w", q[3])))
+            .add("bbox_dim", Json.createObjectBuilder()
+                 .add("x", bboxDim[0])
+                 .add("y", bboxDim[1])
+                 .add("z", bboxDim[2]))
+            .add("bbox_xyzrpy", Json.createObjectBuilder()
+                 .add("translation", Json.createObjectBuilder()
+                      .add("x", bboxPos[0])
+                      .add("y", bboxPos[1])
+                      .add("z", bboxPos[2]))
+                 .add("rotation", Json.createObjectBuilder()
+                      .add("x", qB[0])
+                      .add("y", qB[1])
+                      .add("z", qB[2])
+                      .add("w", qB[3])))
+            .add("num_states", stateValues.size())
+            .add("state_values", jab)
+            .add("num_cat", numCat())
+            .add("cat_dat", catjab)
+            .build();
+        return jo;
     }
 
     public int getID()

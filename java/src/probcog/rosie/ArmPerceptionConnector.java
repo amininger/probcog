@@ -140,23 +140,16 @@ public class ArmPerceptionConnector extends AgentConnector {
     		if(outstandingTraining.size() == 0){
     			return;
     		}
-            StringBuilder outgoingLabels = new StringBuilder();
-            outgoingLabels.append("{");
 
-            long utime = TimeUtil.utime();
-            outgoingLabels.append("\"header\": {\"stamp\": " + utime + "}, ");
-            outgoingLabels.append("\"labels\": [");
-
-            int i = 0;
+            JsonArrayBuilder jab = Json.createArrayBuilder();
     		for(TrainingLabel label : outstandingTraining.keySet()){
-                if (i > 0) outgoingLabels.append(",");
-                i++;
-                outgoingLabels.append(label.toJsonString());
-    		}
-            outgoingLabels.append("]}");
+                jab = jab.add(label.toJson());
+            }
 
-            //System.out.println(outgoingLabels.toString());
-            Message m = new Message(outgoingLabels.toString());
+            JsonObject jo = Json.createObjectBuilder()
+                .add("labels", jab).build();
+
+            Message m = new Message(jo);
             training.publish(m);
     	}
     }

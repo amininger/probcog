@@ -35,16 +35,14 @@ public class TrainingLabel {
         return utime;
     }
 
-    public String toJsonString()
+    public JsonObject toJson()
     {
-        StringBuilder json = new StringBuilder();
-        json.append("{");
-        json.append("\"id\": " + id + ", ");
-        json.append("\"label\": \"" + label + "\", ");
-        json.append("\"utime\": " + utime + ", ");
-        json.append("\"cat\":" + cat.ordinal());
-        json.append("}");
-        return json.toString();
+        JsonObject jo = Json.createObjectBuilder()
+            .add("id", id)
+            .add("label", label)
+            .add("utime", utime)
+            .add("cat", cat.ordinal()).build();
+        return jo;
     }
 
     public int getId()

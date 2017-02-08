@@ -196,23 +196,16 @@ public class WorldModel implements ISoarObject
     		}
     	}
 
-        StringBuilder outgoingObs = new StringBuilder();
-        outgoingObs.append("{");
-
-        long utime = TimeUtil.utime();
-        outgoingObs.append("\"header\": {\"stamp\": " + utime + "}, ");
-        outgoingObs.append("\"objects\": [");
-
+        JsonArrayBuilder jab = Json.createArrayBuilder();
         int count = 0;
         for (ObjectData od : objDatas) {
-            if (count > 0) outgoingObs.append(",");
             count++;
-            outgoingObs.append(od.toJsonString());
+            jab = jab.add(od.toJson());
         }
-        outgoingObs.append("]}");
 
-        //System.out.println("OBSERVATION MSG:\n" + outgoingObs.toString());
-        Message m = new Message(outgoingObs.toString());
+        JsonObject jo = Json.createObjectBuilder()
+            .add("objects", jab).build();
+        Message m = new Message(jo);
         soarObjs.publish(m);
     }
 
