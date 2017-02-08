@@ -180,13 +180,12 @@ public class PerceptionGUI extends JFrame
         System.out.println("Perception subscribed to training labels!");
         trains.subscribe(new TopicCallback() {
                 public void handleMessage(Message message) {
-                    System.out.println("Handling training msg");
                     JsonObject jobj = message.toJsonObject();
                     JsonArray arr = jobj.getJsonArray("labels");
                     ArrayList<Long> times = new ArrayList<Long>();
                     for(int i=0; i < arr.size(); i++){
                         JsonObject tl = arr.getJsonObject(i);
-                        long t = tl.getInt("utime");
+                        long t = tl.getJsonNumber("utime").longValue();
                         times.add(t);
                         if(t <= soarTime){
                             // already seen this label, don't train a second time
