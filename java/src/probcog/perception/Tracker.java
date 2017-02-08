@@ -12,7 +12,6 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 //x import lcm.lcm.*;
-import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 //x import probcog.lcmtypes.*;
@@ -41,14 +40,9 @@ public class Tracker
     private Object soarLock;
     private HashMap<Integer, Obj> soarObjects;
 
-    // Arm Stuff
-    private Object armLock = new Object();
-    //x private robot_command_t robot_cmd;
-
     private Object worldLock = new Object();
 
     private Segmenter segmenter;
-    private ArmCommandInterpreter armInterpreter;
 
     // World state, as decided by Soar and the perception system
     private SimWorld world;
@@ -79,7 +73,6 @@ public class Tracker
         this.world = world;
         worldState = new HashMap<Integer, Obj>();
         classyManager = new ClassifierManager(config_);
-        armInterpreter = new ArmCommandInterpreter(config_, false);  // Debug off
 
         if(settings.useKinect){
         	segmenter = new KinectSegment(config_);
@@ -228,9 +221,9 @@ public class Tracker
             	simulateDynamics(newWorldState);
 
             	// 6. Report new info to arm interpreter
-            	synchronized(armLock){
-            		armInterpreter.updateWorld(new ArrayList<Obj>(newWorldState.values()));
-            	}
+            	//synchronized(armLock){
+                //armInterpreter.updateWorld(new ArrayList<Obj>(newWorldState.values()));
+                //}
 
             	synchronized(stateLock){
             		worldState = newWorldState;
@@ -740,36 +733,5 @@ public class Tracker
                 TimeUtil.sleep(1000/60);
             }
         }
-
-        //x public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-        // {
-        //     try {
-        //         messageReceivedEx(lcm, channel, ins);
-        //     } catch (IOException ioex) {
-        //         System.err.println("ERR: LCM channel -"+channel);
-        //         ioex.printStackTrace();
-        //     }
-        // }
-
-        //x public void messageReceivedEx(LCM lcm, String channel, LCMDataInputStream ins)
-        //         throws IOException
-        // {
-        //     if (channel.equals("SOAR_OBJECTS")) {
-        //         synchronized (soarLock) {
-        //             soar_lcm = new soar_objects_t(ins);
-        //         }
-        //     } else if (channel.equals("ROBOT_COMMAND")) {
-        //         synchronized (armLock) {
-        //             robot_cmd = new robot_command_t(ins);
-        //             armInterpreter.queueCommand(robot_cmd);
-        //         }
-        //     } else if(channel.equals("SET_STATE_COMMAND")){
-        //     	set_state_command_t setState = new set_state_command_t(ins);
-        //     	processSetStateCommand(setState);
-        //     } else if(channel.equals("PERCEPTION_COMMAND")){
-        //     	perception_command_t command = new perception_command_t(ins);
-        //     	handlePerceptionCommand(command);
-        //     }
-        // }
     }
 }

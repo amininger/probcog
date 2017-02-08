@@ -217,7 +217,7 @@ public class ArmPerceptionConnector extends AgentConnector {
     	String propHandle = SoarUtil.getValueOfAttribute(id, "property-handle",
     			"Error (send-training-label): No ^property-handle attribute");
 
-    	CategorizedData.CategoryType catNum = PerceptualProperty.getPropertyID(propHandle);
+    	CategorizedData.CategoryType catNum = ObjectProperty.getPropertyID(propHandle);
     	if(catNum == null){
     		id.CreateStringWME("status", "error");
     		System.err.println("ArmPerceptionConnector::processSendTrainingLabelCommand - bad category");

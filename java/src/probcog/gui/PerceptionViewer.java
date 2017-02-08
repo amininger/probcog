@@ -20,7 +20,6 @@ import april.util.*;
 import april.vis.*;
 import april.vis.VisCameraManager.CameraPosition;
 
-import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
 import probcog.lcmtypes.*;
@@ -39,7 +38,6 @@ import probcog.vis.*;
 public class PerceptionViewer extends JFrame implements LCMSubscriber
 {
     private ProbCogSimulator simulator = null;
-    private ArmStatus arm = null;
 
     // LCM
     static LCM lcm = LCM.getSingleton();
@@ -90,8 +88,6 @@ public class PerceptionViewer extends JFrame implements LCMSubscriber
             kinectView = new KinectView(config, vw, vl);
         } else {
             simulator = new ProbCogSimulator(opts, vw, vl, vc);
-            arm = new ArmStatus(config);
-            new SimArm(config, simulator.getWorld());
         }
 
         // Initialize the JMenuBar
@@ -218,10 +214,6 @@ long time = 0;
                 }
                 if(drawBeliefObjects){
                 	drawBeliefLabels(faceCamera);
-                }
-
-                if(arm != null){
-                    arm.render(vw);
                 }
 
                 TimeUtil.sleep(1000/fps);

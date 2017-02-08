@@ -150,7 +150,7 @@ public class ObjectProperty implements ISoarObject
 
     public static CategorizedData getCatDat(String propName, HashMap<String, FloatWME> values){
     	CategorizedData catDat =
-            new CategorizedData(PerceptualProperty.getPropertyID(propName));
+            new CategorizedData(ObjectProperty.getPropertyID(propName));
 
 		int i = 0;
 		for(Map.Entry<String, FloatWME> val : values.entrySet()){

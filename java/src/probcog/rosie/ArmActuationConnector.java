@@ -13,7 +13,6 @@ import javax.swing.JMenuBar;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
-import probcog.arm.ArmStatus;
 import probcog.lcmtypes.robot_action_t;
 import probcog.lcmtypes.robot_command_t;
 import probcog.lcmtypes.set_state_command_t;
@@ -50,8 +49,6 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 	
     private LCM lcm;
     
-    private ArmStatus armStatus;
-    
     StringBuilder svsCommands = new StringBuilder();
 
 	private Integer heldObject;
@@ -66,16 +63,6 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     	pose = new Pose();
     	
     	String armConfigFilepath = props.getProperty("arm-config", null);
-    	if(armConfigFilepath == null){
-    		armStatus = null;
-    	} else {
-	        try {
-	  			Config config = new ConfigFile(armConfigFilepath);
-	  			armStatus = new ArmStatus(config);
-	  		} catch (IOException e) {
-	  			armStatus = null;
-	  		}
-    	}
     	heldObject = -1;
 
     	// Setup LCM events
@@ -139,9 +126,9 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 			gotUpdate = false;
 			prevStatus = curStatus;
 		}
-		if(armStatus != null){
-			updateArmInfo();
-		}
+		// if(armStatus != null){
+		// 	updateArmInfo();
+		// }
 		if(svsCommands.length() > 0){
 			soarAgent.getAgent().SendSVSInput(svsCommands.toString());
 			//System.out.println(svsCommands.toString());
@@ -177,32 +164,32 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 
     	pose.updateWithArray(new double[]{0, 0, 0, 0, 0, 0});
     	pose.addToWM(selfId);
-    	
-    	if(armStatus != null){
-        	svsCommands.append("add arm world p 0 0 0 r 0 0 0\n");
-        	
-        	ArrayList<Double> widths = armStatus.getArmSegmentWidths();
-        	ArrayList<double[]> points = armStatus.getArmPoints();
-        	for(int i = 0; i < widths.size(); i++){
-        		// For each segment on the arm, initialize with the correct bounding volume
-        		String name = "seg" + i;
-        		
-        		double[] p1 = points.get(i);
-        		double[] p2 = points.get(i+1);
-        		double len = LinAlg.distance(p1, p2); 
-        		double[] size = new double[]{len, widths.get(i), widths.get(i)};
-        		if(i == widths.size()-1){
-        			// Make the gripper bigger to help with occlusion checks;
-        			size = LinAlg.scale(size, 2);
-        		}
-        		
-        		svsCommands.append("add " + name + " arm p 0 0 0 r 0 0 0 ");
-        		svsCommands.append("s " + size[0] + " " + size[1] + " " + size[2] + " ");
-        		svsCommands.append("v " + SVSCommands.bboxVertices() + "\n");
-        	}
-    	}
+
+    	// if(armStatus != null){
+        // 	svsCommands.append("add arm world p 0 0 0 r 0 0 0\n");
+
+        // 	ArrayList<Double> widths = new ArrayList<Double>();//armStatus.getArmSegmentWidths();
+        //     ArrayList<double[]> points = new ArrayList<Double>();//armStatus.getArmPoints();
+        // 	for(int i = 0; i < widths.size(); i++){
+        // 		// For each segment on the arm, initialize with the correct bounding volume
+        // 		String name = "seg" + i;
+
+        // 		double[] p1 = points.get(i);
+        // 		double[] p2 = points.get(i+1);
+        // 		double len = LinAlg.distance(p1, p2); 
+        // 		double[] size = new double[]{len, widths.get(i), widths.get(i)};
+        // 		if(i == widths.size()-1){
+        // 			// Make the gripper bigger to help with occlusion checks;
+        // 			size = LinAlg.scale(size, 2);
+        // 		}
+
+        // 		svsCommands.append("add " + name + " arm p 0 0 0 r 0 0 0 ");
+        // 		svsCommands.append("s " + size[0] + " " + size[1] + " " + size[2] + " ");
+        // 		svsCommands.append("v " + SVSCommands.bboxVertices() + "\n");
+        // 	}
+    	// }
     }
-    
+
 
     private void updateOL(){
     	if(curStatus == null || prevStatus == null || waitingCommand == null){
@@ -244,8 +231,8 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     		return;
     	}
     	gotArmUpdate = false;
-    	ArrayList<Double> widths = armStatus.getArmSegmentWidths();
-    	ArrayList<double[]> points = armStatus.getArmPoints();
+    	ArrayList<Double> widths = new ArrayList<Double>();//armStatus.getArmSegmentWidths();
+    	ArrayList<double[]> points = new ArrayList<double[]>();//armStatus.getArmPoints();
     	for(int i = 0; i < widths.size(); i++){
     		String name = "seg" + i;
     		

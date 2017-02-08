@@ -3,10 +3,10 @@
 <project name="probcog" default="build" basedir=".">
 
   <!-- Build everything -->
-  <target name="build" depends="generate-lcmtypes,build-java,build-jar,make-src"/>
+  <target name="build" depends="build-java,build-jar"/>
 
   <!-- Clean everything -->
-  <target name="clean" depends="clean-lcmtypes,clean-java,clean-src"/>
+  <target name="clean" depends="clean-java"/>
 
   <!-- Dist Clean everyting -->
   <target name="distclean" depends="clean">
@@ -25,30 +25,6 @@
              Public="yes"
              source="1.6"
 	     />
-  </target>
-
-  <target name="clean-src">
-    <exec executable="make" dir="${basedir}">
-      <arg line="-C ../src/ clean" />
-    </exec>
-  </target>
-
-  <target name="make-src">
-    <exec executable="make" dir="${basedir}">
-      <arg line="-C ../src/" />
-    </exec>
-  </target>
-
-  <target name="clean-lcmtypes">
-    <exec executable="make" dir="${basedir}">
-      <arg line="-f Makefile.lcmgen clean" />
-    </exec>
-  </target>
-
-  <target name="generate-lcmtypes">
-    <exec executable="make" dir="${basedir}">
-      <arg line="-f Makefile.lcmgen" />
-    </exec>
   </target>
 
   <!-- Build Jar -->

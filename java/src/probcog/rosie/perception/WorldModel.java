@@ -278,7 +278,7 @@ public class WorldModel implements ISoarObject
     }
 
     public CategorizedData parseFlag(String flagName, String flagValue){
-        CategorizedData.CategoryType catId = PerceptualProperty.getPropertyID(flagName);
+        CategorizedData.CategoryType catId = ObjectProperty.getPropertyID(flagName);
     	if(catId == null){
     		return null;
     	}

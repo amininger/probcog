@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import probcog.arm.ArmStatus;
 import probcog.classify.ColorFeatureExtractor;
 import probcog.sensor.KinectSensor;
 import probcog.sensor.Sensor;
@@ -39,7 +38,7 @@ public class KinectSegment implements Segmenter
 
     private ArrayList<Sensor> sensors = new ArrayList<Sensor>();
     private Sensor kinect;
-    private ArmStatus arm;
+
     private double baseHeight, wristHeight;
     private ArrayList<Double> armWidths;
     private ArrayList<double[]> armPoints;
@@ -60,10 +59,10 @@ public class KinectSegment implements Segmenter
     public KinectSegment(Config config_, SimWorld world) throws IOException
     {
     	// Get stuff ready for moving arms
-        arm = new ArmStatus(config_);
-        baseHeight = arm.baseHeight;
-        wristHeight = arm.wristHeight;
-        armWidths = arm.getArmSegmentWidths();
+        // arm = new ArmStatus(config_);
+        // baseHeight = arm.baseHeight;
+        // wristHeight = arm.wristHeight;
+        // armWidths = arm.getArmSegmentWidths();
 
         points = new ArrayList<double[]>();
         if(world == null){
@@ -139,7 +138,7 @@ public class KinectSegment implements Segmenter
             double[] p = new double[]{point[0], point[1], point[2]};
             double distToPlane = RANSAC.pointToPlaneDist(p, floorPlane);
             if(distToPlane < MIN_FROM_FLOOR_PLANE ||
-               distToPlane > wristHeight ||
+               //distToPlane > wristHeight ||
                belowPlane(p, floorPlane))
                 //inArmRange(p))
             {
@@ -297,34 +296,34 @@ public class KinectSegment implements Segmenter
 
     /** Determine whether a line is part of the arm, given a set of lines
      *  representing the positions of the joints.**/
-    private boolean inArmRange(double[] p)
-    {
-        assert(armWidths.size() < armPoints.size());
-        for (int i=0; i<armWidths.size(); i++) {
-            double[] p0 = armPoints.get(i);
-            double[] p1 = armPoints.get(i+1);
-            GLine3D line = new GLine3D(p0, p1);
-            double[] cp = line.pointOnLineClosestTo(p);
+    // private boolean inArmRange(double[] p)
+    // {
+    //     assert(armWidths.size() < armPoints.size());
+    //     for (int i=0; i<armWidths.size(); i++) {
+    //         double[] p0 = armPoints.get(i);
+    //         double[] p1 = armPoints.get(i+1);
+    //         GLine3D line = new GLine3D(p0, p1);
+    //         double[] cp = line.pointOnLineClosestTo(p);
 
-            if (cp[0] < Math.min(p0[0], p1[0]) ||
-                cp[0] > Math.max(p0[0], p1[0]) ||
-                cp[1] < Math.min(p0[1], p1[1]) ||
-                cp[1] > Math.max(p0[1], p1[1]))
-            {
-                double d1 = LinAlg.distance(cp, p0);
-                double d2 = LinAlg.distance(cp, p1);
-                if (d1 < d2)
-                    cp = p0;
-                else
-                    cp = p1;
-            }
+    //         if (cp[0] < Math.min(p0[0], p1[0]) ||
+    //             cp[0] > Math.max(p0[0], p1[0]) ||
+    //             cp[1] < Math.min(p0[1], p1[1]) ||
+    //             cp[1] > Math.max(p0[1], p1[1]))
+    //         {
+    //             double d1 = LinAlg.distance(cp, p0);
+    //             double d2 = LinAlg.distance(cp, p1);
+    //             if (d1 < d2)
+    //                 cp = p0;
+    //             else
+    //                 cp = p1;
+    //         }
 
-            if (LinAlg.distance(p, cp) < armWidths.get(i)) {
-                return true;
-            }
-        }
-        return false;
-    }
+    //         if (LinAlg.distance(p, cp) < armWidths.get(i)) {
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
 
     /** For determining whether a point is basically at the origin.**/
     private boolean almostZero(double[] p)
