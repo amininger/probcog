@@ -85,6 +85,7 @@ public class ArmActuationConnector extends AgentConnector{
                                 "rosie_msgs/RobotCommand",
                                 500);
 
+        // DOES NOT EXIST YET
         // Topic armAct = new Topic(ros,
         //                          "/rosie_arm_status",
         //                          "rosie_msgs/RobotAction");
@@ -145,14 +146,16 @@ public class ArmActuationConnector extends AgentConnector{
     			if(curStatus.getString("action").toLowerCase().equals("drop")){
     				sentCommand = null;
     			} else if(TimeUtil.utime() > sentTime + 2000000){
-    		    	//lcm.publish("ROBOT_COMMAND", sentCommand);
+                    Message m = new Message(sentCommand);
+                    armCommands.publish(m);
     		    	sentTime = TimeUtil.utime();
     			}
     		} else if(sentCommand.getString("action").toLowerCase().contains("grab")){
     			if(curStatus.getString("action").toLowerCase().equals("grab")){
     				sentCommand = null;
     			} else if(TimeUtil.utime() > sentTime + 2000000){
-    		    	//lcm.publish("ROBOT_COMMAND", sentCommand);
+                    Message m = new Message(sentCommand);
+                    armCommands.publish(m);
     		    	sentTime = TimeUtil.utime();
     			}
     		}
@@ -320,15 +323,18 @@ public class ArmActuationConnector extends AgentConnector{
         	return;
         }
 
-        // robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime();
-        // command.action = String.format("GRAB=%d", percId);
-        // command.dest = new double[6];
-        // System.out.println("PICK UP: " + percId + " (Soar Handle: " + objectHandleStr + ")");
-    	// lcm.publish("ROBOT_COMMAND", command);
-        // sentCommand = command;
+        JsonObject jo = Json.createObjectBuilder()
+            .add("utime", TimeUtil.utime())
+            .add("action", String.format("GRAB=%d", percId))
+            .build();
+        Message m = new Message(jo);
+        armCommands.publish(m);
+
         sentTime = TimeUtil.utime();
+        sentCommand = jo;
         waitingCommand = pickUpId;
+        System.out.println("PICK UP: " + percId +
+                           " (Soar Handle: " + objectHandleStr + ")");
     }
 
     /**
@@ -348,15 +354,22 @@ public class ArmActuationConnector extends AgentConnector{
                 locationId, "y", "Error (put-down): No ^location.y attribute"));
         double z = Double.parseDouble(SoarUtil.getValueOfAttribute(
                 locationId, "z", "Error (put-down): No ^location.z attribute"));
-        // robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime();
-        // command.action = "DROP";
-        // command.dest = new double[]{x, y, z, 0, 0, 0};
-    	// lcm.publish("ROBOT_COMMAND", command);
-        // sentCommand = command;
+
+        JsonObject jo = Json.createObjectBuilder()
+            .add("utime", TimeUtil.utime())
+            .add("action", "DROP")
+            .add("drop", Json.createObjectBuilder()
+                 .add("x", x)
+                 .add("y", y)
+                 .add("z", z))
+            .build();
+        Message m = new Message(jo);
+        armCommands.publish(m);
+
         sentTime = TimeUtil.utime();
-        System.out.println("Put down at " + x + ", " + y + ", " + z);
+        sentCommand = jo;
         waitingCommand = putDownId;
+        System.out.println("PUT DOWN: " + x + ", " + y + ", " + z);
     }
 
     /**
@@ -380,6 +393,7 @@ public class ArmActuationConnector extends AgentConnector{
         String value = SoarUtil.getValueOfAttribute(id, "value",
                 "Error (set-state): No ^value attribute");
 
+        // NOT SURE WHAT IS UP
         // set_state_command_t command = new set_state_command_t();
         // command.utime = TimeUtil.utime();
         // command.state_name = name;
@@ -401,30 +415,33 @@ public class ArmActuationConnector extends AgentConnector{
         	return;
         }
 
-        // robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime();
-        // command.dest = new double[]{0, 0, 0, 0, 0, 0};
-    	// command.action = "POINT=" + percId;
-    	// lcm.publish("ROBOT_COMMAND", command);
-        // pointId.CreateStringWME("status", "complete");
+        JsonObject jo = Json.createObjectBuilder()
+            .add("utime", TimeUtil.utime())
+            .add("action", String.format("POINT=%d", percId))
+            .build();
+        Message m = new Message(jo);
+        armCommands.publish(m);
+        pointId.CreateStringWME("status", "complete");
     }
 
     private void processHomeCommand(Identifier id){
-    	// robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime();
-        // command.dest = new double[6];
-    	// command.action = "HOME";
-    	// lcm.publish("ROBOT_COMMAND", command);
-        // id.CreateStringWME("status", "complete");
+        JsonObject jo = Json.createObjectBuilder()
+            .add("utime", TimeUtil.utime())
+            .add("action", "HOME")
+            .build();
+        Message m = new Message(jo);
+        armCommands.publish(m);
+        id.CreateStringWME("status", "complete");
     }
 
     private void processResetCommand(Identifier id){
-    	// robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime();
-        // command.dest = new double[6];
-    	// command.action = "RESET";
-    	// lcm.publish("ROBOT_COMMAND", command);
-        // id.CreateStringWME("status", "complete");
+        JsonObject jo = Json.createObjectBuilder()
+            .add("utime", TimeUtil.utime())
+            .add("action", "RESET")
+            .build();
+        Message m = new Message(jo);
+        armCommands.publish(m);
+        id.CreateStringWME("status", "complete");
     }
 
     public void createMenu(JMenuBar menuBar){
