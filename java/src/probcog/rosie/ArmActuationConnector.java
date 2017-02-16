@@ -10,13 +10,6 @@ import javax.swing.JButton;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 
-import lcm.lcm.LCM;
-import lcm.lcm.LCMDataInputStream;
-import lcm.lcm.LCMSubscriber;
-// import probcog.lcmtypes.robot_action_t;
-// import probcog.lcmtypes.robot_command_t;
-// import probcog.lcmtypes.set_state_command_t;
-//import probcog.rosie.scripting.ResetRobotArm;
 import sml.Agent;
 import sml.Agent.OutputEventInterface;
 import sml.Agent.RunEventInterface;
@@ -32,88 +25,99 @@ import edu.umich.rosie.*;
 import edu.umich.rosie.soar.*;
 import edu.umich.rosie.soarobjects.Pose;
 
+import edu.wpi.rail.jrosbridge.*;
+import edu.wpi.rail.jrosbridge.messages.*;
+import edu.wpi.rail.jrosbridge.callback.*;
+import javax.json.*;
 
-
-public class ArmActuationConnector extends AgentConnector implements LCMSubscriber{
+public class ArmActuationConnector extends AgentConnector{
 	private Identifier selfId;
 	private Identifier armId;
 
 	private Pose pose;
-	
-	// private robot_action_t curStatus = null;
-	// private robot_action_t prevStatus = null;
-	// Last received information about the arm
-	
+
 	private boolean gotUpdate = false;
 	private boolean gotArmUpdate = false;
-	
-    private LCM lcm;
-    
-    StringBuilder svsCommands = new StringBuilder();
+
+    private Ros ros;
+    private Topic armCommands;
+
+	// Last received information about the arm
+	private JsonObject curStatus = null;
+	private JsonObject prevStatus = null;
+
+    private JsonObject sentCommand = null;
+    private long sentTime = 0;
+
+    private StringBuilder svsCommands = new StringBuilder();
 
 	private Integer heldObject;
-    
-    //    private robot_command_t sentCommand = null;
-    private long sentTime = 0;
-    
+
     private Identifier waitingCommand = null;
 
     public ArmActuationConnector(SoarAgent agent, Properties props){
     	super(agent);
     	pose = new Pose();
-    	
+
     	String armConfigFilepath = props.getProperty("arm-config", null);
     	heldObject = -1;
 
-    	// Setup LCM events
-        lcm = LCM.getSingleton();
-        
         // Setup Output Link Events
         String[] outputHandlerStrings = { "pick-up", "put-down", "point", "set-state", "home", "reset"};
         this.setOutputHandlerNames(outputHandlerStrings);
     }
-    
+
     @Override
     public void connect(){
     	super.connect();
-        lcm.subscribe("ROBOT_ACTION", this);
-        lcm.subscribe("ARM_STATUS", this);
+        ros = new Ros();
+        ros.connect();
+
+        if (ros.isConnected()) {
+            System.out.println("ArmActuationConnector connected to rosbridge server.");
+        }
+        else {
+            System.out.println("ArmActuationConnector NOT CONNECTED TO ROSBRIDGE");
+        }
+
+        armCommands = new Topic(ros,
+                                "/rosie_arm_commands",
+                                "rosie_msgs/RobotCommand",
+                                500);
+
+        // Topic armAct = new Topic(ros,
+        //                          "/rosie_arm_status",
+        //                          "rosie_msgs/RobotAction");
+        // System.out.println("Subscribing to arm status updates!");
+        // armAct.subscribe(new TopicCallback() {
+        //         public void handleMessage(Message message) {
+        //             JsonObject jobj = message.toJsonObject();
+        //             // try {
+        //             // 	robot_action_t action = new robot_action_t(ins);
+        //             // 	newRobotStatus(action);
+        //             // } catch (IOException e) {
+        //             // 	e.printStackTrace();
+        //             // }
+        //         }
+        //     });
     }
-    
+
     @Override
     public void disconnect(){
     	super.disconnect();
     	pose.removeFromWM();
-        lcm.unsubscribe("ROBOT_ACTION", this);
-        lcm.unsubscribe("ARM_STATUS", this);
     }
-    
-    @Override
-    public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
-    	if(channel.equals("ROBOT_ACTION")){
-    		// try {
-    		// 	robot_action_t action = new robot_action_t(ins);
-			// 	newRobotStatus(action);
-			// } catch (IOException e) {
-			// 	e.printStackTrace();
-			// }
-    	} else if(channel.equals("ARM_STATUS")){
-    		gotArmUpdate = true;
-    	}
+
+    public void newRobotStatus(JsonObject status) {
+    	curStatus = status;
+    	gotUpdate = true;
     }
-    
-    // public void newRobotStatus(robot_action_t status){
-    // 	curStatus = status;
-    // 	gotUpdate = true;
-    // }
-    
+
     public String getStatus(){
-    	// if(curStatus == null){
-    	// 	return "wait";
-    	// } else {
-    	// 	return curStatus.action.toLowerCase();
-    	// }
-        return "wait";
+    	if(curStatus == null){
+    		return "wait";
+    	}
+        return curStatus.getString("action").toLowerCase();
     }
 
 	// Happens during an input phase
@@ -125,8 +129,9 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 			updateOL();
 			updateIL();
 			gotUpdate = false;
-            //			prevStatus = curStatus;
+            prevStatus = curStatus;
 		}
+        // ARM MODEL
 		// if(armStatus != null){
 		// 	updateArmInfo();
 		// }
@@ -135,23 +140,23 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 			//System.out.println(svsCommands.toString());
 			svsCommands = new StringBuilder();
 		}
-    	// if(sentCommand != null && curStatus != null){
-    	// 	if(sentCommand.action.toLowerCase().contains("drop")){
-    	// 		if(curStatus.action.toLowerCase().equals("drop")){
-    	// 			sentCommand = null;
-    	// 		} else if(TimeUtil.utime() > sentTime + 2000000){
-    	// 	    	lcm.publish("ROBOT_COMMAND", sentCommand);
-    	// 	    	sentTime = TimeUtil.utime();
-    	// 		}
-    	// 	} else if(sentCommand.action.toLowerCase().contains("grab")){
-    	// 		if(curStatus.action.toLowerCase().equals("grab")){
-    	// 			sentCommand = null;
-    	// 		} else if(TimeUtil.utime() > sentTime + 2000000){
-    	// 	    	lcm.publish("ROBOT_COMMAND", sentCommand);
-    	// 	    	sentTime = TimeUtil.utime();
-    	// 		}
-    	// 	}
-    	//}
+    	if(sentCommand != null && curStatus != null){
+    		if(sentCommand.getString("action").toLowerCase().contains("drop")){
+    			if(curStatus.getString("action").toLowerCase().equals("drop")){
+    				sentCommand = null;
+    			} else if(TimeUtil.utime() > sentTime + 2000000){
+    		    	//lcm.publish("ROBOT_COMMAND", sentCommand);
+    		    	sentTime = TimeUtil.utime();
+    			}
+    		} else if(sentCommand.getString("action").toLowerCase().contains("grab")){
+    			if(curStatus.getString("action").toLowerCase().equals("grab")){
+    				sentCommand = null;
+    			} else if(TimeUtil.utime() > sentTime + 2000000){
+    		    	//lcm.publish("ROBOT_COMMAND", sentCommand);
+    		    	sentTime = TimeUtil.utime();
+    			}
+    		}
+    	}
 	}
 
     private void initIL(){
@@ -165,6 +170,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     	pose.updateWithArray(new double[]{0, 0, 0, 0, 0, 0});
     	pose.addToWM(selfId);
 
+        // ARM MODEL
     	// if(armStatus != null){
         // 	svsCommands.append("add arm world p 0 0 0 r 0 0 0\n");
 
@@ -192,77 +198,85 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 
 
     private void updateOL(){
-    	// if(curStatus == null || prevStatus == null || waitingCommand == null){
-    	// 	return;
-    	// }
-    	// String curAction = curStatus.action.toLowerCase();
-    	// String prevAction = prevStatus.action.toLowerCase();
-    	// if(!prevAction.contains("wait") && !prevAction.contains("failure")){
-    	// 	if(curAction.contains("wait")){
-    	// 		waitingCommand.CreateStringWME("status", "complete");
-    	// 		waitingCommand = null;
-    	// 	} else if(curAction.contains("failure")){
-    	// 		waitingCommand.CreateStringWME("status", "failure");
-    	// 		waitingCommand = null;
-    	// 	}
-    	// }
+    	if(curStatus == null || prevStatus == null || waitingCommand == null){
+    		return;
+    	}
+    	String curAction = curStatus.getString("action").toLowerCase();
+    	String prevAction = prevStatus.getString("action").toLowerCase();
+    	if(!prevAction.contains("wait") && !prevAction.contains("failure")){
+    		if(curAction.contains("wait")){
+    			waitingCommand.CreateStringWME("status", "complete");
+    			waitingCommand = null;
+    		} else if(curAction.contains("failure")){
+    			waitingCommand.CreateStringWME("status", "failure");
+    			waitingCommand = null;
+    		}
+    	}
     }
 
     private void updateIL(){
-    	//heldObject = curStatus.obj_id;
-    	//SoarUtil.updateStringWME(armId, "moving-status", curStatus.action.toLowerCase());
-//    	if(prevStatus == null){
-//        	SoarUtil.updateStringWME(selfId, "prev-action", "wait");
-//    	} else {
-//        	SoarUtil.updateStringWME(selfId, "prev-action", prevStatus.action.toLowerCase());
-//    	}
+    	heldObject = curStatus.getInt("obj_id");
+    	SoarUtil.updateStringWME(armId, "moving-status",
+                                 curStatus.getString("action").toLowerCase());
+        if(prevStatus == null){
+            SoarUtil.updateStringWME(selfId, "prev-action", "wait");
+        } else {
+            SoarUtil.updateStringWME(selfId, "prev-action",
+                                     prevStatus.getString("action").toLowerCase());
+        }
     	ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
-    	// if (curStatus.obj_id == -1){
-    	// 	SoarUtil.updateStringWME(armId, "holding-object", "none");
-    	// } else {
-    	// 	SoarUtil.updateStringWME(armId, "holding-object", perception.getWorld().getSoarHandle(curStatus.obj_id).toString());
-    	// }
-    	// pose.updateWithArray(curStatus.xyz);
+    	if (curStatus.getInt("obj_id") == -1){
+    		SoarUtil.updateStringWME(armId, "holding-object", "none");
+    	} else {
+    		SoarUtil.updateStringWME(armId, "holding-object",
+                                     perception.getWorld().getSoarHandle(curStatus.getInt("obj_id")).toString());
+    	}
+        JsonObject gripXYZ = curStatus.getJsonObject("gripper_pos").getJsonObject("translation");
+        double[] gp = new double[]{gripXYZ.getJsonNumber("x").doubleValue(),
+                                   gripXYZ.getJsonNumber("y").doubleValue(),
+                                   gripXYZ.getJsonNumber("z").doubleValue()};
+    	pose.updateWithArray(gp);
     	pose.updateWM();
     }
-    
+
     private void updateArmInfo(){
-    	if(!gotArmUpdate){
-    		return;
-    	}
-    	gotArmUpdate = false;
-    	ArrayList<Double> widths = new ArrayList<Double>();//armStatus.getArmSegmentWidths();
-    	ArrayList<double[]> points = new ArrayList<double[]>();//armStatus.getArmPoints();
-    	for(int i = 0; i < widths.size(); i++){
-    		String name = "seg" + i;
-    		
-    		double[] p1 = points.get(i);
-			double[] p2 = points.get(i+1);
-			double[] center = LinAlg.scale(LinAlg.add(p1, p2), .5);
-			double[] dir = LinAlg.subtract(p2, p1);
-			
-			double hyp = Math.sqrt(dir[0] * dir[0] + dir[1] * dir[1]);
-			
-			double theta = 0;
-			if(Math.abs(dir[0]) > .0001 || Math.abs(dir[1]) > .0001){
-				theta = Math.atan2(dir[1], dir[0]);
-			} 
-			
-			double phi = Math.PI/2;
-			if(Math.abs(hyp) > .0001 || Math.abs(dir[2]) > .0001){
-				phi = -Math.atan2(dir[2], hyp);
-			}
-			
-			double[][] rotZ = LinAlg.rotateZ(theta);
-			double[][] rotY = LinAlg.rotateY(phi);
-			
-			double[] rot = LinAlg.matrixToRollPitchYaw(LinAlg.matrixAB(rotZ, rotY));
-			
-			svsCommands.append(SVSCommands.changePos(name, center));
-			svsCommands.append(SVSCommands.changeRot(name, rot));
-    	}
+        // ARM MODEL
+    	// if(!gotArmUpdate){
+    	// 	return;
+    	// }
+    	// gotArmUpdate = false;
+    	// ArrayList<Double> widths = new ArrayList<Double>();//armStatus.getArmSegmentWidths();
+    	// ArrayList<double[]> points = new ArrayList<double[]>();//armStatus.getArmPoints();
+    	// for(int i = 0; i < widths.size(); i++){
+    	// 	String name = "seg" + i;
+
+    	// 	double[] p1 = points.get(i);
+		// 	double[] p2 = points.get(i+1);
+		// 	double[] center = LinAlg.scale(LinAlg.add(p1, p2), .5);
+		// 	double[] dir = LinAlg.subtract(p2, p1);
+
+		// 	double hyp = Math.sqrt(dir[0] * dir[0] + dir[1] * dir[1]);
+
+		// 	double theta = 0;
+		// 	if(Math.abs(dir[0]) > .0001 || Math.abs(dir[1]) > .0001){
+		// 		theta = Math.atan2(dir[1], dir[0]);
+		// 	}
+
+		// 	double phi = Math.PI/2;
+		// 	if(Math.abs(hyp) > .0001 || Math.abs(dir[2]) > .0001){
+		// 		phi = -Math.atan2(dir[2], hyp);
+		// 	}
+
+		// 	double[][] rotZ = LinAlg.rotateZ(theta);
+		// 	double[][] rotY = LinAlg.rotateY(phi);
+
+		// 	double[] rot = LinAlg.matrixToRollPitchYaw(LinAlg.matrixAB(rotZ, rotY));
+
+		// 	svsCommands.append(SVSCommands.changePos(name, center));
+		// 	svsCommands.append(SVSCommands.changeRot(name, rot));
+    	// }
     }
-    
+
     /**********************************************************
      * OUTPUT EVENTS
      ***********************************************************/
@@ -271,16 +285,16 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     protected void onOutputEvent(String attName, Identifier id){
         if (attName.equals("set-state")) {
             processSetCommand(id);
-        } 
+        }
         else if (attName.equals("pick-up")) {
             processPickUpCommand(id);
-        } 
+        }
         else if (attName.equals("put-down")) {
             processPutDownCommand(id);
-        } 
+        }
         else if (attName.equals("point")) {
             processPointCommand(id);
-        } 
+        }
         else if(attName.equals("home")){
         	processHomeCommand(id);
         }
@@ -288,7 +302,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         	processResetCommand(id);
         }
 	}
-    
+
     /**
      * Takes a pick-up command on the output link given as an identifier and
      * uses it to update the internal robot_command_t command. Expects pick-up
@@ -305,9 +319,9 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         	pickUpId.CreateStringWME("status", "error");
         	return;
         }
-        
+
         // robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime(); 
+        // command.utime = TimeUtil.utime();
         // command.action = String.format("GRAB=%d", percId);
         // command.dest = new double[6];
         // System.out.println("PICK UP: " + percId + " (Soar Handle: " + objectHandleStr + ")");
@@ -327,7 +341,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         Identifier locationId = SoarUtil.getIdentifierOfAttribute(
                 putDownId, "location",
                 "Error (put-down): No ^location identifier");
-        
+
         double x = Double.parseDouble(SoarUtil.getValueOfAttribute(
                 locationId, "x", "Error (put-down): No ^location.x attribute"));
         double y = Double.parseDouble(SoarUtil.getValueOfAttribute(
@@ -335,7 +349,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         double z = Double.parseDouble(SoarUtil.getValueOfAttribute(
                 locationId, "z", "Error (put-down): No ^location.z attribute"));
         // robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime(); 
+        // command.utime = TimeUtil.utime();
         // command.action = "DROP";
         // command.dest = new double[]{x, y, z, 0, 0, 0};
     	// lcm.publish("ROBOT_COMMAND", command);
@@ -360,14 +374,14 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         	id.CreateStringWME("status", "error");
         	return;
         }
-        
+
         String name = SoarUtil.getValueOfAttribute(id,
                 "name", "Error (set-state): No ^name attribute");
         String value = SoarUtil.getValueOfAttribute(id, "value",
                 "Error (set-state): No ^value attribute");
 
         // set_state_command_t command = new set_state_command_t();
-        // command.utime = TimeUtil.utime(); 
+        // command.utime = TimeUtil.utime();
         // command.state_name = name;
         // command.state_val = value;
         // command.obj_id = percId;
@@ -377,7 +391,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 
     private void processPointCommand(Identifier pointId)
     {
-    	String objHandleStr = SoarUtil.getValueOfAttribute(pointId, "object-handle", 
+    	String objHandleStr = SoarUtil.getValueOfAttribute(pointId, "object-handle",
     			"Error (point): No ^object-handle attribute");
     	ArmPerceptionConnector perc = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
         Integer percId = perc.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
@@ -386,18 +400,18 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         	pointId.CreateStringWME("status", "error");
         	return;
         }
-        
+
         // robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime(); 
+        // command.utime = TimeUtil.utime();
         // command.dest = new double[]{0, 0, 0, 0, 0, 0};
     	// command.action = "POINT=" + percId;
     	// lcm.publish("ROBOT_COMMAND", command);
         // pointId.CreateStringWME("status", "complete");
     }
-    
+
     private void processHomeCommand(Identifier id){
     	// robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime(); 
+        // command.utime = TimeUtil.utime();
         // command.dest = new double[6];
     	// command.action = "HOME";
     	// lcm.publish("ROBOT_COMMAND", command);
@@ -406,13 +420,13 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 
     private void processResetCommand(Identifier id){
     	// robot_command_t command = new robot_command_t();
-        // command.utime = TimeUtil.utime(); 
+        // command.utime = TimeUtil.utime();
         // command.dest = new double[6];
     	// command.action = "RESET";
     	// lcm.publish("ROBOT_COMMAND", command);
         // id.CreateStringWME("status", "complete");
     }
-    
+
     public void createMenu(JMenuBar menuBar){
     	JMenu actionMenu = new JMenu("Action");
     	JButton armResetButton  = new JButton("Reset Arm");
@@ -423,7 +437,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 			}
         });
         actionMenu.add(armResetButton);
-        
+
         menuBar.add(actionMenu);
     }
 
