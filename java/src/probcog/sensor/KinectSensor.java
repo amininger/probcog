@@ -32,6 +32,20 @@ import javax.xml.bind.DatatypeConverter;
  **/
 public class KinectSensor implements Sensor
 {
+    // To compute the k2wXform, need these Fetch links
+    // Default joint positions for torso lift, head pan, head tilt at the moment
+    //--should actually get from ROS
+    private double[] BASE_LINK_XYZRPY = {-0.0036, 0.0, 0.0014, 0.0, 0.0, 0.0};
+    private double[] TORSO_LIFT_XYZRPY = {-0.086875, 0.0, 0.27743+0.4, 0.0, 0.0, 0.0};
+    private double[] HEAD_PAN_XYZRPY = {0.053125, 0.0, 0.603001417713939, 0.0, 0.0, 0.0};
+    private double[] HEAD_TILT_XYZRPY = {0.14253, 0.0, 0.057999, 0.0, 0.85, 0.0};
+    private double[] HEAD_CAMERA_XYZRPY = {0.055, 0, 0.0225, 0.0, 0.0, 0.0};
+    private double[] HEAD_DEPTH_XYZRPY = {0.0, 0.045, 0.0, 0.0, 0.0, 0.0};
+    private double[] HEAD_DEPTH_OPTICAL_XYZRPY = {0.0, 0.0, 0.0, -Math.PI/2, 0.0, -Math.PI/2};
+
+    // From ROS world file
+    private double[] TABLE_CENTER_XYZRPY = {0.8, 0.0, 0.7, 0.0, 0.0, 0.0};
+
     Config config;
 
     Object kinectLock = new Object();
@@ -44,8 +58,6 @@ public class KinectSensor implements Sensor
     // Stash
     byte[] dataStash;
     int stashWidth, stashHeight;
-    //BufferedImage r_rgbIm;
-    //BufferedImage r_depthIm;
     ArrayList<double[]> points;
 
     // Calibration
@@ -105,48 +117,34 @@ public class KinectSensor implements Sensor
         rasterizer = new NearestNeighborRasterizer(input, output);
 
         // Initialize kinect-to-world transform
-        robot = null;
-        if (robot != null) {
-            System.out.println("Loading robot calibration from file...");
-            // Create the k2w transform
-            k2wXform = new double[4][4];
-            double[] k2wArray = robot.getDoubles("calibration.k2w");
-            for (int i = 0; i < 4; i++) {
-                for (int j = 0; j < 4; j++) {
-                    k2wXform[i][j] = k2wArray[i*4 + j];
-                }
-            }
+        k2wXform = LinAlg.identity(4);
+        LinAlg.timesEquals(k2wXform, LinAlg.inverse(LinAlg.xyzrpyToMatrix(TABLE_CENTER_XYZRPY)));
 
-            // Build bounding poly
-            ArrayList<double[]> polypoints = new ArrayList<double[]>();
-            double[] dim = robot.getDoubles("calibration.dim");
-            double[] polyArray = robot.getDoubles("calibration.poly");
-            for (int i = 0; i < polyArray.length; i+=2) {
-                polypoints.add(new double[] {polyArray[i], polyArray[i+1]});
-            }
-            poly = new april.jmat.geom.Polygon(polypoints);
-        } else {
-            k2wXform = LinAlg.translate(0, -0.8, 0.7);
-            LinAlg.timesEquals(k2wXform, LinAlg.rotateX(-2.42));
+        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(BASE_LINK_XYZRPY));
+        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(TORSO_LIFT_XYZRPY));
+        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_PAN_XYZRPY));
+        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_TILT_XYZRPY));
+        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_CAMERA_XYZRPY));
+        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_DEPTH_XYZRPY));
+        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_DEPTH_OPTICAL_XYZRPY));
 
-            double[] polyArray = new double[] {6, 459, 105, 258, 469, 257, 566, 454};
-            ArrayList<double[]> polypoints = new ArrayList<double[]>();
-            for (int i = 0; i < polyArray.length; i+=2) {
-                polypoints.add(new double[] {polyArray[i], polyArray[i+1]});
-            }
-            poly = new april.jmat.geom.Polygon(polypoints);
-        }
         k2wXform_T = LinAlg.transpose(k2wXform);
 
-        //x Spin up LCM listener
+        double[] polyArray = new double[] {6, 459, 105, 258, 469, 257, 566, 454};
+        ArrayList<double[]> polypoints = new ArrayList<double[]>();
+        for (int i = 0; i < polyArray.length; i+=2) {
+            polypoints.add(new double[] {polyArray[i], polyArray[i+1]});
+        }
+        poly = new april.jmat.geom.Polygon(polypoints);
+
         Ros ros = new Ros();
         ros.connect();
 
         if (ros.isConnected()) {
-            System.out.println("Subscriber connected to rosbridge server.");
+            System.out.println("KinectSensor connected to rosbridge server.");
         }
         else {
-            System.out.println("SUBSCRIBER NOT CONNECTED TO ROSBRIDGE");
+            System.out.println("KinectSensor NOT CONNECTED TO ROSBRIDGE");
         }
 
         Topic kinect_data = new Topic(ros,
