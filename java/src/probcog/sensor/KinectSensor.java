@@ -35,16 +35,16 @@ public class KinectSensor implements Sensor
     // To compute the k2wXform, need these Fetch links
     // Default joint positions for torso lift, head pan, head tilt at the moment
     //--should actually get from ROS
-    private double[] BASE_LINK_XYZRPY = {-0.0036, 0.0, 0.0014, 0.0, 0.0, 0.0};
-    private double[] TORSO_LIFT_XYZRPY = {-0.086875, 0.0, 0.27743+0.4, 0.0, 0.0, 0.0};
-    private double[] HEAD_PAN_XYZRPY = {0.053125, 0.0, 0.603001417713939, 0.0, 0.0, 0.0};
-    private double[] HEAD_TILT_XYZRPY = {0.14253, 0.0, 0.057999, 0.0, 0.85, 0.0};
-    private double[] HEAD_CAMERA_XYZRPY = {0.055, 0, 0.0225, 0.0, 0.0, 0.0};
+    private double[] BASE_LINK_XYZRPY = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    private double[] TORSO_LIFT_XYZRPY = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    private double[] HEAD_PAN_XYZRPY = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    private double[] HEAD_TILT_XYZRPY = {0.1087, 0.000177, 1.42458, 0.0, 0.85, 0.0};
+    private double[] HEAD_CAMERA_XYZRPY = {0.055, 0, 0.0, 0.0, 0.0, 0.0};
     private double[] HEAD_DEPTH_XYZRPY = {0.0, 0.045, 0.0, 0.0, 0.0, 0.0};
     private double[] HEAD_DEPTH_OPTICAL_XYZRPY = {0.0, 0.0, 0.0, -Math.PI/2, 0.0, -Math.PI/2};
 
     // From ROS world file
-    private double[] TABLE_CENTER_XYZRPY = {0.8, 0.0, 0.7, 0.0, 0.0, 0.0};
+    private double[] TABLE_CENTER_XYZRPY = {0.8, 0.0, (-0.08+0.755+0.02), 0.0, 0.0, 0.0};
 
     Config config;
 
