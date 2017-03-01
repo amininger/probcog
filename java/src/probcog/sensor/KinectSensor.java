@@ -35,13 +35,19 @@ public class KinectSensor implements Sensor
     // To compute the k2wXform, need these Fetch links
     // Default joint positions for torso lift, head pan, head tilt at the moment
     //--should actually get from ROS
-    private double[] BASE_LINK_XYZRPY = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    private double[] TORSO_LIFT_XYZRPY = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    private double[] HEAD_PAN_XYZRPY = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    private double[] HEAD_TILT_XYZRPY = {0.1087, 0.000177, 1.42458, 0.0, 0.85, 0.0};
+    private double[] BASE_LINK_XYZRPY = {-0.0036, 0.0, 0.0014, 0.0, 0.0, 0.0};
+    private double[] TORSO_LIFT_XYZRPY = {-0.086875, 0.0, 0.37743,
+                                            0.0, 0.0, 0.0};
+    private double[] HEAD_PAN_XYZRPY = {0.053125, 0.0, 0.6030014, 0.0, 0.0, 0.0};
+    private double[] HEAD_TILT_XYZRPY = {0.14253, 0.0, 0.057999, 0.0, 0.0, 0.0};
     private double[] HEAD_CAMERA_XYZRPY = {0.055, 0, 0.0, 0.0, 0.0, 0.0};
     private double[] HEAD_DEPTH_XYZRPY = {0.0, 0.045, 0.0, 0.0, 0.0, 0.0};
     private double[] HEAD_DEPTH_OPTICAL_XYZRPY = {0.0, 0.0, 0.0, -Math.PI/2, 0.0, -Math.PI/2};
+    private double curTorsoLift;
+    private double curHeadPan;
+    private double curHeadTilt;
+    Object jointsLock = new Object();
+    Object xformLock = new Object();
 
     // From ROS world file
     private double[] TABLE_CENTER_XYZRPY = {0.8, 0.0, (-0.08+0.755+0.02), 0.0, 0.0, 0.0};
@@ -76,11 +82,14 @@ public class KinectSensor implements Sensor
     double[][] k2wXform_T;
     april.jmat.geom.Polygon poly;
 
+    private boolean receivedJoints;
+
     public KinectSensor(Config config_) throws IOException{
     	init(config_);
     }
 
     private void init(Config config_) throws IOException{
+        receivedJoints = false;
         config = config_;
 
         // Pull out config files
@@ -116,19 +125,7 @@ public class KinectSensor implements Sensor
         System.err.println("NFO: Initializing rasterizer");
         rasterizer = new NearestNeighborRasterizer(input, output);
 
-        // Initialize kinect-to-world transform
-        k2wXform = LinAlg.identity(4);
-        LinAlg.timesEquals(k2wXform, LinAlg.inverse(LinAlg.xyzrpyToMatrix(TABLE_CENTER_XYZRPY)));
-
-        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(BASE_LINK_XYZRPY));
-        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(TORSO_LIFT_XYZRPY));
-        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_PAN_XYZRPY));
-        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_TILT_XYZRPY));
-        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_CAMERA_XYZRPY));
-        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_DEPTH_XYZRPY));
-        LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_DEPTH_OPTICAL_XYZRPY));
-
-        k2wXform_T = LinAlg.transpose(k2wXform);
+        calculateXform();
 
         double[] polyArray = new double[] {6, 459, 105, 258, 469, 257, 566, 454};
         ArrayList<double[]> polypoints = new ArrayList<double[]>();
@@ -170,10 +167,73 @@ public class KinectSensor implements Sensor
                     }
                 }
             });
+
+        synchronized(jointsLock) {
+            curTorsoLift = -1;
+            curHeadPan = -1;
+            curHeadTilt = -1;
+        }
+        Topic joint_data = new Topic(ros,
+                                     "/joint_states",
+                                     "sensor_msgs/JointState", 2000);
+        joint_data.subscribe(new TopicCallback() {
+                @Override
+                public void handleMessage(Message message) {
+                    JsonObject jobj = message.toJsonObject();
+                    synchronized(jointsLock) {
+                        JsonArray names = jobj.getJsonArray("name");
+                        JsonArray poses = jobj.getJsonArray("position");
+                        for (int i = 0; i < names.size(); i++) {
+                            String n = names.getString(i);
+                            if (n.contains("torso_lift_joint")) {
+                                curTorsoLift = poses.getJsonNumber(i).doubleValue();
+                            }
+                            else if (n.contains("head_pan_joint")) {
+                                curHeadPan = poses.getJsonNumber(i).doubleValue();
+                            }
+                            else if (n.contains("head_tilt_joint")) {
+                                curHeadTilt = poses.getJsonNumber(i).doubleValue();
+                            }
+                        }
+                    }
+                    if (!receivedJoints) receivedJoints = true;
+                    calculateXform();
+                }
+            });
+    }
+
+    public void calculateXform()
+    {
+        double[][] curTorsoLiftMatrix = LinAlg.xyzrpyToMatrix(TORSO_LIFT_XYZRPY);
+        double[][] curHeadPanMatrix = LinAlg.xyzrpyToMatrix(HEAD_PAN_XYZRPY);
+        double[][] curHeadTiltMatrix = LinAlg.xyzrpyToMatrix(HEAD_TILT_XYZRPY);
+        synchronized(jointsLock) {
+            curTorsoLiftMatrix[2][3] += curTorsoLift;
+            LinAlg.timesEquals(curHeadPanMatrix,
+                               LinAlg.rotateZ(curHeadPan));
+            LinAlg.timesEquals(curHeadTiltMatrix,
+                               LinAlg.rotateY(curHeadTilt));
+
+        }
+        synchronized(xformLock) {
+            k2wXform = LinAlg.identity(4);
+            LinAlg.timesEquals(k2wXform, LinAlg.inverse(LinAlg.xyzrpyToMatrix(TABLE_CENTER_XYZRPY)));
+            LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(BASE_LINK_XYZRPY));
+            LinAlg.timesEquals(k2wXform, curTorsoLiftMatrix);
+            LinAlg.timesEquals(k2wXform, curHeadPanMatrix);
+            LinAlg.timesEquals(k2wXform, curHeadTiltMatrix);
+            LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_CAMERA_XYZRPY));
+            LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_DEPTH_XYZRPY));
+            LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(HEAD_DEPTH_OPTICAL_XYZRPY));
+
+            k2wXform_T = LinAlg.transpose(k2wXform);
+        }
     }
 
     public double[][] getTransform(){
-    	return k2wXform;
+        synchronized (xformLock) {
+            return k2wXform;
+        }
     }
 
     public double[] getParams(){
@@ -196,6 +256,8 @@ public class KinectSensor implements Sensor
      */
     public boolean stashFrame()
     {
+        if (!receivedJoints) return false;
+
         // Haven't received a new frame yet
         synchronized (kinectLock) {
             if (kinectData == null)
@@ -265,13 +327,17 @@ public class KinectSensor implements Sensor
         double[] pt = LinAlg.resize(p, 4);
         pt[3] = 1;
 
-        return LinAlg.resize(LinAlg.matrixAB(k2wXform, pt), p.length);
+        synchronized(xformLock) {
+            return LinAlg.resize(LinAlg.matrixAB(k2wXform, pt), p.length);
+        }
     }
 
     /** Return the real world position/orientation of the camera */
     public double[][] getCameraXform()
     {
-        return k2wXform;
+        synchronized(xformLock) {
+            return k2wXform;
+        }
     }
 
     public ArrayList<double[]> getAllXYZRGB(boolean fastScan){
