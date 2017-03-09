@@ -38,7 +38,7 @@ public class WorldObject implements ISoarObject {
 	public WorldObject(Integer tagID, double[] scale, HashMap<String, String> classifications){
 		this.tagID = tagID;
 		this.scale = scale;
-		this.handle = new StringWME("handle", tagID.toString());
+		this.handle = new StringWME("object-handle", tagID.toString());
 		this.tagWME = new IntWME("tag-id", (long)tagID);
 		
 		this.properties = new HashMap<String, ObjectProperty>();
