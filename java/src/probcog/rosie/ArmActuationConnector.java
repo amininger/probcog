@@ -85,22 +85,15 @@ public class ArmActuationConnector extends AgentConnector{
                                 "rosie_msgs/RobotCommand",
                                 500);
 
-        // DOES NOT EXIST YET
-        // Topic armAct = new Topic(ros,
-        //                          "/rosie_arm_status",
-        //                          "rosie_msgs/RobotAction");
-        // System.out.println("Subscribing to arm status updates!");
-        // armAct.subscribe(new TopicCallback() {
-        //         public void handleMessage(Message message) {
-        //             JsonObject jobj = message.toJsonObject();
-        //             // try {
-        //             // 	robot_action_t action = new robot_action_t(ins);
-        //             // 	newRobotStatus(action);
-        //             // } catch (IOException e) {
-        //             // 	e.printStackTrace();
-        //             // }
-        //         }
-        //     });
+        Topic armAct = new Topic(ros,
+                                 "/rosie_arm_status",
+                                 "rosie_msgs/RobotAction");
+        System.out.println("Subscribing to arm status updates!");
+        armAct.subscribe(new TopicCallback() {
+                public void handleMessage(Message message) {
+                    curStatus = message.toJsonObject();
+                }
+            });
     }
 
     @Override
@@ -156,6 +149,7 @@ public class ArmActuationConnector extends AgentConnector{
     			} else if(TimeUtil.utime() > sentTime + 2000000){
                     Message m = new Message(sentCommand);
                     armCommands.publish(m);
+                    System.out.println(m.toString());
     		    	sentTime = TimeUtil.utime();
     			}
     		}

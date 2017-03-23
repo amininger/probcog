@@ -30,7 +30,7 @@ public class RosieGUI extends JFrame
 	private JButton startStopButton;
 
 	private ArmPerceptionConnector perception;
-	//x private ArmActuationConnector actuation;
+	private ArmActuationConnector actuation;
 	private LanguageConnector language;
 
     public RosieGUI(Properties props)
@@ -49,8 +49,8 @@ public class RosieGUI extends JFrame
 
     	soarAgent = new SoarAgent(props);
 
-    	//x actuation = new ArmActuationConnector(soarAgent, props);
-    	//x soarAgent.setActuationConnector(actuation);
+    	actuation = new ArmActuationConnector(soarAgent, props);
+    	soarAgent.setActuationConnector(actuation);
     	perception = new ArmPerceptionConnector(soarAgent, props);
     	soarAgent.setPerceptionConnector(perception);
 
