@@ -23,7 +23,6 @@ import april.jmat.MathUtil;
 import april.util.TimeUtil;
 import edu.umich.rosie.*;
 import edu.umich.rosie.soar.*;
-import edu.umich.rosie.soarobjects.Pose;
 
 import edu.wpi.rail.jrosbridge.*;
 import edu.wpi.rail.jrosbridge.messages.*;
@@ -33,8 +32,6 @@ import javax.json.*;
 public class ArmActuationConnector extends AgentConnector{
 	private Identifier selfId;
 	private Identifier armId;
-
-	private Pose pose;
 
 	private boolean gotUpdate = false;
 	private boolean gotArmUpdate = false;
@@ -57,7 +54,6 @@ public class ArmActuationConnector extends AgentConnector{
 
     public ArmActuationConnector(SoarAgent agent, Properties props){
     	super(agent);
-    	pose = new Pose();
 
     	String armConfigFilepath = props.getProperty("arm-config", null);
     	heldObject = -1;
@@ -92,6 +88,7 @@ public class ArmActuationConnector extends AgentConnector{
         armAct.subscribe(new TopicCallback() {
                 public void handleMessage(Message message) {
                     curStatus = message.toJsonObject();
+                    gotUpdate = true;
                 }
             });
     }
@@ -99,20 +96,14 @@ public class ArmActuationConnector extends AgentConnector{
     @Override
     public void disconnect(){
     	super.disconnect();
-    	pose.removeFromWM();
     }
 
-    public void newRobotStatus(JsonObject status) {
-    	curStatus = status;
-    	gotUpdate = true;
-    }
-
-    public String getStatus(){
-    	if(curStatus == null){
-    		return "wait";
-    	}
-        return curStatus.getString("action").toLowerCase();
-    }
+	@Override
+	protected void onInitSoar() {
+		selfId = null;
+		armId = null;
+		waitingCommand = null;
+	}
 
 	// Happens during an input phase
     @Override
@@ -125,18 +116,14 @@ public class ArmActuationConnector extends AgentConnector{
 			gotUpdate = false;
             prevStatus = curStatus;
 		}
-        // ARM MODEL
-		// if(armStatus != null){
-		// 	updateArmInfo();
-		// }
+
 		if(svsCommands.length() > 0){
 			soarAgent.getAgent().SendSVSInput(svsCommands.toString());
-			//System.out.println(svsCommands.toString());
 			svsCommands = new StringBuilder();
 		}
     	if(sentCommand != null && curStatus != null){
     		if(sentCommand.getString("action").toLowerCase().contains("drop")){
-    			if(curStatus.getString("action").toLowerCase().equals("drop")){
+    			if(curStatus.getString("action").toLowerCase().contains("drop")){
     				sentCommand = null;
     			} else if(TimeUtil.utime() > sentTime + 2000000){
                     Message m = new Message(sentCommand);
@@ -144,7 +131,7 @@ public class ArmActuationConnector extends AgentConnector{
     		    	sentTime = TimeUtil.utime();
     			}
     		} else if(sentCommand.getString("action").toLowerCase().contains("grab")){
-    			if(curStatus.getString("action").toLowerCase().equals("grab")){
+    			if(curStatus.getString("action").toLowerCase().contains("grab")){
     				sentCommand = null;
     			} else if(TimeUtil.utime() > sentTime + 2000000){
                     Message m = new Message(sentCommand);
@@ -156,132 +143,11 @@ public class ArmActuationConnector extends AgentConnector{
     	}
 	}
 
-    private void initIL(){
-    	selfId = soarAgent.getAgent().GetInputLink().CreateIdWME("self");
-    	selfId.CreateStringWME("moving-status", "stopped");
-
-    	armId = selfId.CreateIdWME("arm");
-    	armId.CreateStringWME("moving-status", "wait");
-    	armId.CreateStringWME("holding-object", "none");
-
-    	pose.updateWithArray(new double[]{0, 0, 0, 0, 0, 0});
-    	pose.addToWM(selfId);
-
-        // ARM MODEL
-    	// if(armStatus != null){
-        // 	svsCommands.append("add arm world p 0 0 0 r 0 0 0\n");
-
-        // 	ArrayList<Double> widths = new ArrayList<Double>();//armStatus.getArmSegmentWidths();
-        //     ArrayList<double[]> points = new ArrayList<Double>();//armStatus.getArmPoints();
-        // 	for(int i = 0; i < widths.size(); i++){
-        // 		// For each segment on the arm, initialize with the correct bounding volume
-        // 		String name = "seg" + i;
-
-        // 		double[] p1 = points.get(i);
-        // 		double[] p2 = points.get(i+1);
-        // 		double len = LinAlg.distance(p1, p2); 
-        // 		double[] size = new double[]{len, widths.get(i), widths.get(i)};
-        // 		if(i == widths.size()-1){
-        // 			// Make the gripper bigger to help with occlusion checks;
-        // 			size = LinAlg.scale(size, 2);
-        // 		}
-
-        // 		svsCommands.append("add " + name + " arm p 0 0 0 r 0 0 0 ");
-        // 		svsCommands.append("s " + size[0] + " " + size[1] + " " + size[2] + " ");
-        // 		svsCommands.append("v " + SVSCommands.bboxVertices() + "\n");
-        // 	}
-    	// }
-    }
-
-
-    private void updateOL(){
-    	if(curStatus == null || prevStatus == null || waitingCommand == null){
-    		return;
-    	}
-    	String curAction = curStatus.getString("action").toLowerCase();
-    	String prevAction = prevStatus.getString("action").toLowerCase();
-    	if(!prevAction.contains("wait") && !prevAction.contains("failure")){
-    		if(curAction.contains("wait")){
-    			waitingCommand.CreateStringWME("status", "complete");
-    			waitingCommand = null;
-    		} else if(curAction.contains("failure")){
-    			waitingCommand.CreateStringWME("status", "failure");
-    			waitingCommand = null;
-    		}
-    	}
-    }
-
-    private void updateIL(){
-    	heldObject = curStatus.getInt("obj_id");
-    	SoarUtil.updateStringWME(armId, "moving-status",
-                                 curStatus.getString("action").toLowerCase());
-        if(prevStatus == null){
-            SoarUtil.updateStringWME(selfId, "prev-action", "wait");
-        } else {
-            SoarUtil.updateStringWME(selfId, "prev-action",
-                                     prevStatus.getString("action").toLowerCase());
-        }
-    	ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
-    	if (curStatus.getInt("obj_id") == -1){
-    		SoarUtil.updateStringWME(armId, "holding-object", "none");
-    	} else {
-    		SoarUtil.updateStringWME(armId, "holding-object",
-                                     perception.getWorld().getSoarHandle(curStatus.getInt("obj_id")).toString());
-    	}
-        JsonObject gripXYZ = curStatus.getJsonObject("gripper_pos").getJsonObject("translation");
-        double[] gp = new double[]{gripXYZ.getJsonNumber("x").doubleValue(),
-                                   gripXYZ.getJsonNumber("y").doubleValue(),
-                                   gripXYZ.getJsonNumber("z").doubleValue()};
-    	pose.updateWithArray(gp);
-    	pose.updateWM();
-    }
-
-    private void updateArmInfo(){
-        // ARM MODEL
-    	// if(!gotArmUpdate){
-    	// 	return;
-    	// }
-    	// gotArmUpdate = false;
-    	// ArrayList<Double> widths = new ArrayList<Double>();//armStatus.getArmSegmentWidths();
-    	// ArrayList<double[]> points = new ArrayList<double[]>();//armStatus.getArmPoints();
-    	// for(int i = 0; i < widths.size(); i++){
-    	// 	String name = "seg" + i;
-
-    	// 	double[] p1 = points.get(i);
-		// 	double[] p2 = points.get(i+1);
-		// 	double[] center = LinAlg.scale(LinAlg.add(p1, p2), .5);
-		// 	double[] dir = LinAlg.subtract(p2, p1);
-
-		// 	double hyp = Math.sqrt(dir[0] * dir[0] + dir[1] * dir[1]);
-
-		// 	double theta = 0;
-		// 	if(Math.abs(dir[0]) > .0001 || Math.abs(dir[1]) > .0001){
-		// 		theta = Math.atan2(dir[1], dir[0]);
-		// 	}
-
-		// 	double phi = Math.PI/2;
-		// 	if(Math.abs(hyp) > .0001 || Math.abs(dir[2]) > .0001){
-		// 		phi = -Math.atan2(dir[2], hyp);
-		// 	}
-
-		// 	double[][] rotZ = LinAlg.rotateZ(theta);
-		// 	double[][] rotY = LinAlg.rotateY(phi);
-
-		// 	double[] rot = LinAlg.matrixToRollPitchYaw(LinAlg.matrixAB(rotZ, rotY));
-
-		// 	svsCommands.append(SVSCommands.changePos(name, center));
-		// 	svsCommands.append(SVSCommands.changeRot(name, rot));
-    	// }
-    }
-
-    /**********************************************************
-     * OUTPUT EVENTS
-     ***********************************************************/
-
-    @Override
+  @Override
     protected void onOutputEvent(String attName, Identifier id){
         if (attName.equals("set-state")) {
-            processSetCommand(id);
+            System.out.println("[WARN] Lizzie broke something.");
+            //processSetCommand(id);
         }
         else if (attName.equals("pick-up")) {
             processPickUpCommand(id);
@@ -299,6 +165,64 @@ public class ArmActuationConnector extends AgentConnector{
         	processResetCommand(id);
         }
 	}
+
+    /**********************************************************
+     * INPUT
+     ***********************************************************/
+
+    private void initIL(){
+    	selfId = soarAgent.getAgent().GetInputLink().CreateIdWME("self");
+    	selfId.CreateStringWME("moving-status", "stopped");
+
+    	armId = selfId.CreateIdWME("arm");
+    	armId.CreateStringWME("moving-status", "wait");
+    	armId.CreateStringWME("holding-object", "none");
+    }
+
+    private void updateIL(){
+    	heldObject = curStatus.getInt("obj_id");
+    	SoarUtil.updateStringWME(armId, "moving-status",
+                                  curStatus.getString("action").toLowerCase());
+        System.out.println("Set moving status to " + curStatus.getString("action").toLowerCase());
+        if(prevStatus == null){
+            SoarUtil.updateStringWME(selfId, "prev-action", "wait");
+        } else {
+            SoarUtil.updateStringWME(selfId, "prev-action",
+                                     prevStatus.getString("action").toLowerCase());
+        }
+    	ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
+    	if (curStatus.getInt("obj_id") == -1){
+    		SoarUtil.updateStringWME(armId, "holding-object", "none");
+    	} else {
+    		SoarUtil.updateStringWME(armId, "holding-object",
+                                     perception.getWorld().getSoarHandle(curStatus.getInt("obj_id")).toString());
+    	}
+        JsonObject gripXYZ = curStatus.getJsonObject("gripper_pos").getJsonObject("translation");
+        double[] gp = new double[]{gripXYZ.getJsonNumber("x").doubleValue(),
+                                   gripXYZ.getJsonNumber("y").doubleValue(),
+                                   gripXYZ.getJsonNumber("z").doubleValue()};
+    }
+
+    /**********************************************************
+     * OUTPUT
+     ***********************************************************/
+
+    private void updateOL(){
+    	if(curStatus == null || prevStatus == null || waitingCommand == null){
+    		return;
+    	}
+    	String curAction = curStatus.getString("action").toLowerCase();
+    	String prevAction = prevStatus.getString("action").toLowerCase();
+    	if(!prevAction.contains("wait") && !prevAction.contains("failure")){
+    		if(curAction.contains("wait")){
+    			waitingCommand.CreateStringWME("status", "complete");
+    			waitingCommand = null;
+    		} else if(curAction.contains("failure")){
+    			waitingCommand.CreateStringWME("status", "failure");
+    			waitingCommand = null;
+    		}
+    	}
+    }
 
     /**
      * Takes a pick-up command on the output link given as an identifier and
@@ -366,37 +290,6 @@ public class ArmActuationConnector extends AgentConnector{
         System.out.println("PUT DOWN: " + x + ", " + y + ", " + z);
     }
 
-    /**
-     * Takes a set-state command on the output link given as an identifier and
-     * uses it to update the internal robot_command_t command
-     */
-    private void processSetCommand(Identifier id)
-    {
-        String objHandleStr = SoarUtil.getValueOfAttribute(id, "object-handle",
-                "Error (set-state): No ^object-handle attribute");
-        ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
-        Integer percId = perception.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
-        if(percId == null){
-        	System.err.println("Set: unknown id " + objHandleStr);
-        	id.CreateStringWME("status", "error");
-        	return;
-        }
-
-        String name = SoarUtil.getValueOfAttribute(id,
-                "name", "Error (set-state): No ^name attribute");
-        String value = SoarUtil.getValueOfAttribute(id, "value",
-                "Error (set-state): No ^value attribute");
-
-        // NOT SURE WHAT IS UP
-        // set_state_command_t command = new set_state_command_t();
-        // command.utime = TimeUtil.utime();
-        // command.state_name = name;
-        // command.state_val = value;
-        // command.obj_id = percId;
-    	// lcm.publish("SET_STATE_COMMAND", command);
-        // id.CreateStringWME("status", "complete");
-    }
-
     private void processPointCommand(Identifier pointId)
     {
     	String objHandleStr = SoarUtil.getValueOfAttribute(pointId, "object-handle",
@@ -438,6 +331,25 @@ public class ArmActuationConnector extends AgentConnector{
         id.CreateStringWME("status", "complete");
     }
 
+    /**
+     * Getters
+     **/
+
+	public Integer getHeldObject() {
+		return heldObject;
+	}
+
+    public String getStatus(){
+    	if(curStatus == null){
+    		return "wait";
+    	}
+        return curStatus.getString("action").toLowerCase();
+    }
+
+    /**
+     * Why the f is this a necessary override?
+     **/
+    @Override
     public void createMenu(JMenuBar menuBar){
     	JMenu actionMenu = new JMenu("Action");
     	JButton armResetButton  = new JButton("Reset Arm");
@@ -452,15 +364,37 @@ public class ArmActuationConnector extends AgentConnector{
         menuBar.add(actionMenu);
     }
 
-	public Integer getHeldObject() {
-		return heldObject;
-	}
+    ///** LIZZIE: Is this necessary? What to do with it?
+    // * Takes a set-state command on the output link given as an identifier and
+    // * uses it to update the internal robot_command_t command
+    // */
+    /*
+    private void processSetCommand(Identifier id)
+    {
+        String objHandleStr = SoarUtil.getValueOfAttribute(id, "object-handle",
+                "Error (set-state): No ^object-handle attribute");
+        ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
+        Integer percId = perception.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
+        if(percId == null){
+        	System.err.println("Set: unknown id " + objHandleStr);
+        	id.CreateStringWME("status", "error");
+        	return;
+        }
 
-	@Override
-	protected void onInitSoar() {
-		pose.removeFromWM();
-		selfId = null;
-		armId = null;
-		waitingCommand = null;
-	}
+        String name = SoarUtil.getValueOfAttribute(id,
+                "name", "Error (set-state): No ^name attribute");
+        String value = SoarUtil.getValueOfAttribute(id, "value",
+                "Error (set-state): No ^value attribute");
+
+        // NOT SURE WHAT IS UP
+        // set_state_command_t command = new set_state_command_t();
+        // command.utime = TimeUtil.utime();
+        // command.state_name = name;
+        // command.state_val = value;
+        // command.obj_id = percId;
+    	// lcm.publish("SET_STATE_COMMAND", command);
+        // id.CreateStringWME("status", "complete");
+    }
+    */
+
 }
