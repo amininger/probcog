@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Properties;
 
 public class WorldObjectManager {
@@ -24,6 +25,10 @@ public class WorldObjectManager {
 	
 	public WorldObject getObject(Integer tagID){
 		return objects.get(tagID);
+	}
+	
+	public HashSet<WorldObject> getObjects(){
+		return new HashSet<WorldObject>(objects.values());
 	}
 	
 	private void readObjectInfoFile(String filename){
@@ -56,7 +61,7 @@ public class WorldObjectManager {
 	
 	private void parseObjectInfo(String info){
 		String[] params = info.split(" ");
-		if(params.length < 5){
+		if(params.length < 8){
 			return;
 		}
 		// Param 1 : id
@@ -68,19 +73,24 @@ public class WorldObjectManager {
 		}
 
 		// Param 2-4: size
-		double[] size = new double[]{
+		double[] pos = new double[]{
 				new Double(params[1]), new Double(params[2]), new Double(params[3])
 		};
+
+		// Param 5-7: size
+		double[] size = new double[]{
+				new Double(params[4]), new Double(params[5]), new Double(params[6])
+		};
 		
-		// Param 4: num classes
-		Integer numClasses = new Integer(params[4]);
+		// Param 8: num classes
+		Integer numClasses = new Integer(params[7]);
 		HashMap<String, String> classifications = new HashMap<String, String>();
 		for(int i = 0; i < numClasses; i++){
-			String name = params[2*i+5];
-			String value = params[2*i+6];
+			String name = params[2*i+8];
+			String value = params[2*i+9];
 			classifications.put(name, value);
 		}
-		objects.put(tagID, new WorldObject(tagID, size, classifications));
+		objects.put(tagID, new WorldObject(tagID, pos, size, classifications));
 		//System.out.println("Added object " + tagID.toString());
 		//System.out.println("  " + classifications.toString());
 	}

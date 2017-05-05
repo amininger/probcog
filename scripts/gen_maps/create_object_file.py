@@ -17,6 +17,8 @@ def create_object_file(world_info, obj_info_filename):
 
 def printObject(obj_info, fout):
 	fout.write(str(obj_info.obj_id))
+	for i in range(0, 3):
+		fout.write(" " + str(obj_info.vals[i]))
 	for i in range(6, 9):
 		fout.write(" " + str(obj_info.vals[i]))
 	fout.write(" " + str(len(obj_info.cats)))

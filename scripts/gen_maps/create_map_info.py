@@ -8,6 +8,7 @@ def pNum(n):
 def create_map_info(world_info, map_info_filename):
 	fout = open(map_info_filename, 'w')
 
+	fout.write("robot {:f} {:f}\n".format(world_info.robot.x, world_info.robot.y))
 	for region in world_info.regions:
 		printRegion(region, fout)
 

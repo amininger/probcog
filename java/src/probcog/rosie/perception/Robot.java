@@ -45,14 +45,28 @@ public class Robot implements ISoarObject {
 		heldObject = new StringWME("holding-object", "none");
 		pose = new Pose();
 		mapInfo = new MapInfo(props);
+		setPos(mapInfo.getRobotPos());
 	}
 	
 	public MapInfo getMapInfo(){
 		return mapInfo;
 	}
 	
+	public String getHeldObject(){
+		return this.heldObject.getValue();
+	}
+	
 	public void setHeldObject(String handle){
 		this.heldObject.setValue(handle == null ? "none" : handle);
+	}
+	
+	public void setPos(double[] xy){
+		pos[0] = xy[0];
+		pos[1] = xy[1];
+		pose.setX(pos[0]);
+		pose.setY(pos[1]);
+		updatePose = true;
+		updateRegion();	
 	}
 
   public double[] getXyzrpy(){
@@ -79,6 +93,10 @@ public class Robot implements ISoarObject {
 			pose.updateWithArray(info.xyzrpy);
 		}
 		
+		updateRegion();
+	}
+	
+	public void updateRegion(){
 		HashSet<Region> regions = mapInfo.getRegions(pos);
 		Region closest = null;
 		Double distance = Double.MAX_VALUE;
