@@ -183,8 +183,7 @@ public class ArmActuationConnector extends AgentConnector{
     	heldObject = curStatus.getInt("obj_id");
     	SoarUtil.updateStringWME(armId, "moving-status",
                                   curStatus.getString("action").toLowerCase());
-        System.out.println("Set moving status to " + curStatus.getString("action").toLowerCase());
-        if(prevStatus == null){
+             if(prevStatus == null){
             SoarUtil.updateStringWME(selfId, "prev-action", "wait");
         } else {
             SoarUtil.updateStringWME(selfId, "prev-action",
@@ -308,7 +307,7 @@ public class ArmActuationConnector extends AgentConnector{
             .build();
         Message m = new Message(jo);
         armCommands.publish(m);
-        pointId.CreateStringWME("status", "complete");
+        //pointId.CreateStringWME("status", "complete");
     }
 
     private void processHomeCommand(Identifier id){
