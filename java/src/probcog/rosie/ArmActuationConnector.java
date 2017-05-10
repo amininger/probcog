@@ -307,7 +307,12 @@ public class ArmActuationConnector extends AgentConnector{
             .build();
         Message m = new Message(jo);
         armCommands.publish(m);
-        //pointId.CreateStringWME("status", "complete");
+
+        sentTime = TimeUtil.utime();
+        sentCommand = jo;
+        waitingCommand = pointId;
+        System.out.println("POINT TO: " + percId +
+                           " (Soar Handle: " + objHandleStr + ")");
     }
 
     private void processHomeCommand(Identifier id){
