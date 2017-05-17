@@ -18,7 +18,7 @@ if len(sys.argv) <= 1:
 	print("  Input File : map_info/simple_office.info")
 	print("  Output File: rosie-project/probcog/worlds/simple_office.world")
 	#print("  Output File: rosie-project/probcog/config/simple_office.tagdb")
-	print("  Output File: rosie-project/rosie/agent/_agent/manage-world-state/world/maps/simple_office.soar")
+	print("  Output File: rosie-project/rosie/agent/manage-world-state/world/maps/simple_office.soar")
 	print("  Output File: rosie-project/probcog/worlds/objects/simple_office.info")
 	print("  Output File: rosie-project/probcog/worlds/maps/simple_office.map")
 	sys.exit(0)
@@ -66,7 +66,7 @@ print("Success!\n")
 
 
 # Write the soar map file
-map_folder = rosie_path + "/rosie/agent/_agent/manage-world-state/world/maps/"
+map_folder = rosie_path + "/rosie/agent/manage-world-state/world/maps/"
 map_filename = map_folder + world_stem + ".soar"
 
 print("Writing soar map file: " + map_filename)
