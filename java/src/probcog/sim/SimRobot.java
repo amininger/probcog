@@ -339,13 +339,14 @@ public class SimRobot implements SimObject, LCMSubscriber
     public boolean inViewRange(double[] xyz){
     	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
     	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
+    	toPoint[2] = 0.0;
 
     	// Check if point is within view distance
     	double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
     	if(sqDist > OBJECT_VIEW_DIST_SQ){
     		return false;
     	}
-    	if(sqDist < 1.5){
+    	if(sqDist < 0.5){
     		// Within 10 cm of object, report as seen
     		return true;
     	}

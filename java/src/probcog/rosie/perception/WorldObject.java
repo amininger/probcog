@@ -35,8 +35,9 @@ public class WorldObject implements ISoarObject {
 
 	private boolean changed = false;
 
-	public WorldObject(Integer tagID, double[] scale, HashMap<String, String> classifications){
+	public WorldObject(Integer tagID, double[] pos, double[] scale, HashMap<String, String> classifications){
 		this.tagID = tagID;
+		this.pos = pos;
 		this.scale = scale;
 		this.handle = new StringWME("object-handle", tagID.toString());
 		this.tagWME = new IntWME("tag-id", (long)tagID);
@@ -51,6 +52,11 @@ public class WorldObject implements ISoarObject {
 
 	public Integer getTagID(){
 		return tagID;
+	}
+	
+	public void setPos(double[] pos){
+		this.pos = pos;
+		updatePos = true;
 	}
 
 	public double[] getPos(){
