@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
 
+import april.util.StringUtil;
+
 public class WorldObjectManager {
 	
 	private HashMap<Integer, WorldObject> objects;
@@ -37,7 +39,9 @@ public class WorldObjectManager {
 
         try {
             // FileReader reads text files in the default encoding.
-            FileReader fileReader = new FileReader(filename);
+        	String probcogHome = StringUtil.replaceEnvironmentVariables("$PROBCOG_HOME");
+
+            FileReader fileReader = new FileReader(probcogHome + "/worlds/objects/" + filename);
 
             // Always wrap FileReader in BufferedReader.
             BufferedReader bufferedReader = new BufferedReader(fileReader);

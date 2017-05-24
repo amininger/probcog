@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
 
+import april.util.StringUtil;
+
 public class MapInfo {
 	private HashSet<Region> regions;
 	private double[] robotPos;
@@ -49,7 +51,8 @@ public class MapInfo {
 
         try {
             // FileReader reads text files in the default encoding.
-            FileReader fileReader = new FileReader(filename);
+        	String probcogHome = StringUtil.replaceEnvironmentVariables("$PROBCOG_HOME");
+            FileReader fileReader = new FileReader(probcogHome + "/worlds/maps/" + filename);
 
             // Always wrap FileReader in BufferedReader.
             BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -73,10 +76,10 @@ public class MapInfo {
             bufferedReader.close();         
         }
         catch(FileNotFoundException ex) {
-            System.err.println("WorldObjectManager: unable to open file " + filename);
+            System.err.println("MapInfo: unable to open file " + filename);
         }
         catch(IOException ex) {
-        	System.err.println("WorldObjectManager: error reading file " + filename);
+        	System.err.println("MapInfo: error reading file " + filename);
         }
 	}
 }
