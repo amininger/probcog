@@ -48,10 +48,6 @@ public class KinectSensor implements Sensor
     private double curHeadTilt;
     Object jointsLock = new Object();
     Object xformLock = new Object();
-
-    // From ROS world file
-    private double[] TABLE_CENTER_XYZRPY = {0.8, 0.0, (-0.08+0.755+0.02), 0.0, 0.0, 0.0};
-
     Config config;
 
     Object kinectLock = new Object();
@@ -217,7 +213,6 @@ public class KinectSensor implements Sensor
         }
         synchronized(xformLock) {
             k2wXform = LinAlg.identity(4);
-            LinAlg.timesEquals(k2wXform, LinAlg.inverse(LinAlg.xyzrpyToMatrix(TABLE_CENTER_XYZRPY)));
             LinAlg.timesEquals(k2wXform, LinAlg.xyzrpyToMatrix(BASE_LINK_XYZRPY));
             LinAlg.timesEquals(k2wXform, curTorsoLiftMatrix);
             LinAlg.timesEquals(k2wXform, curHeadPanMatrix);

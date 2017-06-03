@@ -639,6 +639,7 @@ public class PerceptionGUI extends JFrame
                     //}
 
                 drawSelection(dt);
+                drawTablePlane();
                 // if(drawPerceptionObjects){
                 drawPerceptionObjects();
                 //}
@@ -704,6 +705,32 @@ public class PerceptionGUI extends JFrame
 	    	}
     	}
     	buffer.swap();
+    }
+
+    private void drawTablePlane() {
+        VisWorld.Buffer vb = vw.getBuffer("table");
+        double[] planeCoeff = tracker.getFloorPlane();
+
+        if (planeCoeff == null) return;
+
+        double mX = 0.8;
+        double mY = 0.0;
+
+        double mZ = (planeCoeff[3] + planeCoeff[0]*mX +
+                     planeCoeff[1]*mY) / -planeCoeff[2];
+
+        double[] n = new double[]{planeCoeff[0], planeCoeff[1], planeCoeff[2]};
+        double[] up = new double[]{0, 0, 1};
+
+        double[] rpy = LinAlg.quatToRollPitchYaw(LinAlg.quatCompute(up,
+                                                                    LinAlg.normalize(n)));
+
+        double[] xyzrpy = new double[]{mX, mY, mZ-0.01, rpy[0], rpy[1], rpy[2]};
+
+        double[][] trans = LinAlg.xyzrpyToMatrix(xyzrpy);
+        VzBox box = new VzBox(1, 1, 0.02, new VzMesh.Style(new Color(0,0,0,50)), new VzLines.Style(Color.darkGray, 1));
+        vb.addBack(new VisChain(trans, box));
+        vb.swap();
     }
 
     public void drawSensors()

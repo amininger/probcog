@@ -695,6 +695,10 @@ public class Tracker
     	}
     }
 
+    public double[] getFloorPlane() {
+        return segmenter.getFloorPlane();
+    }
+
     // Needed for ArmActuationConnector!
     // Given a command from soar to set the state for an object,
     //   sets the state if a valid command

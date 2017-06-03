@@ -13,4 +13,6 @@ public interface Segmenter {
 	public ArrayList<Sensor> getSensors();
 
     public ArrayList<double[]> getPointCloud();
+
+    public double[] getFloorPlane();
 }

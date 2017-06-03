@@ -115,6 +115,11 @@ public class KinectSegment implements Segmenter
         }
     }
 
+    public double[] getFloorPlane()
+    {
+        return floorPlane;
+    }
+
     /** "Remove" points that are too close to the floor by setting them to
      ** empty arrays.
      ** @return whether a plane was found and points were removed

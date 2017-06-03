@@ -44,6 +44,10 @@ public class SimKinectSegment implements Segmenter
         return new ArrayList<double[]>();
     }
 
+    public double[] getFloorPlane() {
+        return new double[4];
+    }
+
     public synchronized ArrayList<Obj> getSegmentedObjects(){
     	SimPixel[] pixels = kinect.getPixels(true);
 
