@@ -308,8 +308,10 @@ public class PerceptionGUI extends JFrame
     }
 
     public void sendMessage()
-
     {
+        double[] planeCoeff = tracker.getFloorPlane();
+        if (planeCoeff == null) return;
+
         int cid = -1;
         synchronized(tracker.stateLock){
             cid = getSelectedId();
@@ -342,12 +344,20 @@ public class PerceptionGUI extends JFrame
                 .add(camera.up[2]);
         }
 
+        JsonArrayBuilder tjab = Json.createArrayBuilder();
+        tjab = tjab
+            .add(planeCoeff[0])
+            .add(planeCoeff[1])
+            .add(planeCoeff[2])
+            .add(planeCoeff[3]);
+
         JsonObject jo = Json.createObjectBuilder()
             .add("click_id", cid)
             .add("soar_utime", soarTime)
             .add("eye", eyejab)
             .add("lookat", lookjab)
             .add("up", upjab)
+            .add("table", tjab)
             .add("observations", tracker.getObjectData())
             .add("nobs", tracker.getNumObj()).build();
 
