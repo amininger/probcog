@@ -100,9 +100,13 @@ public class PerceptionGUI extends JFrame
         vc = new VisCanvas(vl);
         this.add(vc, BorderLayout.CENTER);
 
-	    // Customized event handling
-	    vl.addEventHandler(new BoltEventHandler());
+	vl.cameraManager.uiLookAt(new double[]{0, 0, 4},
+				  new double[]{0, 0, 0},
+				  new double[]{0, 1, 0},
+				  true);
 
+	// Customized event handling
+	vl.addEventHandler(new BoltEventHandler());
 
         // Handle Options
         Config config = new ConfigFile(opts.getString("config"));
