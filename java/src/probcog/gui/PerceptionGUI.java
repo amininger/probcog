@@ -100,9 +100,10 @@ public class PerceptionGUI extends JFrame
         vc = new VisCanvas(vl);
         this.add(vc, BorderLayout.CENTER);
 
-	vl.cameraManager.uiLookAt(new double[]{0, 0, 4},
-				  new double[]{0, 0, 0},
-				  new double[]{0, 1, 0},
+	// Default camera values taken from experimenting---sorry
+	vl.cameraManager.uiLookAt(new double[]{ 2.05196, -0.87788, 1.75393},
+				  new double[]{ 0.15207,  0.37279, 0.0},
+				  new double[]{-0.51005,  0.33576, 0.79191},
 				  true);
 
 	// Customized event handling
@@ -110,13 +111,6 @@ public class PerceptionGUI extends JFrame
 
         // Handle Options
         Config config = new ConfigFile(opts.getString("config"));
-
-        // Arm control and arm monitor for rendering purposes
-        //x controller = new ArmController(config);//
-        //x arm = new ArmStatus(config);
-
-        // Initialize sensable manager
-        //sensableManager = SensableManager.getSingleton();
 
     	// Initialize the simulator
         simulator = new ProbCogSimulator(opts, vw, vl, vc);
