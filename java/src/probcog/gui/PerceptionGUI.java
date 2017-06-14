@@ -736,7 +736,7 @@ public class PerceptionGUI extends JFrame
         double[] xyzrpy = new double[]{mX, mY, mZ-0.01, rpy[0], rpy[1], rpy[2]};
 
         double[][] trans = LinAlg.xyzrpyToMatrix(xyzrpy);
-        VzBox box = new VzBox(1, 1, 0.02, new VzMesh.Style(new Color(0,0,0,50)), new VzLines.Style(Color.darkGray, 1));
+        VzBox box = new VzBox(1, 1, 0.02, new VzMesh.Style(new Color(0,0,0,0)), new VzLines.Style(Color.darkGray, 1));
         vb.addBack(new VisChain(trans, box));
         vb.swap();
     }
