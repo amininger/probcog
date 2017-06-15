@@ -59,7 +59,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     private robot_command_t sentCommand = null;
     private long sentTime = 0;
     
-    private Identifier waitingCommand = null;
+    private Identifier waitingCommandId = null;
 
     public ArmActuationConnector(SoarAgent agent, Properties props){
     	super(agent);
@@ -205,18 +205,18 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     
 
     private void updateOL(){
-    	if(curStatus == null || prevStatus == null || waitingCommand == null){
+    	if(curStatus == null || prevStatus == null || waitingCommandId == null){
     		return;
     	}
     	String curAction = curStatus.action.toLowerCase();
     	String prevAction = prevStatus.action.toLowerCase();
     	if(!prevAction.contains("wait") && !prevAction.contains("failure")){
     		if(curAction.contains("wait")){
-    			waitingCommand.CreateStringWME("status", "complete");
-    			waitingCommand = null;
+				SoarUtil.updateStringWME(waitingCommandId, "status", "success");
+    			waitingCommandId = null;
     		} else if(curAction.contains("failure")){
-    			waitingCommand.CreateStringWME("status", "failure");
-    			waitingCommand = null;
+				SoarUtil.updateStringWME(waitingCommandId, "status", "failure");
+    			waitingCommandId = null;
     		}
     	}
     }
@@ -315,7 +315,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         Integer percId = perception.getWorld().getPerceptionId(Integer.parseInt(objectHandleStr));
         if(percId == null){
         	System.err.println("Pick up: unknown id " + objectHandleStr);
-        	pickUpId.CreateStringWME("status", "error");
+			SoarUtil.updateStringWME(pickUpId, "status", "error");
         	return;
         }
         
@@ -327,7 +327,8 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     	lcm.publish("ROBOT_COMMAND", command);
         sentCommand = command;
         sentTime = TimeUtil.utime();
-        waitingCommand = pickUpId;
+        waitingCommandId = pickUpId;
+		SoarUtil.updateStringWME(pickUpId, "status", "sent");
     }
 
     /**
@@ -355,7 +356,8 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         sentCommand = command;
         sentTime = TimeUtil.utime();
         System.out.println("Put down at " + x + ", " + y + ", " + z);
-        waitingCommand = putDownId;
+        waitingCommandId = putDownId;
+		SoarUtil.updateStringWME(putDownId, "status", "sent");
     }
 
     /**
@@ -370,7 +372,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         Integer percId = perception.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
         if(percId == null){
         	System.err.println("Set: unknown id " + objHandleStr);
-        	id.CreateStringWME("status", "error");
+			SoarUtil.updateStringWME(id, "status", "error");
         	return;
         }
         
@@ -385,7 +387,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         command.state_val = value;
         command.obj_id = percId;
     	lcm.publish("SET_STATE_COMMAND", command);
-        id.CreateStringWME("status", "complete");
+		SoarUtil.updateStringWME(id, "status", "sent");
     }
 
     private void processPointCommand(Identifier pointId)
@@ -396,7 +398,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         Integer percId = perc.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
         if(percId == null){
         	System.err.println("Set: unknown handle " + objHandleStr);
-        	pointId.CreateStringWME("status", "error");
+			SoarUtil.updateStringWME(pointId, "status", "error");
         	return;
         }
         
@@ -405,7 +407,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         command.dest = new double[]{0, 0, 0, 0, 0, 0};
     	command.action = "POINT=" + percId;
     	lcm.publish("ROBOT_COMMAND", command);
-        pointId.CreateStringWME("status", "complete");
+		SoarUtil.updateStringWME(pointId, "status", "sent");
     }
     
     private void processHomeCommand(Identifier id){
@@ -414,7 +416,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         command.dest = new double[6];
     	command.action = "HOME";
     	lcm.publish("ROBOT_COMMAND", command);
-        id.CreateStringWME("status", "complete");
+		SoarUtil.updateStringWME(id, "status", "sent");
     }
 
     private void processResetCommand(Identifier id){
@@ -423,7 +425,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
         command.dest = new double[6];
     	command.action = "RESET";
     	lcm.publish("ROBOT_COMMAND", command);
-        id.CreateStringWME("status", "complete");
+		SoarUtil.updateStringWME(id, "status", "sent");
     }
     
     public void createMenu(JMenuBar menuBar){
@@ -448,6 +450,6 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 		pose.removeFromWM();
 		selfId = null;
 		armId = null;
-		waitingCommand = null;
+		waitingCommandId = null;
 	}
 }
