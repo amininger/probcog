@@ -23,6 +23,7 @@ import april.jmat.MathUtil;
 import april.util.TimeUtil;
 import edu.umich.rosie.*;
 import edu.umich.rosie.soar.*;
+import probcog.rosie.perception.*;
 
 import edu.wpi.rail.jrosbridge.*;
 import edu.wpi.rail.jrosbridge.messages.*;
@@ -38,6 +39,7 @@ public class ArmActuationConnector extends AgentConnector{
 
     private Ros ros;
     private Topic armCommands;
+	private Topic simCommands; // commands to probcog simulator
 
 	// Last received information about the arm
 	private JsonObject curStatus = null;
@@ -50,7 +52,10 @@ public class ArmActuationConnector extends AgentConnector{
 
 	private Integer heldObject;
 
-    private Identifier waitingCommand = null;
+    private Identifier waitingCommandId = null;
+
+	private JsonObject setStateCommand = null;
+	private long setStateSentTime = 0;
 
     public ArmActuationConnector(SoarAgent agent, Properties props){
     	super(agent);
@@ -81,6 +86,11 @@ public class ArmActuationConnector extends AgentConnector{
                                 "rosie_msgs/RobotCommand",
                                 500);
 
+        simCommands = new Topic(ros,
+                                "/rosie_set_state_commands",
+                                "rosie_msgs/SetStateCommand",
+                                500);
+
         Topic armAct = new Topic(ros,
                                  "/rosie_arm_status",
                                  "rosie_msgs/RobotAction");
@@ -102,7 +112,7 @@ public class ArmActuationConnector extends AgentConnector{
 	protected void onInitSoar() {
 		selfId = null;
 		armId = null;
-		waitingCommand = null;
+		waitingCommandId = null;
 	}
 
 	// Happens during an input phase
@@ -141,13 +151,24 @@ public class ArmActuationConnector extends AgentConnector{
     			}
     		}
     	}
+		if(setStateCommand != null){
+			ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
+			Integer objId = perception.getWorld().getSoarHandle(setStateCommand.getInt("objectId"));
+			WorldObject obj = perception.getWorld().getObject(objId);
+			if(obj == null || obj.hasProperty(setStateCommand.getString("stateName"), setStateCommand.getString("stateValue"))){
+				setStateCommand = null;
+			} else if(TimeUtil.utime() > setStateSentTime + 2000000){
+				Message m = new Message(setStateCommand);
+				simCommands.publish(m);
+				setStateSentTime = TimeUtil.utime();
+			}
+		}
 	}
 
   @Override
     protected void onOutputEvent(String attName, Identifier id){
         if (attName.equals("set-state")) {
-            System.out.println("[WARN] Lizzie broke something.");
-            //processSetCommand(id);
+            processSetCommand(id);
         }
         else if (attName.equals("pick-up")) {
             processPickUpCommand(id);
@@ -207,18 +228,18 @@ public class ArmActuationConnector extends AgentConnector{
      ***********************************************************/
 
     private void updateOL(){
-    	if(curStatus == null || prevStatus == null || waitingCommand == null){
+    	if(curStatus == null || prevStatus == null || waitingCommandId == null){
     		return;
     	}
     	String curAction = curStatus.getString("action").toLowerCase();
     	String prevAction = prevStatus.getString("action").toLowerCase();
     	if(!prevAction.contains("wait") && !prevAction.contains("failure")){
     		if(curAction.contains("wait")){
-    			waitingCommand.CreateStringWME("status", "complete");
-    			waitingCommand = null;
+    			SoarUtil.updateStringWME(waitingCommandId, "status", "complete");
+    			waitingCommandId = null;
     		} else if(curAction.contains("failure")){
-    			waitingCommand.CreateStringWME("status", "failure");
-    			waitingCommand = null;
+    			SoarUtil.updateStringWME(waitingCommandId, "status", "failure");
+    			waitingCommandId = null;
     		}
     	}
     }
@@ -249,7 +270,8 @@ public class ArmActuationConnector extends AgentConnector{
 
         sentTime = TimeUtil.utime();
         sentCommand = jo;
-        waitingCommand = pickUpId;
+        waitingCommandId = pickUpId;
+		SoarUtil.updateStringWME(pickUpId, "status", "sent");
         System.out.println("PICK UP: " + percId +
                            " (Soar Handle: " + objectHandleStr + ")");
     }
@@ -285,7 +307,8 @@ public class ArmActuationConnector extends AgentConnector{
 
         sentTime = TimeUtil.utime();
         sentCommand = jo;
-        waitingCommand = putDownId;
+        waitingCommandId = putDownId;
+		putDownId.CreateStringWME("status", "sent");
         System.out.println("PUT DOWN: " + x + ", " + y + ", " + z);
     }
 
@@ -310,7 +333,8 @@ public class ArmActuationConnector extends AgentConnector{
 
         sentTime = TimeUtil.utime();
         sentCommand = jo;
-        waitingCommand = pointId;
+        waitingCommandId = pointId;
+		pointId.CreateStringWME("status", "sent");
         System.out.println("POINT TO: " + percId +
                            " (Soar Handle: " + objHandleStr + ")");
     }
@@ -322,7 +346,7 @@ public class ArmActuationConnector extends AgentConnector{
             .build();
         Message m = new Message(jo);
         armCommands.publish(m);
-        id.CreateStringWME("status", "complete");
+        id.CreateStringWME("status", "sent");
     }
 
     private void processResetCommand(Identifier id){
@@ -332,7 +356,7 @@ public class ArmActuationConnector extends AgentConnector{
             .build();
         Message m = new Message(jo);
         armCommands.publish(m);
-        id.CreateStringWME("status", "complete");
+        id.CreateStringWME("status", "sent");
     }
 
     /**
@@ -368,11 +392,10 @@ public class ArmActuationConnector extends AgentConnector{
         menuBar.add(actionMenu);
     }
 
-    ///** LIZZIE: Is this necessary? What to do with it?
-    // * Takes a set-state command on the output link given as an identifier and
-    // * uses it to update the internal robot_command_t command
-    // */
-    /*
+	/*
+     * Takes a set-state command on the output link given as an identifier and
+     * uses it to update the internal robot_command_t command
+     */
     private void processSetCommand(Identifier id)
     {
         String objHandleStr = SoarUtil.getValueOfAttribute(id, "object-handle",
@@ -389,16 +412,16 @@ public class ArmActuationConnector extends AgentConnector{
                 "name", "Error (set-state): No ^name attribute");
         String value = SoarUtil.getValueOfAttribute(id, "value",
                 "Error (set-state): No ^value attribute");
-
-        // NOT SURE WHAT IS UP
-        // set_state_command_t command = new set_state_command_t();
-        // command.utime = TimeUtil.utime();
-        // command.state_name = name;
-        // command.state_val = value;
-        // command.obj_id = percId;
-    	// lcm.publish("SET_STATE_COMMAND", command);
-        // id.CreateStringWME("status", "complete");
+		
+        JsonObject jo = Json.createObjectBuilder()
+            .add("utime", TimeUtil.utime())
+            .add("objectId", percId)
+			.add("stateName", name)
+			.add("stateValue", value)
+            .build();
+        Message m = new Message(jo);
+        simCommands.publish(m);
+		setStateSentTime = TimeUtil.utime();
+        id.CreateStringWME("status", "sent");
     }
-    */
-
 }

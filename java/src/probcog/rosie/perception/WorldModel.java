@@ -90,6 +90,13 @@ public class WorldModel implements ISoarObject
     	return handle;
     }
 
+	public synchronized WorldObject getObject(Integer handle){
+		if(objects.containsKey(handle)){
+			return objects.get(handle);
+		}
+		return null;
+	}
+
     public synchronized void linkObjects(Set<String> sourceHandles, String destHandle){
     	Integer dHandle = Integer.parseInt(destHandle);
 

@@ -145,6 +145,11 @@ public class WorldObject implements ISoarObject
         updateProperties(objDatas);
     }
 
+	public boolean hasProperty(String name, String value){
+		return (stateProperties.containsKey(name) && 
+				stateProperties.get(name).equals(value));
+	}
+
     private void updateProperties(ArrayList<ObjectData> objDatas){
     	if(objDatas.size() > 1){
     		// We don't actually know how to combine the properties, so we report as unknown for now

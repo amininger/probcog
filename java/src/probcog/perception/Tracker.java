@@ -150,6 +150,16 @@ public class Tracker
                 }
             });
 
+        Topic ssc = new Topic(ros,
+                               "/rosie_set_state_commands",
+                               "rosie_msgs/SetStateCommand");
+        ssc.subscribe(new TopicCallback() {
+                public void handleMessage(Message message) {
+                    JsonObject jobj = message.toJsonObject();
+                    handleSetStateCommand(jobj);
+                }
+            });
+
         new TrackingThread().start();
     }
 
@@ -699,21 +709,20 @@ public class Tracker
         return segmenter.getFloorPlane();
     }
 
-    // Needed for ArmActuationConnector!
     // Given a command from soar to set the state for an object,
     //   sets the state if a valid command
-    //x private void processSetStateCommand(set_state_command_t setState){
-    // 	SimObject src = null;
-    // 	synchronized(stateLock){
-    // 		Obj obj = worldState.get(setState.obj_id);
-    // 		if(obj != null){
-    // 			src = obj.getSourceSimObject();
-    // 		}
-    // 	}
-    // 	if(src != null && src instanceof ISimStateful){
-    // 		synchronized(worldLock){
-    // 			((ISimStateful)src).setState(setState.state_name, setState.state_val);
-    // 		}
-	// 	}
-    // }
+    private void handleSetStateCommand(JsonObject setState){
+     	SimObject src = null;
+     	synchronized(stateLock){
+     		Obj obj = worldState.get(setState.getInt("objectId"));
+     		if(obj != null){
+     			src = obj.getSourceSimObject();
+     		}
+     	}
+     	if(src != null && src instanceof ISimStateful){
+     		synchronized(worldLock){
+     			((ISimStateful)src).setState(setState.getString("stateName"), setState.getString("stateValue"));
+     		}
+	 	}
+     }
 }
