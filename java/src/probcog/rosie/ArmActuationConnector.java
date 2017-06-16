@@ -262,10 +262,14 @@ public class ArmActuationConnector extends AgentConnector{
     	String prevAction = prevStatus.getString("action").toLowerCase();
     	if(!prevAction.contains("wait") && !prevAction.contains("failure")){
     		if(curAction.contains("wait")){
-    			SoarUtil.updateStringWME(waitingCommandId, "status", "complete");
+    			SoarUtil.updateStringWME(waitingCommandId, "status", "success");
     			waitingCommandId = null;
     		} else if(curAction.contains("failure")){
     			SoarUtil.updateStringWME(waitingCommandId, "status", "failure");
+				String reason = curStatus.getString("failure_reason");
+				if(!reason.equals("none")){
+					SoarUtil.updateStringWME(waitingCommandId, "failure-reason", reason);
+				}
     			waitingCommandId = null;
     		}
     	}
@@ -336,7 +340,6 @@ public class ArmActuationConnector extends AgentConnector{
         Message m = new Message(jo);
         armCommands.publish(m);
 
-        putDownId.CreateStringWME("status", "sent");
         sentTime = TimeUtil.utime();
         sentCommand = jo;
         waitingCommandId = putDownId;
@@ -363,7 +366,6 @@ public class ArmActuationConnector extends AgentConnector{
         Message m = new Message(jo);
         armCommands.publish(m);
 
-        pointId.CreateStringWME("status", "sent");
         sentTime = TimeUtil.utime();
         sentCommand = jo;
         waitingCommandId = pointId;
@@ -383,7 +385,7 @@ public class ArmActuationConnector extends AgentConnector{
 
         sentTime = TimeUtil.utime();
         sentCommand = jo;
-        waitingCommand = id;
+        waitingCommandId = id;
         System.out.println("HOME ARM");
     }
 
@@ -398,7 +400,7 @@ public class ArmActuationConnector extends AgentConnector{
 
         sentTime = TimeUtil.utime();
         sentCommand = jo;
-        waitingCommand = id;
+        waitingCommandId = id;
         System.out.println("RESET ARM");
     }
 

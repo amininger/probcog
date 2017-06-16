@@ -1,32 +1,32 @@
+#"probcog.sim.SimLocation"
+#{
+#	-1
+#	vec 6
+#	0.5 0.2 0.52 0.0 0.0 0.0
+#	0.3
+#	vec 4
+#	0.0 0.5 1.0 1.0
+#	1
+#	door2=closed2,open2
+#	pantry1
+#}
+#"probcog.sim.SimLocation"
+#{
+#	-1
+#	vec 6
+#	0.5 -0.2 0.52 0.0 0.0 0.0
+#	0.3
+#	vec 4
+#	0.0 1.0 0.0 1.0
+#	0
+#	table1
+#}
 "probcog.sim.SimLocation"
 {
 	-1
 	vec 6
-	0.3 0.3 0.47 0.0 0.0 0.0
-	0.4
-	vec 4
-	0.0 0.5 1.0 1.0
-	1
-	door2=closed2,open2
-	pantry1
-}
-"probcog.sim.SimLocation"
-{
-	-1
-	vec 6
-	0.3 -0.3 0.47 0.0 0.0 0.0
-	0.4
-	vec 4
-	0.0 1.0 0.0 1.0
-	0
-	table1
-}
-"probcog.sim.SimLocation"
-{
-	-1
-	vec 6
-	0.9 0.3 0.47 0.0 0.0 0.0
-	0.4
+	1.0 0.2 0.52 0.0 0.0 0.0
+	0.3
 	vec 4
 	1.0 0.0 0.0 1.0
 	0
@@ -36,8 +36,8 @@
 {
 	-1
 	vec 6
-	0.9 -0.3 0.47 0.0 0.0 0.0
-	0.4
+	1.0 -0.2 0.52 0.0 0.0 0.0
+	0.3
 	vec 4
 	1.0 1.0 0.0 1.0
 	0
