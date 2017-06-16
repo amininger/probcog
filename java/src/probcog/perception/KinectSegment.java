@@ -149,6 +149,8 @@ public class KinectSegment implements Segmenter
             {
                 points.set(i, new double[4]);
             }
+            // Sort of a hack: don't look for things far away behind table
+            if (p[0] > 1.2) points.set(i, new double[4]);
         }
         return true;
     }

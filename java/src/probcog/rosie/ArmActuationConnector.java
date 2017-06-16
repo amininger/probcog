@@ -149,6 +149,33 @@ public class ArmActuationConnector extends AgentConnector{
                     System.out.println(m.toString());
     		    	sentTime = TimeUtil.utime();
     			}
+    		} else if(sentCommand.getString("action").toLowerCase().contains("point")){
+    			if(curStatus.getString("action").toLowerCase().contains("point")){
+    				sentCommand = null;
+    			} else if(TimeUtil.utime() > sentTime + 2000000){
+                    Message m = new Message(sentCommand);
+                    armCommands.publish(m);
+                    System.out.println(m.toString());
+    		    	sentTime = TimeUtil.utime();
+    			}
+    		} else if(sentCommand.getString("action").toLowerCase().contains("reset")){
+    			if(curStatus.getString("action").toLowerCase().contains("home")){
+    				sentCommand = null;
+    			} else if(TimeUtil.utime() > sentTime + 2000000){
+                    Message m = new Message(sentCommand);
+                    armCommands.publish(m);
+                    System.out.println(m.toString());
+    		    	sentTime = TimeUtil.utime();
+    			}
+    		} else if(sentCommand.getString("action").toLowerCase().contains("home")){
+    			if(curStatus.getString("action").toLowerCase().contains("home")){
+    				sentCommand = null;
+    			} else if(TimeUtil.utime() > sentTime + 2000000){
+                    Message m = new Message(sentCommand);
+                    armCommands.publish(m);
+                    System.out.println(m.toString());
+    		    	sentTime = TimeUtil.utime();
+    			}
     		}
     	}
 		if(setStateCommand != null){
@@ -268,6 +295,7 @@ public class ArmActuationConnector extends AgentConnector{
         Message m = new Message(jo);
         armCommands.publish(m);
 
+        pickUpId.CreateStringWME("status", "sent");
         sentTime = TimeUtil.utime();
         sentCommand = jo;
         waitingCommandId = pickUpId;
@@ -297,14 +325,18 @@ public class ArmActuationConnector extends AgentConnector{
         JsonObject jo = Json.createObjectBuilder()
             .add("utime", TimeUtil.utime())
             .add("action", "DROP")
-            .add("drop", Json.createObjectBuilder()
-                 .add("x", x)
-                 .add("y", y)
-                 .add("z", z))
+            .add("dest", Json.createObjectBuilder()
+                 .add("translation", Json.createObjectBuilder()
+                      .add("x", x)
+                      .add("y", y)
+                      .add("z", z))
+                 .add("rotation", Json.createObjectBuilder()
+                      .add("w", 1.0)))
             .build();
         Message m = new Message(jo);
         armCommands.publish(m);
 
+        putDownId.CreateStringWME("status", "sent");
         sentTime = TimeUtil.utime();
         sentCommand = jo;
         waitingCommandId = putDownId;
@@ -331,6 +363,7 @@ public class ArmActuationConnector extends AgentConnector{
         Message m = new Message(jo);
         armCommands.publish(m);
 
+        pointId.CreateStringWME("status", "sent");
         sentTime = TimeUtil.utime();
         sentCommand = jo;
         waitingCommandId = pointId;
@@ -347,6 +380,11 @@ public class ArmActuationConnector extends AgentConnector{
         Message m = new Message(jo);
         armCommands.publish(m);
         id.CreateStringWME("status", "sent");
+
+        sentTime = TimeUtil.utime();
+        sentCommand = jo;
+        waitingCommand = id;
+        System.out.println("HOME ARM");
     }
 
     private void processResetCommand(Identifier id){
@@ -357,6 +395,11 @@ public class ArmActuationConnector extends AgentConnector{
         Message m = new Message(jo);
         armCommands.publish(m);
         id.CreateStringWME("status", "sent");
+
+        sentTime = TimeUtil.utime();
+        sentCommand = jo;
+        waitingCommand = id;
+        System.out.println("RESET ARM");
     }
 
     /**
