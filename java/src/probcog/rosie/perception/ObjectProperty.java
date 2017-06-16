@@ -134,6 +134,7 @@ public class ObjectProperty implements ISoarObject
     		this.values.remove(curValue);
     		this.values.put(newValue, new FloatWME(newValue, 1.0));
     	}
+    	gotUpdate = true;
     }
     
     public void updateProperty(categorized_data_t catDat){

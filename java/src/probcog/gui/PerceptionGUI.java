@@ -250,8 +250,8 @@ public class PerceptionGUI extends JFrame implements LCMSubscriber
         			if(simObj.getState(SoarConcepts.DOOR) != null){
         				simObj.setState(SoarConcepts.DOOR, SoarConcepts.CLOSED);
         			}
-        			if(simObj.getState(SoarConcepts.HEAT) != null){
-        				simObj.setState(SoarConcepts.HEAT, SoarConcepts.OFF);
+        			if(simObj.getState(SoarConcepts.ACTIVATION) != null){
+        				simObj.setState(SoarConcepts.ACTIVATION, SoarConcepts.OFF);
         			}
         			if(simObj.getState(SoarConcepts.MEAT) != null){
         				simObj.setState(SoarConcepts.MEAT, SoarConcepts.RAW);

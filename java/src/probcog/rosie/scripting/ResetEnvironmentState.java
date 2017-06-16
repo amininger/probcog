@@ -83,14 +83,14 @@ public class ResetEnvironmentState implements UiCommand {
 		set_state_command_t commandPantryDoor = new set_state_command_t();
 		if (pantryDoorState){
 			commandPantryDoor.utime = TimeUtil.utime();
-			commandPantryDoor.state_name = "door1";
+			commandPantryDoor.state_name = "door2";
 			commandPantryDoor.state_val = "open2";
 			commandPantryDoor.obj_id = 1;
 			LCM.getSingleton().publish("SET_STATE_COMMAND", commandPantryDoor);
 		}
 		else {
 			commandPantryDoor.utime = TimeUtil.utime();
-			commandPantryDoor.state_name = "door1";
+			commandPantryDoor.state_name = "door2";
 			commandPantryDoor.state_val = "closed2";
 			commandPantryDoor.obj_id = 1;
 			LCM.getSingleton().publish("SET_STATE_COMMAND", commandPantryDoor);

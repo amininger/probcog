@@ -29,8 +29,14 @@ public class SimLocation extends SimObjectPC
         
         objs.add(LinAlg.scale(scale));
 
+		Color fillColor = color;
+        // The smaller inner box is only drawn if there is a door and it's open
+        if(currentState.containsKey(SoarConcepts.ACTIVATION) && currentState.get(SoarConcepts.ACTIVATION).equals(SoarConcepts.ON)) {
+        	fillColor = new Color((int)(255+color.getRed())/2, (int)(255+color.getGreen())/2, (int)(255+color.getBlue())/2);
+        }
+
         // The larger box making up the background of the object
-        objs.add(new VisChain(LinAlg.translate(0, 0, .5), new VzRectangle(lenxyz[0], lenxyz[1], new VzMesh.Style(color))));
+        objs.add(new VisChain(LinAlg.translate(0, 0, .5), new VzRectangle(lenxyz[0], lenxyz[1], new VzMesh.Style(fillColor))));
 
         // The smaller inner box is only drawn if there is a door and it's open
         if(currentState.containsKey(SoarConcepts.DOOR) && currentState.get(SoarConcepts.DOOR).equals(SoarConcepts.OPEN)) {
@@ -38,6 +44,7 @@ public class SimLocation extends SimObjectPC
                                   LinAlg.scale(.9),
                                   new VzRectangle(lenxyz[0], lenxyz[1], new VzMesh.Style(Color.DARK_GRAY))));
         }
+
 
         // The name of the location
         objs.add(new VisChain(LinAlg.rotateZ(Math.PI/2), LinAlg.translate(0,-.4,0.502),
