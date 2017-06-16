@@ -275,10 +275,13 @@ public class ArmActuationConnector extends AgentConnector{
         JsonObject jo = Json.createObjectBuilder()
             .add("utime", TimeUtil.utime())
             .add("action", "DROP")
-            .add("drop", Json.createObjectBuilder()
-                 .add("x", x)
-                 .add("y", y)
-                 .add("z", z))
+            .add("dest", Json.createObjectBuilder()
+                 .add("translation", Json.createObjectBuilder()
+                      .add("x", x)
+                      .add("y", y)
+                      .add("z", z))
+                 .add("rotation", Json.createObjectBuilder()
+                      .add("w", 1.0)))
             .build();
         Message m = new Message(jo);
         armCommands.publish(m);

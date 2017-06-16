@@ -149,6 +149,7 @@ public class KinectSegment implements Segmenter
             {
                 points.set(i, new double[4]);
             }
+            if (p[0] > 1.0) points.set(i, new double[4]);
         }
         return true;
     }
