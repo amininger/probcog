@@ -1,0 +1,40 @@
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	.75 -.1 0.6 0 0 0
+    .11
+	vec 4
+	0 1 0 1
+	2
+	color=green1
+	category=location
+	1
+}
+
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	0.75 0.1 0.6 0 0 0
+	.11
+	vec 4
+	0 1 0 1
+	2
+	color=green1
+	category=location
+	2
+}
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	0.75 0.3 0.6 0 0 0
+	.11
+	vec 4
+	0 0 1 1
+	2
+	color=blue1
+	category=location
+	3
+}

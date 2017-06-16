@@ -1,0 +1,79 @@
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	.75 -.15 0.6 0 0 0
+    .11
+	vec 4
+	1 0.3 0 1
+	2
+	color=orange1
+	category=location
+	1
+}
+
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	0.75 0.05 0.6 0 0 0
+	.11
+	vec 4
+	0 0 1 1
+	2
+	color=blue1
+	category=location
+	2
+}
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	0.75 0.25 0.6 0 0 0
+	.11
+	vec 4
+	1 0 0 1
+	2
+	color=red1
+	category=location
+	3
+}
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	.95 -.15 0.6 0 0 0
+    .11
+	vec 4
+	0 0 0 1
+	1
+	category=location
+	4
+}
+
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	0.95 0.05 0.6 0 0 0
+	.11
+	vec 4
+	0 1 0 1
+	2
+	color=green1
+	category=location
+	5
+}
+"probcog.sim.SimLocation"
+{
+	-1
+	vec 6
+	0.95 0.25 0.6 0 0 0
+	.11
+	vec 4
+	1 1 0 1
+	2
+	color=yellow1
+	category=location
+	6
+}
