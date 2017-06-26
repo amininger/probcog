@@ -40,6 +40,10 @@ else:
     print("  or give the directory path as a second argument")
     sys.exit(0)
 
+probcog_home = ""
+if "PROBCOG_HOME" in os.environ:
+    probcog_home = os.environ["PROBCOG_HOME"]
+
 # Read the file
 info_filename = "map_info/" + world_stem + ".info"
 
@@ -49,7 +53,7 @@ print("Success!\n")
 
 
 # Write the world file
-world_filename = rosie_path + "/probcog/worlds/" + world_stem + ".world"
+world_filename = probcog_home + "/worlds/" + world_stem + ".world"
 
 print("Writing world file: " + world_filename)
 create_world(world_info, "temp.world")
@@ -84,7 +88,7 @@ print("Success!\n")
 
 
 # Write the object info file
-obj_filename = rosie_path + "/probcog/worlds/objects/" + world_stem + ".info"
+obj_filename = probcog_home + "/worlds/objects/" + world_stem + ".info"
 
 print("Writing object info file: " + obj_filename)
 create_object_file(world_info, "temp.objinfo")
@@ -93,7 +97,7 @@ print("Success!\n")
 
 
 # Write the map info file
-map_filename = rosie_path + "/probcog/worlds/maps/" + world_stem + ".map"
+map_filename = probcog_home + "/worlds/maps/" + world_stem + ".map"
 
 print("Writing map info file: " + map_filename)
 create_map_info(world_info, "temp.map")

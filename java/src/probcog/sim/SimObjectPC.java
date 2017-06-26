@@ -61,7 +61,7 @@ public abstract class SimObjectPC implements SimObject{
 
         // descriptio
         desc = ins.readString();
-    	
+
     	// xyzrpy
     	xyzrpy = ins.readDoubles();
     	

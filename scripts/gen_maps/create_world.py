@@ -62,7 +62,7 @@ def printObject(obj_info, fout):
 	fout.write("  %(x)s %(y)s %(z)s\n" % \
 			{ "x": pNum(obj_info.vals[6]), "y": pNum(obj_info.vals[7]), "z": pNum(obj_info.vals[8]) })
 	fout.write("  # Color rgb (int 0-255)\n")
-	fout.write("  vec 3\n")
+	fout.write("  ivec 3\n")
 	fout.write("  %(r)d %(g)d %(b)d\n" % \
 			{ "r": obj_info.rgb[0], "g": obj_info.rgb[1], "b": obj_info.rgb[2] })
 	#fout.write("  # Labels \n")

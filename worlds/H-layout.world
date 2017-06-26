@@ -22,7 +22,7 @@
   vec 3
     0.40   0.40   0.40
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   255 0 0
 }
 "probcog.sim.SimBoxObject"
@@ -38,7 +38,7 @@
   vec 3
     0.50   0.50   0.50
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   0 0 255
 }
 "probcog.sim.SimBoxObject"
@@ -54,7 +54,7 @@
   vec 3
     0.50   0.50   0.50
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   10 10 10
 }
 "probcog.sim.SimBoxObject"
@@ -70,7 +70,7 @@
   vec 3
     0.50   0.50   0.50
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   0 0 150
 }
 "probcog.sim.SimBoxObject"
@@ -86,7 +86,7 @@
   vec 3
     0.50   0.50   0.50
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   50 50 0
 }
 "probcog.sim.SimBoxObject"
@@ -102,7 +102,7 @@
   vec 3
     0.50   0.50   2.00
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   255 200 100
 }
 "probcog.sim.SimBoxObject"
@@ -118,7 +118,7 @@
   vec 3
     0.50   0.50   2.00
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   255 200 100
 }
 "probcog.sim.SimBoxObject"
@@ -134,7 +134,7 @@
   vec 3
     0.50   0.50   2.00
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   255 200 100
 }
 "probcog.sim.SimBoxObject"
@@ -150,7 +150,7 @@
   vec 3
     2.00   2.00   2.00
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   0 0 0
 }
 "probcog.sim.SimBoxObject"
@@ -166,7 +166,7 @@
   vec 3
     2.00   2.00   2.00
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   0 0 0
 }
 "probcog.sim.SimBoxObject"
@@ -182,7 +182,7 @@
   vec 3
     0.50   0.50   0.50
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   255 0 0
 }
 "probcog.sim.SimBoxObject"
@@ -198,7 +198,7 @@
   vec 3
     0.50   0.50   0.50
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   200 200 200
 }
 "probcog.sim.SimBoxObject"
@@ -214,7 +214,7 @@
   vec 3
     0.50   0.50   0.50
   # Color rgb (int 0-255)
-  vec 3
+  ivec 3
   255 128 0
 }
 "probcog.sim.SimRoomWall"
