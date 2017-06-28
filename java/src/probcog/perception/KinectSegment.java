@@ -27,7 +27,7 @@ public class KinectSegment implements Segmenter
 {
     final static double COLOR_THRESH = .025;//30;
     final static double DISTANCE_THRESH = 0.01;
-    final static double MIN_FROM_FLOOR_PLANE = .015; // XXX 0.015
+    final static double MIN_FROM_FLOOR_PLANE = .011; // XXX 0.015
     final static double MIN_OBJECT_SIZE = 100;
     final static double RANSAC_PERCENT = .6;
     final static int RANSAC_ITERATIONS = 250;

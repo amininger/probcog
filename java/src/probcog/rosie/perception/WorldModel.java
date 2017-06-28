@@ -168,8 +168,21 @@ public class WorldModel implements ISoarObject
     		Integer handle = e.getKey();
     		WorldObject object = objects.get(handle);
     		if(object == null){
-    			object = new WorldObject(this, String.valueOf(handle), e.getValue());
-    			objects.put(handle, object);
+			boolean matchedOld = false;
+			for(WorldObject remObj : objsToRemove){
+				if(remObj.getHandle() == handle){
+					objsToRemove.remove(remObj);
+					staleObjects.remove(handle);
+					objects.put(handle, remObj);
+					object.update(e.getValue());
+					matchedOld = true;
+					break;
+				}
+			}
+			if(!matchedOld){
+    				object = new WorldObject(this, String.valueOf(handle), e.getValue());
+    				objects.put(handle, object);
+			}
     		} else {
     			staleObjects.remove(handle);
     			object.update(e.getValue());
