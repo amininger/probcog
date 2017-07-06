@@ -33,7 +33,7 @@ public class RosieGUI extends JFrame
 	private ArmActuationConnector actuation;
 	private LanguageConnector language;
 
-    public RosieGUI(Properties props)
+    public RosieGUI(Properties props, boolean internal)
     {
 		super("Rosie Chat");
 
@@ -49,9 +49,9 @@ public class RosieGUI extends JFrame
 
     	soarAgent = new SoarAgent(props);
 
-    	actuation = new ArmActuationConnector(soarAgent, props);
+    	actuation = new ArmActuationConnector(soarAgent, props, internal);
     	soarAgent.setActuationConnector(actuation);
-    	perception = new ArmPerceptionConnector(soarAgent, props);
+    	perception = new ArmPerceptionConnector(soarAgent, props, internal);
     	soarAgent.setPerceptionConnector(perception);
 
     	InternalMessagePasser messagePasser = new InternalMessagePasser();
@@ -108,6 +108,7 @@ public class RosieGUI extends JFrame
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addBoolean('d', "debug", true, "Show the soar debugger");
         opts.addString('c', "config", null, "Config file for rosie");
+        opts.addBoolean('i', "internal", false, "Run without ROS communication");
 
         if (!opts.parse(args)) {
             System.err.println("ERR: Error parsing args - "+opts.getReason());
@@ -117,6 +118,7 @@ public class RosieGUI extends JFrame
             opts.doHelp();
             System.exit(0);
         }
+        boolean internal = opts.getBoolean("internal");
 
         String configFile = opts.getString("config");
         if(configFile == null){
@@ -137,6 +139,6 @@ public class RosieGUI extends JFrame
 			return;
 		}
 
-        new RosieGUI(props);
+        new RosieGUI(props, internal);
     }
 }

@@ -38,7 +38,7 @@ public class WorldModel implements ISoarObject
     private Ros ros;
     private Topic soarObjs;
 
-    public WorldModel(SoarAgent soarAgent){
+    public WorldModel(SoarAgent soarAgent, boolean internal){
     	this.soarAgent = soarAgent;
 
         objects = new HashMap<Integer, WorldObject>();
@@ -47,20 +47,24 @@ public class WorldModel implements ISoarObject
 
         eyePos = new double[6];
 
-        ros = new Ros();
-        ros.connect();
+        if (internal) {
+            ros = null;
+        } else {
+            ros = new Ros();
+            ros.connect();
 
-        if (ros.isConnected()) {
-            System.out.println("WorldModel connected to rosbridge server.");
-        }
-        else {
-            System.out.println("WorldModel NOT CONNECTED TO ROSBRIDGE");
-        }
+            if (ros.isConnected()) {
+                System.out.println("WorldModel connected to rosbridge server.");
+            }
+            else {
+                System.out.println("WorldModel NOT CONNECTED TO ROSBRIDGE");
+            }
 
-        soarObjs = new Topic(ros,
-                             "/rosie_soar_obj",
-                             "rosie_msgs/SoarObjects",
-                             500);
+            soarObjs = new Topic(ros,
+                                 "/rosie_soar_obj",
+                                 "rosie_msgs/SoarObjects",
+                                 500);
+        }
     }
 
     public Agent getAgent(){
@@ -200,6 +204,8 @@ public class WorldModel implements ISoarObject
     }
 
     private void sendObservation(){
+        if (ros == null) return;
+
     	ArrayList<ObjectData> objDatas = new ArrayList<ObjectData>();
 
     	String[] beliefObjects = soarAgent.getAgent().SVSQuery("objs-with-flag object-source belief\n").split(" ");

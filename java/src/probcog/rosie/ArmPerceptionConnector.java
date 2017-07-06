@@ -51,7 +51,7 @@ public class ArmPerceptionConnector extends AgentConnector {
     private Topic perceptionComm;
     private Topic training;
 
-    public ArmPerceptionConnector(SoarAgent soarAgent, Properties props)
+    public ArmPerceptionConnector(SoarAgent soarAgent, Properties props, boolean internal)
     {
     	super(soarAgent);
 
@@ -59,31 +59,36 @@ public class ArmPerceptionConnector extends AgentConnector {
 
     	outstandingTraining = new HashMap<TrainingLabel, Identifier>();
 
-        world = new WorldModel(soarAgent);
+        world = new WorldModel(soarAgent, internal);
 
         sendTrainingTimer = new Timer();
 
         String[] outputHandlerNames = new String[]{ "send-training-label", "modify-scene" };
         this.setOutputHandlerNames(outputHandlerNames);
 
-        ros = new Ros();
-        ros.connect();
+        if (internal) {
+            System.out.println("ROS is turned off. No communication available!");
+            ros = null;
+        } else {
+            ros = new Ros();
+            ros.connect();
 
-        if (ros.isConnected()) {
-            System.out.println("ArmPerceptionConnector connected to rosbridge server.");
+            if (ros.isConnected()) {
+                System.out.println("ArmPerceptionConnector connected to rosbridge server.");
+            }
+            else {
+                System.out.println("ArmPerceptionConnector NOT CONNECTED TO ROSBRIDGE");
+            }
+            perceptionComm = new Topic(ros,
+                                       "/rosie_perception_commands",
+                                       "std_msgs/String",
+                                       500);
+            training = new Topic(ros,
+                                 "/rosie_training",
+                                 "rosie_msgs/TrainingData",
+                                 500);
         }
-        else {
-            System.out.println("ArmPerceptionConnector NOT CONNECTED TO ROSBRIDGE");
-        }
-        perceptionComm = new Topic(ros,
-                                   "/rosie_perception_commands",
-                                   "std_msgs/String",
-                                   500);
-        training = new Topic(ros,
-                             "/rosie_training",
-                             "rosie_msgs/TrainingData",
-                             500);
-      }
+    }
 
     public WorldModel getWorld(){
     	return world;
@@ -92,6 +97,8 @@ public class ArmPerceptionConnector extends AgentConnector {
     @Override
     public void connect(){
         super.connect();
+
+        if (ros == null) return;
 
         sendTrainingTimer.schedule(new TimerTask(){
         	public void run(){
@@ -136,6 +143,7 @@ public class ArmPerceptionConnector extends AgentConnector {
     }
 
     private void sendTrainingLabels(){
+        if (ros == null) return;
     	synchronized(outstandingTraining){
     		if(outstandingTraining.size() == 0){
     			return;
@@ -241,6 +249,10 @@ public class ArmPerceptionConnector extends AgentConnector {
     }
 
     public void createMenu(JMenuBar menuBar){
+        // If there is no ROS, there is no comm with perception, so these
+        // are useless
+        if (ros == null) return;
+
     	JMenu perceptionMenu = new JMenu("Perception");
     	JMenuItem clearDataButton = new JMenuItem("Clear Classifier Data");
         clearDataButton.addActionListener(new ActionListener(){

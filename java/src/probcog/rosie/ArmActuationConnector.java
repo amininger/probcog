@@ -56,10 +56,12 @@ public class ArmActuationConnector extends AgentConnector{
 
 	private JsonObject setStateCommand = null;
 	private long setStateSentTime = 0;
+    private boolean startRos;
 
-    public ArmActuationConnector(SoarAgent agent, Properties props){
+    public ArmActuationConnector(SoarAgent agent, Properties props, boolean internal){
     	super(agent);
 
+        startRos = !internal;
     	String armConfigFilepath = props.getProperty("arm-config", null);
     	heldObject = -1;
 
@@ -71,6 +73,12 @@ public class ArmActuationConnector extends AgentConnector{
     @Override
     public void connect(){
     	super.connect();
+
+        if (!startRos) {
+            ros = null;
+            return;
+        }
+
         ros = new Ros();
         ros.connect();
 
@@ -131,6 +139,10 @@ public class ArmActuationConnector extends AgentConnector{
 			soarAgent.getAgent().SendSVSInput(svsCommands.toString());
 			svsCommands = new StringBuilder();
 		}
+
+        // If no ROS, there's no robot to send commands to
+        if (ros == null) return;
+
     	if(sentCommand != null && curStatus != null){
     		if(sentCommand.getString("action").toLowerCase().contains("drop")){
     			if(curStatus.getString("action").toLowerCase().contains("drop")){
@@ -282,6 +294,8 @@ public class ArmActuationConnector extends AgentConnector{
      */
     private void processPickUpCommand(Identifier pickUpId)
     {
+        if (ros == null) return;
+
         String objectHandleStr = SoarUtil.getValueOfAttribute(pickUpId,
                 "object-handle", "pick-up does not have an ^object-id attribute");
         ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
@@ -315,6 +329,8 @@ public class ArmActuationConnector extends AgentConnector{
      */
     private void processPutDownCommand(Identifier putDownId)
     {
+        if (ros == null) return;
+
         Identifier locationId = SoarUtil.getIdentifierOfAttribute(
                 putDownId, "location",
                 "Error (put-down): No ^location identifier");
@@ -349,6 +365,8 @@ public class ArmActuationConnector extends AgentConnector{
 
     private void processPointCommand(Identifier pointId)
     {
+        if (ros == null) return;
+
     	String objHandleStr = SoarUtil.getValueOfAttribute(pointId, "object-handle",
     			"Error (point): No ^object-handle attribute");
     	ArmPerceptionConnector perc = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
@@ -375,6 +393,8 @@ public class ArmActuationConnector extends AgentConnector{
     }
 
     private void processHomeCommand(Identifier id){
+        if (ros == null) return;
+
         JsonObject jo = Json.createObjectBuilder()
             .add("utime", TimeUtil.utime())
             .add("action", "HOME")
@@ -390,6 +410,8 @@ public class ArmActuationConnector extends AgentConnector{
     }
 
     private void processResetCommand(Identifier id){
+        if (ros == null) return;
+
         JsonObject jo = Json.createObjectBuilder()
             .add("utime", TimeUtil.utime())
             .add("action", "RESET")
@@ -443,6 +465,8 @@ public class ArmActuationConnector extends AgentConnector{
      */
     private void processSetCommand(Identifier id)
     {
+        if (ros == null) return;
+
         String objHandleStr = SoarUtil.getValueOfAttribute(id, "object-handle",
                 "Error (set-state): No ^object-handle attribute");
         ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
@@ -457,7 +481,7 @@ public class ArmActuationConnector extends AgentConnector{
                 "name", "Error (set-state): No ^name attribute");
         String value = SoarUtil.getValueOfAttribute(id, "value",
                 "Error (set-state): No ^value attribute");
-		
+
         JsonObject jo = Json.createObjectBuilder()
             .add("utime", TimeUtil.utime())
             .add("objectId", percId)
