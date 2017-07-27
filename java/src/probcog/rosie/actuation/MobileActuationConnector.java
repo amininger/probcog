@@ -161,6 +161,9 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 
 	protected void onInputPhase(Identifier inputLink) {
 		if(activeCommandId != null){
+			if(activeCommand == null){
+				commandStatus = "success";
+			}
 			SoarUtil.updateStringWME(activeCommandId, "status", commandStatus);
 			if(commandStatus.equals("success") || commandStatus.equals("failure") || commandStatus.equals("unknown")){
 				activeCommandId = null;

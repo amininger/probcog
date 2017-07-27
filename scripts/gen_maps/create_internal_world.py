@@ -12,12 +12,12 @@ def create_internal_world(world_info, filename):
     fout.write("### Used to test actions in a simulated world\n")
     fout.write("\n")
     fout.write("sp {top-state*domain*internal*elaborate*internal-world*" + world_info.name + "\n")
-    fout.write("   (state <s> ^superstate nil)\n")
+    fout.write("   (state <s> ^superstate nil\n")
+    fout.write("              ^agent-params.simulate-perception true)\n")
     fout.write("-->\n")
     fout.write("   (<s> ^internal-world <w>)\n")
     fout.write("   (<w> ^starting-location " + start_loc + "\n")
-    fout.write("        ^objects <objs>\n")
-    fout.write("        ^locations <locs>)\n")
+    fout.write("        ^objects <objs>)\n")
     fout.write("\n")
 
     name_counts = {}
@@ -46,12 +46,9 @@ def create_internal_world(world_info, filename):
             if region.contains_point(obj.vals[0], obj.vals[1])), None)
 
         fout.write("   (<objs> ^object {:s})\n".format(obj_id))
-        fout.write("   ({:s} ^handle {:s} ^item-type object ^predicates {:s})\n".format(obj_id, handle, preds_id))
-        fout.write("   ({:s} {:s}\n".format(preds_id, " ".join([ "^{:s} {:s}".format(obj.cats[c], obj.labels[c]) for c in range(len(obj.cats))])))
-        fout.write("                  ^arm-status not-grabbed ^visible false)\n")
+        fout.write("   ({:s} ^handle {:s} ^waypoint wp{:s} ^predicates {:s})\n".format(obj_id, handle, obj_loc.soar_id, preds_id))
+        fout.write("   ({:s} {:s})\n".format(preds_id, " ".join([ "^{:s} {:s}".format(obj.cats[c], obj.labels[c]) for c in range(len(obj.cats))])))
         
-        if obj_loc != None:
-            fout.write("   (<locs> ^{:s} wp{:s})\n".format(handle, obj_loc.soar_id))
         fout.write("\n")
     # End of writing objects
 
