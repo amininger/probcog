@@ -33,7 +33,7 @@ import magic2.lcmtypes.*;
 
 public class SimRobot implements SimObject, LCMSubscriber
 {
-	static final double OBJECT_VIEW_DIST = 5.0;  // max distant it can see objects at
+	static final double OBJECT_VIEW_DIST = 20.0;  // max distant it can see objects at
 	static final double OBJECT_VIEW_DIST_SQ = OBJECT_VIEW_DIST * OBJECT_VIEW_DIST;
 	static final double OBJECT_VIEW_ANGLE = Math.PI/2;  // max angle it can see objects at
 	static final double OBJECT_VIEW_ANGLE_COS = Math.cos(OBJECT_VIEW_ANGLE/2);

@@ -214,34 +214,34 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	if(objectsId == null){
     		objectsId = soarAgent.getAgent().GetInputLink().CreateIdWME("objects");
     	}
-//    	Region curRegion = robot.getRegion();
-//    	if(curRegion != null){
-//    		for(WorldObject obj : objects.values()){
-//    			Collection<Region> regions = robot.getMapInfo().getRegions(obj.getPos());
-//    			if(regions.contains(curRegion)){
-//    				// in current location
-//    				if(obj.isAdded()){
-//    					obj.updateWM();
-//    				} else {
-//    					obj.addToWM(objectsId);
-//    				}
-//    			} else {
-//    				// not in current location
-//    				if(obj.isAdded()){
-//    					obj.removeFromWM();
-//    				}
-//    			}
-//
-//    		}
-//
-//    	}
-    	for(WorldObject obj : objects.values()){
-    		if(obj.isAdded()){
-    			obj.updateWM();
-    		} else {
-    			obj.addToWM(objectsId);
+    	Region curRegion = robot.getRegion();
+    	if(curRegion != null){
+    		for(WorldObject obj : objects.values()){
+    			Collection<Region> regions = robot.getMapInfo().getRegions(obj.getPos());
+    			if(regions.contains(curRegion)){
+    				// in current location
+    				if(obj.isAdded()){
+    					obj.updateWM();
+    				} else {
+    					obj.addToWM(objectsId);
+    				}
+    			} else {
+    				// not in current location
+    				if(obj.isAdded()){
+    					obj.removeFromWM();
+    				}
+    			}
+
     		}
+
     	}
+    	//for(WorldObject obj : objects.values()){
+    	//	if(obj.isAdded()){
+    	//		obj.updateWM();
+    	//	} else {
+    	//		obj.addToWM(objectsId);
+    	//	}
+    	//}
     	for(WorldObject obj : objsToRemove.values()){
     		obj.removeFromWM();
     	}
