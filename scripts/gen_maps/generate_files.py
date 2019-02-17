@@ -26,23 +26,27 @@ if len(sys.argv) <= 1:
 
 world_stem = sys.argv[1]
 
-# Arg 2: (optional) the directory of the rosie-project 
-#   (can get from $ROSIE_PROJ instead)
+# Arg 2: (optional) the name of the rosie test-agent to copy things to 
+
+rosie_agent = None
+if len(sys.argv) > 2:
+    rosie_agent = sys.argv[2]
 
 rosie_path = ""
-if len(sys.argv) > 2:
-    rosie_path = sys.argv[2]
-elif "ROSIE_PROJ" in os.environ:
+if "ROSIE_PROJ" in os.environ:
     rosie_path = os.environ["ROSIE_PROJ"]
 else:
-    print("Error: Requires rosie-project directory")
-    print("  Either set the $ROSIE_PROJ environment variable")
-    print("  or give the directory path as a second argument")
+    print("ERROR: Requires ROSIE_PROJ environment variable set")
     sys.exit(0)
+
 
 probcog_home = ""
 if "PROBCOG_HOME" in os.environ:
     probcog_home = os.environ["PROBCOG_HOME"]
+else:
+    print("ERROR: Requires PROBCOG_HOME environment variable set")
+    sys.exit(0)
+
 
 # Read the file
 info_filename = "map_info/" + world_stem + ".info"
@@ -93,6 +97,10 @@ obj_filename = probcog_home + "/worlds/objects/" + world_stem + ".info"
 print("Writing object info file: " + obj_filename)
 create_object_file(world_info, "temp.objinfo")
 shutil.copyfile("temp.objinfo", obj_filename)
+if rosie_agent:
+    obj_filename = rosie_path + "/rosie/test-agents/" + rosie_agent + "/" + world_stem + ".info"
+    print(" -> " + obj_filename)
+    shutil.copyfile("temp.objinfo", obj_filename)
 print("Success!\n")
 
 
@@ -102,6 +110,10 @@ map_filename = probcog_home + "/worlds/maps/" + world_stem + ".map"
 print("Writing map info file: " + map_filename)
 create_map_info(world_info, "temp.map")
 shutil.copyfile("temp.map", map_filename)
+if rosie_agent:
+    map_filename = rosie_path + "/rosie/test-agents/" + rosie_agent + "/" + world_stem + ".map"
+    print(" -> " + map_filename)
+    shutil.copyfile("temp.objinfo", map_filename)
 print("Success!\n")
 
 

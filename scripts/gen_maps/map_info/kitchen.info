@@ -1,0 +1,45 @@
+robot 2.5 2.5
+
+object 1 0.50 0.38 1.00 0 0 0 1.00 0.75 2.00 200 200 200 5 category object name fridge1 activation on2 door2 closed2 receptacle receptacle Fridge
+object 2 1.75 0.38 0.50 0 0 0 1.50 0.75 1.00 100 100 100 4 category object name sink1 activation off2 receptacle receptacle Sink
+object 3 3.75 0.38 0.95 0 0 0 2.50 0.75 0.10 250 230 140 2 category object name counter1 Counter
+object 4 3.00 0.38 0.45 0 0 0 1.00 0.75 0.90 94 76 28 4 category object name cupboard1 door2 closed2 receptacle receptacle Cupboard
+object 5 4.50 0.38 0.80 0 0 0 1.00 0.75 0.20 94 76 28 4 category object name drawer1 door2 closed2 receptacle receptacle Drawer
+object 6 1.00 4.50 0.50 0 0 0 2.00 1.00 1.00 94 76 28 2 category object name table1 Table
+object 7 4.50 4.00 1.00 0 0 0 1.00 2.00 2.00 94 76 28 4 category object name pantry1 door2 closed2 receptacle receptacle Pantry
+object 8 4.80 2.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 3 category object name garbage1 receptacle receptacle Garbage
+object 9 4.70 0.20 1.20 0 0 0 0.60 0.40 0.40 40 40 40 5 category object name microwave1 activation off2 door2 closed2 receptacle receptacle Microwave
+
+object 20 0.80 4.30 1.10 0 0 0 0.20 0.20 0.20 255 0 0 4 category object color red1 shape apple1 grabbable grabbable apple
+object 21 1.20 4.30 1.20 0 0 0 0.20 0.20 0.40 0 0 255 4 category object color blue1 shape soda1 grabbable grabbable soda
+object 22 3.50 0.55 1.15 0 0 0 0.20 0.20 0.20 0 255 0 4 category object color green1 shape mug1 grabbable grabbable mug
+object 23 4.00 0.55 1.15 0 0 0 0.10 0.20 0.10 50 50 50 4 category object color gray1 shape fork1 grabbable grabbable fork
+
+
+#object 1 8 3 0.5 0 0 0 .2 .2 .2 255 0 0 4 shape box1 color red1 size small1 category object sm-red-box
+#object 2 8 4 0.5 0 0 0 .4 .4 .4 255 0 0 4 shape box1 color red1 size medium1 category object red-box
+#object 3 8 5 0.5 0 0 0 .6 .6 .6 255 0 0 4 shape box1 color red1 size large1 category object lg-red-box
+#object 4 8 6 0.5 0 0 0 .5 .5 .5 255 0 0 4 shape ball1 color red1 size medium1 category object red-ball
+#object 5 8 7 0.5 0 0 0 .5 .5 .5 0 0 255 4 shape ball1 color blue1 size medium1 category object blue-ball
+#object 6 8 8 0.5 0 0 0 .5 .5 .5 0 0 255 4 shape box1 color blue1 size medium1 category object blue-box
+#object 7 3 25 0.5 0 0 0 .5 .5 .5 10 10 10 3 shape book1 color black1 category object book
+#object 8 20 27 0.5 0 0 0 .5 .5 .5 0 0 150 3 shape stapler1 color blue1 category object stapler
+#object 9 20 25 0.5 0 0 0 .5 .5 .5 50 50 0 3 shape package1 color brown1 category object package
+#object 10 3 22 1 0 0 0 .5 .5 2 255 200 100 2 name alice1 category person Alice
+#object 11 3 3 1 0 0 0 .5 .5 2 255 200 100 2 name bob1 category person Bob
+#object 12 14 24 1 0 0 0 .5 .5 2 255 200 100 2 name charlie1 category person Charlie
+#object 13 8 2 1 0 0 0 2 2 2 0 0 0 2 shape trash1 category object Trash
+#object 14 14 2 1 0 0 0 2 2 2 0 0 0 2 shape cupboard1 category object Cupboard
+#object 15 20 3 0.5 0 0 0 .5 .5 .5 255 0 0 3 shape soda1 color red1 category object soda
+#object 16 20 5 0.5 0 0 0 .5 .5 .5 200 200 200 3 shape water1 color white1 category object water
+#object 17 20 7 0.5 0 0 0 .5 .5 .5 255 128 0 3 shape juice1 color orange1 category object juice
+
+region 1 2.5 2.5 0 5 5 room1
+
+wallchain 4
+  -0.1 -0.1
+  -0.1  5.1
+   5.1  5.1
+   5.1 -0.1
+  -0.1 -0.1
+
