@@ -98,7 +98,7 @@ print("Writing object info file: " + obj_filename)
 create_object_file(world_info, "temp.objinfo")
 shutil.copyfile("temp.objinfo", obj_filename)
 if rosie_agent:
-    obj_filename = rosie_path + "/rosie/test-agents/" + rosie_agent + "/" + world_stem + ".info"
+    obj_filename = rosie_path + "/rosie/test-agents/" + rosie_agent + "/" + world_stem + ".obj_info"
     print(" -> " + obj_filename)
     shutil.copyfile("temp.objinfo", obj_filename)
 print("Success!\n")
@@ -113,7 +113,7 @@ shutil.copyfile("temp.map", map_filename)
 if rosie_agent:
     map_filename = rosie_path + "/rosie/test-agents/" + rosie_agent + "/" + world_stem + ".map"
     print(" -> " + map_filename)
-    shutil.copyfile("temp.objinfo", map_filename)
+    shutil.copyfile("temp.map", map_filename)
 print("Success!\n")
 
 

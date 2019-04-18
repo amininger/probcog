@@ -3,6 +3,9 @@
 from math import sin
 from math import cos
 
+#DOOR_DIST = 0.8 # Magicbot
+DOOR_DIST = 0.6 # Cozmo
+
 def create_soar_map(world_info, map_filename):
 	nodes = {}
 	edges = []
@@ -83,8 +86,8 @@ class Edge:
 			self.side = -1
 		self.has_door = edge.has_door
 		if edge.has_door:
-			dx = cos(edge.door_rot) * .8
-			dy = sin(edge.door_rot) * .8
+			dx = cos(edge.door_rot) * DOOR_DIST
+			dy = sin(edge.door_rot) * DOOR_DIST
 			if forward:
 				self.door_sx = edge.door_x - dx
 				self.door_sy = edge.door_y - dy

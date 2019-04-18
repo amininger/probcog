@@ -12,6 +12,8 @@ def parse_info_file(name, info_filename):
     fin.close()
     return world_info
 
+SCALE_FACTOR = 0.254 # in to decimeter
+
 ####### ALL INFO ######
 
 class WorldInfo:
@@ -50,8 +52,8 @@ class RobotInfo:
         self.y = 0
 
     def read_info(self, reader):
-        self.x = float(reader.nextWord())
-        self.y = float(reader.nextWord())
+        self.x = float(reader.nextWord()) * SCALE_FACTOR
+        self.y = float(reader.nextWord()) * SCALE_FACTOR
         return self
 
 ###### REGION ######
@@ -75,11 +77,11 @@ class RegionInfo:
         while len(self.soar_id) < 2:
             self.soar_id = "0" + self.soar_id
 
-        self.x = float(reader.nextWord())
-        self.y = float(reader.nextWord())
+        self.x = float(reader.nextWord()) * SCALE_FACTOR
+        self.y = float(reader.nextWord()) * SCALE_FACTOR
         self.rot = float(reader.nextWord())
-        self.width = float(reader.nextWord())
-        self.length = float(reader.nextWord())
+        self.width = float(reader.nextWord()) * SCALE_FACTOR
+        self.length = float(reader.nextWord()) * SCALE_FACTOR
         label = reader.nextWord()
         if label == "none":
             self.label = None
@@ -113,8 +115,8 @@ class EdgeInfo:
             self.has_door = False
         elif label == "door":
             self.has_door = True
-            self.door_x = float(reader.nextWord())
-            self.door_y = float(reader.nextWord())
+            self.door_x = float(reader.nextWord()) * SCALE_FACTOR
+            self.door_y = float(reader.nextWord()) * SCALE_FACTOR
             self.door_rot = float(reader.nextWord())
         return self
 
@@ -128,20 +130,20 @@ class WallInfo:
         self.y2 = 0
 
     def read_info(self, reader):
-        self.x1 = float(reader.nextWord())
-        self.y1 = float(reader.nextWord())
-        self.x2 = float(reader.nextWord())
-        self.y2 = float(reader.nextWord())
+        self.x1 = float(reader.nextWord()) * SCALE_FACTOR
+        self.y1 = float(reader.nextWord()) * SCALE_FACTOR
+        self.x2 = float(reader.nextWord()) * SCALE_FACTOR
+        self.y2 = float(reader.nextWord()) * SCALE_FACTOR
         return self
 
 def parseWallChain(reader):
     walls = []
     n = int(reader.nextWord())
-    x1 = float(reader.nextWord())
-    y1 = float(reader.nextWord())
+    x1 = float(reader.nextWord()) * SCALE_FACTOR
+    y1 = float(reader.nextWord()) * SCALE_FACTOR
     for i in range(n):
-        x2 = float(reader.nextWord())
-        y2 = float(reader.nextWord())
+        x2 = float(reader.nextWord()) * SCALE_FACTOR
+        y2 = float(reader.nextWord()) * SCALE_FACTOR
         wall = WallInfo()
         wall.x1 = x1
         wall.y1 = y1
@@ -164,8 +166,8 @@ class DoorInfo:
         self.open = True
 
     def read_info(self, reader):
-        self.x = float(reader.nextWord())
-        self.y = float(reader.nextWord())
+        self.x = float(reader.nextWord()) * SCALE_FACTOR
+        self.y = float(reader.nextWord()) * SCALE_FACTOR
         self.yaw = float(reader.nextWord())
         self.wp1 = int(reader.nextWord())
         self.wp2 = int(reader.nextWord())
@@ -184,8 +186,12 @@ class ObjectInfo:
 
     def read_info(self, reader):
         self.obj_id = int(reader.nextWord())
-        for i in range(0, 9):
-            self.vals[i] = float(reader.nextWord())
+        for i in range(0, 3):
+            self.vals[i] = float(reader.nextWord()) * SCALE_FACTOR
+        for i in range(3, 6):
+            self.vals[i] = float(reader.nextWord()) 
+        for i in range(6, 9):
+            self.vals[i] = float(reader.nextWord()) * SCALE_FACTOR
         self.rgb = []
         self.rgb.append(int(reader.nextWord()))
         self.rgb.append(int(reader.nextWord()))
