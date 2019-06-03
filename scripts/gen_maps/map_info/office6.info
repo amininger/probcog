@@ -1,0 +1,161 @@
+robot 2.5 2.5
+
+# 6 Room Office Environment
+#   +---------+
+#   |   | |   |
+#   | 3     6 |
+#   |   | |   |
+#   +---| |---+
+#       | |
+#       | |
+#   +---| |---+
+#   |   | |   |
+#   | 2     5 |
+#   |   | |   |
+#   +---| |---+
+#       | |
+#       | |
+#   +---| |---+
+#   |   | |   |
+#   | 1     4 |
+#   |   | |   |
+#   +---+ +---+
+    
+# objectformat:
+# object<id> <x> <y> <z> <r> <p> <y> <sx> <sy> <sz> <r> <g> <b> <num-preds> <pred1> <prop1> <pred2> <prop2> ... <label>
+#             |position-| |rotation-| |-- scale ---| |- color -| |---------- predicates -----------------------|
+
+# Room 1: Kitchen, Left-Bottom [0,0 to 5,5]
+object 0.50 0.38 1.00 0 0 0 1.00 0.75 2.00 200 200 200 4 category fridge1 activation1 on2 door2 closed2 receptacle receptacle Fridge1
+object 1.75 0.38 0.50 0 0 0 1.50 0.75 1.00 100 100 100 2 category sink1 activation1 off2 receptacle receptacle Sink2
+object 3.75 0.38 0.95 0 0 0 2.50 0.75 0.10 250 230 140 1 category counter1 Counter3
+object 3.00 0.38 0.45 0 0 0 1.00 0.75 0.90 94 76 28 3 category cupboard1 door2 closed2 receptacle receptacle Cupboard4
+object 4.50 0.38 0.80 0 0 0 1.00 0.75 0.20 94 76 28 3 category drawer1 door2 closed2 receptacle receptacle Drawer5
+object 1.00 4.50 0.50 0 0 0 2.00 1.00 1.00 94 76 28 1 category table1 Table6 
+object 4.50 4.00 1.00 0 0 0 1.00 2.00 2.00 94 76 28 3 category pantry1 door2 closed2 receptacle receptacle Pantry7 
+object 4.80 2.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 2 category garbage1 receptacle receptacle Garbage8 
+object 4.70 0.20 1.20 0 0 0 0.60 0.40 0.40 40 40 40 4 category microwave1 activation1 off2 door2 closed2 receptacle receptacle Microwave9 
+
+object 0.80 4.30 1.10 0 0 0 0.20 0.20 0.20 255 0 0 3 category apple1 color red1 is-grabbable1 grabbable1 apple20 
+object 1.20 4.30 1.20 0 0 0 0.20 0.20 0.40 0 0 255 3 category soda1 color blue1 is-grabbable1 grabbable1 soda21 
+object 3.50 0.55 1.15 0 0 0 0.20 0.20 0.20 0 255 0 3 category mug1 color green1 is-grabbable1 grabbable1 mug22 
+object 4.00 0.55 1.15 0 0 0 0.10 0.20 0.10 50 50 50 3 category fork1 color gray1 is-grabbable1 grabbable1 fork23 
+object 2.50 0.25 1.00 0 0 0 0.50 0.50 2.00 255 200 100 2 name charlie1 category person Charlie24 
+
+# Room 2: Charlie's office, Left-Center [0,10 to 5,15]
+object 1.50 14.00 0.50 0 0 0 1.00 2.00 1.00 95 76 28 1 category desk1 Desk31 
+object 0.50 14.50 0.60 0 0 0 0.50 0.50 1.20 50 50 255 2 category chair1 color blue1 Chair32 
+object 1.50 14.50 1.20 0 0 0 0.40 0.40 0.40 255 255 255 1 category computer1 Computer33 
+
+object 4.80 14.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 2 category garbage1 receptacle receptacle Garbage41 
+object 1.50 13.50 1.05 0 0 0 0.40 0.30 0.10 0 0 0 2 category book1 color black1 Book42 
+
+# Room 3: Bob's office, Left-Top [0,20 to 5,25]
+object 1.50 24.00 0.50 0 0 0 1.00 2.00 1.00 95 76 28 1 category desk1 Desk51 
+object 0.50 24.50 0.60 0 0 0 0.50 0.50 1.20 50 50 255 2 category chair1 color blue1 Chair52 
+object 1.50 24.50 1.20 0 0 0 0.40 0.40 0.40 255 255 255 1 category computer1 Computer53 
+object 4.80 24.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 2 category garbage1 receptacle receptacle Garbage54 
+
+object 0.50 23.50 1.00 0 0 0 0.50 0.50 2.00 255 200 100 2 name bob1 category person Bob61 
+object 1.50 23.50 1.10 0 0 0 0.40 0.40 0.20 50 50 0 2 color brown1 category package1 Package62 
+
+# Room 4: Conference Room, Right-Bottom [7,0 to 12,5]
+object 7.50 0.50 0.50 0 0 0 0.50 0.50 1.00 255 50 50 2 category chair1 color red1 Chair 60 
+object 8.50 0.50 0.50 0 0 0 0.50 0.50 1.00 255 50 50 2 category chair1 color red1 Chair 61 
+object 9.50 0.50 0.50 0 0 0 0.50 0.50 1.00 255 50 50 2 category chair1 color red1 Chair62 
+object 10.5 0.50 0.50 0 0 0 0.50 0.50 1.00 255 50 50 2 category chair1 color red1 Chair63 
+object 7.50 4.50 0.50 0 0 0 0.50 0.50 1.00 255 50 50 2 category chair1 color red1 Chair64 
+object 8.50 4.50 0.50 0 0 0 0.50 0.50 1.00 255 50 50 2 category chair1 color red1 Chair65 
+object 9.50 4.50 0.50 0 0 0 0.50 0.50 1.00 255 50 50 2 category chair1 color red1 Chair66 
+object 10.5 4.50 0.50 0 0 0 0.50 0.50 1.00 255 50 50 2 category chair1 color red1 Chair67 
+
+
+object 11.5 2.50 1.50 0 0 0 0.20 3.00 2.00 255 255 255 2 category screen1 elevation1 raised1 Screen70 
+object 7.10 1.20 0.50 0 0 0 0.10 0.10 0.10 50 50 50 2 category button1 symbol1 down-arrow1 DownBtn71 
+object 7.10 1.20 0.75 0 0 0 0.10 0.10 0.10 50 50 50 2 category button1 symbol1 up-arrow1 UpBtn72 
+
+
+# Room 5: Copy Room, Right-Center [7,10 to 12,15]
+object 11.5 14.0 0.50 0 0 0 1.00 2.00 1.00 94 76 28 1 category table1 Table80 
+object 8.00 10.5 0.50 0 0 0 1.00 1.00 1.00 150 150 150 1 category copier1 Copier81 
+
+object 8.00 14.0 1.00 0 0 0 0.50 0.50 2.00 255 200 100 2 name alice1 category person Alice90 
+object 11.5 14.0 1.05 0 0 0 0.20 0.10 0.10 50 50 255 2 color green1 category stapler1 Stapler91 
+object 11.5 13.0 1.05 0 0 0 0.15 0.20 0.10 255 255 255 1 category papers1 Papers92 
+
+
+# Room 6: Alice's office, Right-Top [7,20 to 12,25]
+object 10.50 24.00 0.50 0 0 0 1.00 2.00 1.00 95 76 28 1 category desk1 Desk111 
+object 11.50 24.50 0.60 0 0 0 0.50 0.50 1.20 50 50 255 2 category chair1 color blue1 Chair112 
+object 10.50 24.50 1.20 0 0 0 0.40 0.40 0.40 255 255 255 1 category computer1 Computer113 
+object 7.20 24.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 2 category garbage1 receptacle receptacle Garbage114 
+
+
+# 3 Left Rooms
+region 1 2.5 2.5 0 5 5 room1
+region 2 2.5 12.5 0 5 5 room1
+region 3 2.5 22.5 0 5 5 room1
+# 3 Right Rooms
+region 4 9.5 2.5 0 5 5 room1
+region 5 9.5 12.5 0 5 5 room1
+region 6 9.5 22.5 0 5 5 room1
+# Hallway in 5 sections
+region 7 6.0 2.5 0 2 5 hall1
+region 8 6.0 7.5 0 2 5 hall1
+region 9 6.0 12.5 0 2 5 hall1
+region 10 6.0 17.5 0 2 5 hall1
+region 11 6.0 22.5 0 2 5 hall1
+
+# Left Doors
+edge 1 7 door 5 2 0
+edge 2 9 door 5 12.5 0
+edge 3 11 door 5 22.5 0
+
+# Right doors
+edge 4 7 door 7 2.5 3.14
+edge 5 9 door 7 12.5 3.14
+edge 6 11 door 7 22.5 3.14
+
+# Hallway connections
+edge 7 8 open
+edge 8 9 open
+edge 9 10 open
+edge 10 11 open
+
+# Outer wall
+wallchain 20
+  -0.1 -0.1
+  -0.1 5.1
+   5.1 5.1
+   5.1 9.9
+  -0.1 9.9
+  -0.1 15.1
+   5.1 15.1
+   5.1 19.9
+  -0.1 19.9
+  -0.1 25.1
+  12.1 25.1
+  12.1 19.9
+   6.9 19.9
+   6.9 15.1
+  12.1 15.1
+  12.1 9.9
+   6.9 9.9
+   6.9 5.1
+  12.1 5.1
+  12.1 -0.1
+  -0.1 -0.1
+
+# Inner hallway walls
+wall 5.1 0 5 1
+wall 5.1 3 5 5
+wall 5.1 10 5 11.5
+wall 5.1 13.5 5 15
+wall 5.1 20 5 21.5
+wall 5.1 23.5 5 25
+wall 6.9 0 7 1.5
+wall 6.9 3.5 7 5
+wall 6.9 10 7 11.5
+wall 6.9 13.5 7 15
+wall 6.9 20 7 21.5
+wall 6.9 23.5 7 25

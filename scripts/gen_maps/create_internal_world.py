@@ -22,13 +22,10 @@ def create_internal_world(world_info, filename):
 
     name_counts = {}
 
-    i = 0
-
     # Write the list of objects
     for obj in world_info.objects:
-        i += 1
-        obj_id = "<obj" + str(i) + ">"
-        preds_id = "<obj" + str(i) + "-preds>"
+        obj_id = "<obj" + str(obj.obj_id) + ">"
+        preds_id = "<obj" + str(obj.obj_id) + "-preds>"
 
         # Create a unique handle for the object
         handle = "obj"

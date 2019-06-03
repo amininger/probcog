@@ -1,12 +1,12 @@
 robot -6 -8
 
-object 150 3.5 31.5 0 0 0 0 .2 .2 .2 200 200 0 4 shape package1 color red1 size medium1 category object
-object 151 3.5 26 0 0 0 0 .2 .2 .2 255 0 0 4 shape book1 color red1 size medium1 category object
-object 152 -12 10 0 0 0 0 .2 .2 .2 0 255 0 4 shape paper1 color green1 size medium1 category object
-object 153 -12 9 0 0 0 0 .2 .2 .2 0 0 255 4 shape water1 color blue1 size medium1 category object
-object 154 4.5 25 0 0 0 0 .5 .5 2 255 0 0 2 name james1 category person
-object 155 1 -9 0 0 0 0 .5 .5 2 0 255 0 2 name bob1 category person
-object 156 -14.5 -2 0 0 0 0 .5 .5 2 0 0 255 2 name charlie1 category person
+object 3.5 31.5 0 0 0 0 .2 .2 .2 200 200 0 3 color red1 size medium1 category package1 Package
+object 3.5 26 0 0 0 0 .2 .2 .2 255 0 0 3 color red1 size medium1 category book1 Book
+object -12 10 0 0 0 0 .2 .2 .2 0 255 0 3 color green1 size medium1 category papers1 Paper
+object -12 9 0 0 0 0 .2 .2 .2 0 0 255 3 color blue1 size medium1 category water1 Water
+object 4.5 25 0 0 0 0 .5 .5 2 255 0 0 2 name james1 category person James
+object 1 -9 0 0 0 0 .5 .5 2 0 255 0 2 name bob1 category person Bob
+object -14.5 -2 0 0 0 0 .5 .5 2 0 0 255 2 name charlie1 category person Charlie
 
 region 1 3.5 31.5 0 3.5 3.0 room1
 region 2 0.875 29.5 0 1.75 7.0 hall1

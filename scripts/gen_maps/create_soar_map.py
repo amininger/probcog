@@ -3,8 +3,8 @@
 from math import sin
 from math import cos
 
-#DOOR_DIST = 0.8 # Magicbot
-DOOR_DIST = 0.6 # Cozmo
+DOOR_DIST = 0.8 # Magicbot
+#DOOR_DIST = 0.6 # Cozmo
 
 def create_soar_map(world_info, map_filename):
 	nodes = {}
