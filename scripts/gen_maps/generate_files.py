@@ -82,12 +82,6 @@ print("Writing soar map file: " + map_filename)
 create_soar_map(world_info, "temp.soar")
 shutil.copyfile("temp.soar", map_filename)
 
-print("Writing maps_source.soar file")
-fout = open("maps_source.soar", 'w')
-fout.write("source " + world_stem + ".soar")
-fout.close()
-shutil.copyfile("maps_source.soar", map_folder + "maps_source.soar")
-
 print("Success!\n")
 
 
@@ -118,16 +112,10 @@ print("Success!\n")
 
 
 # Write the internal-world soar file
-internal_filename = rosie_path + "/rosie/agent/manage-world-state/internal-world/worlds/" + world_stem + ".soar"
+internal_filename = rosie_path + "/rosie/agent/manage-world-state/world/internal-worlds/" + world_stem + ".soar"
 
 print("Writing internal world soar file: " + internal_filename)
 create_internal_world(world_info, "temp2.soar")
 shutil.copyfile("temp2.soar", internal_filename)
-
-print("Writing world_source.soar file")
-source_world_filename = rosie_path + "/rosie/agent/manage-world-state/internal-world/worlds/world_source.soar"
-fout = open(source_world_filename, 'w')
-fout.write("source " + world_stem + ".soar")
-fout.close()
 
 print("Success!\n")
