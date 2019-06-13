@@ -16,7 +16,8 @@ def create_internal_world(world_info, filename):
     fout.write("              ^agent-params.simulate-perception true)\n")
     fout.write("-->\n")
     fout.write("   (<s> ^internal-world <w>)\n")
-    fout.write("   (<w> ^starting-location " + start_loc + "\n")
+    fout.write("   (<w> ^current-waypoint " + start_loc + "\n")
+    fout.write("        ^holding-object none\n")
     fout.write("        ^objects <objs>)\n")
     fout.write("\n")
 
