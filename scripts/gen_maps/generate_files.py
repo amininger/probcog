@@ -112,7 +112,7 @@ print("Success!\n")
 
 
 # Write the internal-world soar file
-internal_filename = rosie_path + "/rosie/agent/manage-world-state/world/internal-worlds/" + world_stem + ".soar"
+internal_filename = rosie_path + "/rosie/agent/manage-world-state/simulate-perception/internal-worlds/" + world_stem + ".soar"
 
 print("Writing internal world soar file: " + internal_filename)
 create_internal_world(world_info, "temp2.soar")

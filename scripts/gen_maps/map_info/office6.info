@@ -26,20 +26,20 @@ robot 2.5 2.5
 #             |position-| |rotation-| |-- scale ---| |- color -| |---------- predicates -----------------------|
 
 # Room 1: Kitchen, Left-Bottom [0,0 to 5,5]
-object 0.50 0.38 1.00 0 0 0 1.00 0.75 2.00 200 200 200 4 category fridge1 activation1 on2 door2 closed2 receptacle receptacle Fridge1
-object 1.75 0.38 0.50 0 0 0 1.50 0.75 1.00 100 100 100 2 category sink1 activation1 off2 receptacle receptacle Sink2
+object 0.50 0.38 1.00 0 0 0 1.00 0.75 2.00 200 200 200 3 category fridge1 activation1 on2 door2 closed2 Fridge1
+object 1.75 0.38 0.50 0 0 0 1.50 0.75 1.00 100 100 100 1 category sink1 activation1 off2 Sink2
 object 3.75 0.38 0.95 0 0 0 2.50 0.75 0.10 250 230 140 1 category counter1 Counter3
-object 3.00 0.38 0.45 0 0 0 1.00 0.75 0.90 94 76 28 3 category cupboard1 door2 closed2 receptacle receptacle Cupboard4
-object 4.50 0.38 0.80 0 0 0 1.00 0.75 0.20 94 76 28 3 category drawer1 door2 closed2 receptacle receptacle Drawer5
+object 3.00 0.38 0.45 0 0 0 1.00 0.75 0.90 94 76 28 2 category cupboard1 door2 closed2 Cupboard4
+object 4.50 0.38 0.80 0 0 0 1.00 0.75 0.20 94 76 28 2 category drawer1 door2 closed2 Drawer5
 object 1.00 4.50 0.50 0 0 0 2.00 1.00 1.00 94 76 28 1 category table1 Table6 
-object 4.50 4.00 1.00 0 0 0 1.00 2.00 2.00 94 76 28 3 category pantry1 door2 closed2 receptacle receptacle Pantry7 
-object 4.80 2.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 2 category garbage1 receptacle receptacle Garbage8 
-object 4.70 0.20 1.20 0 0 0 0.60 0.40 0.40 40 40 40 4 category microwave1 activation1 off2 door2 closed2 receptacle receptacle Microwave9 
+object 4.50 4.00 1.00 0 0 0 1.00 2.00 2.00 94 76 28 2 category pantry1 door2 closed2 Pantry7 
+object 4.80 2.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 1 category garbage1 Garbage8 
+object 4.70 0.20 1.20 0 0 0 0.60 0.40 0.40 40 40 40 3 category microwave1 activation1 off2 door2 closed2 Microwave9 
 
-object 0.80 4.30 1.10 0 0 0 0.20 0.20 0.20 255 0 0 3 category apple1 color red1 is-grabbable1 grabbable1 apple20 
-object 1.20 4.30 1.20 0 0 0 0.20 0.20 0.40 0 0 255 3 category soda1 color blue1 is-grabbable1 grabbable1 soda21 
-object 3.50 0.55 1.15 0 0 0 0.20 0.20 0.20 0 255 0 3 category mug1 color green1 is-grabbable1 grabbable1 mug22 
-object 4.00 0.55 1.15 0 0 0 0.10 0.20 0.10 50 50 50 3 category fork1 color gray1 is-grabbable1 grabbable1 fork23 
+object 0.80 4.30 1.10 0 0 0 0.20 0.20 0.20 255 0 0 2 category apple1 color red1 apple20 
+object 1.20 4.30 1.20 0 0 0 0.20 0.20 0.40 0 0 255 2 category soda1 color blue1 soda21 
+object 3.50 0.55 1.15 0 0 0 0.20 0.20 0.20 0 255 0 2 category mug1 color green1 mug22 
+object 4.00 0.55 1.15 0 0 0 0.10 0.20 0.10 50 50 50 2 category fork1 color gray1 fork23 
 object 2.50 0.25 1.00 0 0 0 0.50 0.50 2.00 255 200 100 2 name charlie1 category person Charlie24 
 
 # Room 2: Charlie's office, Left-Center [0,10 to 5,15]
@@ -47,14 +47,14 @@ object 1.50 14.00 0.50 0 0 0 1.00 2.00 1.00 95 76 28 1 category desk1 Desk31
 object 0.50 14.50 0.60 0 0 0 0.50 0.50 1.20 50 50 255 2 category chair1 color blue1 Chair32 
 object 1.50 14.50 1.20 0 0 0 0.40 0.40 0.40 255 255 255 1 category computer1 Computer33 
 
-object 4.80 14.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 2 category garbage1 receptacle receptacle Garbage41 
+object 4.80 14.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 1 category garbage1 Garbage41 
 object 1.50 13.50 1.05 0 0 0 0.40 0.30 0.10 0 0 0 2 category book1 color black1 Book42 
 
 # Room 3: Bob's office, Left-Top [0,20 to 5,25]
 object 1.50 24.00 0.50 0 0 0 1.00 2.00 1.00 95 76 28 1 category desk1 Desk51 
 object 0.50 24.50 0.60 0 0 0 0.50 0.50 1.20 50 50 255 2 category chair1 color blue1 Chair52 
 object 1.50 24.50 1.20 0 0 0 0.40 0.40 0.40 255 255 255 1 category computer1 Computer53 
-object 4.80 24.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 2 category garbage1 receptacle receptacle Garbage54 
+object 4.80 24.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 1 category garbage1 Garbage54 
 
 object 0.50 23.50 1.00 0 0 0 0.50 0.50 2.00 255 200 100 2 name bob1 category person Bob61 
 object 1.50 23.50 1.10 0 0 0 0.40 0.40 0.20 50 50 0 2 color brown1 category package1 Package62 
@@ -88,7 +88,7 @@ object 11.5 13.0 1.05 0 0 0 0.15 0.20 0.10 255 255 255 1 category papers1 Papers
 object 10.50 24.00 0.50 0 0 0 1.00 2.00 1.00 95 76 28 1 category desk1 Desk111 
 object 11.50 24.50 0.60 0 0 0 0.50 0.50 1.20 50 50 255 2 category chair1 color blue1 Chair112 
 object 10.50 24.50 1.20 0 0 0 0.40 0.40 0.40 255 255 255 1 category computer1 Computer113 
-object 7.20 24.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 2 category garbage1 receptacle receptacle Garbage114 
+object 7.20 24.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 1 category garbage1 Garbage114 
 
 
 # 3 Left Rooms
