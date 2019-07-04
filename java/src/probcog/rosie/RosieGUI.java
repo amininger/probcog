@@ -20,6 +20,7 @@ import probcog.rosie.perception.MobilePerceptionConnector;
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
 import edu.umich.rosie.language.InternalMessagePasser;
+import edu.umich.rosie.language.ScriptPanel;
 import edu.umich.rosie.language.InstructorMessagePanel;
 import edu.umich.rosie.language.LanguageConnector;
 import edu.umich.rosie.soar.SoarAgent;
@@ -73,7 +74,14 @@ public class RosieGUI extends JFrame
 
     	add(chat);
 
-    	add(new InstructorMessagePanel(chat, props));
+		if(props.getProperty("script-file") != null){
+			ScriptPanel scriptPanel = new ScriptPanel(chat);
+			scriptPanel.loadScriptFile(props.getProperty("script-file"));
+			add(scriptPanel);
+		} else {
+			add(new InstructorMessagePanel(chat, props));
+		}
+
 
 //    	CommandPanel commandPanel = new CommandPanel(soarAgent);
 //
