@@ -72,6 +72,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 
     public SimRobot(SimWorld sw)
     {
+		System.out.println("SIMROBOT");
         this.sw = sw;
         // XXX These don't exist?
         useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);

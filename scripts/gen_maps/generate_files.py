@@ -118,16 +118,16 @@ print("Success!\n")
 
 
 # Write the internal-world soar file
-internal_filename = rosie_path + "/rosie/agent/manage-world-state/internal-world/worlds/" + world_stem + ".soar"
+internal_filename = rosie_path + "/rosie/agent/manage-world-state/simulate-perception/internal-worlds/" + world_stem + ".soar"
 
 print("Writing internal world soar file: " + internal_filename)
 create_internal_world(world_info, "temp2.soar")
 shutil.copyfile("temp2.soar", internal_filename)
 
-print("Writing world_source.soar file")
-source_world_filename = rosie_path + "/rosie/agent/manage-world-state/internal-world/worlds/world_source.soar"
-fout = open(source_world_filename, 'w')
-fout.write("source " + world_stem + ".soar")
-fout.close()
+#print("Writing world_source.soar file")
+#source_world_filename = rosie_path + "/rosie/agent/manage-world-state/internal-world/worlds/world_source.soar"
+#fout = open(source_world_filename, 'w')
+#fout.write("source " + world_stem + ".soar")
+#fout.close()
 
 print("Success!\n")

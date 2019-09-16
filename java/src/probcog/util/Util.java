@@ -192,6 +192,7 @@ public class Util
             System.exit(-1);
         }
 
+		System.out.println(localPath);
         try{
             config = new ConfigFile(file);
         }catch(IOException e){}

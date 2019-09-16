@@ -12,7 +12,7 @@ def parse_info_file(name, info_filename):
     fin.close()
     return world_info
 
-SCALE_FACTOR = 0.0254 # in to meter
+SCALE_FACTOR = 0.5#1.0 #0.0254 # in to meter
 
 ####### ALL INFO ######
 
