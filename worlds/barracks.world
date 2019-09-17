@@ -9,6 +9,806 @@
   vec 6
     0.00   0.00   0.00   0.00   0.00   0.00
 }
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  1
+  # Object Description
+  Officer
+  # Object xyzrpy
+  vec 6
+    7.50  17.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  0 0 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2
+  # Object Description
+  Cook
+  # Object xyzrpy
+  vec 6
+   18.00  10.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  255 255 255
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  100
+  # Object Description
+  Bunk
+  # Object xyzrpy
+  vec 6
+    2.50  19.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.50   2.00   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  101
+  # Object Description
+  Bunk
+  # Object xyzrpy
+  vec 6
+    6.50  19.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.50   2.00   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  102
+  # Object Description
+  Bunk
+  # Object xyzrpy
+  vec 6
+   10.50  19.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.50   2.00   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  103
+  # Object Description
+  Bunk
+  # Object xyzrpy
+  vec 6
+   14.50  19.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.50   2.00   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  104
+  # Object Description
+  Bunk
+  # Object xyzrpy
+  vec 6
+   18.50  19.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.50   2.00   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  105
+  # Object Description
+  Bunk
+  # Object xyzrpy
+  vec 6
+   22.50  19.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.50   2.00   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  106
+  # Object Description
+  Bunk
+  # Object xyzrpy
+  vec 6
+   26.50  19.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.50   2.00   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  110
+  # Object Description
+  Shelf
+  # Object xyzrpy
+  vec 6
+    4.50  19.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  111
+  # Object Description
+  Shelf
+  # Object xyzrpy
+  vec 6
+    8.50  19.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  112
+  # Object Description
+  Shelf
+  # Object xyzrpy
+  vec 6
+   12.50  19.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  113
+  # Object Description
+  Shelf
+  # Object xyzrpy
+  vec 6
+   16.50  19.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  114
+  # Object Description
+  Shelf
+  # Object xyzrpy
+  vec 6
+   20.50  19.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  115
+  # Object Description
+  Shelf
+  # Object xyzrpy
+  vec 6
+   24.50  19.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  116
+  # Object Description
+  Shelf
+  # Object xyzrpy
+  vec 6
+   28.50  19.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  200
+  # Object Description
+  Desk
+  # Object xyzrpy
+  vec 6
+    2.50  12.00   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.00   2.00   1.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 50
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  201
+  # Object Description
+  CO
+  # Object xyzrpy
+  vec 6
+    1.50  12.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  0 0 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  300
+  # Object Description
+  Sentry
+  # Object xyzrpy
+  vec 6
+   29.00  12.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  125 100 50
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  301
+  # Object Description
+  Desk
+  # Object xyzrpy
+  vec 6
+   29.00  11.50   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   1.00   1.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 50
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  302
+  # Object Description
+  Radio
+  # Object xyzrpy
+  vec 6
+   28.50  11.50   1.12   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.25   0.25   0.25
+  # Color rgb (int 0-255)
+  ivec 3
+  50 50 50
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  400
+  # Object Description
+  Table
+  # Object xyzrpy
+  vec 6
+   11.50  10.00   0.25   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.50   4.00   0.50
+  # Color rgb (int 0-255)
+  ivec 3
+  200 150 50
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  410
+  # Object Description
+  Fridge
+  # Object xyzrpy
+  vec 6
+   17.75  12.25   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   1.00   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  411
+  # Object Description
+  Counter
+  # Object xyzrpy
+  vec 6
+   19.25  11.50   0.25   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.00   3.00   0.50
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  412
+  # Object Description
+  Stove
+  # Object xyzrpy
+  vec 6
+   19.25   9.00   0.25   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.00   2.00   0.50
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 25
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  413
+  # Object Description
+  Sink
+  # Object xyzrpy
+  vec 6
+   17.75   7.75   0.25   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   1.00   0.50
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  400
+  # Object Description
+  Plate
+  # Object xyzrpy
+  vec 6
+   12.00   9.00   0.55   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.25   0.25   0.10
+  # Color rgb (int 0-255)
+  ivec 3
+  225 225 225
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  401
+  # Object Description
+  Plate
+  # Object xyzrpy
+  vec 6
+   12.00  11.00   0.55   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.25   0.25   0.10
+  # Color rgb (int 0-255)
+  ivec 3
+  225 225 225
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  402
+  # Object Description
+  Ketchup
+  # Object xyzrpy
+  vec 6
+   12.00  10.00   0.62   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.25
+  # Color rgb (int 0-255)
+  ivec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  600
+  # Object Description
+  Sentry
+  # Object xyzrpy
+  vec 6
+    1.00   7.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  125 100 50
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  601
+  # Object Description
+  Desk
+  # Object xyzrpy
+  vec 6
+    1.00   8.50   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   1.00   1.00
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 50
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  602
+  # Object Description
+  Radio
+  # Object xyzrpy
+  vec 6
+    1.50   8.50   1.12   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.25   0.25   0.25
+  # Color rgb (int 0-255)
+  ivec 3
+  50 50 50
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  700
+  # Object Description
+  Ext
+  # Object xyzrpy
+  vec 6
+   24.00   8.00   0.12   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.25   0.25   0.25
+  # Color rgb (int 0-255)
+  ivec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  701
+  # Object Description
+  Ext
+  # Object xyzrpy
+  vec 6
+   25.00   8.00   0.12   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.25   0.25   0.25
+  # Color rgb (int 0-255)
+  ivec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  702
+  # Object Description
+  Ext
+  # Object xyzrpy
+  vec 6
+   26.00   8.00   0.12   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.25   0.25   0.25
+  # Color rgb (int 0-255)
+  ivec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  703
+  # Object Description
+  Ext
+  # Object xyzrpy
+  vec 6
+   27.00   8.00   0.12   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.25   0.25   0.25
+  # Color rgb (int 0-255)
+  ivec 3
+  255 0 0
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  801
+  # Object Description
+  Armorer
+  # Object xyzrpy
+  vec 6
+   12.00   4.00   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.50   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  802
+  # Object Description
+  Table
+  # Object xyzrpy
+  vec 6
+    1.00   2.50   0.25   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.00   4.00   0.50
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  803
+  # Object Description
+  Table
+  # Object xyzrpy
+  vec 6
+   14.00   2.50   0.25   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    1.00   4.00   0.50
+  # Color rgb (int 0-255)
+  ivec 3
+  100 100 100
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  810
+  # Object Description
+  Cab
+  # Object xyzrpy
+  vec 6
+    4.00   0.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 25
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  811
+  # Object Description
+  Cab
+  # Object xyzrpy
+  vec 6
+    8.00   0.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 25
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  812
+  # Object Description
+  Cab
+  # Object xyzrpy
+  vec 6
+   12.00   0.50   1.00   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    2.00   0.50   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+  25 25 25
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2001
+  # Object Description
+  LS
+  # Object xyzrpy
+  vec 6
+   10.50  15.12   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.12
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2002
+  # Object Description
+  LS
+  # Object xyzrpy
+  vec 6
+    7.88  12.50   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.12
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2003
+  # Object Description
+  LS
+  # Object xyzrpy
+  vec 6
+   22.12  11.50   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.12
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2004
+  # Object Description
+  LS
+  # Object xyzrpy
+  vec 6
+   13.50   7.12   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.12
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2005
+  # Object Description
+  LS
+  # Object xyzrpy
+  vec 6
+    7.88   8.50   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.12
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2006
+  # Object Description
+  LS
+  # Object xyzrpy
+  vec 6
+   22.12   7.50   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.12
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2007
+  # Object Description
+  LS
+  # Object xyzrpy
+  vec 6
+    7.50   4.88   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.12
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
+"probcog.sim.SimBoxObject"
+{
+  # Object id
+  2008
+  # Object Description
+  LS
+  # Object xyzrpy
+  vec 6
+   22.50   4.88   0.50   0.00   0.00   0.00
+  # Length xyz
+  vec 3
+    0.12   0.12   0.12
+  # Color rgb (int 0-255)
+  ivec 3
+  200 200 200
+}
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
@@ -79,13 +879,13 @@
    10.00  13.00
   # End Point 2
   vec 2
-   12.00  13.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
    14.00  13.00
+}
+"probcog.sim.SimRoomWall"
+{
+  # End Point 1
+  vec 2
+   16.00  13.00
   # End Point 2
   vec 2
    20.00  13.00
@@ -105,14 +905,14 @@
   vec 2
    20.00   7.00
   # End Point 2
+  vec 2
+   16.00   7.00
+}
+"probcog.sim.SimRoomWall"
+{
+  # End Point 1
   vec 2
    14.00   7.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   12.00   7.00
   # End Point 2
   vec 2
    10.00   7.00
@@ -125,24 +925,6 @@
   # End Point 2
   vec 2
    10.00  13.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   16.00   7.00
-  # End Point 2
-  vec 2
-   16.00   9.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   16.00  11.00
-  # End Point 2
-  vec 2
-   16.00  13.00
 }
 "probcog.sim.SimRoomWall"
 {
@@ -273,20 +1055,9 @@
   4
   # Tag Position
   vec 6
-   13.00  10.00   0.01   0.00   0.00   0.00
+   15.00  10.00   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
-  6.0
-  6.0
-}
-"probcog.sim.SimRegion"
-{
-  # Region ID
-  5
-  # Tag Position
-  vec 6
-   18.00  10.00   0.01   0.00   0.00   0.00
-  # Width (dx) and Length (dy)
-  4.0
+  10.0
   6.0
 }
 "probcog.sim.SimRegion"
