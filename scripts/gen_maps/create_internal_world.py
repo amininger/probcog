@@ -33,7 +33,7 @@ def create_internal_world(world_info, filename):
         # Create a unique handle for the object
         handle = "obj"
         for c in range(len(obj.cats)):
-            if obj.cats[c] == "name" or obj.cats[c] == "shape":
+            if obj.cats[c] in [ "name", "shape", "category" ]:
                 handle = obj.labels[c]
         
         if handle not in name_counts:

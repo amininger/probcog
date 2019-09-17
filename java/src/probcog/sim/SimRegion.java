@@ -29,7 +29,7 @@ import april.vis.VzLines;
 public class SimRegion extends SimObjectPC implements SimObject
 {
     protected double T[][] = LinAlg.identity(4);  // position
-	protected static Color  color = Color.gray;
+	protected static Color  color = new Color(175, 175, 175);
 	
 	protected double width = 1.0;
 	protected double length = 1.0;
@@ -63,12 +63,13 @@ public class SimRegion extends SimObjectPC implements SimObject
         ArrayList<Object> objs = new ArrayList<Object>();
 
         // Actual Rectangle
-        objs.add(new VisChain(new VzRectangle(width, length, new VzMesh.Style(color)), new VzRectangle(width, length, new VzLines.Style(Color.black, 2))));
+        //objs.add(new VisChain(new VzRectangle(width, length, new VzMesh.Style(color)), new VzRectangle(width+0.001, length+0.001, new VzLines.Style(Color.black, 2))));
+        objs.add(new VzRectangle(width, length, new VzMesh.Style(color)));
 
         // The handle of the location
-        objs.add(new VisChain(LinAlg.translate(0,0,0.01),
-                              LinAlg.scale(0.05),
-                              new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle))));
+        //objs.add(new VisChain(LinAlg.translate(0,0,0.01),
+        //                      LinAlg.scale(0.05),
+        //                      new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle))));
 
         return new VisChain(objs.toArray());
     }

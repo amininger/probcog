@@ -29,7 +29,7 @@ import april.vis.VzText;
 public class SimRoomWall extends SimObjectPC implements SimObject
 {
     protected double T[][] = LinAlg.identity(4);  // position
-	protected static Color  color = Color.gray;   // default wall color
+	protected static Color  color = new Color(100, 100, 100);//Color.gray;   // default wall color
 	protected static double height = 1.5;         // default wall height (meters)
 	protected static double thickness = 0.2;	  // default wall thickness (meters)
 	

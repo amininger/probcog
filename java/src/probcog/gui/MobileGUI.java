@@ -134,7 +134,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                 drawTrajectory(dt);
                 drawClassifications();
                 drawGraph(graph);
-                drawObjectLabels();
+                //drawObjectLabels();
                 TimeUtil.sleep(1000/fps);
             }
         }

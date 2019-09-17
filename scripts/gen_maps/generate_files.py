@@ -52,7 +52,11 @@ else:
 info_filename = "map_info/" + world_stem + ".info"
 
 print("Parsing info file: " + info_filename)
-world_info = parse_info_file(world_stem, info_filename)
+try:
+	world_info = parse_info_file(world_stem, info_filename)
+except Exception as e:
+	print(e)
+	sys.exit(0)
 print("Success!\n")
 
 

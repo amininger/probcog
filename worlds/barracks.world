@@ -39,7 +39,7 @@
     0.50   0.50   2.00
   # Color rgb (int 0-255)
   ivec 3
-  255 255 255
+  150 150 150
 }
 "probcog.sim.SimBoxObject"
 {
@@ -375,7 +375,7 @@
     2.00   1.00   2.00
   # Color rgb (int 0-255)
   ivec 3
-  200 200 200
+  150 150 255
 }
 "probcog.sim.SimBoxObject"
 {
@@ -599,7 +599,7 @@
     0.50   0.50   2.00
   # Color rgb (int 0-255)
   ivec 3
-  200 200 200
+  125 100 50
 }
 "probcog.sim.SimBoxObject"
 {
@@ -786,22 +786,6 @@
   # Object xyzrpy
   vec 6
     7.50   4.88   0.50   0.00   0.00   0.00
-  # Length xyz
-  vec 3
-    0.12   0.12   0.12
-  # Color rgb (int 0-255)
-  ivec 3
-  200 200 200
-}
-"probcog.sim.SimBoxObject"
-{
-  # Object id
-  2008
-  # Object Description
-  LS
-  # Object xyzrpy
-  vec 6
-   22.50   4.88   0.50   0.00   0.00   0.00
   # Length xyz
   vec 3
     0.12   0.12   0.12
@@ -1005,15 +989,6 @@
    10.00   5.00
   # End Point 2
   vec 2
-   20.00   5.00
-}
-"probcog.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   22.00   5.00
-  # End Point 2
-  vec 2
    30.00   5.00
 }
 "probcog.sim.SimRegion"
@@ -1091,17 +1066,6 @@
     8.00   2.50   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
   16.0
-  5.0
-}
-"probcog.sim.SimRegion"
-{
-  # Region ID
-  9
-  # Tag Position
-  vec 6
-   23.00   2.50   0.01   0.00   0.00   0.00
-  # Width (dx) and Length (dy)
-  14.0
   5.0
 }
 "probcog.sim.SimRegion"
