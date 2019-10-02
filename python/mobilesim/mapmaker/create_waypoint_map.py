@@ -6,7 +6,7 @@ from math import cos
 #DOOR_DIST = 0.8 # Magicbot
 DOOR_DIST = 0.6 # Cozmo
 
-def create_soar_map(world_info, map_filename):
+def create_waypoint_map(world_info, fout):
 	nodes = {}
 	edges = []
 
@@ -17,8 +17,6 @@ def create_soar_map(world_info, map_filename):
 	for edge in world_info.edges:
 		edges.append(Edge(edge, True))
 		edges.append(Edge(edge, False))
-
-	fout = open(map_filename, 'w')
 
 	fout.write("sp {topstate*elaborate*map\n")
 	fout.write("   (state <s> ^superstate nil)\n")
@@ -47,15 +45,13 @@ def create_soar_map(world_info, map_filename):
 
 	for node_id in sorted(nodes):
 		node = nodes[node_id]
-		node.print(fout)
+		node.write(fout)
 		for edge in edges:
 			if edge.start == node.id_num:
-				edge.print(nodes, fout)
+				edge.write(nodes, fout)
 		fout.write("\n")
 
 	fout.write("}\n")
-
-	fout.close()
 
 class Node:
 	def __init__(self, region):
@@ -69,7 +65,7 @@ class Node:
 		self.var = "<" + self.name + ">"
 		self.classification = region.label
 	
-	def print(self, out):
+	def write(self, out):
 		out.write('  (%(var)s ^handle %(hand)s ^handle-int %(id_num)d ^x %(x)s ^y %(y)s ^map <building>)\n' % \
 				{ "var": self.var, "hand": self.name, "id_num": self.id_num, "x": self.x, "y": self.y })
 
@@ -99,7 +95,7 @@ class Edge:
 				self.door_ex = edge.door_x - dx
 				self.door_ey = edge.door_y - dy
 	
-	def print(self, nodes, fout):
+	def write(self, nodes, fout):
 		start = nodes[self.start]
 		end = nodes[self.end]
 		self.var = "<e" + start.id_str + end.id_str + ">"

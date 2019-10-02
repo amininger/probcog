@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
-def create_internal_world(world_info, filename):
-    fout = open(filename, 'w')
-
+def create_internal_world(world_info, fout):
     # Find the first region that contains the robot's point
     start_loc = "wp" + next( (region.soar_id for region in world_info.regions 
         if region.contains_point(world_info.robot.x, world_info.robot.y)), "01")
@@ -56,6 +54,4 @@ def create_internal_world(world_info, filename):
     # End of writing objects
 
     fout.write("}\n")
-
-    fout.close()
 

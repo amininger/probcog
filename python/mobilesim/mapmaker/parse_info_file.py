@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from file_reader import FileReader
+from mobilesim.mapmaker.file_reader import FileReader
 
 from math import *
 
