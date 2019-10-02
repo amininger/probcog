@@ -14,8 +14,8 @@ import april.tag.*;
 import april.util.*;
 import april.vis.*;
 
-import probcog.commands.controls.*;
-import probcog.commands.tests.*;
+import soargroup.rosie.mobilesim.commands.controls.*;
+import soargroup.rosie.mobilesim.commands.tests.*;
 import soargroup.rosie.lcmtypes.*;
 import probcog.navigation.*;
 import probcog.sim.*;

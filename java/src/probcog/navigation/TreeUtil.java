@@ -9,7 +9,7 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 
-import probcog.commands.controls.*;
+import soargroup.rosie.mobilesim.commands.controls.*;
 import probcog.util.*;
 import probcog.util.Tree.Node;
 import probcog.sim.*;

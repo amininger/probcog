@@ -29,8 +29,8 @@ WORLD_FILE=$MOBILE_SIM_HOME/worlds/$WORLD_FILE
 
 cd $MOBILE_SIM_HOME
 if [ "$BG" == "TRUE" ]; then
-	java soargroup.rosie.mobilesim.MobileSimulator -w $WORLD_FILE -s &
+	java soargroup.rosie.mobilesim.MobileGUI -w $WORLD_FILE -s &
 else
-	java soargroup.rosie.mobilesim.MobileSimulator -w $WORLD_FILE -s
+	java soargroup.rosie.mobilesim.MobileGUI -w $WORLD_FILE -s
 fi
 

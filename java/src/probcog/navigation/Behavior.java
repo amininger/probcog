@@ -7,9 +7,9 @@ import april.jmat.*;
 import april.util.*;
 import april.vis.*;
 
-import probcog.commands.*;
-import probcog.commands.controls.*;
-import probcog.commands.tests.*;
+import soargroup.rosie.mobilesim.commands.*;
+import soargroup.rosie.mobilesim.commands.controls.*;
+import soargroup.rosie.mobilesim.commands.tests.*;
 import probcog.util.*;
 
 // Used to represent a law-test pair, along with some state for distributions

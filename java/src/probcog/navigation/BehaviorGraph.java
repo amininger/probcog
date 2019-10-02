@@ -7,9 +7,9 @@ import april.jmat.*;
 import april.vis.*;
 import april.util.*;
 
-import probcog.commands.*;
-import probcog.commands.controls.*;
-import probcog.commands.tests.*;
+import soargroup.rosie.mobilesim.commands.*;
+import soargroup.rosie.mobilesim.commands.controls.*;
+import soargroup.rosie.mobilesim.commands.tests.*;
 import probcog.util.*;
 
 /** A graph structure with some wrinkles particular to this application.

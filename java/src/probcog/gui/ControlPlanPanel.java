@@ -7,8 +7,8 @@ import java.util.*;
 
 import april.vis.*;
 
-import probcog.commands.*;
-import probcog.commands.controls.*;
+import soargroup.rosie.mobilesim.commands.*;
+import soargroup.rosie.mobilesim.commands.controls.*;
 
 public class ControlPlanPanel extends JPanel
 {

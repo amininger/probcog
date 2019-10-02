@@ -8,8 +8,8 @@ import java.util.*;
 import april.util.*;
 import april.vis.*;
 
-import probcog.commands.*;
-import probcog.commands.controls.*;
+import soargroup.rosie.mobilesim.commands.*;
+import soargroup.rosie.mobilesim.commands.controls.*;
 
 /** A tool for testing control laws in simulation. */
 public class ControlPlanningGUI
