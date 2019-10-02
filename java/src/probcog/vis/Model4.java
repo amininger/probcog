@@ -9,7 +9,7 @@ import april.vis.*;
 import april.jmat.LinAlg;
 import april.config.*;
 
-import soargroup.rosie.mobilesim.util.*;
+import soargroup.mobilesim.util.*;
 
 public class Model4 extends VisChain
 {

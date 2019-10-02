@@ -4,8 +4,8 @@ import java.awt.*;
 
 import april.jmat.*;
 import april.vis.*;
-import soargroup.rosie.mobilesim.sim.SimObjectPC;
-import soargroup.rosie.mobilesim.util.*;
+import soargroup.mobilesim.sim.SimObjectPC;
+import soargroup.mobilesim.util.*;
 
 public class SelectionAnimation implements VisObject
 {

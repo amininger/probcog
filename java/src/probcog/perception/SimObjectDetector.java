@@ -27,18 +27,18 @@ import april.util.TimeUtil;
 
 import probcog.classify.TagClassifier;
 import probcog.classify.TagHistory;
-import soargroup.rosie.lcmtypes.classification_list_t;
-import soargroup.rosie.lcmtypes.classification_t;
-import soargroup.rosie.lcmtypes.control_law_t;
-import soargroup.rosie.lcmtypes.object_data_t;
-import soargroup.rosie.lcmtypes.soar_objects_t;
-import soargroup.rosie.lcmtypes.tag_classification_list_t;
-import soargroup.rosie.lcmtypes.tag_classification_t;
-import soargroup.rosie.mobilesim.sim.SimObjectPC;
-import soargroup.rosie.mobilesim.sim.SimRobot;
-import soargroup.rosie.mobilesim.sim.SimAprilTag;
-import soargroup.rosie.mobilesim.util.BoundingBox;
-import soargroup.rosie.mobilesim.util.Util;
+import soargroup.mobilesim.lcmtypes.classification_list_t;
+import soargroup.mobilesim.lcmtypes.classification_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.object_data_t;
+import soargroup.mobilesim.lcmtypes.soar_objects_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
+import soargroup.mobilesim.sim.SimObjectPC;
+import soargroup.mobilesim.sim.SimRobot;
+import soargroup.mobilesim.sim.SimAprilTag;
+import soargroup.mobilesim.util.BoundingBox;
+import soargroup.mobilesim.util.Util;
 
 public class SimObjectDetector implements LCMSubscriber{
 	private static double MSG_PER_SEC = 10.0;

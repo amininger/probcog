@@ -12,8 +12,8 @@ import april.jmat.*;
 import april.util.*;
 import april.sim.*;
 
-import soargroup.rosie.lcmtypes.*;
-import soargroup.rosie.mobilesim.sim.*;
+import soargroup.mobilesim.lcmtypes.*;
+import soargroup.mobilesim.sim.*;
 
 /** A test GUI for generating plan requests. */
 public class PlanRequestGUI

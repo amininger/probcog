@@ -2,7 +2,7 @@ package probcog.robot.control;
 
 import april.config.*;
 
-import soargroup.rosie.mobilesim.util.Util;
+import soargroup.mobilesim.util.Util;
 
 public class Params
 {

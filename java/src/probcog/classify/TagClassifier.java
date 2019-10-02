@@ -10,11 +10,11 @@ import april.jmat.*;
 import april.util.*;
 import april.tag.TagDetection;
 
-//import soargroup.rosie.lcmtypes.*;
-import soargroup.rosie.lcmtypes.classification_list_t;
-import soargroup.rosie.lcmtypes.classification_t;
-import soargroup.rosie.lcmtypes.tag_classification_t;
-import soargroup.rosie.mobilesim.util.*;
+//import soargroup.mobilesim.lcmtypes.*;
+import soargroup.mobilesim.lcmtypes.classification_list_t;
+import soargroup.mobilesim.lcmtypes.classification_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
+import soargroup.mobilesim.util.*;
 import magic2.lcmtypes.*;
 
 public class TagClassifier

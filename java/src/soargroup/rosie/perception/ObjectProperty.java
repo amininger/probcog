@@ -6,7 +6,7 @@ import java.util.HashMap;
 import edu.umich.rosie.soar.FloatWME;
 import edu.umich.rosie.soar.ISoarObject;
 
-import soargroup.rosie.lcmtypes.*;
+import soargroup.mobilesim.lcmtypes.*;
 import sml.*;
 
 /**

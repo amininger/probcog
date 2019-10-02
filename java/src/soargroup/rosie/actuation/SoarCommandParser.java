@@ -7,17 +7,17 @@ import april.util.TimeUtil;
 
 import edu.umich.rosie.soar.SoarUtil;
 
-import soargroup.rosie.mobilesim.commands.TypedValue;
-import soargroup.rosie.lcmtypes.condition_test_t;
-import soargroup.rosie.lcmtypes.control_law_t;
-import soargroup.rosie.lcmtypes.typed_value_t;
+import soargroup.mobilesim.commands.TypedValue;
+import soargroup.mobilesim.lcmtypes.condition_test_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.typed_value_t;
 //
 //import edu.umich.rosie.SoarUtil;
 //import april.util.TimeUtil;
-//import soargroup.rosie.mobilesim.commands.TypedValue;
-//import soargroup.rosie.lcmtypes.condition_test_t;
-//import soargroup.rosie.lcmtypes.control_law_t;
-//import soargroup.rosie.lcmtypes.typed_value_t;
+//import soargroup.mobilesim.commands.TypedValue;
+//import soargroup.mobilesim.lcmtypes.condition_test_t;
+//import soargroup.mobilesim.lcmtypes.control_law_t;
+//import soargroup.mobilesim.lcmtypes.typed_value_t;
 //import sml.Identifier;
 //import sml.WMElement;
 

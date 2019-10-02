@@ -7,10 +7,10 @@ import april.jmat.*;
 import april.util.*;
 import april.vis.*;
 
-import soargroup.rosie.mobilesim.commands.*;
-import soargroup.rosie.mobilesim.commands.controls.*;
-import soargroup.rosie.mobilesim.commands.tests.*;
-import soargroup.rosie.mobilesim.util.*;
+import soargroup.mobilesim.commands.*;
+import soargroup.mobilesim.commands.controls.*;
+import soargroup.mobilesim.commands.tests.*;
+import soargroup.mobilesim.util.*;
 
 // Used to represent a law-test pair, along with some state for distributions
 // of states associated with executing this pair.

@@ -1,4 +1,4 @@
-package soargroup.rosie.mobilesim.util;
+package soargroup.mobilesim.util;
 
 import java.util.ArrayList;
 import java.util.Formatter;

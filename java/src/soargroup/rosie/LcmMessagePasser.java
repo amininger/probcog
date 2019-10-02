@@ -17,8 +17,8 @@ import april.util.TimeUtil;
 import edu.umich.rosie.language.IMessagePasser;
 import edu.umich.rosie.language.IMessagePasser.*;
 import edu.umich.rosie.language.LanguageConnector.MessageType;
-import soargroup.rosie.lcmtypes.interaction_message_t;
-import soargroup.rosie.lcmtypes.interaction_message_list_t;
+import soargroup.mobilesim.lcmtypes.interaction_message_t;
+import soargroup.mobilesim.lcmtypes.interaction_message_list_t;
 
 public class LcmMessagePasser implements LCMSubscriber, IMessagePasser{
 	public int SEND_MESSAGE_FPS = 20;

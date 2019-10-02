@@ -26,11 +26,11 @@ import magic2.lcmtypes.ooi_msg_t;
 import magic2.lcmtypes.svs_info_t;
 import magic2.lcmtypes.svs_object_data_t;
 import magic2.lcmtypes.svs_location_data_t;
-import soargroup.rosie.lcmtypes.classification_list_t;
-import soargroup.rosie.lcmtypes.classification_t;
-import soargroup.rosie.lcmtypes.robot_info_t;
-import soargroup.rosie.lcmtypes.tag_classification_list_t;
-import soargroup.rosie.lcmtypes.tag_classification_t;
+import soargroup.mobilesim.lcmtypes.classification_list_t;
+import soargroup.mobilesim.lcmtypes.classification_t;
+import soargroup.mobilesim.lcmtypes.robot_info_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
 import soargroup.rosie.actuation.MobileActuationConnector;
 import sml.Identifier;
 

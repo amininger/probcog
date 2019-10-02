@@ -14,11 +14,11 @@ import april.util.TimeUtil;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
-import soargroup.rosie.mobilesim.commands.CommandCoordinator.Status;
-import soargroup.rosie.mobilesim.commands.TypedValue;
-import soargroup.rosie.lcmtypes.control_law_status_t;
-import soargroup.rosie.lcmtypes.control_law_t;
-import soargroup.rosie.lcmtypes.typed_value_t;
+import soargroup.mobilesim.commands.CommandCoordinator.Status;
+import soargroup.mobilesim.commands.TypedValue;
+import soargroup.mobilesim.lcmtypes.control_law_status_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.typed_value_t;
 import sml.Identifier;
 
 import javax.swing.JButton;

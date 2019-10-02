@@ -1,4 +1,4 @@
-package soargroup.rosie.mobilesim.util;
+package soargroup.mobilesim.util;
 
 /**
  * This class defines various physical constants for the MAGIC 2010

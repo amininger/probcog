@@ -7,10 +7,10 @@ import april.jmat.*;
 import april.vis.*;
 import april.util.*;
 
-import soargroup.rosie.mobilesim.commands.*;
-import soargroup.rosie.mobilesim.commands.controls.*;
-import soargroup.rosie.mobilesim.commands.tests.*;
-import soargroup.rosie.mobilesim.util.*;
+import soargroup.mobilesim.commands.*;
+import soargroup.mobilesim.commands.controls.*;
+import soargroup.mobilesim.commands.tests.*;
+import soargroup.mobilesim.util.*;
 
 /** A graph structure with some wrinkles particular to this application.
  *  Could certainly be done generally given more time, but this is
