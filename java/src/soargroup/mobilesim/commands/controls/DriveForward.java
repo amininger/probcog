@@ -10,7 +10,7 @@ import april.jmat.geom.*;
 import april.util.*;
 
 import soargroup.mobilesim.commands.*;
-import probcog.robot.control.*;
+import soargroup.mobilesim.robot.control.*;
 import soargroup.mobilesim.util.*;
 
 import magic2.lcmtypes.*;

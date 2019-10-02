@@ -19,13 +19,12 @@ import april.vis.*;
 import april.lcm.*;
 import april.util.*;
 import april.sim.*;
-import probcog.classify.*;
 import soargroup.mobilesim.commands.CommandInterpreter;
 import soargroup.mobilesim.commands.CommandCoordinator.Status;
 import soargroup.mobilesim.util.*;
-import probcog.vis.*;
-import probcog.perception.SimObjectDetector;
-import probcog.robot.control.*;
+import soargroup.mobilesim.vis.*;
+import soargroup.mobilesim.robot.control.*;
+import soargroup.mobilesim.robot.perception.*;
 import soargroup.mobilesim.lcmtypes.*;
 import magic2.lcmtypes.*;
 
@@ -511,7 +510,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
     }
 
-    // Aaron Mininger: Implementaton of this task moved to probcog.perception.SimObjectDetector
+    // Aaron Mininger: Implementaton of this task moved to robot.perception.SimObjectDetector
 
     // class ClassifyTask implements PeriodicTasks.Task
 
@@ -523,12 +522,6 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         public void run(double dt)
         {
-            //pose_t pose;
-            //if (!perfectPose) {
-            //    pose = LCMUtil.a2mPose(drive.poseOdom);
-            //} else {
-            //    pose = LCMUtil.a2mPose(drive.poseTruth);
-            //}
             drive.poseOdom.utime = TimeUtil.utime();
             lcm.publish("POSE", drive.poseOdom);
 

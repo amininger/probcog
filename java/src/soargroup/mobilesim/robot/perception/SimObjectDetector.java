@@ -1,4 +1,4 @@
-package probcog.perception;
+package soargroup.mobilesim.robot.perception;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,8 +25,6 @@ import april.sim.SimWorld;
 import april.util.PeriodicTasks;
 import april.util.TimeUtil;
 
-import probcog.classify.TagClassifier;
-import probcog.classify.TagHistory;
 import soargroup.mobilesim.lcmtypes.classification_list_t;
 import soargroup.mobilesim.lcmtypes.classification_t;
 import soargroup.mobilesim.lcmtypes.control_law_t;

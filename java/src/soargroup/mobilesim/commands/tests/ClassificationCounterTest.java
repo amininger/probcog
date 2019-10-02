@@ -6,7 +6,7 @@ import java.util.*;
 import lcm.lcm.*;
 import april.jmat.*;
 import april.util.*;
-import probcog.classify.TagHistory;
+import soargroup.mobilesim.robot.perception.TagHistory;
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.lcmtypes.*;
 import magic2.lcmtypes.*;

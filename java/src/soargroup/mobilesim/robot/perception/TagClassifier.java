@@ -1,4 +1,4 @@
-package probcog.classify;
+package soargroup.mobilesim.robot.perception;
 
 import java.io.*;
 import java.util.*;

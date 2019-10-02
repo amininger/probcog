@@ -3,7 +3,7 @@ package soargroup.mobilesim.commands.controls;
 import java.util.*;
 
 import soargroup.mobilesim.commands.*;
-import probcog.robot.control.*;
+import soargroup.mobilesim.robot.control.*;
 import magic2.lcmtypes.*;
 
 // XXX Temporary port to new control law implementation. This is just a water-

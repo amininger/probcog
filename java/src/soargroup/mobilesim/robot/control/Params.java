@@ -1,4 +1,4 @@
-package probcog.robot.control;
+package soargroup.mobilesim.robot.control;
 
 import april.config.*;
 

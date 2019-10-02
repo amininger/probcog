@@ -1,4 +1,4 @@
-package probcog.vis;
+package soargroup.mobilesim.vis;
 
 import java.awt.*;
 
