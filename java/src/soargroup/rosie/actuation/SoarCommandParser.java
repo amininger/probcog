@@ -1,4 +1,4 @@
-package soargroup.rosie.mobilesim.actuation;
+package soargroup.rosie.actuation;
 
 import java.util.HashMap;
 import java.util.Map;

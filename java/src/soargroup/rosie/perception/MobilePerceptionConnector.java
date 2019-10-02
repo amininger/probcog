@@ -1,4 +1,4 @@
-package soargroup.rosie.mobilesim.perception;
+package soargroup.rosie.perception;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -31,7 +31,7 @@ import soargroup.rosie.lcmtypes.classification_t;
 import soargroup.rosie.lcmtypes.robot_info_t;
 import soargroup.rosie.lcmtypes.tag_classification_list_t;
 import soargroup.rosie.lcmtypes.tag_classification_t;
-import soargroup.rosie.mobilesim.actuation.MobileActuationConnector;
+import soargroup.rosie.actuation.MobileActuationConnector;
 import sml.Identifier;
 
 public class MobilePerceptionConnector extends AgentConnector implements LCMSubscriber{

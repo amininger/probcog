@@ -1,4 +1,4 @@
-package probcog.gui;
+package soargroup.rosie.mobilesim;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -20,23 +20,16 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 import april.vis.VisCameraManager.CameraPosition;
-import probcog.arm.*;
-import probcog.classify.*;
-import probcog.commands.*;
 import soargroup.rosie.lcmtypes.*;
-import probcog.old.classify.Features.FeatureCategory;
-import probcog.old.perception.*;
-import probcog.sensor.*;
-import probcog.sim.*;
-import probcog.util.*;
-import probcog.vis.*;
+
+import probcog.gui.ProbCogSimulator;
 
 // import abolt.collision.ShapeToVisObject;
 // import abolt.sim.SimSensable;
 // import abolt.util.SimUtil;
 // import abolt.objects.SensableManager;
 
-public class MobileGUI extends JFrame implements VisConsole.Listener
+public class MobileSimulator extends JFrame implements VisConsole.Listener
 {
     private ProbCogSimulator simulator;
     LCM lcm = LCM.getSingleton();
@@ -51,17 +44,11 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
     VisWorld vw;
     VisLayer vl;
     VisCanvas vc;
-    GraphVisEventHandler graphHandler;
-
-    // Temporary graph stuff (where will this graph actually live so that it is
-    // accessible to all who need it?
-    String graphFilename = "/tmp/probcog-graph.ser";
-    MultiGraph<CommandNode, CommandEdge> graph = new MultiGraph<CommandNode, CommandEdge>();
 
     // Parameter Stuff
     ParameterGUI pg;
 
-    public MobileGUI(GetOpt opts) throws IOException
+    public MobileSimulator(GetOpt opts) throws IOException
     {
         super("ProbCog Mobile");
         this.setSize(800, 600);
@@ -72,21 +59,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         vl = new VisLayer(vw);
         vc = new VisCanvas(vl);
         vl.addEventHandler(new MobileGUIEventHandler(vw));
-        graphHandler = new GraphVisEventHandler(vw, graph);
-        vl.addEventHandler(graphHandler);
         this.add(vc, BorderLayout.CENTER);
-
-        // Load graph if applicable. Graphs can be saved/loaded via the
-        // command line as well as the console. In console:
-        // graph save [optional filename]
-        // graph load [filename]
-        if (opts.getString("graph") != null) {
-            try {
-                loadGraph(opts.getString("graph"));
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
 
         VisConsole console = new VisConsole(vw, vl, vc);
         console.addListener(this);
@@ -126,14 +99,12 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         public void run()
         {
             Tic tic = new Tic();
-            //drawGraph();
             while (true) {
                 double dt = tic.toctic();
                 //drawWorld();
                 //System.out.println(lcm.getNumSubscriptions());
                 drawTrajectory(dt);
                 drawClassifications();
-                drawGraph(graph);
                 drawObjectLabels();
                 TimeUtil.sleep(1000/fps);
             }
@@ -225,18 +196,8 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 
         public boolean keyPressed(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, KeyEvent e)
         {
-            // Toggle mode
-            if (e.getKeyCode() == KeyEvent.VK_G)
-                graphHandler.toggle();
-
-            VisWorld.Buffer vb = vw.getBuffer("graphMode");
-            if (graphHandler.isOn()) {
-                vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.TOP_LEFT,
-                                            LinAlg.scale(0.1),
-                                            new VzText(VzText.ANCHOR.TOP_LEFT_ROUND,
-                                                       "<<monospaced-128-bold,red>>Graph Mode")));
-            }
-            vb.swap();
+            //if (e.getKeyCode() == KeyEvent.VK_G)
+			
             return false;
         }
 
@@ -280,29 +241,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                     }
                 }
             }
-        }
-    }
-
-    // Graph loading/saving
-    private void saveGraph(String filename) throws IOException
-    {
-        FileOutputStream fout = new FileOutputStream(filename);
-        ObjectOutputStream oout = new ObjectOutputStream(fout);
-        oout.writeObject(graph);
-        oout.close();
-        fout.close();
-    }
-
-    private void loadGraph(String filename) throws IOException
-    {
-        try {
-            FileInputStream fin = new FileInputStream(filename);
-            ObjectInputStream oin = new ObjectInputStream(fin);
-            graph = (MultiGraph<CommandNode, CommandEdge>) oin.readObject();
-            oin.close();
-            fin.close();
-        } catch (ClassNotFoundException ex) {
-            ex.printStackTrace();
         }
     }
 
@@ -364,80 +302,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
     }
 
 
-    private void drawGraph(MultiGraph<CommandNode, CommandEdge> graph)
-    {
-        // Drawing parameters
-        double STEP_SIZE = 0.5;    // [m]
-        double START_ANGLE = Math.toRadians(45);
-        double ANGLE_STEP = Math.toRadians(2.5);
-
-        ArrayList<Color> colors = new ArrayList<Color>(Palette.web.listAll());
-        Collections.shuffle(colors, new Random(18941));
-        HashMap<String, Color> colorMap = new HashMap<String, Color>();
-
-        VisWorld.Buffer vb = vw.getBuffer("graph");
-        synchronized (graph) {
-            // Render edges...this will take some doing
-            for (Integer n0: graph.getNodes()) {
-                for (Integer n1: graph.getNodes()) {
-                    if (n0.equals(n1))
-                        continue;
-
-                    Set<CommandEdge> edges = graph.getEdges(n0, n1);
-                    if (edges == null)
-                        continue;
-
-                    CommandNode a = graph.getValue(n0);
-                    CommandNode b = graph.getValue(n1);
-                    if (a == null || b == null)
-                        continue;
-
-                    double[] axy = a.getXY();
-                    double[] bxy = b.getXY();
-                    double theta0 = Math.atan2(bxy[1]-axy[1], bxy[0]-axy[0]);
-
-                    int idx = 0;
-                    for (CommandEdge e: edges) {
-                        // Pick a color from the palette
-                        if (!colorMap.containsKey(e.law))
-                            colorMap.put(e.law, colors.get(colorMap.size()%colors.size()));
-                        Color color = colorMap.get(e.law);
-
-                        ArrayList<double[]> points = new ArrayList<double[]>();
-                        points.add(axy);
-
-                        double theta1 = MathUtil.mod2pi(theta0 + (START_ANGLE + idx*ANGLE_STEP));
-                        double theta2 = MathUtil.mod2pi(Math.PI + theta0 - (START_ANGLE + idx*ANGLE_STEP));
-                        double r = (idx+1)*STEP_SIZE;
-                        double[] xy0 = LinAlg.add(axy, new double[] {r*Math.cos(theta1), r*Math.sin(theta1)});
-                        double[] xy1 = LinAlg.add(bxy, new double[] {r*Math.cos(theta2), r*Math.sin(theta2)});
-                        points.add(xy0);
-                        points.add(xy1);
-
-                        points.add(bxy);
-                        vb.addBack(new VzLines(new VisVertexData(points),
-                                               VzLines.LINE_STRIP,
-                                               new VzLines.Style(color, 1)));
-                        idx++;
-                    }
-                }
-            }
-
-            // Render vertices
-            ArrayList<double[]> points = new ArrayList<double[]>();
-            for (Integer key: graph.getNodes()) {
-                CommandNode n = graph.getValue(key);
-                if (n == null)
-                    continue;
-                points.add(n.getXY());
-            }
-            vb.addBack(new VzPoints(new VisVertexData(points),
-                                    new VzPoints.Style(Color.red, 5)));
-        }
-
-        vb.swap();
-    }
-
     // XXX Should be updated to not draw forever/draw noisy data
     private static final double MAX_POINTS = 500;
     private static double dtAcc = 0;
@@ -472,54 +336,14 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         if (toks.length == 0)
             return false;
 
-        // Graph handling commands
-        if (toks[0].equals("graph")) {
-            if (toks.length < 2) {
-                out.printf("usage: graph <save | load> [filename]\n");
-                return true;
-            }
-            if (toks[1].equals("load")) {
-                if (toks.length != 3) {
-                    out.printf("usage: graph load <filename>\n");
-                } else {
-                    try {
-                        graphFilename = toks[2];
-                        loadGraph(graphFilename);
-                        out.printf("graph loaded\n");
-                    } catch (IOException ex) {
-                        out.printf("ERR: could not load graph %s\n", toks[2]);
-                    }
-                }
-                return true;
-            } else if (toks[1].equals("save")) {
-                if (toks.length == 2) {
-                    try {
-                        saveGraph(graphFilename);
-                        out.printf("graph saved\n");
-                    } catch (IOException ex) {
-                        out.printf("ERR: could not save graph to file\n");
-                    }
-                } else if (toks.length == 3) {
-                    try {
-                        graphFilename = toks[2];
-                        saveGraph(graphFilename);
-                        out.printf("graph saved\n");
-                    } catch (IOException ex) {
-                        out.printf("ERR: could not save graph to file\n");
-                    }
-                } else {
-                    out.printf("usage: graph save [filename]\n");
-                }
-                return true;
-            }
-        }
+		// Handle tokens (toks array) and return true
 
         return false;
     }
 
     public ArrayList<String> consoleCompletions(VisConsole console, String prefix)
     {
-        String cs[] = new String[] { "graph load", "graph save" };
+        String cs[] = new String[] {  }; // Add any console command completions
 
         ArrayList<String> as = new ArrayList<String>();
         for (String s: cs)
@@ -537,7 +361,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         opts.addBoolean('h', "help", false, "Show this help screen");
         //opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
-        opts.addString('g', "graph", null, "Graph file");
         opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
 
         if (!opts.parse(args)) {
@@ -551,7 +374,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 
         // Spin up the GUI
         try {
-            MobileGUI gui = new MobileGUI(opts);
+            MobileSimulator sim = new MobileSimulator(opts);
             if(opts.getBoolean("spoof")) {
                 probcog.gui.CommandSpoofer spoof = new probcog.gui.CommandSpoofer();
             }

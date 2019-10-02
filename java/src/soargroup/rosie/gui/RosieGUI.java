@@ -15,8 +15,8 @@ import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JSplitPane;
 
-import soargroup.rosie.mobilesim.actuation.MobileActuationConnector;
-import soargroup.rosie.mobilesim.perception.MobilePerceptionConnector;
+import soargroup.rosie.actuation.MobileActuationConnector;
+import soargroup.rosie.perception.MobilePerceptionConnector;
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
 import edu.umich.rosie.language.InternalMessagePasser;

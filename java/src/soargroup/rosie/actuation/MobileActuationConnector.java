@@ -1,4 +1,4 @@
-package soargroup.rosie.mobilesim.actuation;
+package soargroup.rosie.actuation;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
