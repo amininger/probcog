@@ -9,8 +9,8 @@ import april.config.*;
 import april.jmat.*;
 import april.util.*;
 
-import probcog.lcmtypes.bolt_arm_command_t;
-import probcog.lcmtypes.robot_action_t;
+import soargroup.rosie.lcmtypes.bolt_arm_command_t;
+import soargroup.rosie.lcmtypes.robot_action_t;
 import probcog.util.*;
 
 import magic2.lcmtypes.*;

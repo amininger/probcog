@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import probcog.lcmtypes.categorized_data_t;
-import probcog.lcmtypes.category_t;
+import soargroup.rosie.lcmtypes.categorized_data_t;
+import soargroup.rosie.lcmtypes.category_t;
 import probcog.old.classify.Classifications;
 import probcog.old.classify.Features;
 import probcog.old.classify.Features.FeatureCategory;

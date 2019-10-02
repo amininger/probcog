@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import probcog.lcmtypes.category_t;
+import soargroup.rosie.lcmtypes.category_t;
 import probcog.old.perception.*;
 
 public class Features

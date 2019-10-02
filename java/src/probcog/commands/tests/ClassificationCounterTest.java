@@ -8,7 +8,7 @@ import april.jmat.*;
 import april.util.*;
 import probcog.classify.TagHistory;
 import probcog.commands.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 public class ClassificationCounterTest implements ConditionTest, LCMSubscriber

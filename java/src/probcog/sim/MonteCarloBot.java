@@ -17,7 +17,7 @@ import probcog.commands.controls.*;
 import probcog.commands.tests.*;
 import probcog.util.*;
 import probcog.navigation.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 public class MonteCarloBot implements SimObject

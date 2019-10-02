@@ -4,7 +4,7 @@ LCMTYPES_NAMES := $(shell cd ../lcmtypes && ls *.lcm)
 
 # Construct the pathnames to the java types
 LCMTYPES_JAVA := $(LCMTYPES_NAMES:%.lcm=%.java)
-LCMTYPES_JAVA := $(addprefix src/probcog/lcmtypes/,$(LCMTYPES_JAVA))
+LCMTYPES_JAVA := $(addprefix src/soargroup/rosie/lcmtypes/,$(LCMTYPES_JAVA))
 
 LCMTYPES_JAR = lcmtypes.jar
 
@@ -15,9 +15,9 @@ LCM_JAR = /usr/local/share/java/lcm.jar
 
 all: $(LCMTYPES_JAVA)
 
-src/probcog/lcmtypes/%.java: ../lcmtypes/%.lcm
+src/soargroup/rosie/lcmtypes/%.java: ../lcmtypes/%.lcm
 	@echo "\t$<"
-	@$(LCM) -j --jpath=src --jdefaultpkg=probcog.lcmtypes $<
+	@$(LCM) -j --jpath=src --jdefaultpkg=soargroup.rosie.lcmtypes $<
 
 $(LCMTYPES_JAR): | builddir
 	@echo "[$(LCMTYPES_JAR)]"
@@ -29,4 +29,4 @@ builddir:
 	@mkdir -p $(BUILD_PATH)
 
 clean:
-	@rm -rf *~ src/probcog/lcmtypes/* *.jar
+	@rm -rf *~ src/soargroup/rosie/lcmtypes/* *.jar

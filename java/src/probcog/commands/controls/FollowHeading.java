@@ -11,7 +11,7 @@ import april.util.*;
 import probcog.commands.*;
 import probcog.util.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** Given a heading (yaw) to follow relative to the global coordinate frame, try

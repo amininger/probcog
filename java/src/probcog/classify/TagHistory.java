@@ -5,7 +5,7 @@ import java.util.*;
 import april.jmat.*;
 import april.util.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 
 /** Stores tag detection information regarding labels, but with some persistence
  *  information. This allows us to make a one-time assignment of a label to a tag

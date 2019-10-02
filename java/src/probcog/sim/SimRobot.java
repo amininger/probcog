@@ -28,7 +28,7 @@ import probcog.old.sim.SimDoor;
 import probcog.perception.SimObjectDetector;
 import probcog.robot.control.*;
 import probcog.sensor.SimKinectSensor;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 public class SimRobot implements SimObject, LCMSubscriber

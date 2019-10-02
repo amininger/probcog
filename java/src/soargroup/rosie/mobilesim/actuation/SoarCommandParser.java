@@ -8,16 +8,16 @@ import april.util.TimeUtil;
 import edu.umich.rosie.soar.SoarUtil;
 
 import probcog.commands.TypedValue;
-import probcog.lcmtypes.condition_test_t;
-import probcog.lcmtypes.control_law_t;
-import probcog.lcmtypes.typed_value_t;
+import soargroup.rosie.lcmtypes.condition_test_t;
+import soargroup.rosie.lcmtypes.control_law_t;
+import soargroup.rosie.lcmtypes.typed_value_t;
 //
 //import edu.umich.rosie.SoarUtil;
 //import april.util.TimeUtil;
 //import probcog.commands.TypedValue;
-//import probcog.lcmtypes.condition_test_t;
-//import probcog.lcmtypes.control_law_t;
-//import probcog.lcmtypes.typed_value_t;
+//import soargroup.rosie.lcmtypes.condition_test_t;
+//import soargroup.rosie.lcmtypes.control_law_t;
+//import soargroup.rosie.lcmtypes.typed_value_t;
 //import sml.Identifier;
 //import sml.WMElement;
 

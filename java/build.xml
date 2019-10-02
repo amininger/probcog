@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 
-<project name="probcog" default="build" basedir=".">
+<project name="mobilesim" default="build" basedir=".">
 
   <!-- Build everything -->
   <target name="build" depends="generate-lcmtypes,build-java,build-jar"/>
@@ -12,7 +12,7 @@
   <target name="distclean" depends="clean">
     <delete dir="build"/>
     <delete dir="docs"/>
-    <delete file="probcog.jar"/>
+    <delete file="mobilesim.jar"/>
     <delete dir="depcache"/>
   </target>
 
@@ -41,7 +41,7 @@
 
   <!-- Build Jar -->
   <target name="build-jar">
-    <jar destfile="probcog.jar">
+    <jar destfile="mobilesim.jar">
 
       <fileset dir="build">
 	<include name="**/*.class" />
@@ -49,10 +49,9 @@
       </fileset>
 
       <manifest>
-	<attribute name="Main-Class" value="probcog.ProbCog" />
       </manifest>
     </jar>
-    <copy file="probcog.jar" todir="." />
+    <copy file="mobilesim.jar" todir="." />
   </target>
 
   <target name="build-java">
@@ -75,7 +74,7 @@
     <delete>
       <fileset dir="build" includes="**/*.class"/>
       <fileset dir="." includes="**/*~" defaultexcludes="no"/>
-      <fileset dir="." includes="probcog.jar"/>
+      <fileset dir="." includes="mobilesim.jar"/>
     </delete>
   </target>
 

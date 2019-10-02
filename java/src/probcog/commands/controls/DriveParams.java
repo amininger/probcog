@@ -1,6 +1,6 @@
 package probcog.commands.controls;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** A container class holding possible inputs to a control law.

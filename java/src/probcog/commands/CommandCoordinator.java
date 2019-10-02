@@ -8,7 +8,7 @@ import april.util.*;
 
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 
 /** The command coordinator is responsible for the creation of new control
  *  law requests, condition tests, registration of tests as termination

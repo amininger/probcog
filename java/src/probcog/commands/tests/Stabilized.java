@@ -10,7 +10,7 @@ import april.util.*;
 
 import probcog.commands.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** Detects whether or not a system has basically ceased moving. In

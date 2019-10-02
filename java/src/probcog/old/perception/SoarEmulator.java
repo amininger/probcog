@@ -7,7 +7,7 @@ import lcm.lcm.*;
 
 import april.util.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 
 public class SoarEmulator
 {

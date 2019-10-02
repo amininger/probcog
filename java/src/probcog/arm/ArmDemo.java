@@ -18,7 +18,7 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 import probcog.classify.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.old.classify.Features.FeatureCategory;
 import probcog.old.perception.*;
 

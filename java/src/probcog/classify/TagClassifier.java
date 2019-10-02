@@ -10,10 +10,10 @@ import april.jmat.*;
 import april.util.*;
 import april.tag.TagDetection;
 
-//import probcog.lcmtypes.*;
-import probcog.lcmtypes.classification_list_t;
-import probcog.lcmtypes.classification_t;
-import probcog.lcmtypes.tag_classification_t;
+//import soargroup.rosie.lcmtypes.*;
+import soargroup.rosie.lcmtypes.classification_list_t;
+import soargroup.rosie.lcmtypes.classification_t;
+import soargroup.rosie.lcmtypes.tag_classification_t;
 import probcog.util.*;
 import magic2.lcmtypes.*;
 

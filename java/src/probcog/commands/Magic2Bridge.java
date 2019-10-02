@@ -8,7 +8,7 @@ import java.io.IOException;
 import april.jmat.*;
 import april.util.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** A class to act as a bridge between the old ProbCog interface and

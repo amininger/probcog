@@ -25,7 +25,7 @@ import probcog.vis.*;
 import probcog.util.*;
 import probcog.sim.*;
 import probcog.robot.control.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 

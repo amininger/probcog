@@ -2,7 +2,7 @@ package probcog.commands;
 
 import java.io.*;
 
-import probcog.lcmtypes.typed_value_t;
+import soargroup.rosie.lcmtypes.typed_value_t;
 
 public class TypedValue implements Serializable
 {

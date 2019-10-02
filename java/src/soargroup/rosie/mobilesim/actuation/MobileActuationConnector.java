@@ -16,9 +16,9 @@ import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
 import probcog.commands.CommandCoordinator.Status;
 import probcog.commands.TypedValue;
-import probcog.lcmtypes.control_law_status_t;
-import probcog.lcmtypes.control_law_t;
-import probcog.lcmtypes.typed_value_t;
+import soargroup.rosie.lcmtypes.control_law_status_t;
+import soargroup.rosie.lcmtypes.control_law_t;
+import soargroup.rosie.lcmtypes.typed_value_t;
 import sml.Identifier;
 
 import javax.swing.JButton;

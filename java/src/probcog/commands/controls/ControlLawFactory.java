@@ -4,7 +4,7 @@ import java.util.*;
 import java.lang.reflect.*;
 
 import probcog.commands.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 
 public class ControlLawFactory
 {

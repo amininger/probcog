@@ -16,7 +16,7 @@ import april.vis.*;
 
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.navigation.*;
 import probcog.sim.*;
 import probcog.util.*;

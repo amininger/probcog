@@ -22,7 +22,7 @@ import april.vis.VisCameraManager.CameraPosition;
 import probcog.arm.*;
 import probcog.classify.*;
 import probcog.classify.Features.FeatureCategory;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.perception.*;
 import probcog.sensor.*;
 import probcog.sim.SimLocation;

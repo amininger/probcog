@@ -19,7 +19,7 @@ import april.vis.*;
 import probcog.commands.*;
 import probcog.util.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 // TODO: Add orientation stuff if needed

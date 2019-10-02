@@ -12,7 +12,7 @@ import april.jmat.*;
 import april.util.*;
 import april.sim.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.sim.*;
 
 /** A test GUI for generating plan requests. */

@@ -11,7 +11,7 @@ import april.jmat.geom.*;
 import april.util.*;
 
 import probcog.commands.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.util.*;
 
 import magic2.lcmtypes.*;

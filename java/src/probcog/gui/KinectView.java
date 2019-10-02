@@ -11,7 +11,7 @@ import april.config.*;
 import april.jmat.LinAlg;
 import april.vis.*;
 import april.util.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.old.perception.*;
 import probcog.sensor.*;
 import probcog.util.*;

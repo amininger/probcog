@@ -3,9 +3,9 @@ package soargroup.rosie.mobilesim.perception;
 import java.util.HashSet;
 import java.util.Properties;
 
-import probcog.lcmtypes.robot_info_t;
-import probcog.lcmtypes.tag_classification_list_t;
-import probcog.lcmtypes.tag_classification_t;
+import soargroup.rosie.lcmtypes.robot_info_t;
+import soargroup.rosie.lcmtypes.tag_classification_list_t;
+import soargroup.rosie.lcmtypes.tag_classification_t;
 import sml.Identifier;
 import edu.umich.rosie.soar.ISoarObject;
 import edu.umich.rosie.soar.SVSCommands;

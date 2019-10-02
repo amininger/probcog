@@ -16,7 +16,7 @@ import april.jmat.*;
 import april.sim.SimObject;
 import april.util.*;
 import april.vis.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.old.perception.PointCloud;
 import probcog.old.sim.SimLocation;
 import probcog.sensor.SimKinectSensor.SimPixel;

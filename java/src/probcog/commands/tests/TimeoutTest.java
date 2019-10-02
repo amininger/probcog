@@ -5,7 +5,7 @@ import java.util.*;
 import april.util.*;
 
 import probcog.commands.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 
 // XXX IS this broken when not executed immediately? It would seem so, since
 // elapsed is initialized on creation.

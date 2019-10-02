@@ -10,7 +10,7 @@ import april.jmat.*;
 
 import probcog.commands.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 
 /** Orient the robot to face along a particular heading. Automatically turns

@@ -16,7 +16,7 @@ import april.lcmtypes.*;
 import probcog.commands.*;
 import probcog.commands.controls.*;
 import probcog.commands.tests.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.util.*;
 
 public class CommandSpoofer extends JFrame

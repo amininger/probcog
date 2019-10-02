@@ -7,7 +7,7 @@ import java.io.IOException;
 
 import april.util.*;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 
 import probcog.commands.CommandCoordinator.Status;
 import probcog.commands.controls.*;

@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.nio.ByteBuffer;
 
 import april.jmat.LinAlg;
-import probcog.lcmtypes.classification_t;
-import probcog.lcmtypes.object_data_t;
+import soargroup.rosie.lcmtypes.classification_t;
+import soargroup.rosie.lcmtypes.object_data_t;
 import sml.Identifier;
 import edu.umich.rosie.soar.ISoarObject;
 import edu.umich.rosie.soar.IntWME;

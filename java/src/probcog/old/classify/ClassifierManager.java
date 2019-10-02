@@ -5,7 +5,7 @@ import java.io.*;
 
 import april.config.*;
 import april.util.*;
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 import probcog.old.classify.Features.FeatureCategory;
 import probcog.old.perception.Obj;
 

@@ -5,7 +5,7 @@ import april.tag.CameraUtil;
 import april.jmat.LinAlg;
 import april.lcmtypes.pose_t;
 
-import probcog.lcmtypes.*;
+import soargroup.rosie.lcmtypes.*;
 
 public class TagUtil
 {
