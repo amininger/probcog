@@ -1,4 +1,4 @@
-package probcog.rosie;
+package soargroup.rosie.gui;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -15,8 +15,8 @@ import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JSplitPane;
 
-import probcog.rosie.actuation.MobileActuationConnector;
-import probcog.rosie.perception.MobilePerceptionConnector;
+import soargroup.rosie.mobilesim.actuation.MobileActuationConnector;
+import soargroup.rosie.mobilesim.perception.MobilePerceptionConnector;
 import edu.umich.rosie.AgentMenu;
 import edu.umich.rosie.language.ChatPanel;
 import edu.umich.rosie.language.InternalMessagePasser;

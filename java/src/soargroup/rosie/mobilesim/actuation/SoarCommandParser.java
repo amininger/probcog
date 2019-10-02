@@ -1,4 +1,4 @@
-package probcog.rosie.actuation;
+package soargroup.rosie.mobilesim.actuation;
 
 import java.util.HashMap;
 import java.util.Map;

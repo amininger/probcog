@@ -1,4 +1,4 @@
-package probcog.rosie;
+package soargroup.rosie;
 
 import java.io.IOException;
 import java.util.ArrayList;

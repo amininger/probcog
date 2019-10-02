@@ -1,8 +1,9 @@
-package probcog.rosie;
+package soargroup.rosie.gui;
 
 import javax.swing.JFrame;
 
 import edu.umich.rosie.language.ChatPanel;
+import soargroup.rosie.LcmMessagePasser;
 
 
 public class ChatStandaloneGUI extends JFrame

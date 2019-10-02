@@ -1,4 +1,4 @@
-package probcog.rosie.actuation;
+package soargroup.rosie.mobilesim.actuation;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;

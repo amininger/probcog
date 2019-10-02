@@ -1,4 +1,4 @@
-package probcog.rosie.perception;
+package soargroup.rosie.mobilesim.perception;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;

@@ -1,4 +1,4 @@
-package probcog.rosie.perception;
+package soargroup.rosie.mobilesim.perception;
 
 import java.util.HashSet;
 import java.util.Properties;
