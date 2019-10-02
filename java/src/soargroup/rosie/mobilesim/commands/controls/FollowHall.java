@@ -17,7 +17,7 @@ import april.util.*;
 import april.vis.*;
 
 import soargroup.rosie.mobilesim.commands.*;
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 
 import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;

@@ -1,4 +1,4 @@
-package probcog.util;
+package soargroup.rosie.mobilesim.util;
 
 import java.util.*;
 

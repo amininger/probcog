@@ -51,8 +51,6 @@ public class MapInfo {
 
         try {
             // FileReader reads text files in the default encoding.
-        	//String probcogHome = StringUtil.replaceEnvironmentVariables("$PROBCOG_HOME");
-            //FileReader fileReader = new FileReader(probcogHome + "/worlds/maps/" + filename);
             FileReader fileReader = new FileReader(filename);
 
             // Always wrap FileReader in BufferedReader.

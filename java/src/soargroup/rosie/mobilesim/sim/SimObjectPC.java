@@ -1,4 +1,4 @@
-package probcog.sim;
+package soargroup.rosie.mobilesim.sim;
 
 import java.awt.Color;
 import java.io.IOException;
@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import probcog.util.BoundingBox;
+import soargroup.rosie.mobilesim.util.BoundingBox;
 import april.jmat.LinAlg;
 import april.util.StructureReader;
 import april.util.StructureWriter;

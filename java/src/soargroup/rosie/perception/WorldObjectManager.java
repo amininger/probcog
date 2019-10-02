@@ -39,9 +39,6 @@ public class WorldObjectManager {
 
         try {
             // FileReader reads text files in the default encoding.
-        	//String probcogHome = StringUtil.replaceEnvironmentVariables("$PROBCOG_HOME");
-
-            //FileReader fileReader = new FileReader(probcogHome + "/worlds/objects/" + filename);
             FileReader fileReader = new FileReader(filename);
 
             // Always wrap FileReader in BufferedReader.

@@ -1,4 +1,4 @@
-package probcog.sim;
+package soargroup.rosie.mobilesim.sim;
 
 import java.awt.*;
 import java.awt.image.*;
@@ -22,12 +22,10 @@ import april.sim.*;
 import probcog.classify.*;
 import soargroup.rosie.mobilesim.commands.CommandInterpreter;
 import soargroup.rosie.mobilesim.commands.CommandCoordinator.Status;
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 import probcog.vis.*;
-import probcog.old.sim.SimDoor;
 import probcog.perception.SimObjectDetector;
 import probcog.robot.control.*;
-import probcog.sensor.SimKinectSensor;
 import soargroup.rosie.lcmtypes.*;
 import magic2.lcmtypes.*;
 

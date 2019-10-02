@@ -12,7 +12,7 @@ import april.jmat.geom.*;
 import april.vis.*;
 import april.util.*;
 
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 
 import magic2.lcmtypes.*;
 

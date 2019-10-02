@@ -17,7 +17,7 @@ import soargroup.rosie.mobilesim.commands.*;
 import soargroup.rosie.mobilesim.commands.controls.*;
 import soargroup.rosie.mobilesim.commands.tests.*;
 import soargroup.rosie.lcmtypes.*;
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 
 public class CommandSpoofer extends JFrame
 {

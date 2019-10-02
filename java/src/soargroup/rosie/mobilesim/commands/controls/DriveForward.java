@@ -11,7 +11,7 @@ import april.util.*;
 
 import soargroup.rosie.mobilesim.commands.*;
 import probcog.robot.control.*;
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 
 import magic2.lcmtypes.*;
 

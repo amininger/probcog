@@ -1,4 +1,4 @@
-package probcog.util;
+package soargroup.rosie.mobilesim.util;
 
 import java.awt.*;
 import java.io.*;
@@ -8,8 +8,6 @@ import april.config.*;
 import april.jmat.*;
 import april.vis.VisCameraManager.CameraPosition;
 import april.util.*;
-
-import probcog.sensor.*;
 
 public class Util
 {
@@ -89,63 +87,6 @@ public class Util
         }
 
         return ia;
-    }
-
-    public static ArrayList<double[]> extractPoints(Sensor sensor)
-    {
-        ArrayList<double[]> points = new ArrayList<double[]>();
-        int height = sensor.getHeight();
-        int width = sensor.getWidth();
-
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                double[] xyzrgb = sensor.getXYZRGB(x,y);
-                if (xyzrgb == null)
-                    continue;
-                //System.out.printf("%f %f %f\n", xyzrgb[0], xyzrgb[1], xyzrgb[2]);
-
-                points.add(xyzrgb);
-            }
-        }
-        return points;
-    }
-
-    public static CameraPosition getSensorPos(Sensor sensor)
-    {
-        double[][] camMatrix = sensor.getCameraXform();
-
-        CameraPosition camera = new CameraPosition();
-        camera.eye = new double[3];
-        camera.eye[0] = camMatrix[0][3];
-        camera.eye[1] = camMatrix[1][3];
-        camera.eye[2] = camMatrix[2][3];
-        camera.layerViewport = new int[4];
-
-        double[] sx = new double[] {camMatrix[0][0],
-                                    camMatrix[1][0],
-                                    camMatrix[2][0]};
-        double[] sy = new double[] {camMatrix[0][1],
-                                    camMatrix[1][1],
-                                    camMatrix[2][1]};
-        double[] sz = new double[] {camMatrix[0][2],
-                                    camMatrix[1][2],
-                                    camMatrix[2][2]};
-
-        // Lets us account for weird coordinate frames
-        if (sensor instanceof KinectSensor ||
-            sensor instanceof SimKinectSensor)
-        {
-            camera.lookat = LinAlg.add(camera.eye, sz);
-            camera.up = LinAlg.scale(sy, -1);
-            camera.layerViewport[2] = sensor.getWidth();
-            camera.layerViewport[3] = sensor.getHeight();
-            camera.perspective_fovy_degrees = SimKinectSensor.VFOV;
-        } else {
-            camera.lookat = new double[3];
-            camera.up = new double[3];
-        }
-
-        return camera;
     }
 
     static public void printCamera(CameraPosition camera)

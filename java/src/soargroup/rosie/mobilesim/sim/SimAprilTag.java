@@ -1,4 +1,4 @@
-package probcog.sim;
+package soargroup.rosie.mobilesim.sim;
 
 import java.awt.Color;
 import java.io.*;
@@ -8,7 +8,7 @@ import april.sim.*;
 import april.util.*;
 import april.vis.*;
 
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 
 /** Merely an object which produces an ID. Later, this can be mapped to a
  *  tag config file for identification as an arbitrary object.

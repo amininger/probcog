@@ -14,7 +14,7 @@ import april.tag.TagDetection;
 import soargroup.rosie.lcmtypes.classification_list_t;
 import soargroup.rosie.lcmtypes.classification_t;
 import soargroup.rosie.lcmtypes.tag_classification_t;
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 import magic2.lcmtypes.*;
 
 public class TagClassifier

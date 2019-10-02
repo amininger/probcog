@@ -10,7 +10,7 @@ import april.util.*;
 import soargroup.rosie.mobilesim.commands.*;
 import soargroup.rosie.mobilesim.commands.controls.*;
 import soargroup.rosie.mobilesim.commands.tests.*;
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 
 /** A graph structure with some wrinkles particular to this application.
  *  Could certainly be done generally given more time, but this is

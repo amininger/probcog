@@ -10,7 +10,7 @@ import april.vis.*;
 import soargroup.rosie.mobilesim.commands.*;
 import soargroup.rosie.mobilesim.commands.controls.*;
 import soargroup.rosie.mobilesim.commands.tests.*;
-import probcog.util.*;
+import soargroup.rosie.mobilesim.util.*;
 
 // Used to represent a law-test pair, along with some state for distributions
 // of states associated with executing this pair.

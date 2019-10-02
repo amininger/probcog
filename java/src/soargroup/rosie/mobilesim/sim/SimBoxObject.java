@@ -1,4 +1,4 @@
-package probcog.sim;
+package soargroup.rosie.mobilesim.sim;
 
 import april.sim.*;
 import april.vis.*;

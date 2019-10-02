@@ -34,14 +34,11 @@ import soargroup.rosie.lcmtypes.object_data_t;
 import soargroup.rosie.lcmtypes.soar_objects_t;
 import soargroup.rosie.lcmtypes.tag_classification_list_t;
 import soargroup.rosie.lcmtypes.tag_classification_t;
-import probcog.old.sim.SimDoor;
-import probcog.sim.SimAprilTag;
-import probcog.sim.SimFalseDoor;
-import probcog.sim.SimHallway;
-import probcog.sim.SimObjectPC;
-import probcog.sim.SimRobot;
-import probcog.util.BoundingBox;
-import probcog.util.Util;
+import soargroup.rosie.mobilesim.sim.SimObjectPC;
+import soargroup.rosie.mobilesim.sim.SimRobot;
+import soargroup.rosie.mobilesim.sim.SimAprilTag;
+import soargroup.rosie.mobilesim.util.BoundingBox;
+import soargroup.rosie.mobilesim.util.Util;
 
 public class SimObjectDetector implements LCMSubscriber{
 	private static double MSG_PER_SEC = 10.0;

@@ -226,18 +226,18 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                 // Look for SimRobot and turn off/on noise
                 synchronized (simulator) {
                     for (SimObject obj: simulator.getWorld().objects) {
-                        if (!(obj instanceof probcog.sim.SimRobot))
+                        if (!(obj instanceof soargroup.rosie.mobilesim.sim.SimRobot))
                             continue;
-                        probcog.sim.SimRobot robot = (probcog.sim.SimRobot)obj;
+                        soargroup.rosie.mobilesim.sim.SimRobot robot = (soargroup.rosie.mobilesim.sim.SimRobot)obj;
                         robot.setNoise(pg.gb(name));
                     }
                 }
             } else if ("pp".equals(name)) {
                 synchronized (simulator) {
                     for (SimObject obj: simulator.getWorld().objects) {
-                        if (!(obj instanceof probcog.sim.SimRobot))
+                        if (!(obj instanceof soargroup.rosie.mobilesim.sim.SimRobot))
                             continue;
-                        probcog.sim.SimRobot robot = (probcog.sim.SimRobot)obj;
+                        soargroup.rosie.mobilesim.sim.SimRobot robot = (soargroup.rosie.mobilesim.sim.SimRobot)obj;
                         robot.setPerfectPose(pg.gb(name));
                     }
                 }
@@ -287,9 +287,9 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 		VisWorld.Buffer buffer = vw.getBuffer("obj-labels");
         synchronized (simulator) {
             for (SimObject obj: simulator.getWorld().objects) {
-                if (!(obj instanceof probcog.sim.SimObjectPC))
+                if (!(obj instanceof soargroup.rosie.mobilesim.sim.SimObjectPC))
                     continue;
-                probcog.sim.SimObjectPC pcobj = (probcog.sim.SimObjectPC)obj;
+                soargroup.rosie.mobilesim.sim.SimObjectPC pcobj = (soargroup.rosie.mobilesim.sim.SimObjectPC)obj;
 
         		String tf="<<monospaced,black,dropshadow=false>>";
         		String text = String.format("%s%s\n", tf, pcobj.getDescription());

@@ -13,7 +13,7 @@ import april.util.*;
 import april.sim.*;
 
 import soargroup.rosie.lcmtypes.*;
-import probcog.sim.*;
+import soargroup.rosie.mobilesim.sim.*;
 
 /** A test GUI for generating plan requests. */
 public class PlanRequestGUI
