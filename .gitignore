@@ -6,6 +6,6 @@
 *.classpath
 
 *.pyc
+*__pycache__
 
-scripts/gen_maps/temp*
 
