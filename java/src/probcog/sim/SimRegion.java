@@ -67,9 +67,9 @@ public class SimRegion extends SimObjectPC implements SimObject
         objs.add(new VzRectangle(width, length, new VzMesh.Style(color)));
 
         // The handle of the location
-        //objs.add(new VisChain(LinAlg.translate(0,0,0.01),
-        //                      LinAlg.scale(0.05),
-        //                      new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle))));
+       // objs.add(new VisChain(LinAlg.translate(0,0,0.01),
+       //                       LinAlg.scale(0.05),
+       //                       new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle))));
 
         return new VisChain(objs.toArray());
     }

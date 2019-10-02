@@ -1,4 +1,4 @@
-robot 10.0 20.0
+robot 32.0 20.0
 
 # Building map with an outer ring of rooms surrounding inner rooms and a ring hallway in between
 # Recommend scale = 0.5
@@ -10,29 +10,31 @@ region 3 52 26 0 16 8 room1
 region 4 30 20 0 20 12 room1
 #region 5 36 20 0 8 12 room1
 region 6 8 14 0 16 8 room1
-region 7 52 14 0 16 8 room1
+region 7 52 12 0 16 4 room1
 region 8 16 5 0 32 10 room1
 #region 9 46 5 0 28 10 room1
 
 # Halls
-region 10 10 20 0 20 4 hall1
-region 11 18 26 0 4 8 hall1
+region 10 18 20 0 4 12 hall1
+region 11 18 28 0 4 4 hall1
 region 12 30 28 0 20 4 hall1
-region 13 42 26 0 4 8 hall1
-region 14 50 20 0 20 4 hall1
-region 15 42 14 0 4 8 hall1
+region 13 42 28 0 4 4 hall1
+region 14 42 20 0 4 12 hall1
+region 15 42 12 0 4 4 hall1
 region 16 30 12 0 20 4 hall1
-region 17 18 14 0 4 8 hall1
+region 17 18 12 0 4 4 hall1
+
+region 18 52 20 0 16 4 hall1
 
 # Connecting the halls to the outer rooms
-edge 11 2 door 16 28 3.141
+edge 11 2 open
 edge 11 1 door 18 30 1.571
-edge 13 1 door 42 30 1.571
-edge 14 3 open
-edge 15 7 door 44 12 0
+#edge 13 1 door 42 30 1.571
+edge 15 7 open
 #edge 15 9 door 42 10 4.712
-edge 17 8 door 18 10 4.712
-edge 10 6 open
+edge 17 8 open
+#edge 10 6 open
+edge 18 3 open
 
 # Connecting inner rooms
 edge 12 4 door 30 26 4.712
@@ -40,14 +42,17 @@ edge 16 4 door 30 14 1.571
 #edge 4 5 door 32 20 0
 
 # Interconnecting hallways
-edge 10 11 door 18 22 1.571
-edge 11 12 door 20 28 0
-edge 12 13 door 40 28 0
-edge 13 14 door 42 22 4.712
-edge 14 15 door 42 18 4.712
-edge 15 16 door 40 12 3.141
-edge 16 17 door 20 12 3.141
-edge 17 10 door 18 18 1.571
+edge 10 11 open
+edge 11 12 open
+edge 12 13 open
+edge 13 14 open
+edge 14 15 open
+edge 15 16 open
+edge 16 17 open
+edge 17 10 open
+
+edge 14 18 open
+
 
 # Outer wall
 wallchain 4
@@ -90,8 +95,8 @@ wall 20 10 60 10
 #wall 44 10 60 10
 
 ### Misc
-object 1 15 35 2 0 0 0 1 1 4 0 0 100 2 modifier relieving1 category officer1 Officer
-object 2 36 20 2 0 0 0 1 1 4 150 150 150 1 category chef1 Cook
+object 1 15 35 2 0 0 0 1 1 4 0 0 100 2 category officer1 name Williams Williams
+#object 2 36 20 2 0 0 0 1 1 4 150 150 150 1 category chef1 Cook
 
 ### Quarters
 object 100 5 38 2 0 0 0 3 4 4 100 100 100 2 color gray1 category bunk1 Bunk
@@ -122,14 +127,15 @@ object 302 57 23 2.25 0 0 0 0.5 0.5 0.5 50 50 50 2 color black1 category radio1 
 ### Mess Hall
 object 400 23 20 0.5 0 0 0 3 8 1 200 150 50 1 category table1 Table
 
-object 410 35.5 24.5 2 0 0 0 4 2 4 150 150 255 1 category fridge1 Fridge
-object 411 38.5 23 0.5 0 0 0 2 6 1 100 100 100 1 category counter1 Counter
-object 412 38.5 18 0.5 0 0 0 2 4 1 25 25 25 1 category stove1 Stove
-object 413 35.5 15.5 0.5 0 0 0 4 2 1 100 100 100 1 category sink1 Sink
+object 410 35.5 24.5 2 0 0 0 4 2 4 150 150 255 2 door2 closed2 category fridge1 Fridge
+object 411 38.5 22 0.25 0 0 0 2 4 0.5 100 100 100 1 category counter1 Counter
+object 412 38.5 18 0.25 0 0 0 2 4 0.5 25 25 25 1 category sink1 Sink
+object 413 36 15.5 0.5 0 0 0 3 2 1 100 100 100 1 category stove1 Stove
+#object 414 33 15.5 0.5 0 0 0 2 2 2 10 10 10 1 category garbage1 Garbage
 
-object 400 24 18 1.1 0 0 0 0.5 0.5 0.2 225 225 225 1 category plate1 Plate
-object 401 24 22 1.1 0 0 0 0.5 0.5 0.2 225 225 225 1 category plate1 Plate
-object 402 24 20 1.25 0 0 0 0.25 0.25 0.5 255 0 0 1 category ketchup1 Ketchup
+object 420 24 18 1.1 0 0 0 0.75 0.75 0.4 100 100 225 1 category plate1 Plate
+#object 421 24 22 1.1 0 0 0 0.5 0.5 0.2 225 225 225 1 category plate1 Plate
+object 422 24 20 1.25 0 0 0 0.5 0.5 1.0 255 0 0 1 category ketchup1 Ketchup
 
 
 ### West Sentry
@@ -138,10 +144,10 @@ object 601 2 17 1 0 0 0 4 2 2 100 100 50 2 color brown1 category desk1 Desk
 object 602 3 17 2.25 0 0 0 0.5 0.5 0.5 50 50 50 2 color black1 category radio1 Radio
 
 ### Supply Room
-object 700 48 16 0.25 0 0 0 0.5 0.5 0.5 255 0 0 3 shape cylinder1 color red1 category extinguisher1 Ext
-object 701 50 16 0.25 0 0 0 0.5 0.5 0.5 255 0 0 3 shape cylinder1 color red1 category extinguisher1 Ext
-object 702 52 16 0.25 0 0 0 0.5 0.5 0.5 255 0 0 3 shape cylinder1 color red1 category extinguisher1 Ext
-object 703 54 16 0.25 0 0 0 0.5 0.5 0.5 255 0 0 3 shape cylinder1 color red1 category extinguisher1 Ext
+object 700 48 13.5 0.25 0 0 0 1.0 1.0 1.0 255 0 0 3 shape cylinder1 color blue1 category extinguisher1 FE
+object 701 50 13.5 0.25 0 0 0 1.0 1.0 1.0 255 0 0 3 shape cylinder1 color red1 category extinguisher1 FE
+object 702 52 13.5 0.25 0 0 0 1.0 1.0 1.0 255 0 0 3 shape cylinder1 color red1 category extinguisher1 FE
+object 703 54 13.5 0.25 0 0 0 1.0 1.0 1.0 255 0 0 3 shape cylinder1 color red1 category extinguisher1 FE
 
 ### Armory
 object 801 24 8 2 0 0 0 1 1 4 125 100 50 1 category armorer1 Armorer
@@ -153,15 +159,17 @@ object 811 16 1 2 0 0 0 4 1 4 25 25 25 2 color black1 category cabinet1 Cab
 object 812 24 1 2 0 0 0 4 1 4 25 25 25 2 color black1 category cabinet1 Cab
 
 ### Light switches
-object 2001 21 30.25 1 0 0 0 0.25 0.25 0.25 200 200 200 2 color white1 category switch1 LS
-object 2002 15.75 25 1 0 0 0 0.25 0.25 0.25 200 200 200 2 color white1 category switch1 LS
-object 2003 44.25 23 1 0 0 0 0.25 0.25 0.25 200 200 200 2 color white1 category switch1 LS
-object 2004 27 14.25 1 0 0 0 0.25 0.25 0.25 200 200 200 2 color white1 category switch1 LS
-object 2005 15.75 17 1 0 0 0 0.25 0.25 0.25 200 200 200 2 color white1 category switch1 LS
-object 2006 44.25 15 1 0 0 0 0.25 0.25 0.25 200 200 200 2 color white1 category switch1 LS
-object 2007 15 9.75 1 0 0 0 0.25 0.25 0.25 200 200 200 2 color white1 category switch1 LS
+object 2001 21 30.25 1 0 0 0 0.5 0.5 0.5 10 10 10 3 color black1 category switch1 activation1 off2 LS
+object 2002 15.75 25 1 0 0 0 0.5 0.5 0.5 10 10 10 3 color black1 category switch1 activation1 off2 LS
+object 2003 44.25 23 1 0 0 0 0.5 0.5 0.5 10 10 10 3 color black1 category switch1 activation1 off2 LS
+object 2004 27 25.75 1 0 0 0 0.5 0.5 0.5 10 10 10 3 color black1 category switch1 activation1 off2 LS
+object 2005 15.75 17 1 0 0 0 0.5 0.5 0.5 10 10 10 3 color black1 category switch1 activation1 off2 LS
+#object 2006 44.25 15 1 0 0 0 0.5 0.5 0.5 10 10 10 3 color black1 category switch1 activation1 off2 LS
+object 2007 15 9.75 1 0 0 0 0.5 0.5 0.5 10 10 10 3 color black1 category switch1 activation1 off2 LS
 #object 2008 45 9.75 1 0 0 0 0.25 0.25 0.25 200 200 200 2 color white1 category switch1 LS
 
+object 2100 44.1 21.75 1 0 0 0 1.0 0.5 1.0 255 0 0 4 category alarm1 modifier1 firey1 color red1 activation1 off2 Alarm
+object 2101 5 5 1 0 0 0 2 2 2 255 0 0 2 category fire1 color red1 Fire
 
 
 #object 1 -6 3 1.2 0 0 0 2 2 2 255 0 0 3 shape box1 color red1 category object red-box

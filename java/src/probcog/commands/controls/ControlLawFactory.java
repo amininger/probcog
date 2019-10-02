@@ -38,6 +38,7 @@ public class ControlLawFactory
         registerControlLaw("drive-xy", DriveToXY.class.getName());
         registerControlLaw("pick-up", PickUp.class.getName());
         registerControlLaw("put-down", PutDown.class.getName());
+        registerControlLaw("change-state", ChangeState.class.getName());
     }
 
     /** Register control laws with the factory. It is the job of the

@@ -59,7 +59,8 @@ public class SimRoomWall extends SimObjectPC implements SimObject
 
     public Shape getShape()
     {
-    	return new april.sim.BoxShape(length, thickness, height);
+    	//return new april.sim.BoxShape(length, thickness, height);
+    	return new april.sim.SphereShape(0.0);
     }
 
     /** Restore state that was previously written **/

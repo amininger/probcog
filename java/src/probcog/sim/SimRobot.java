@@ -294,8 +294,8 @@ public class SimRobot implements SimObject, LCMSubscriber
 					}
 				}
         // UNCOMMENT TO TELEPORT
-				drive.poseTruth.pos[0] = newx;
-				drive.poseTruth.pos[1] = newy;
+		//		drive.poseTruth.pos[0] = newx;
+		//		drive.poseTruth.pos[1] = newy;
 			} else if (controlLaw.name.toLowerCase().equals("pause")){
 				this.setRunning(false);
 			} else if (controlLaw.name.toLowerCase().equals("resume")){
@@ -332,34 +332,36 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
     	forward = LinAlg.scale(forward, 1.5);
     	double[] newPos = LinAlg.add(robotPos, forward);
-    	double[] xyzrpy = new double[]{ newPos[0], newPos[1], newPos[2], 0, 0, 0 };
+    	double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
     	grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
     	grabbedObject = null;
     }
 
     public boolean inViewRange(double[] xyz){
-    	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
-    	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
-    	toPoint[2] = 0.0;
+		// AM: Hack to make everything visible
+		return true;
+    	//double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
+    	//double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
+    	//toPoint[2] = 0.0;
 
-    	// Check if point is within view distance
-    	double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
-    	if(sqDist > OBJECT_VIEW_DIST_SQ){
-    		return false;
-    	}
-    	if(sqDist < 0.5){
-    		// Within 10 cm of object, report as seen
-    		return true;
-    	}
+    	//// Check if point is within view distance
+    	//double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
+    	//if(sqDist > OBJECT_VIEW_DIST_SQ){
+    	//	return false;
+    	//}
+    	//if(sqDist < 0.5){
+    	//	// Within 10 cm of object, report as seen
+    	//	return true;
+    	//}
 
-    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
-    	forward = LinAlg.copy(forward, 3);
-    	double dp = LinAlg.dotProduct(forward, toPoint);
-    	double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
-    	if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
-    		return true;
-    	}
-    	return false;
+    	//double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
+    	//forward = LinAlg.copy(forward, 3);
+    	//double dp = LinAlg.dotProduct(forward, toPoint);
+    	//double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
+    	//if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
+    	//	return true;
+    	//}
+    	//return false;
     }
 
     public void setNoise(boolean noise)

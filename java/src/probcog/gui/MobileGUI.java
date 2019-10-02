@@ -134,7 +134,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
                 drawTrajectory(dt);
                 drawClassifications();
                 drawGraph(graph);
-                //drawObjectLabels();
+                drawObjectLabels();
                 TimeUtil.sleep(1000/fps);
             }
         }
@@ -356,7 +356,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         		String text = String.format("%s%s\n", tf, pcobj.getDescription());
 
         		VzText vzText = new VzText(text);
-        		double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.0};
+        		double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.5};
                 buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.05), vzText));
             }
     	}

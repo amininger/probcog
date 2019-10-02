@@ -96,6 +96,8 @@ public class SimObjectDetector implements LCMSubscriber{
 			}
 		} else if(controlLaw.name.equals("put-down")){
 			robot.putDownObject();
+		} else if(controlLaw.name.equals("change-state")){
+			System.out.println("CHANGE STATE");
 		}
 	}
 

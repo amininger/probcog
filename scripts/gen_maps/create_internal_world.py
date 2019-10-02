@@ -45,6 +45,9 @@ def create_internal_world(world_info, filename):
         obj_loc = next( (region for region in world_info.regions 
             if region.contains_point(obj.vals[0], obj.vals[1])), None)
 
+        if obj_loc == None:
+            print("ERROR: " + handle)
+
         fout.write("   (<objs> ^object {:s})\n".format(obj_id))
         fout.write("   ({:s} ^handle {:s} ^waypoint wp{:s} ^predicates {:s})\n".format(obj_id, handle, obj_loc.soar_id, preds_id))
         fout.write("   ({:s} {:s})\n".format(preds_id, " ".join([ "^{:s} {:s}".format(obj.cats[c], obj.labels[c]) for c in range(len(obj.cats))])))

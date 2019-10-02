@@ -4,7 +4,7 @@
   6
   # XYZRPY Truth
   vec 6
-    2.50   2.50   0.10   0.00   0.00   0.00
+    1.25   1.25   0.10   0.00   0.00   0.00
   # XYZRPY Odometry
   vec 6
     0.00   0.00   0.00   0.00   0.00   0.00
@@ -17,10 +17,10 @@
   Fridge
   # Object xyzrpy
   vec 6
-    0.50   0.38   1.00   0.00   0.00   0.00
+    0.25   0.19   0.50   0.00   0.00   0.00
   # Length xyz
   vec 3
-    1.00   0.75   2.00
+    0.50   0.38   1.00
   # Color rgb (int 0-255)
   ivec 3
   200 200 200
@@ -33,10 +33,10 @@
   Sink
   # Object xyzrpy
   vec 6
-    1.75   0.38   0.50   0.00   0.00   0.00
+    0.88   0.19   0.25   0.00   0.00   0.00
   # Length xyz
   vec 3
-    1.50   0.75   1.00
+    0.75   0.38   0.50
   # Color rgb (int 0-255)
   ivec 3
   100 100 100
@@ -49,10 +49,10 @@
   Counter
   # Object xyzrpy
   vec 6
-    3.75   0.38   0.95   0.00   0.00   0.00
+    1.88   0.19   0.47   0.00   0.00   0.00
   # Length xyz
   vec 3
-    2.50   0.75   0.10
+    1.25   0.38   0.05
   # Color rgb (int 0-255)
   ivec 3
   250 230 140
@@ -65,10 +65,10 @@
   Cupboard
   # Object xyzrpy
   vec 6
-    3.00   0.38   0.45   0.00   0.00   0.00
+    1.50   0.19   0.23   0.00   0.00   0.00
   # Length xyz
   vec 3
-    1.00   0.75   0.90
+    0.50   0.38   0.45
   # Color rgb (int 0-255)
   ivec 3
   94 76 28
@@ -81,10 +81,10 @@
   Drawer
   # Object xyzrpy
   vec 6
-    4.50   0.38   0.80   0.00   0.00   0.00
+    2.25   0.19   0.40   0.00   0.00   0.00
   # Length xyz
   vec 3
-    1.00   0.75   0.20
+    0.50   0.38   0.10
   # Color rgb (int 0-255)
   ivec 3
   94 76 28
@@ -97,10 +97,10 @@
   Table
   # Object xyzrpy
   vec 6
-    1.00   4.50   0.50   0.00   0.00   0.00
+    0.50   2.25   0.25   0.00   0.00   0.00
   # Length xyz
   vec 3
-    2.00   1.00   1.00
+    1.00   0.50   0.50
   # Color rgb (int 0-255)
   ivec 3
   94 76 28
@@ -113,10 +113,10 @@
   Pantry
   # Object xyzrpy
   vec 6
-    4.50   4.00   1.00   0.00   0.00   0.00
+    2.25   2.00   0.50   0.00   0.00   0.00
   # Length xyz
   vec 3
-    1.00   2.00   2.00
+    0.50   1.00   1.00
   # Color rgb (int 0-255)
   ivec 3
   94 76 28
@@ -129,10 +129,10 @@
   Garbage
   # Object xyzrpy
   vec 6
-    4.80   2.80   0.20   0.00   0.00   0.00
+    2.40   1.40   0.10   0.00   0.00   0.00
   # Length xyz
   vec 3
-    0.40   0.40   0.40
+    0.20   0.20   0.20
   # Color rgb (int 0-255)
   ivec 3
   40 40 40
@@ -145,10 +145,10 @@
   Microwave
   # Object xyzrpy
   vec 6
-    4.70   0.20   1.20   0.00   0.00   0.00
+    2.35   0.10   0.60   0.00   0.00   0.00
   # Length xyz
   vec 3
-    0.60   0.40   0.40
+    0.30   0.20   0.20
   # Color rgb (int 0-255)
   ivec 3
   40 40 40
@@ -161,10 +161,10 @@
   apple
   # Object xyzrpy
   vec 6
-    0.80   4.30   1.10   0.00   0.00   0.00
+    0.40   2.15   0.55   0.00   0.00   0.00
   # Length xyz
   vec 3
-    0.20   0.20   0.20
+    0.10   0.10   0.10
   # Color rgb (int 0-255)
   ivec 3
   255 0 0
@@ -177,10 +177,10 @@
   soda
   # Object xyzrpy
   vec 6
-    1.20   4.30   1.20   0.00   0.00   0.00
+    0.60   2.15   0.60   0.00   0.00   0.00
   # Length xyz
   vec 3
-    0.20   0.20   0.40
+    0.10   0.10   0.20
   # Color rgb (int 0-255)
   ivec 3
   0 0 255
@@ -193,10 +193,10 @@
   mug
   # Object xyzrpy
   vec 6
-    3.50   0.55   1.15   0.00   0.00   0.00
+    1.75   0.28   0.57   0.00   0.00   0.00
   # Length xyz
   vec 3
-    0.20   0.20   0.20
+    0.10   0.10   0.10
   # Color rgb (int 0-255)
   ivec 3
   0 255 0
@@ -209,10 +209,10 @@
   fork
   # Object xyzrpy
   vec 6
-    4.00   0.55   1.15   0.00   0.00   0.00
+    2.00   0.28   0.57   0.00   0.00   0.00
   # Length xyz
   vec 3
-    0.10   0.20   0.10
+    0.05   0.10   0.05
   # Color rgb (int 0-255)
   ivec 3
   50 50 50
@@ -221,37 +221,37 @@
 {
   # End Point 1
   vec 2
-   -0.10  -0.10
+   -0.05  -0.05
   # End Point 2
   vec 2
-   -0.10   5.10
+   -0.05   2.55
 }
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   -0.10   5.10
+   -0.05   2.55
   # End Point 2
   vec 2
-    5.10   5.10
+    2.55   2.55
 }
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-    5.10   5.10
+    2.55   2.55
   # End Point 2
   vec 2
-    5.10  -0.10
+    2.55  -0.05
 }
 "probcog.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-    5.10  -0.10
+    2.55  -0.05
   # End Point 2
   vec 2
-   -0.10  -0.10
+   -0.05  -0.05
 }
 "probcog.sim.SimRegion"
 {
@@ -259,8 +259,8 @@
   1
   # Tag Position
   vec 6
-    2.50   2.50   0.01   0.00   0.00   0.00
+    1.25   1.25   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
-  5.0
-  5.0
+  2.5
+  2.5
 }

@@ -49,7 +49,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
         lcm = LCM.getSingleton();
         
         // Setup Output Link Events
-        String[] outputHandlerStrings = { "do-control-law", "stop", "face-point", "pick-up", "put-down"};
+        String[] outputHandlerStrings = { "do-control-law", "stop", "face-point", "pick-up", "put-down", "set-state"};
         this.setOutputHandlerNames(outputHandlerStrings);
 
         activeCommand = SoarCommandParser.createEmptyControlLaw("RESTART");
@@ -191,6 +191,8 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 			
 		} else if(attName.equals("pick-down")){
 			
+		} else if(attName.equals("set-state")){
+		//	processSetStateCommand(id);
 		}
 	}
 
@@ -205,9 +207,9 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     	controlLaw.id = nextControlLawId++;
     	id.CreateStringWME("status", "sent");
     	synchronized(commandLock){
-    		if (activeCommandId != null){
-    			SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
-    		}
+    	//	if (activeCommandId != null){
+    	//		SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
+    	//	}
     		activeCommand = controlLaw;
     		activeCommandId = id;
     		
@@ -253,4 +255,23 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 			movingState = "moving";
 		}
     }
+
+//    public void processSetStateCommand(Identifier id){
+//		synchronized(commandLock){
+//			if(activeCommandId != null){
+//				SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
+//			}
+//			activeCommand = SoarCommandParser.createEmptyControlLaw("STOP");
+//			activeCommand.id = nextControlLawId++;
+//			activeCommandId = id;
+//			
+//			commandStatus = "sent";
+//			movingState = "stopped";
+//		}
+//			Integer objId = Integer.parseInt(SoarUtil.getValueOfAttribute("id"));
+//			String property = SoarUtil.getValueOfAttribute("property");
+//			String value = SoarUtil.getValueOfAttribute("value");
+//			MobilePerceptionConnector perception = (MobilePerceptionConnector)this.agent.getPerceptionConnector();
+//			perception.changeObjectState(objId, property, value);
+//    }
 }

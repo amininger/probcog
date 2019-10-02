@@ -13,15 +13,19 @@ from create_internal_world import create_internal_world
 # Arg 1: stem of the info file
 
 if len(sys.argv) <= 1:
-    print("Given a file stem and a matching info file in map_info")
-    print("  Generates a set of world/map files for rosie")
-    print("Example: given the stem of 'simple_office'")
+    print("python3 generate_files.py [info_name] [rosie_agent]")
+    print("  info_name will parse the file at map_info/[info_name].info")
+    print("  rosie_agent is optional and is the name of an agent in $ROSIE_HOME/test-agents")
+    print("Will generate a set of world/map files for a rosie environment, both magicbot and internal")
+    print("Example: given the stem of 'simple_office' and agent 'driver'")
     print("  Input File : map_info/simple_office.info")
-    print("  Output File: rosie-project/probcog/worlds/simple_office.world")
-    #print("  Output File: rosie-project/probcog/config/simple_office.tagdb")
-    print("  Output File: rosie-project/rosie/agent/manage-world-state/world/maps/simple_office.soar")
-    print("  Output File: rosie-project/probcog/worlds/objects/simple_office.info")
-    print("  Output File: rosie-project/probcog/worlds/maps/simple_office.map")
+    print("  Output File: $PROBCOG_HOME/worlds/simple_office.world")
+    print("  Output File: $PROBCOG_HOME/worlds/objects/simple_office.info")
+    print("  Output File: $PROBCOG_HOME/worlds/maps/simple_office.map")
+    print("  Output File: $ROSIE_PROJ/rosie/agent/manage-world-state/waypoint-maps/simple_office.soar")
+    print("  Output File: $ROSIE_PROJ/rosie/agent/manage-world-state/internal-worlds/simple_office.soar")
+    print("  Output File: $ROSIE_PROJ/rosie/test-agents/driver/simple_office.obj_info")
+    print("  Output File: $ROSIE_PROJ/rosie/test-agents/driver/simple_office.map")
     sys.exit(0)
 
 world_stem = sys.argv[1]
@@ -53,10 +57,10 @@ info_filename = "map_info/" + world_stem + ".info"
 
 print("Parsing info file: " + info_filename)
 try:
-	world_info = parse_info_file(world_stem, info_filename)
+    world_info = parse_info_file(world_stem, info_filename)
 except Exception as e:
-	print(e)
-	sys.exit(0)
+    print(e)
+    sys.exit(0)
 print("Success!\n")
 
 
@@ -79,7 +83,7 @@ print("Success!\n")
 
 
 # Write the soar map file
-map_folder = rosie_path + "/rosie/agent/manage-world-state/world/maps/"
+map_folder = rosie_path + "/rosie/agent/manage-world-state/waypoint-maps/"
 map_filename = map_folder + world_stem + ".soar"
 
 print("Writing soar map file: " + map_filename)
@@ -93,6 +97,14 @@ fout.close()
 shutil.copyfile("maps_source.soar", map_folder + "maps_source.soar")
 
 print("Success!\n")
+
+
+# Write the internal-world soar file
+internal_filename = rosie_path + "/rosie/agent/manage-world-state/internal-worlds/" + world_stem + ".soar"
+
+print("Writing internal world soar file: " + internal_filename)
+create_internal_world(world_info, "temp2.soar")
+shutil.copyfile("temp2.soar", internal_filename)
 
 
 # Write the object info file
@@ -119,19 +131,5 @@ if rosie_agent:
     print(" -> " + map_filename)
     shutil.copyfile("temp.map", map_filename)
 print("Success!\n")
-
-
-# Write the internal-world soar file
-internal_filename = rosie_path + "/rosie/agent/manage-world-state/simulate-perception/internal-worlds/" + world_stem + ".soar"
-
-print("Writing internal world soar file: " + internal_filename)
-create_internal_world(world_info, "temp2.soar")
-shutil.copyfile("temp2.soar", internal_filename)
-
-#print("Writing world_source.soar file")
-#source_world_filename = rosie_path + "/rosie/agent/manage-world-state/internal-world/worlds/world_source.soar"
-#fout = open(source_world_filename, 'w')
-#fout.write("source " + world_stem + ".soar")
-#fout.close()
 
 print("Success!\n")
