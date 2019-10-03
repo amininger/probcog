@@ -61,7 +61,7 @@ else:
 #################### PARSE THE MAP_INFO FILE #######################
 
 # Read the file
-info_filename = "map_info/" + world_stem + ".info"
+info_filename = mobile_sim_home + "/map_info/" + map_info
 
 print("Parsing info file: " + info_filename)
 try:

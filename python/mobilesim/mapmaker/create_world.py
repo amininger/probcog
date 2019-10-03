@@ -24,7 +24,7 @@ def create_world(world_info, writer):
 ###### ROBOT ######
 
 def writeRobot(robot_info, writer):
-	writer.write("\"probcog.sim.SimRobot\"\n")
+	writer.write("\"soargroup.mobilesim.sim.SimRobot\"\n")
 	writer.write("{\n")
 	writer.write("  # Robot ID\n")
 	writer.write("  6\n")
@@ -43,7 +43,7 @@ def writeRobot(robot_info, writer):
 ##### OBJECTS #####
 
 def writeObject(obj_info, writer):
-	writer.write("\"probcog.sim.SimBoxObject\"\n")
+	writer.write("\"soargroup.mobilesim.sim.SimBoxObject\"\n")
 	writer.write("{\n")
 	writer.write("  # Object id\n")
 	writer.write("  " + str(obj_info.obj_id) + "\n")
@@ -71,7 +71,7 @@ def writeObject(obj_info, writer):
 ##### WALLS ######
 
 def writeWall(wall_info, writer):
-	writer.write("\"probcog.sim.SimRoomWall\"\n")
+	writer.write("\"soargroup.mobilesim.sim.SimRoomWall\"\n")
 	writer.write("{\n")
 	writer.write("  # End Point 1\n")
 	writer.write("  vec 2\n")
@@ -86,7 +86,7 @@ def writeWall(wall_info, writer):
 ##### REGIONS #####
 
 def writeRegion(region, writer):
-	writer.write("\"probcog.sim.SimRegion\"\n")
+	writer.write("\"soargroup.mobilesim.sim.SimRegion\"\n")
 	writer.write("{\n")
 	writer.write("  # Region ID\n")
 	writer.write("  " + str(region.tag_id) + "\n")
@@ -103,7 +103,7 @@ def writeRegion(region, writer):
 ##### DOOR #####
 
 def writeDoor(door_info, writer):
-	writer.write("\"probcog.sim.SimDoor\"\n")
+	writer.write("\"soargroup.mobilesim.sim.SimDoor\"\n")
 	writer.write("{\n")
 	writer.write("  # Door xyzrpy\n")
 	writer.write("  vec 6\n")

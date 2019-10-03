@@ -1,4 +1,4 @@
-"probcog.sim.SimRobot"
+"soargroup.mobilesim.sim.SimRobot"
 {
   # Robot ID
   6
@@ -9,7 +9,7 @@
   vec 6
     0.00   0.00   0.00   0.00   0.00   0.00
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   1
@@ -25,7 +25,7 @@
   ivec 3
   0 0 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   100
@@ -41,7 +41,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   101
@@ -57,7 +57,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   102
@@ -73,7 +73,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   103
@@ -89,7 +89,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   104
@@ -105,7 +105,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   105
@@ -121,7 +121,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   106
@@ -137,7 +137,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   110
@@ -153,7 +153,7 @@
   ivec 3
   25 25 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   111
@@ -169,7 +169,7 @@
   ivec 3
   25 25 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   112
@@ -185,7 +185,7 @@
   ivec 3
   25 25 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   113
@@ -201,7 +201,7 @@
   ivec 3
   25 25 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   114
@@ -217,7 +217,7 @@
   ivec 3
   25 25 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   115
@@ -233,7 +233,7 @@
   ivec 3
   25 25 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   116
@@ -249,7 +249,7 @@
   ivec 3
   25 25 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   200
@@ -265,7 +265,7 @@
   ivec 3
   100 100 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   201
@@ -281,7 +281,7 @@
   ivec 3
   0 0 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   300
@@ -297,7 +297,7 @@
   ivec 3
   125 100 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   301
@@ -313,7 +313,7 @@
   ivec 3
   100 100 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   302
@@ -329,7 +329,7 @@
   ivec 3
   50 50 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   400
@@ -345,7 +345,7 @@
   ivec 3
   200 150 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   410
@@ -361,7 +361,7 @@
   ivec 3
   150 150 255
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   411
@@ -377,7 +377,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   412
@@ -393,7 +393,7 @@
   ivec 3
   25 25 25
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   413
@@ -409,7 +409,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   420
@@ -425,7 +425,7 @@
   ivec 3
   100 100 225
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   422
@@ -441,7 +441,7 @@
   ivec 3
   255 0 0
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   600
@@ -457,7 +457,7 @@
   ivec 3
   125 100 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   601
@@ -473,7 +473,7 @@
   ivec 3
   100 100 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   602
@@ -489,7 +489,7 @@
   ivec 3
   50 50 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   700
@@ -505,7 +505,7 @@
   ivec 3
   255 0 0
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   701
@@ -521,7 +521,7 @@
   ivec 3
   255 0 0
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   702
@@ -537,7 +537,7 @@
   ivec 3
   255 0 0
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   703
@@ -553,7 +553,7 @@
   ivec 3
   255 0 0
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   801
@@ -569,7 +569,7 @@
   ivec 3
   125 100 50
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   802
@@ -585,7 +585,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   803
@@ -601,7 +601,7 @@
   ivec 3
   100 100 100
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   810
@@ -617,7 +617,7 @@
   ivec 3
   25 25 25
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   811
@@ -633,7 +633,7 @@
   ivec 3
   25 25 25
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   812
@@ -649,7 +649,7 @@
   ivec 3
   25 25 25
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   2001
@@ -665,7 +665,7 @@
   ivec 3
   10 10 10
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   2002
@@ -681,7 +681,7 @@
   ivec 3
   10 10 10
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   2003
@@ -697,7 +697,7 @@
   ivec 3
   10 10 10
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   2004
@@ -713,7 +713,7 @@
   ivec 3
   10 10 10
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   2005
@@ -729,7 +729,7 @@
   ivec 3
   10 10 10
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   2007
@@ -745,7 +745,7 @@
   ivec 3
   10 10 10
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   2100
@@ -761,7 +761,7 @@
   ivec 3
   255 0 0
 }
-"probcog.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimBoxObject"
 {
   # Object id
   2101
@@ -777,7 +777,7 @@
   ivec 3
   255 0 0
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -786,7 +786,7 @@
   vec 2
     0.00  20.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -795,7 +795,7 @@
   vec 2
    30.00  20.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -804,7 +804,7 @@
   vec 2
    30.00   0.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -813,7 +813,7 @@
   vec 2
     0.00   0.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -822,7 +822,7 @@
   vec 2
     8.00  15.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -831,7 +831,7 @@
   vec 2
    20.00  15.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -840,7 +840,7 @@
   vec 2
    30.00  15.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -849,7 +849,7 @@
   vec 2
    14.00  13.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -858,7 +858,7 @@
   vec 2
    20.00  13.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -867,7 +867,7 @@
   vec 2
    20.00   7.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -876,7 +876,7 @@
   vec 2
    16.00   7.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -885,7 +885,7 @@
   vec 2
    10.00   7.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -894,7 +894,7 @@
   vec 2
    10.00  13.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -903,7 +903,7 @@
   vec 2
     8.00  11.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -912,7 +912,7 @@
   vec 2
    30.00   9.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -921,7 +921,7 @@
   vec 2
     8.00   9.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -930,7 +930,7 @@
   vec 2
     8.00  13.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -939,7 +939,7 @@
   vec 2
    22.00   9.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -948,7 +948,7 @@
   vec 2
    22.00  15.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -957,7 +957,7 @@
   vec 2
    16.00   5.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -966,7 +966,7 @@
   vec 2
     8.00   5.00
 }
-"probcog.sim.SimRoomWall"
+"soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
@@ -975,7 +975,7 @@
   vec 2
    30.00   5.00
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   1
@@ -986,7 +986,7 @@
   30.0
   5.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   2
@@ -997,7 +997,7 @@
   8.0
   4.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   3
@@ -1008,7 +1008,7 @@
   8.0
   4.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   4
@@ -1019,7 +1019,7 @@
   10.0
   6.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   6
@@ -1030,7 +1030,7 @@
   8.0
   4.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   7
@@ -1041,7 +1041,7 @@
   8.0
   2.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   8
@@ -1052,7 +1052,7 @@
   16.0
   5.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   10
@@ -1063,7 +1063,7 @@
   2.0
   6.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   11
@@ -1074,7 +1074,7 @@
   2.0
   2.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   12
@@ -1085,7 +1085,7 @@
   10.0
   2.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   13
@@ -1096,7 +1096,7 @@
   2.0
   2.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   14
@@ -1107,7 +1107,7 @@
   2.0
   6.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   15
@@ -1118,7 +1118,7 @@
   2.0
   2.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   16
@@ -1129,7 +1129,7 @@
   10.0
   2.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   17
@@ -1140,7 +1140,7 @@
   2.0
   2.0
 }
-"probcog.sim.SimRegion"
+"soargroup.mobilesim.sim.SimRegion"
 {
   # Region ID
   18
