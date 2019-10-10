@@ -66,7 +66,7 @@ class Node:
 		self.classification = region.label
 	
 	def write(self, out):
-		out.write('  (%(var)s ^handle %(hand)s ^handle-int %(id_num)d ^x %(x)s ^y %(y)s ^map <building>)\n' % \
+		out.write('  (%(var)s ^handle %(hand)s ^x %(x)s ^y %(y)s ^map <building>)\n' % \
 				{ "var": self.var, "hand": self.name, "id_num": self.id_num, "x": self.x, "y": self.y })
 
 
@@ -75,11 +75,9 @@ class Edge:
 		if forward:
 			self.start = edge.start_wp
 			self.end = edge.end_wp
-			self.side = 1
 		else:
 			self.start = edge.end_wp
 			self.end = edge.start_wp
-			self.side = -1
 		self.has_door = edge.has_door
 		if edge.has_door:
 			dx = cos(edge.door_rot) * DOOR_DIST
@@ -102,8 +100,8 @@ class Edge:
 
 		fout.write('   (%(start)s ^edge %(edge)s)\n' % \
 				{ "start": start.var, "edge": self.var })
-		fout.write('    (%(edge)s ^start %(start)s ^end %(end)s ^wall-side %(side)s\n' % \
-				{ "edge": self.var, "start": start.var, "end": end.var, "side": self.side})
+		fout.write('    (%(edge)s ^start %(start)s ^end %(end)s \n' % \
+				{ "edge": self.var, "start": start.var, "end": end.var })
 		if self.has_door:
 			fout.write('         ^doorway true ^door_sx %(sx)s ^door_sy %(sy)s ^door_ex %(ex)s ^door_ey %(ey)s)\n' % \
 					{ "sx": self.door_sx, "sy": self.door_sy, "ex": self.door_ex, "ey": self.door_ey })

@@ -1,18 +1,19 @@
 package soargroup.mobilesim.commands;
 
-import lcm.lcm.*;
-
 import java.util.*;
 import java.io.IOException;
 
 import april.util.*;
 
-import soargroup.mobilesim.lcmtypes.*;
-
 import soargroup.mobilesim.commands.CommandCoordinator.Status;
 import soargroup.mobilesim.commands.controls.*;
 import soargroup.mobilesim.commands.tests.*;
 
+// LCM Types
+import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.control_law_status_t;
+import soargroup.mobilesim.lcmtypes.control_law_status_list_t;
 
 public class CommandInterpreter
 {

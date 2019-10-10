@@ -3,13 +3,18 @@ package soargroup.mobilesim.commands.tests;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
 import april.jmat.*;
 import april.util.*;
+
 import soargroup.mobilesim.robot.perception.TagHistory;
 import soargroup.mobilesim.commands.*;
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+
+// LCM Types
+import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.typed_value_t;
+import soargroup.mobilesim.lcmtypes.condition_test_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
 
 public class ClassificationCounterTest implements ConditionTest, LCMSubscriber
 {

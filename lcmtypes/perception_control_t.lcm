@@ -1,6 +1,0 @@
-struct perception_command_t
-{
-    int64_t utime;
-
-    string command; // Command to give to the perception
-}

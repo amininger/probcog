@@ -7,16 +7,14 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import lcm.lcm.LCM;
-import lcm.lcm.LCMDataInputStream;
-import lcm.lcm.LCMSubscriber;
-import magic2.lcmtypes.speak_t;
-//import magic2.lcmtypes.led_message_t;
-//import magic2.lcmtypes.speak_t;
 import april.util.TimeUtil;
 import edu.umich.rosie.language.IMessagePasser;
 import edu.umich.rosie.language.IMessagePasser.*;
 import edu.umich.rosie.language.LanguageConnector.MessageType;
+
+// LCM Types
+import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.speak_t;
 import soargroup.mobilesim.lcmtypes.interaction_message_t;
 import soargroup.mobilesim.lcmtypes.interaction_message_list_t;
 

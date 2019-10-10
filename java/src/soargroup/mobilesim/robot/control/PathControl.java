@@ -6,7 +6,7 @@ import april.jmat.*;
 import april.jmat.geom.*;
 import april.util.*;
 
-import magic2.lcmtypes.*;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
 public class PathControl
 {

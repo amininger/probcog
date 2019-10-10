@@ -1,15 +1,22 @@
 package soargroup.mobilesim.commands;
 
-import lcm.lcm.*;
-
 import java.util.*;
 import java.io.IOException;
 
 import april.jmat.*;
 import april.util.*;
 
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.control_law_status_t;
+import soargroup.mobilesim.lcmtypes.robot_termination_condition_t;
+import soargroup.mobilesim.lcmtypes.lcmdoubles_t;
+import soargroup.mobilesim.lcmtypes.robot_info_t;
+import soargroup.mobilesim.lcmtypes.robot_control_policy_t;
+import soargroup.mobilesim.lcmtypes.robot_control_policy_status_t;
 
 /** A class to act as a bridge between the old ProbCog interface and
  *  the new, magic2 code in C. Eventually, we'll want to switch to the

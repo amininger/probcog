@@ -4,7 +4,6 @@ import java.util.*;
 import java.lang.reflect.*;
 
 import soargroup.mobilesim.commands.*;
-import soargroup.mobilesim.lcmtypes.*;
 
 public class ControlLawFactory
 {

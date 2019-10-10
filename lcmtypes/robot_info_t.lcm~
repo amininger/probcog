@@ -1,7 +1,0 @@
-struct robot_info_t
-{
-    int64_t utime;
-
-    double xyzrpy[6];
-    boolean holding_object;
-}

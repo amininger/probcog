@@ -4,16 +4,21 @@ import java.io.*;
 import java.util.zip.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 import april.util.*;
 
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.util.*;
 
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import april.lcmtypes.laser_t;
+import soargroup.mobilesim.lcmtypes.grid_map_t;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.typed_value_t;
+import soargroup.mobilesim.lcmtypes.robot_map_data_t;
 
 /** A not-very-principaled wall follower. Should be revisited later. Note:
  *  when it reaches a wall in front of it that forces a turn, the follower

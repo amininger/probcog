@@ -5,7 +5,11 @@ import java.util.*;
 import april.util.*;
 
 import soargroup.mobilesim.commands.*;
-import soargroup.mobilesim.lcmtypes.*;
+
+// LCM Types
+import soargroup.mobilesim.lcmtypes.typed_value_t;
+import soargroup.mobilesim.lcmtypes.condition_test_t;
+
 
 // XXX IS this broken when not executed immediately? It would seem so, since
 // elapsed is initialized on creation.

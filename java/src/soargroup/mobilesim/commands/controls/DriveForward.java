@@ -3,8 +3,6 @@ package soargroup.mobilesim.commands.controls;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.util.*;
@@ -13,7 +11,10 @@ import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.robot.control.*;
 import soargroup.mobilesim.util.*;
 
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
 // XXX Temporary port to new control law implementation. This is just a water-
 // through-the-pipes implementation.

@@ -8,16 +8,18 @@ import javax.swing.event.*;
 import javax.swing.text.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.util.*;
-import april.lcmtypes.*;
 
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.commands.controls.*;
 import soargroup.mobilesim.commands.tests.*;
-import soargroup.mobilesim.lcmtypes.*;
 import soargroup.mobilesim.util.*;
+
+// LCM Types
+import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.typed_value_t;
+import soargroup.mobilesim.lcmtypes.condition_test_t;
 
 public class CommandSpoofer extends JFrame
 {

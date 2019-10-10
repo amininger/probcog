@@ -3,15 +3,15 @@ package soargroup.mobilesim.commands.tests;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 import april.util.*;
 
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.util.*;
 
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.laser_t;
 
 /** A condition test that fails when the robot is sufficiently close to running
  *  into an obstacle. This is a last-ditch safety tool, typically, though could

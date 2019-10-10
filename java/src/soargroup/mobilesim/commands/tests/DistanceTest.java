@@ -3,15 +3,14 @@ package soargroup.mobilesim.commands.tests;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 import april.util.*;
 
 import soargroup.mobilesim.commands.*;
 
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
 
 public class DistanceTest implements ConditionTest, LCMSubscriber
 {

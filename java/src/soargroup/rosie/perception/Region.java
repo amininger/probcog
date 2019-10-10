@@ -3,7 +3,7 @@ package soargroup.rosie.perception;
 import java.text.ParseException;
 
 import april.util.*;
-import magic2.lcmtypes.svs_location_data_t;
+import soargroup.mobilesim.lcmtypes.svs_location_data_t;
 
 public class Region{
 	public String id;

@@ -5,7 +5,8 @@ import java.util.*;
 import april.jmat.*;
 import april.util.*;
 
-import soargroup.mobilesim.lcmtypes.*;
+// LCM Types
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
 
 /** Stores tag detection information regarding labels, but with some persistence
  *  information. This allows us to make a one-time assignment of a label to a tag

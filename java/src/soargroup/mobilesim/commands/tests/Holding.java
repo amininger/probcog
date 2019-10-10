@@ -3,14 +3,15 @@ package soargroup.mobilesim.commands.tests;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 
 import soargroup.mobilesim.commands.*;
 
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.typed_value_t;
+import soargroup.mobilesim.lcmtypes.robot_info_t;
+import soargroup.mobilesim.lcmtypes.condition_test_t;
 
 public class Holding implements ConditionTest, LCMSubscriber
 {

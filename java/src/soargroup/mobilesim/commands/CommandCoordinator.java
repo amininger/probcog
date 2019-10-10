@@ -2,13 +2,16 @@ package soargroup.mobilesim.commands;
 
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.util.*;
 
 import soargroup.mobilesim.commands.controls.*;
 import soargroup.mobilesim.commands.tests.*;
-import soargroup.mobilesim.lcmtypes.*;
+
+// LCM Types
+import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.control_law_status_t;
+import soargroup.mobilesim.lcmtypes.control_law_status_list_t;
 
 /** The command coordinator is responsible for the creation of new control
  *  law requests, condition tests, registration of tests as termination

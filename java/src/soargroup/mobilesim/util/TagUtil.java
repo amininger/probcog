@@ -3,9 +3,6 @@ package soargroup.mobilesim.util;
 import april.tag.TagDetection;
 import april.tag.CameraUtil;
 import april.jmat.LinAlg;
-import april.lcmtypes.pose_t;
-
-import soargroup.mobilesim.lcmtypes.*;
 
 public class TagUtil
 {

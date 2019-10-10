@@ -11,24 +11,22 @@ import java.text.*;
 import java.util.*;
 import java.util.Timer;
 
-import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
 import april.jmat.geom.*;
-import april.lcmtypes.*;
 import april.sim.*;
 import april.util.*;
 import april.vis.*;
 import april.vis.VisCameraManager.CameraPosition;
 
-import soargroup.mobilesim.lcmtypes.*;
 import soargroup.mobilesim.MobileSimulator;
 import soargroup.mobilesim.CommandSpoofer;
 
-// import abolt.collision.ShapeToVisObject;
-// import abolt.sim.SimSensable;
-// import abolt.util.SimUtil;
-// import abolt.objects.SensableManager;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
 
 public class MobileGUI extends JFrame implements VisConsole.Listener
 {

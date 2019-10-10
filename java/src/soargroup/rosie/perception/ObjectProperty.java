@@ -3,11 +3,13 @@ package soargroup.rosie.perception;
 import java.util.*;
 import java.util.HashMap;
 
+import sml.*;
 import edu.umich.rosie.soar.FloatWME;
 import edu.umich.rosie.soar.ISoarObject;
 
-import soargroup.mobilesim.lcmtypes.*;
-import sml.*;
+// LCM Types
+import soargroup.mobilesim.lcmtypes.category_t;
+import soargroup.mobilesim.lcmtypes.categorized_data_t;
 
 /**
  * A category for each object, which contains several possible labels and their confidences

@@ -10,8 +10,6 @@ import april.jmat.geom.*;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 import april.util.*;
 import april.vis.*;
@@ -19,8 +17,11 @@ import april.vis.*;
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.util.*;
 
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import april.lcmtypes.laser_t;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
 // TODO: Add orientation stuff if needed
 public class FollowHall implements ControlLaw, LCMSubscriber

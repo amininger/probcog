@@ -25,7 +25,6 @@ public class Robot implements ISoarObject {
 	private Pose pose;
 	
 	private boolean updatePose = true;
-	private boolean updateWaypoint = true;
 	
 	private StringBuilder svsCommands = new StringBuilder();
 	
@@ -36,13 +35,14 @@ public class Robot implements ISoarObject {
 	private StringWME heldObject;
 	
 	private Region curRegion = null;
-	private Identifier waypointId = null;
+	private StringWME waypointId;
 	
 	private MapInfo mapInfo;
 	
 	public Robot(Properties props){
 		movingState = new StringWME("moving-status", "stopped");
 		heldObject = new StringWME("holding-object", "none");
+		waypointId = new StringWME("current-waypoint", "none");
 		pose = new Pose();
 		mapInfo = new MapInfo(props);
 		setPos(mapInfo.getRobotPos());
@@ -109,7 +109,7 @@ public class Robot implements ISoarObject {
 		}
 		if(curRegion != closest){
 			curRegion = closest;
-			updateWaypoint = true;
+			waypointId.setValue(curRegion == null ? "none" : curRegion.label);
 		}
 	}
 	
@@ -185,6 +185,7 @@ public class Robot implements ISoarObject {
 
 		movingState.updateWM();
 		heldObject.updateWM();
+		waypointId.updateWM();
 
 		if(updatePose){
 			pose.updateWM();
@@ -192,37 +193,17 @@ public class Robot implements ISoarObject {
 			svsCommands.append(SVSCommands.changeRot("robot", rot));
 			updatePose = false;
 		}
-		
-		if(updateWaypoint){
-			updateWaypointInfo();
-			updateWaypoint = false;
-		}
 	}
 	
-	private void updateWaypointInfo(){
-		if(waypointId != null){
-			waypointId.DestroyWME();
-			waypointId = null;
-   		}
-		if(curRegion != null){
-			waypointId = selfId.CreateIdWME("current-waypoint");
-			waypointId.CreateStringWME("waypoint-handle", curRegion.id);
-			waypointId.CreateStringWME("classification", curRegion.label);
-		}
-	}
-
 	@Override
 	public void removeFromWM() {
 		if(!added){
 			return;
 		}
 		
-		if(waypointId != null){
-			waypointId.DestroyWME();
-			waypointId = null;
-		}
 		movingState.removeFromWM();
 		heldObject.removeFromWM();
+		waypointId.removeFromWM();
 		pose.removeFromWM();
 
 		selfId.DestroyWME();

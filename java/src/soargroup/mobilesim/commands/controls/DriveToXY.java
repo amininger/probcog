@@ -4,17 +4,24 @@ import java.io.*;
 import java.util.zip.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.util.*;
 
 import soargroup.mobilesim.commands.*;
-import soargroup.mobilesim.lcmtypes.*;
 import soargroup.mobilesim.util.*;
 
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import soargroup.mobilesim.lcmtypes.grid_map_t;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
+import soargroup.mobilesim.lcmtypes.robot_map_data_t;
+import soargroup.mobilesim.lcmtypes.lcmdoubles_t;
+import soargroup.mobilesim.lcmtypes.robot_command_t;
+import soargroup.mobilesim.lcmtypes.robot_task_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.typed_value_t;
 
 // XXX DEBUG
 import java.awt.*;
@@ -251,11 +258,10 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
     synchronized public void sendNullCmd()
     {
-        magic2.lcmtypes.robot_command_t msg =
-            new magic2.lcmtypes.robot_command_t();
+        robot_command_t msg = new robot_command_t();
         msg.robotid = robotid;
-        msg.task = new magic2.lcmtypes.robot_task_t();
-        msg.task.task = magic2.lcmtypes.robot_task_t.FREEZE;
+        msg.task = new robot_task_t();
+        msg.task.task = robot_task_t.FREEZE;
         msg.taskid = robotDriveID++;
 
         msg.ndparams = 0;
@@ -278,12 +284,11 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
             goalXYT = LinAlg.xytInvMul31(l2g, globalXYT);
         }
 
-        magic2.lcmtypes.robot_command_t msg =
-            new magic2.lcmtypes.robot_command_t();
+        robot_command_t msg = new robot_command_t();
         //msg.utime = TimeUtil.utime();
         msg.robotid = robotid;
-        msg.task = new magic2.lcmtypes.robot_task_t();
-        msg.task.task = magic2.lcmtypes.robot_task_t.GOTO_GLOBAL;
+        msg.task = new robot_task_t();
+        msg.task.task = robot_task_t.GOTO_GLOBAL;
         msg.taskid = robotDriveID++;
 
         msg.ndparams = 4;

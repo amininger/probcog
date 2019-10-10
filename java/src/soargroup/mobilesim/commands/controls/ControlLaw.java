@@ -4,7 +4,7 @@ import java.util.*;
 
 import soargroup.mobilesim.commands.*;
 
-import magic2.lcmtypes.*;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
 public interface ControlLaw
 {

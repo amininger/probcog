@@ -3,19 +3,21 @@ package soargroup.mobilesim.robot.perception;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
 import april.config.*;
 import april.jmat.*;
-//import april.lcmtypes.*;
 import april.util.*;
 import april.tag.TagDetection;
 
-//import soargroup.mobilesim.lcmtypes.*;
-import soargroup.mobilesim.lcmtypes.classification_list_t;
-import soargroup.mobilesim.lcmtypes.classification_t;
-import soargroup.mobilesim.lcmtypes.tag_classification_t;
 import soargroup.mobilesim.util.*;
-import magic2.lcmtypes.*;
+
+// LCM Types
+import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.classification_t;
+import soargroup.mobilesim.lcmtypes.classification_list_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
+import soargroup.mobilesim.lcmtypes.tag_detection_t;
+import soargroup.mobilesim.lcmtypes.tag_detection_list_t;
 
 public class TagClassifier
 {

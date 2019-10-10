@@ -11,15 +11,16 @@ import edu.umich.rosie.soar.SoarAgent;
 import edu.umich.rosie.soar.SoarUtil;
 import april.jmat.LinAlg;
 import april.util.TimeUtil;
-import lcm.lcm.LCM;
-import lcm.lcm.LCMDataInputStream;
-import lcm.lcm.LCMSubscriber;
+
+import sml.Identifier;
 import soargroup.mobilesim.commands.CommandCoordinator.Status;
 import soargroup.mobilesim.commands.TypedValue;
-import soargroup.mobilesim.lcmtypes.control_law_status_t;
-import soargroup.mobilesim.lcmtypes.control_law_t;
+
+// LCM Types
+import lcm.lcm.*;
 import soargroup.mobilesim.lcmtypes.typed_value_t;
-import sml.Identifier;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.control_law_status_t;
 
 import javax.swing.JButton;
 import javax.swing.JMenuBar;

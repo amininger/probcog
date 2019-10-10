@@ -3,15 +3,17 @@ package soargroup.mobilesim.commands.controls;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.util.*;
 import april.jmat.*;
 
 import soargroup.mobilesim.commands.*;
 
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.typed_value_t;
 
 public class Turn implements ControlLaw, LCMSubscriber
 {

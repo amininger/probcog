@@ -9,15 +9,6 @@ import java.util.Random;
 
 import java.nio.ByteBuffer;
 
-import lcm.lcm.LCM;
-import lcm.lcm.LCMDataInputStream;
-import lcm.lcm.LCMSubscriber;
-
-import magic2.lcmtypes.ooi_msg_list_t;
-import magic2.lcmtypes.ooi_msg_t;
-import magic2.lcmtypes.tag_detection_list_t;
-import magic2.lcmtypes.tag_detection_t;
-
 import april.jmat.LinAlg;
 import april.jmat.MathUtil;
 import april.sim.SimObject;
@@ -25,18 +16,27 @@ import april.sim.SimWorld;
 import april.util.PeriodicTasks;
 import april.util.TimeUtil;
 
-import soargroup.mobilesim.lcmtypes.classification_list_t;
-import soargroup.mobilesim.lcmtypes.classification_t;
-import soargroup.mobilesim.lcmtypes.control_law_t;
-import soargroup.mobilesim.lcmtypes.object_data_t;
-import soargroup.mobilesim.lcmtypes.soar_objects_t;
-import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
-import soargroup.mobilesim.lcmtypes.tag_classification_t;
 import soargroup.mobilesim.sim.SimObjectPC;
 import soargroup.mobilesim.sim.SimRobot;
 import soargroup.mobilesim.sim.SimAprilTag;
 import soargroup.mobilesim.util.BoundingBox;
 import soargroup.mobilesim.util.Util;
+
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import soargroup.mobilesim.lcmtypes.ooi_msg_list_t;
+import soargroup.mobilesim.lcmtypes.ooi_msg_t;
+import soargroup.mobilesim.lcmtypes.tag_detection_t;
+import soargroup.mobilesim.lcmtypes.tag_detection_list_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
+import soargroup.mobilesim.lcmtypes.classification_t;
+import soargroup.mobilesim.lcmtypes.classification_list_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.object_data_t;
+import soargroup.mobilesim.lcmtypes.soar_objects_t;
+
 
 public class SimObjectDetector implements LCMSubscriber{
 	private static double MSG_PER_SEC = 10.0;
@@ -152,7 +152,7 @@ public class SimObjectDetector implements LCMSubscriber{
             	objData.utime = TimeUtil.utime();
             	objData.ooi_id = e.getValue().getID();
             	objData.ooi_type = ooi_msg_t.TAG_POSE_QUAT;
-            	objData.local_pose = new magic2.lcmtypes.pose_t();
+            	objData.local_pose = new pose_t();
             	objData.local_pose.utime = TimeUtil.utime();
             	objData.local_pose.accel = new double[3];
             	objData.local_pose.orientation = new double[4];

@@ -3,16 +3,17 @@ package soargroup.mobilesim.commands.controls;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 import april.util.*;
 
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.util.*;
 
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import april.lcmtypes.laser_t;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
 /** Given a heading (yaw) to follow relative to the global coordinate frame, try
  *  to drive the robot in that direction, avoiding obstacles along the way.

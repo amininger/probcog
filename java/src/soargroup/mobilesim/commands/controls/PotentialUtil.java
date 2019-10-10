@@ -5,8 +5,6 @@ import javax.swing.*;
 import java.io.*;
 import java.util.*;
 
-import lcm.lcm.*;
-
 import april.jmat.*;
 import april.jmat.geom.*;
 import april.vis.*;
@@ -14,7 +12,10 @@ import april.util.*;
 
 import soargroup.mobilesim.util.*;
 
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.laser_t;
+
 
 /** A utility class for generating and debugging potential functions */
 public class PotentialUtil

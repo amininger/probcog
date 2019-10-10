@@ -10,7 +10,6 @@ import java.awt.*;
 
 import javax.swing.*;
 
-import lcm.lcm.*;
 import april.config.Config;
 import april.jmat.LinAlg;
 import april.jmat.MathUtil;
@@ -25,8 +24,17 @@ import soargroup.mobilesim.util.*;
 import soargroup.mobilesim.vis.*;
 import soargroup.mobilesim.robot.control.*;
 import soargroup.mobilesim.robot.perception.*;
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.gamepad_t;
+import april.lcmtypes.laser_t;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
+import soargroup.mobilesim.lcmtypes.grid_map_t;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+import soargroup.mobilesim.lcmtypes.lcmdoubles_t;
+import soargroup.mobilesim.lcmtypes.robot_info_t;
+import soargroup.mobilesim.lcmtypes.robot_map_data_t;
 
 public class SimRobot implements SimObject, LCMSubscriber
 {

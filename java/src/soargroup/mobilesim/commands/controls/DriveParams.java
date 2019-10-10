@@ -1,7 +1,11 @@
 package soargroup.mobilesim.commands.controls;
 
-import soargroup.mobilesim.lcmtypes.*;
-import magic2.lcmtypes.*;
+// LCM Types
+import lcm.lcm.*;
+import april.lcmtypes.pose_t;
+import april.lcmtypes.laser_t;
+import soargroup.mobilesim.lcmtypes.grid_map_t;
+import soargroup.mobilesim.lcmtypes.tag_classification_t;
 
 /** A container class holding possible inputs to a control law.
  *  It is expected that these will be a fairly small subset of

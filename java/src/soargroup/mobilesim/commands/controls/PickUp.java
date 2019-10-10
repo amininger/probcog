@@ -4,7 +4,7 @@ import java.util.*;
 
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.robot.control.*;
-import magic2.lcmtypes.*;
+import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
 // XXX Temporary port to new control law implementation. This is just a water-
 // through-the-pipes implementation.
