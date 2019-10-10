@@ -16,13 +16,6 @@ public class WorldObjectManager {
 	
 	public WorldObjectManager(Properties props){
 		objects = new HashMap<Integer, WorldObject>();
-		
-		String objectFile = props.getProperty("object-info-file");
-		if(objectFile == null){
-			System.err.println("No object-info-file specified in properties file");
-		} else {
-			readObjectInfoFile(objectFile);
-		}
 	}
 	
 	public WorldObject getObject(Integer tagID){

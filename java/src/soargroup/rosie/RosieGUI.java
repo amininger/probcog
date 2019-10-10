@@ -113,8 +113,6 @@ public class RosieGUI extends JFrame
 
     	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
-    	actuation.createMenu(menuBar);
-
 
     	stopRobotButton = new JButton("STOP");
     	stopRobotButton.setBackground(Color.red);

@@ -11,15 +11,6 @@ import soargroup.mobilesim.commands.TypedValue;
 import soargroup.mobilesim.lcmtypes.condition_test_t;
 import soargroup.mobilesim.lcmtypes.control_law_t;
 import soargroup.mobilesim.lcmtypes.typed_value_t;
-//
-//import edu.umich.rosie.SoarUtil;
-//import april.util.TimeUtil;
-//import soargroup.mobilesim.commands.TypedValue;
-//import soargroup.mobilesim.lcmtypes.condition_test_t;
-//import soargroup.mobilesim.lcmtypes.control_law_t;
-//import soargroup.mobilesim.lcmtypes.typed_value_t;
-//import sml.Identifier;
-//import sml.WMElement;
 
 import sml.Identifier;
 import sml.WMElement;
@@ -93,36 +84,33 @@ public class SoarCommandParser {
 			i++;
 		}
 
-		ct.compare_type = condition_test_t.CMP_GT;
-		ct.compared_value = (new TypedValue(0)).toLCM();
 		// compare-type
-//		//   The type of comparison (gt, gte, eq, lte, lt)
-//		String compareType = SoarUtil.getValueOfAttribute(id, "compare-type");
-//		if(compareType == null){
-//			System.err.println("No compare-type on condition test");
-//			return null;
-//		} else if(compareType.equals("gt")){
-//			ct.compare_type = condition_test_t.CMP_GT;
-//		} else if(compareType.equals("gte")){
-//			ct.compare_type = condition_test_t.CMP_GTE;
-//		} else if(compareType.equals("eq")){
-//			ct.compare_type = condition_test_t.CMP_EQ;
-//		} else if(compareType.equals("lte")){
-//			ct.compare_type = condition_test_t.CMP_LTE;
-//		} else if(compareType.equals("lt")){
-//			ct.compare_type = condition_test_t.CMP_LT;
-//		} else {
-//			System.err.println("Unknown compare-type on condition test");
-//		}
+		//   The type of comparison (gt, gte, eq, lte, lt)
+		String compareType = SoarUtil.getValueOfAttribute(id, "compare-type");
+		if(compareType == null){
+			ct.compare_type = condition_test_t.CMP_GT;
+		} else if(compareType.equals("gt")){
+			ct.compare_type = condition_test_t.CMP_GT;
+		} else if(compareType.equals("gte")){
+			ct.compare_type = condition_test_t.CMP_GTE;
+		} else if(compareType.equals("eq")){
+			ct.compare_type = condition_test_t.CMP_EQ;
+		} else if(compareType.equals("lte")){
+			ct.compare_type = condition_test_t.CMP_LTE;
+		} else if(compareType.equals("lt")){
+			ct.compare_type = condition_test_t.CMP_LT;
+		} else {
+			System.err.println("Unknown compare-type on condition test");
+		}
 
 		// compared-value
 		//   the value being compared against when evaluating the test
-//		String comparedValue = SoarUtil.getValueOfAttribute(id, "compared-value");
-//		if(comparedValue == null){
-//			System.err.println("no compared-value on condition test");
-//			return null;
-//		}
-//		ct.compared_value = SoarUtil.wrapTypedValue(id, "compared-value");
+		String comparedValue = SoarUtil.getValueOfAttribute(id, "compared-value");
+		if(comparedValue == null){
+			ct.compared_value = (new TypedValue(0)).toLCM();
+		} else {
+			ct.compared_value = wrapTypedValue(id, "compared-value");
+		}
 
 		return ct;
 	}

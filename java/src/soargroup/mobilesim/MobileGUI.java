@@ -101,8 +101,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             while (true) {
                 double dt = tic.toctic();
                 //drawWorld();
-                //System.out.println(lcm.getNumSubscriptions());
-                drawTrajectory(dt);
                 drawClassifications();
                 drawObjectLabels();
                 TimeUtil.sleep(1000/fps);
@@ -301,33 +299,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
     }
 
 
-    // XXX Should be updated to not draw forever/draw noisy data
-    private static final double MAX_POINTS = 500;
-    private static double dtAcc = 0;
-    ArrayList<double[]> poseList = new ArrayList<double[]>();
-    private void drawTrajectory(double dt)
-    {
-        if (dtAcc + dt < .5) {
-            dtAcc += dt;
-            return;
-        }
-
-        pose_t pose = poseCache.get();
-        if (pose != null)
-            poseList.add(pose.pos);
-
-        while (poseList.size() > MAX_POINTS)
-            poseList.remove(0);
-
-        vw.getBuffer("trajectory").addBack(new VzPoints(new VisVertexData(poseList),
-                                                        new VzPoints.Style(Color.cyan, 4)));
-        vw.getBuffer("trajectory").addBack(new VzLines(new VisVertexData(poseList),
-                                                       VzLines.LINE_STRIP,
-                                                       new VzLines.Style(Color.blue, 1)));
-        vw.getBuffer("trajectory").swap();
-        dtAcc = 0;
-    }
-
     // === VisConsole commands ===
 	public boolean consoleCommand(VisConsole console, PrintStream out, String command)
     {
@@ -360,6 +331,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         opts.addBoolean('h', "help", false, "Show this help screen");
         //opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
+		opts.addString('m', "map", null, "File with information about the waypoint map");
         opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
 
         if (!opts.parse(args)) {

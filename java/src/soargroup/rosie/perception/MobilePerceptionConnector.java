@@ -215,27 +215,27 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	if(objectsId == null){
     		objectsId = soarAgent.getAgent().GetInputLink().CreateIdWME("objects");
     	}
-    	Region curRegion = robot.getRegion();
-    	if(curRegion != null){
-    		for(WorldObject obj : objects.values()){
-    			Collection<Region> regions = robot.getMapInfo().getRegions(obj.getPos());
-    			if(regions.contains(curRegion)){
-    				// in current location
-    				if(obj.isAdded()){
-    					obj.updateWM();
-    				} else {
-    					obj.addToWM(objectsId);
-    				}
-    			} else {
-    				// not in current location
-    				if(obj.isAdded()){
-    					obj.removeFromWM();
-    				}
-    			}
-
-    		}
-
-    	}
+//    	Region curRegion = robot.getRegion();
+//    	if(curRegion != null){
+//    		for(WorldObject obj : objects.values()){
+//    			Collection<Region> regions = robot.getMapInfo().getRegions(obj.getPos());
+//    			if(regions.contains(curRegion)){
+//    				// in current location
+//    				if(obj.isAdded()){
+//    					obj.updateWM();
+//    				} else {
+//    					obj.addToWM(objectsId);
+//    				}
+//    			} else {
+//    				// not in current location
+//    				if(obj.isAdded()){
+//    					obj.removeFromWM();
+//    				}
+//    			}
+//
+//    		}
+//
+//    	}
     	//for(WorldObject obj : objects.values()){
     	//	if(obj.isAdded()){
     	//		obj.updateWM();
@@ -278,11 +278,11 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     	}
 
         ArrayList<svs_location_data_t> locDatas = new ArrayList<svs_location_data_t>();
-        HashSet<Region> regions = robot.getMapInfo().getAllRegions();
-        for(Region reg : regions){
-            locDatas.add(reg.getLcmData());
-        }
-
+        //HashSet<Region> regions = robot.getMapInfo().getAllRegions();
+//        for(Region reg : regions){
+//            locDatas.add(reg.getLcmData());
+//        }
+//
     	svs_info_t svsInfo = new svs_info_t();
     	svsInfo.utime = TimeUtil.utime();
     	svsInfo.nobjects = objDatas.size();

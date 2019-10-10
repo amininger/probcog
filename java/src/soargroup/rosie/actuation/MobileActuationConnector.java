@@ -31,7 +31,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 	private Object commandLock = new Object();
 	private control_law_t activeCommand = null;
 	private Identifier activeCommandId = null;
-	private String commandStatus = "waiting";
+	private String commandStatus = "none";
 	private int nextControlLawId = 1;
 
 	private String movingState = "stopped";
@@ -41,16 +41,13 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     private boolean killThread = false;
     private ControlLawThread sendCommandThread = null;
     
-    private boolean robotPaused = false;
-    private JButton pauseButton;
-    
     public MobileActuationConnector(SoarAgent agent, Properties props){
     	super(agent);
 
         lcm = LCM.getSingleton();
         
         // Setup Output Link Events
-        String[] outputHandlerStrings = { "do-control-law", "stop", "face-point", "pick-up", "put-down", "set-state"};
+        String[] outputHandlerStrings = { "do-control-law", "stop" };
         this.setOutputHandlerNames(outputHandlerStrings);
 
         activeCommand = SoarCommandParser.createEmptyControlLaw("RESTART");
@@ -85,50 +82,23 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     	return movingState;
     }
 
-	public void createMenu(JMenuBar menuBar) {
-		pauseButton = new JButton("Pause");
-		pauseButton.setBackground(new Color(50, 255, 50));
-		pauseButton.addActionListener(new ActionListener(){
-			public void actionPerformed(ActionEvent arg0) {
-				control_law_t command;
-				if(robotPaused){
-					pauseButton.setText("Pause");
-					pauseButton.setBackground(new Color(50, 255, 50));
-					command = SoarCommandParser.createEmptyControlLaw("resume");
-				} else {
-					pauseButton.setText("Resume");
-					pauseButton.setBackground(new Color(255, 50, 50));
-					command = SoarCommandParser.createEmptyControlLaw("pause");
-				}
-				robotPaused = !robotPaused;
-				lcm.publish("SOAR_COMMAND_TX", command);
-			}
-		});
-		menuBar.add(pauseButton);
-	}
+	@Override
+	public void createMenu(JMenuBar menuBar) {}
 
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
 		try {
 			if(channel.startsWith("SOAR_COMMAND_STATUS")){
-				control_law_status_t newStatus = new control_law_status_t(ins);
-				handleCommandStatusMessage(newStatus);
+				control_law_status_t status = new control_law_status_t(ins);
+				synchronized(commandLock){
+					if(activeCommand != null && activeCommand.id == status.id){
+						commandStatus = Status.valueOf(status.status).toString().toLowerCase();
+					}
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-    }
-    
-    private void handleCommandStatusMessage(control_law_status_t status){
-      if(activeCommand != null && activeCommand.id == status.id){
-        Status newStatus = Status.valueOf(status.status);
-        if(newStatus == Status.FAILURE || newStatus == Status.SUCCESS || newStatus == Status.UNKNOWN){
-          activeCommand = null;//SoarCommandParser.createEmptyControlLaw("NONE");
-          //activeCommand.id = nextControlLawId++;
-          movingState = "stopped";
-        }
-        commandStatus = newStatus.toString().toLowerCase();
-	  }
     }
 
     
@@ -159,21 +129,26 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     /*******************************************************
      * Methods for updating the input link
      ******************************************************/
-
+    
 	protected void onInputPhase(Identifier inputLink) {
-		if(activeCommandId != null){
-			if(activeCommand == null){
-				commandStatus = "success";
-			}
-			SoarUtil.updateStringWME(activeCommandId, "status", commandStatus);
-			if(commandStatus.equals("success") || commandStatus.equals("failure") || commandStatus.equals("unknown")){
-				activeCommandId = null;
+		synchronized(commandLock){
+			if(activeCommandId != null){
+				SoarUtil.updateStringWME(activeCommandId, "status", commandStatus);
+				if(commandStatus.equals("success") || commandStatus.equals("failure") || commandStatus.equals("unknown")){
+					activeCommandId = null;
+					activeCommand = null;
+					movingState = "stopped";
+				}
 			}
 		}
 	}
 	
 	protected void onInitSoar() {
-		activeCommandId = null;
+		synchronized(commandLock){
+			activeCommand = null;
+			activeCommandId = null;
+			commandStatus =  "none";
+		}
 	}
 	
 	/*************************************************************
@@ -186,14 +161,6 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 			processDoControlLawCommand(id);
 		} else if(attName.equals("stop")){
 			processStopCommand(id);
-		} else if(attName.equals("face-point")){
-			processFacePoint(id);
-		} else if(attName.equals("pick-up")){
-			
-		} else if(attName.equals("pick-down")){
-			
-		} else if(attName.equals("set-state")){
-		//	processSetStateCommand(id);
 		}
 	}
 
@@ -208,9 +175,9 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     	controlLaw.id = nextControlLawId++;
     	id.CreateStringWME("status", "sent");
     	synchronized(commandLock){
-    	//	if (activeCommandId != null){
-    	//		SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
-    	//	}
+    		if (activeCommandId != null){
+    			SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
+    		}
     		activeCommand = controlLaw;
     		activeCommandId = id;
     		
@@ -232,47 +199,4 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
 			movingState = "stopped";
 		}
     }
-    
-    public void processFacePoint(Identifier id){
-		synchronized(commandLock){
-			if(activeCommandId != null){
-				SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
-			}
-			double cx = Double.parseDouble(SoarUtil.getValueOfAttribute(id, "cur-x"));
-			double cy = Double.parseDouble(SoarUtil.getValueOfAttribute(id, "cur-y"));
-			double dx = Double.parseDouble(SoarUtil.getValueOfAttribute(id, "x"));
-			double dy = Double.parseDouble(SoarUtil.getValueOfAttribute(id, "y"));
-			double yaw = Math.atan2(dy-cy, dx-cx);
-
-			activeCommandId = id;
-			activeCommand = SoarCommandParser.createEmptyControlLaw("orient");
-			activeCommand.id = nextControlLawId++;
-			activeCommand.num_params = 1;
-			activeCommand.param_names = new String[]{ "yaw" };
-			activeCommand.param_values = new typed_value_t[]{ (new TypedValue(yaw)).toLCM() };
-			activeCommand.termination_condition.name = "stabilized";
-			
-			commandStatus = "sent";
-			movingState = "moving";
-		}
-    }
-
-//    public void processSetStateCommand(Identifier id){
-//		synchronized(commandLock){
-//			if(activeCommandId != null){
-//				SoarUtil.updateStringWME(activeCommandId, "status", "interrupted");
-//			}
-//			activeCommand = SoarCommandParser.createEmptyControlLaw("STOP");
-//			activeCommand.id = nextControlLawId++;
-//			activeCommandId = id;
-//			
-//			commandStatus = "sent";
-//			movingState = "stopped";
-//		}
-//			Integer objId = Integer.parseInt(SoarUtil.getValueOfAttribute("id"));
-//			String property = SoarUtil.getValueOfAttribute("property");
-//			String value = SoarUtil.getValueOfAttribute("value");
-//			MobilePerceptionConnector perception = (MobilePerceptionConnector)this.agent.getPerceptionConnector();
-//			perception.changeObjectState(objId, property, value);
-//    }
 }

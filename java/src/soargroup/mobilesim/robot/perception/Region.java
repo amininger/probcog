@@ -1,4 +1,4 @@
-package soargroup.rosie.perception;
+package soargroup.mobilesim.robot.perception;
 
 import java.text.ParseException;
 

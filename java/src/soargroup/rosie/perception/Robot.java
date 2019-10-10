@@ -34,22 +34,13 @@ public class Robot implements ISoarObject {
 	private StringWME movingState;
 	private StringWME heldObject;
 	
-	private Region curRegion = null;
 	private StringWME waypointId;
-	
-	private MapInfo mapInfo;
 	
 	public Robot(Properties props){
 		movingState = new StringWME("moving-status", "stopped");
 		heldObject = new StringWME("holding-object", "none");
 		waypointId = new StringWME("current-waypoint", "none");
 		pose = new Pose();
-		mapInfo = new MapInfo(props);
-		setPos(mapInfo.getRobotPos());
-	}
-	
-	public MapInfo getMapInfo(){
-		return mapInfo;
 	}
 	
 	public String getHeldObject(){
@@ -66,7 +57,6 @@ public class Robot implements ISoarObject {
 		pose.setX(pos[0]);
 		pose.setY(pos[1]);
 		updatePose = true;
-		updateRegion();	
 	}
 
   public double[] getXyzrpy(){
@@ -92,31 +82,8 @@ public class Robot implements ISoarObject {
 		if(updatePose){
 			pose.updateWithArray(info.xyzrpy);
 		}
-		
-		updateRegion();
 	}
 	
-	public void updateRegion(){
-		HashSet<Region> regions = mapInfo.getRegions(pos);
-		Region closest = null;
-		Double distance = Double.MAX_VALUE;
-		for(Region r : regions){
-			double d = r.getDistanceSq(pos);
-			if(d < distance){
-				distance = d;
-				closest = r;
-			}
-		}
-		if(curRegion != closest){
-			curRegion = closest;
-			waypointId.setValue(curRegion == null ? "none" : curRegion.label);
-		}
-	}
-	
-	public Region getRegion(){
-		return curRegion;
-	}
-	 
 	 public void updateMovingState(String newMovingState){
 		 movingState.setValue(newMovingState);
 	 }

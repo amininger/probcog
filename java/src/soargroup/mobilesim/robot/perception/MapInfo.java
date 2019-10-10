@@ -1,4 +1,4 @@
-package soargroup.rosie.perception;
+package soargroup.mobilesim.robot.perception;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -26,7 +26,24 @@ public class MapInfo {
 			readMapInfoFile(mapFile);
 		}
 	}
-	
+
+//	public void updateRegion(){
+//		HashSet<Region> regions = mapInfo.getRegions(pos);
+//		Region closest = null;
+//		Double distance = Double.MAX_VALUE;
+//		for(Region r : regions){
+//			double d = r.getDistanceSq(pos);
+//			if(d < distance){
+//				distance = d;
+//				closest = r;
+//			}
+//		}
+//		if(curRegion != closest){
+//			curRegion = closest;
+//			waypointId.setValue(curRegion == null ? "none" : curRegion.label);
+//		}
+//	}
+//	
 	public HashSet<Region> getRegions(double[] pos){
 		HashSet<Region> regionSet = new HashSet<Region>();
 		for(Region r : regions){
