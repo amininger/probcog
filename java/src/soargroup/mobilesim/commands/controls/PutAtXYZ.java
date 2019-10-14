@@ -6,18 +6,19 @@ import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.robot.control.*;
 import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
-public class PutDown implements ControlLaw
+public class PutAtXYZ implements ControlLaw
 {
     Params storedParams = Params.makeParams();
 
     /** Strictly for creating instances for parameter checks */
-    public PutDown()
+    public PutAtXYZ()
     {
     }
 
-    public PutDown(Map<String, TypedValue> parameters)
+    public PutAtXYZ(Map<String, TypedValue> parameters)
     {
-        System.out.println("PUT DOWN");
+        System.out.println("PUT DOWN AT {" + parameters.get("x").toString() + ", " + 
+				parameters.get("y").toString() + ", " + parameters.get("z").toString() + "}");
     }
 
     /** Start/stop the execution of the control law.
@@ -35,7 +36,7 @@ public class PutDown implements ControlLaw
      **/
     public String getName()
     {
-        return "PUT_DOWN";
+        return "PUT_AT_XYZ";
     }
 
     /** Get the parameters that can be set for this control law.
@@ -46,6 +47,9 @@ public class PutDown implements ControlLaw
     {
         // No parameters, so this can just return an empty container
     	ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+        params.add(new TypedParameter("x", TypedValue.TYPE_DOUBLE, true));
+        params.add(new TypedParameter("y", TypedValue.TYPE_DOUBLE, true));
+        params.add(new TypedParameter("z", TypedValue.TYPE_DOUBLE, true));
 
     	return params;
     }

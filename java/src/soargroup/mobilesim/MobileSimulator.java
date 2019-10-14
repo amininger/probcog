@@ -17,7 +17,13 @@ import april.vis.VisConsole;
 import april.vis.VisLayer;
 import april.vis.VisWorld;
 
-public class MobileSimulator implements VisConsole.Listener
+import soargroup.mobilesim.sim.*;
+
+// LCM Types
+import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.control_law_t;
+
+public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
 {
 	// Sim stuff
     SimWorld world;
@@ -28,6 +34,8 @@ public class MobileSimulator implements VisConsole.Listener
 
     private Timer simulateDynamicsTimer;
     private static final int DYNAMICS_RATE = 30; // FPS to simulate dynamics at
+
+	SimRobot robot = null;
 
     public MobileSimulator(GetOpt opts,
                             VisWorld vw,
@@ -44,12 +52,42 @@ public class MobileSimulator implements VisConsole.Listener
 	    simulateDynamicsTimer = new Timer();
 	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(), 1000, 1000/DYNAMICS_RATE);
 
+        ArrayList<SimObject> simObjects;
+		synchronized(world.objects){
+			simObjects = (ArrayList<SimObject>)world.objects.clone();
+		}
+		for(SimObject obj : simObjects){
+			if(obj instanceof SimRobot){
+				robot = (SimRobot)obj;
+			}
+		}
+		if(robot == null){
+			System.err.println("WARNING: No SimRobot defined in the world file");
+		}
+
+		LCM.getSingleton().subscribe("SOAR_COMMAND.*", this);
 	}
 
     public SimWorld getWorld()
     {
     	return world;
     }
+
+	private SimObjectPC getSimObject(Integer id){
+        ArrayList<SimObject> simObjects;
+		synchronized(world.objects){
+			simObjects = (ArrayList<SimObject>)world.objects.clone();
+		}
+		for(SimObject obj : simObjects){
+			if(obj instanceof SimObjectPC){
+				SimObjectPC simObj = (SimObjectPC)obj;
+				if(simObj.getID().equals(id)){
+					return simObj;
+				}
+			}
+		}
+		return null;
+	}
 
     private void loadWorld(GetOpt opts)
     {
@@ -72,6 +110,83 @@ public class MobileSimulator implements VisConsole.Listener
         }
         world.setRunning(true);
     }
+
+	/*************************************
+	 * Handling Simulated SOAR COMMANDS
+	 ************************************/
+
+	@Override
+	public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins) {
+        try {
+        	if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")){
+		  		control_law_t controlLaw = new control_law_t(ins);
+				if(controlLaw.name.equals("pick-up")){
+					handlePickUpCommand(controlLaw);
+				} else if(controlLaw.name.equals("put-down")){
+					handlePutDownCommand(controlLaw);
+				} else if(controlLaw.name.equals("put-at-xyz")){
+					handlePutAtXYZCommand(controlLaw);
+				} else if(controlLaw.name.equals("change-state")){
+					handleChangeStateCommand(controlLaw);
+				}
+	      	}
+        } catch (IOException ex) {
+            System.out.println("WRN: "+ex);
+        }
+    }
+
+	private void handlePickUpCommand(control_law_t controlLaw){
+		for(int p = 0; p < controlLaw.num_params; p++){
+			if(controlLaw.param_names[p].equals("object-id")){
+				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
+				SimObjectPC obj = getSimObject(objectId);
+				if(obj != null){
+					robot.pickUpObject(obj);
+				} else {
+					System.err.println("MobileSimulator::handlePickUpCommand: object-id '" + objectId.toString() + "' not recognized");
+				}
+			}
+		}
+	}
+
+	private void handlePutDownCommand(control_law_t controlLaw){
+		robot.putDownObject();
+	}
+
+	private void handlePutAtXYZCommand(control_law_t controlLaw){
+		double[] xyz = new double[]{ 0, 0, 0 };
+		for(int p = 0; p < controlLaw.num_params; p++){
+			if(controlLaw.param_names[p].equals("x")){
+				xyz[0] = Double.parseDouble(controlLaw.param_values[p].value);
+			} else if(controlLaw.param_names[p].equals("y")){
+				xyz[1] = Double.parseDouble(controlLaw.param_values[p].value);
+			} else if(controlLaw.param_names[p].equals("z")){
+				xyz[2] = Double.parseDouble(controlLaw.param_values[p].value);
+			} 
+		}
+		robot.putObjectAtXYZ(xyz);
+	}
+
+	private void handleChangeStateCommand(control_law_t controlLaw){
+		SimObjectPC obj = null;
+		String prop = null;
+		String val = null;
+		for(int p = 0; p < controlLaw.num_params; p++){
+			if(controlLaw.param_names[p].equals("object-id")){
+				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
+				obj = getSimObject(objectId);
+				if(obj == null){
+					System.err.println("MobileSimulator::handleChangeStateCommand: object-id '" + objectId.toString() + "' not recognized");
+					return;
+				}
+			} else if(controlLaw.param_names[p].equals("property")){
+				prop = controlLaw.param_values[p].value;
+			} else if(controlLaw.param_names[p].equals("value")){
+				val = controlLaw.param_values[p].value;
+			} 
+		}
+		// TODO: obj.setState(prop, val);
+	}
 
     // === VisConsole commands ===
     // Currently not implemented

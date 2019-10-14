@@ -28,6 +28,7 @@ import april.lcmtypes.pose_t;
 import soargroup.mobilesim.lcmtypes.tag_classification_t;
 import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
 
+
 public class MobileGUI extends JFrame implements VisConsole.Listener
 {
     private MobileSimulator simulator;
@@ -100,7 +101,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
             Tic tic = new Tic();
             while (true) {
                 double dt = tic.toctic();
-                //drawWorld();
                 drawClassifications();
                 drawObjectLabels();
                 TimeUtil.sleep(1000/fps);
@@ -177,8 +177,13 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         }
     }
 
+	/*************************************************
+	 * MobileGUIEventHandler
+	 *   Handles GUI input events (mouse/keyboard)
+	 ************************************************/
+
     class MobileGUIEventHandler extends VisEventAdapter
-    {
+	{
         VisWorld world;
 
         public MobileGUIEventHandler(VisWorld vw)
@@ -200,6 +205,7 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 
         public boolean mouseMoved(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
         {
+			// draws mouse world coordinates in the corner
             double[] xy = ray.intersectPlaneXY();
             Formatter f = new Formatter();
             f.format("<<monospaced-128>>(%.2f, %.2f)", xy[0], xy[1]);
@@ -214,56 +220,27 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         }
     }
 
-    class SimParameterListener implements ParameterListener
-    {
-        public void parameterChanged(ParameterGUI pg, String name)
-        {
-            if ("noise".equals(name)) {
-                // Look for SimRobot and turn off/on noise
-                synchronized (simulator) {
-                    for (SimObject obj: simulator.getWorld().objects) {
-                        if (!(obj instanceof soargroup.mobilesim.sim.SimRobot))
-                            continue;
-                        soargroup.mobilesim.sim.SimRobot robot = (soargroup.mobilesim.sim.SimRobot)obj;
-                        robot.setNoise(pg.gb(name));
-                    }
-                }
-            } else if ("pp".equals(name)) {
-                synchronized (simulator) {
-                    for (SimObject obj: simulator.getWorld().objects) {
-                        if (!(obj instanceof soargroup.mobilesim.sim.SimRobot))
-                            continue;
-                        soargroup.mobilesim.sim.SimRobot robot = (soargroup.mobilesim.sim.SimRobot)obj;
-                        robot.setPerfectPose(pg.gb(name));
-                    }
-                }
-            }
-        }
-    }
+	/*************************************************
+	 * Parameters
+	 *   Way to set parameters which can be changed by the user in the GUI
+	 ************************************************/
 
     private void initParameters()
     {
-        // Is noise on by default? Assumes simulator HAS been initialization
-        boolean useNoise = simulator.getWorld().config.getBoolean("simulator.sim_magic_robot.use_noise", false);
-        boolean perfectPose = simulator.getWorld().config.getBoolean("simulator.sim_magic_robot.perfect_pose", true);
-        pg.addCheckBoxes("noise", "Sensor Noise", useNoise,
-                         "pp", "Perfect Pose", perfectPose);
+        // boolean paramval = simulator.getWorld().config.getBoolean("simulator.sim_magic_robot.use_noise", false);
+        // pg.addCheckBoxes("param-name", "Param Name", initValue);
 
-        pg.addListener(new SimParameterListener());
+        pg.addListener(new ParameterListener(){
+			public void parameterChanged(ParameterGUI pg, String name) {
+				if(name.equals("param-name")){
+					// use parameter value pg.gb(name)
+				}
+			}
+		});
     }
 
-    private void drawWorld()
-    {
-    	VisWorld.Buffer buffer = vw.getBuffer("object-view");
-        ArrayList<SimObject> objs = simulator.getWorld().objects;
-        for(SimObject o : objs) {
-            buffer.addBack(o.getVisObject());
-        }
-    	buffer.swap();
-    }
 
     public double[][] calcFaceCameraMatrix(){
-        // === XXX THE BELOW TRIES TO RENDER TEXT OVER OBJECTS ===
     	CameraPosition camera = vl.cameraManager.getCameraTarget();
 		double[] forward = LinAlg.normalize(LinAlg.subtract(camera.eye, camera.lookat));
 		// Spherical coordinates
@@ -298,6 +275,10 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         buffer.swap();
     }
 
+	/*************************************************
+	 * VisConsole Commands
+	 *   Way to have the GUI respond to text-based commands
+	 ************************************************/
 
     // === VisConsole commands ===
 	public boolean consoleCommand(VisConsole console, PrintStream out, String command)

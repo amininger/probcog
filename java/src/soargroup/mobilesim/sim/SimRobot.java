@@ -313,20 +313,39 @@ public class SimRobot implements SimObject, LCMSubscriber
     	return grabbedObject;
     }
 
+	public String getCurrentWaypoint(double[] pose){
+		Double closestDist = Double.MAX_VALUE;
+		SimRegion closest = null;
+		for(SimObject obj : sw.objects){
+			if(obj instanceof SimRegion){
+				SimRegion reg = (SimRegion)obj;
+				if(reg.pointInRegion(pose)){
+					double distSq = reg.getDistanceSq(pose);
+					if(distSq < closestDist){
+						closest = reg;
+						closestDist = distSq;
+					}
+				}
+			}
+		}
+		return (closest == null ? "none" : closest.getHandle());
+	}
+
     public void pickUpObject(SimObjectPC obj){
+		System.out.println("SimRobot: picking up object " + obj.getID().toString());
     	if(grabbedObject != null && obj != grabbedObject){
     		System.err.println("ERROR: already holding different object");
     		return;
     	}
     	double[] objPos = LinAlg.copy(LinAlg.matrixToXyzrpy(obj.getPose()), 3);
     	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
-    	double dist = LinAlg.distance(robPos, objPos);
+    	double dist = LinAlg.distance(robPos, objPos, 2);
 
-//    	if(dist <= .1){
+    	if(dist <= 1.0){
     		grabbedObject = obj;
     		double[][] robPose = LinAlg.xyzrpyToMatrix(LinAlg.quatPosToXyzrpy(this.drive.poseTruth.orientation, robPos));
     		obj.setPose(robPose);
-//    	}
+		}
     }
 
     public void putDownObject(){
@@ -341,6 +360,18 @@ public class SimRobot implements SimObject, LCMSubscriber
     	grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
     	grabbedObject = null;
     }
+
+	public void putObjectAtXYZ(double[] xyz){
+		if(grabbedObject == null){
+			return;
+		}
+    	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
+    	double dist = LinAlg.distance(robPos, xyz, 2);
+		if(dist <= 1.0){
+			grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ xyz[0], xyz[1], xyz[2], 0, 0, 0 }));
+			grabbedObject = null;
+		}
+	}
 
     public boolean inViewRange(double[] xyz){
 		// AM: Hack to make everything visible
@@ -554,6 +585,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             robot_info_t robotInfo = new robot_info_t();
             robotInfo.utime = TimeUtil.utime();
             robotInfo.xyzrpy = xyzrpy;
+			robotInfo.current_waypoint = getCurrentWaypoint(xyzrpy);
             robotInfo.held_object = (grabbedObject == null ? -1 : grabbedObject.getID());
             lcm.publish("ROBOT_INFO", robotInfo);
         }

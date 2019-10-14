@@ -33,12 +33,11 @@ import soargroup.mobilesim.lcmtypes.tag_classification_t;
 import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
 import soargroup.mobilesim.lcmtypes.classification_t;
 import soargroup.mobilesim.lcmtypes.classification_list_t;
-import soargroup.mobilesim.lcmtypes.control_law_t;
 import soargroup.mobilesim.lcmtypes.object_data_t;
 import soargroup.mobilesim.lcmtypes.soar_objects_t;
 
 
-public class SimObjectDetector implements LCMSubscriber{
+public class SimObjectDetector {
 	private static double MSG_PER_SEC = 10.0;
 
 	protected SimRobot robot;
@@ -58,42 +57,10 @@ public class SimObjectDetector implements LCMSubscriber{
 
 		tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
 
-		LCM.getSingleton().subscribe("SOAR_COMMAND.*", this);
 	}
 
 	public void setRunning(boolean b){
 		tasks.setRunning(b);
-	}
-
-
-	@Override
-	public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins) {
-        try {
-        	if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")){
-		  		control_law_t controlLaw = new control_law_t(ins);
-			  	handleSoarCommand(controlLaw);
-	      	}
-        } catch (IOException ex) {
-            System.out.println("WRN: "+ex);
-        }
-    }
-
-	private void handleSoarCommand(control_law_t controlLaw){
-		if(controlLaw.name.equals("pick-up")){
-			for(int p = 0; p < controlLaw.num_params; p++){
-				if(controlLaw.param_names[p].equals("object-id")){
-					Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
-					SimObjectPC obj = detectedObjects.get(objectId);
-					if(obj != null){
-						robot.pickUpObject(obj);
-					}
-				}
-			}
-		} else if(controlLaw.name.equals("put-down")){
-			robot.putDownObject();
-		} else if(controlLaw.name.equals("change-state")){
-			System.out.println("CHANGE STATE");
-		}
 	}
 
 	protected class DetectorTask implements PeriodicTasks.Task {

@@ -1,6 +1,9 @@
 struct robot_info_t
 {
     int64_t utime;
+
+	// Waypoint region the robot is at (or "none")
+	string current_waypoint;
     
     // Global pose of the robot
     double xyzrpy[6];
