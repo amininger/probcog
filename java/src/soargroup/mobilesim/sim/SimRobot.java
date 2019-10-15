@@ -77,7 +77,6 @@ public class SimRobot implements SimObject, LCMSubscriber
 
     public SimRobot(SimWorld sw)
     {
-		System.out.println("SIMROBOT");
         this.sw = sw;
         // XXX These don't exist?
         useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);
@@ -374,30 +373,28 @@ public class SimRobot implements SimObject, LCMSubscriber
 	}
 
     public boolean inViewRange(double[] xyz){
-		// AM: Hack to make everything visible
-		return true;
-    	//double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
-    	//double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
-    	//toPoint[2] = 0.0;
+    	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
+    	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
+    	toPoint[2] = 0.0;
 
-    	//// Check if point is within view distance
-    	//double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
-    	//if(sqDist > OBJECT_VIEW_DIST_SQ){
-    	//	return false;
-    	//}
-    	//if(sqDist < 0.5){
-    	//	// Within 10 cm of object, report as seen
-    	//	return true;
-    	//}
+    	// Check if point is within view distance
+    	double sqDist = toPoint[0]*toPoint[0] + toPoint[1]*toPoint[1] + toPoint[2]*toPoint[2];
+    	if(sqDist > OBJECT_VIEW_DIST_SQ){
+    		return false;
+    	}
+    	if(sqDist < 0.5){
+    		// Within 50 cm of object, report as seen
+    		return true;
+    	}
 
-    	//double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
-    	//forward = LinAlg.copy(forward, 3);
-    	//double dp = LinAlg.dotProduct(forward, toPoint);
-    	//double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
-    	//if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
-    	//	return true;
-    	//}
-    	//return false;
+    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
+    	forward = LinAlg.copy(forward, 3);
+    	double dp = LinAlg.dotProduct(forward, toPoint);
+    	double lengthProduct = LinAlg.magnitude(forward) * LinAlg.magnitude(toPoint);
+    	if(dp/lengthProduct > OBJECT_VIEW_ANGLE_COS){
+    		return true;
+    	}
+    	return false;
     }
 
     public void setNoise(boolean noise)

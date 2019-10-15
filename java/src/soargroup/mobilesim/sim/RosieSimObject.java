@@ -111,9 +111,6 @@ public abstract class RosieSimObject implements SimObject{
 			String[] prop = ins.readString().trim().split("=");
 			properties.put(prop[0], prop[1]);
 		}
-		for(String k : properties.keySet()){
-			System.out.println(k);
-		}
     }
 
     /** Write one or more lines that serialize this instance. No line

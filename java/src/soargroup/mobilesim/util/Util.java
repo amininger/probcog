@@ -11,7 +11,7 @@ import april.util.*;
 
 public class Util
 {
-    public static String configPath = "$PROBCOG_HOME/config/robot.config";
+    public static String configPath = "$MOBILE_SIM_HOME/config/robot.config";
     private static Config config = null;
 
     /** Give a string of key=token pairs, extract the token
