@@ -1,4 +1,5 @@
-struct soar_objects_t
+// List of detected objects
+struct object_data_list_t
 {
     int64_t utime;
 
