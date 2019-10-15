@@ -16,7 +16,7 @@ import april.sim.SimWorld;
 import april.util.PeriodicTasks;
 import april.util.TimeUtil;
 
-import soargroup.mobilesim.sim.SimObjectPC;
+import soargroup.mobilesim.sim.RosieSimObject;
 import soargroup.mobilesim.sim.SimRobot;
 import soargroup.mobilesim.sim.SimAprilTag;
 import soargroup.mobilesim.util.BoundingBox;
@@ -43,7 +43,7 @@ public class SimObjectDetector {
 	protected SimRobot robot;
 	protected SimWorld world;
 
-	protected HashMap<Integer, SimObjectPC> detectedObjects;
+	protected HashMap<Integer, RosieSimObject> detectedObjects;
 
     TagHistory tagHistory = new TagHistory();
     static Random classifierRandom = new Random(3611871);
@@ -53,7 +53,7 @@ public class SimObjectDetector {
 	public SimObjectDetector(SimRobot robot, SimWorld world){
 		this.robot = robot;
 		this.world = world;
-		this.detectedObjects = new HashMap<Integer, SimObjectPC>();
+		this.detectedObjects = new HashMap<Integer, RosieSimObject>();
 
 		tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
 
@@ -88,9 +88,9 @@ public class SimObjectDetector {
 
         private void sendObjectMessage(ArrayList<SimObject> simObjects){
             for(SimObject so : simObjects){
-            	if (so instanceof SimObjectPC){
-            		// Run through each SimObjectPC for a possible inclusion in the object list
-            		SimObjectPC obj = (SimObjectPC)so;
+            	if (so instanceof RosieSimObject){
+            		// Run through each RosieSimObject for a possible inclusion in the object list
+            		RosieSimObject obj = (RosieSimObject)so;
             		Integer objID = obj.getID();
             		// Check if the object is visible by the robot
             		if (robot.inViewRange(obj.getBoundingBox().xyzrpy) || obj == robot.getGrabbedObject()){
@@ -114,7 +114,7 @@ public class SimObjectDetector {
             objects.num_observations = detectedObjects.size();
             objects.observations = new ooi_msg_t[objects.num_observations];
             int obj_index = 0;
-            for(Map.Entry<Integer, SimObjectPC> e : detectedObjects.entrySet()){
+            for(Map.Entry<Integer, RosieSimObject> e : detectedObjects.entrySet()){
             	ooi_msg_t objData = new ooi_msg_t();
             	objData.utime = TimeUtil.utime();
             	objData.ooi_id = e.getValue().getID();

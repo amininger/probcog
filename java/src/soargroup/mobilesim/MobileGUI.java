@@ -260,9 +260,9 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 		VisWorld.Buffer buffer = vw.getBuffer("obj-labels");
         synchronized (simulator) {
             for (SimObject obj: simulator.getWorld().objects) {
-                if (!(obj instanceof soargroup.mobilesim.sim.SimObjectPC))
+                if (!(obj instanceof soargroup.mobilesim.sim.RosieSimObject))
                     continue;
-                soargroup.mobilesim.sim.SimObjectPC pcobj = (soargroup.mobilesim.sim.SimObjectPC)obj;
+                soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
 
         		String tf="<<monospaced,black,dropshadow=false>>";
         		String text = String.format("%s%s\n", tf, pcobj.getDescription());

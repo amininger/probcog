@@ -4,7 +4,7 @@ import java.awt.*;
 
 import april.jmat.*;
 import april.vis.*;
-import soargroup.mobilesim.sim.SimObjectPC;
+import soargroup.mobilesim.sim.RosieSimObject;
 import soargroup.mobilesim.util.*;
 
 public class SelectionAnimation implements VisObject
@@ -23,7 +23,7 @@ public class SelectionAnimation implements VisObject
     int sign = 1;
     double accum = 0;
 
-    public SelectionAnimation(SimObjectPC obj)
+    public SelectionAnimation(RosieSimObject obj)
     {
         bbox = obj.getBoundingBox();
 

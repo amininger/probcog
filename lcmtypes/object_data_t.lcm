@@ -2,7 +2,7 @@ struct object_data_t
 {
     int64_t utime;
 
-    string id;
+    int32_t id;
 
     // Bounding Box
     double xyzrpy[6];

@@ -73,7 +73,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     static Random r = new Random();
     static Model4 model4 = new Model4();
 
-    private SimObjectPC grabbedObject = null;
+    private RosieSimObject grabbedObject = null;
 
     public SimRobot(SimWorld sw)
     {
@@ -309,7 +309,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 		}
     }
 
-    public SimObjectPC getGrabbedObject(){
+    public RosieSimObject getGrabbedObject(){
     	return grabbedObject;
     }
 
@@ -331,7 +331,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 		return (closest == null ? "none" : closest.getHandle());
 	}
 
-    public void pickUpObject(SimObjectPC obj){
+    public void pickUpObject(RosieSimObject obj){
 		System.out.println("SimRobot: picking up object " + obj.getID().toString());
     	if(grabbedObject != null && obj != grabbedObject){
     		System.err.println("ERROR: already holding different object");
@@ -430,7 +430,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         		ignore = new HashSet<SimObject>();
         		ignore.add(SimRobot.this);
         		for(SimObject obj : sw.objects){
-        			if(obj instanceof SimObjectPC){
+        			if(obj instanceof RosieSimObject){
         				ignore.add(obj);
         			}
         		}

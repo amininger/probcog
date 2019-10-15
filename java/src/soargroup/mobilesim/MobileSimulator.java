@@ -73,14 +73,14 @@ public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
     	return world;
     }
 
-	private SimObjectPC getSimObject(Integer id){
+	private RosieSimObject getSimObject(Integer id){
         ArrayList<SimObject> simObjects;
 		synchronized(world.objects){
 			simObjects = (ArrayList<SimObject>)world.objects.clone();
 		}
 		for(SimObject obj : simObjects){
-			if(obj instanceof SimObjectPC){
-				SimObjectPC simObj = (SimObjectPC)obj;
+			if(obj instanceof RosieSimObject){
+				RosieSimObject simObj = (RosieSimObject)obj;
 				if(simObj.getID().equals(id)){
 					return simObj;
 				}
@@ -139,7 +139,7 @@ public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
 		for(int p = 0; p < controlLaw.num_params; p++){
 			if(controlLaw.param_names[p].equals("object-id")){
 				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
-				SimObjectPC obj = getSimObject(objectId);
+				RosieSimObject obj = getSimObject(objectId);
 				if(obj != null){
 					robot.pickUpObject(obj);
 				} else {
@@ -168,7 +168,7 @@ public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
 	}
 
 	private void handleChangeStateCommand(control_law_t controlLaw){
-		SimObjectPC obj = null;
+		RosieSimObject obj = null;
 		String prop = null;
 		String val = null;
 		for(int p = 0; p < controlLaw.num_params; p++){

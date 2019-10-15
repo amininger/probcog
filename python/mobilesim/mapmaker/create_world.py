@@ -9,7 +9,10 @@ def create_world(world_info, writer):
 	writeRobot(world_info.robot, writer)
 
 	for obj in world_info.objects:
-		writeObject(obj, writer)
+		writer.write("\"" + obj.sim_class() + "\"\n")
+		writer.write("{\n")
+		obj.write_info(writer)
+		writer.write("}\n")
 
 	for wall in world_info.walls:
 		writeWall(wall, writer)
@@ -40,33 +43,6 @@ def writeRobot(robot_info, writer):
 			  "r": pNum(0.0), "p": pNum(0.0), "yaw": pNum(0.0) })
 	writer.write("}\n")
 
-##### OBJECTS #####
-
-def writeObject(obj_info, writer):
-	writer.write("\"soargroup.mobilesim.sim.SimBoxObject\"\n")
-	writer.write("{\n")
-	writer.write("  # Object id\n")
-	writer.write("  " + str(obj_info.obj_id) + "\n")
-	writer.write("  # Object Description\n")
-	writer.write("  " + str(obj_info.desc) + "\n")
-	writer.write("  # Object xyzrpy\n")
-	writer.write("  vec 6\n")
-	writer.write("  %(x)s %(y)s %(z)s %(roll)s %(pitch)s %(yaw)s\n" % \
-			{ "x": pNum(obj_info.vals[0]), "y": pNum(obj_info.vals[1]), "z": pNum(obj_info.vals[2]), \
-			  "roll": pNum(obj_info.vals[3]), "pitch": pNum(obj_info.vals[4]), "yaw": pNum(obj_info.vals[5]) })
-	writer.write("  # Length xyz\n")
-	writer.write("  vec 3\n")
-	writer.write("  %(x)s %(y)s %(z)s\n" % \
-			{ "x": pNum(obj_info.vals[6]), "y": pNum(obj_info.vals[7]), "z": pNum(obj_info.vals[8]) })
-	writer.write("  # Color rgb (int 0-255)\n")
-	writer.write("  ivec 3\n")
-	writer.write("  %(r)d %(g)d %(b)d\n" % \
-			{ "r": obj_info.rgb[0], "g": obj_info.rgb[1], "b": obj_info.rgb[2] })
-	#writer.write("  # Labels \n")
-	#writer.write("  " + str(len(obj_info.cats)) + "\n")
-	#for i in range(len(obj_info.cats)):
-	#	writer.write("  " + obj_info.cats[i] + "=" + obj_info.labels[i] + "\n")
-	writer.write("}\n")
 
 ##### WALLS ######
 

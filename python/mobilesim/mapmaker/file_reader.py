@@ -3,6 +3,7 @@ class FileReader:
 		self.f = file
 		self.splitline = None
 		self.lineIndex = 0
+		self.lineNum = -1
 
 	def skipWords(self, num):
 		for i in range(num):
@@ -25,6 +26,7 @@ class FileReader:
 		# Read file until the end is reached or a non-empty line
 		while True:
 			line = self.f.readline()
+			self.lineNum += 1
 			if len(line) == 0:
 				return None
 			if line.startswith("#"):
