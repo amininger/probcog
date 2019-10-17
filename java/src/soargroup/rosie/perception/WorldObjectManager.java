@@ -27,6 +27,10 @@ public class WorldObjectManager implements ISVSObject {
     	objsToRemove = new HashMap<Integer, WorldObject>();
     }
 
+	public WorldObject getObject(Integer id){
+		return objects.get(id);
+	}
+
 	public void update(object_data_list_t newObjectData){
     	// Set of objects that didn't appear in the new update
     	// (remove ids as we see them)
@@ -49,6 +53,7 @@ public class WorldObjectManager implements ISVSObject {
 				} else {
     				// It's a new object, add it to the map
 					obj = new WorldObject(objData);
+					objects.put(objID, obj);
 				}
 			}
 

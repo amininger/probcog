@@ -24,28 +24,24 @@ import soargroup.rosie.actuation.MobileActuationConnector;
 
 // LCM Types
 import lcm.lcm.*;
-import soargroup.mobilesim.lcmtypes.object_data_t;
 import soargroup.mobilesim.lcmtypes.object_data_list_t;
 import soargroup.mobilesim.lcmtypes.robot_info_t;
 
 public class MobilePerceptionConnector extends AgentConnector implements LCMSubscriber{
-	private HashMap<Integer, WorldObject> objects;
-	private HashMap<Integer, WorldObject> objsToRemove;
-	private boolean newObjectsMessage = false;
-
 	private Integer nextID = 1;
 
     private LCM lcm;
 
     private Identifier objectsId = null;
 
+	private WorldObjectManager objectManager;
+
     private Robot robot;
 
     public MobilePerceptionConnector(SoarAgent agent, Properties props){
     	super(agent);
 
-    	objects = new HashMap<Integer, WorldObject>();
-    	objsToRemove = new HashMap<Integer, WorldObject>();
+		objectManager = new WorldObjectManager();
 
     	robot = new Robot(props);
 
@@ -83,54 +79,15 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
 			if (channel.startsWith("ROBOT_INFO")){
 				robot_info_t robotInfo = new robot_info_t(ins);
 				robot.update(robotInfo);
-				if(objects.containsKey(robotInfo.held_object)){
-					robot.setHeldObject(objects.get(robotInfo.held_object).getHandle());
-				} else {
-					robot.setHeldObject(null);
-				}
+				WorldObject obj = objectManager.getObject(robotInfo.held_object);
+				robot.setHeldObject(obj == null ? null : obj.getHandle());
 			} else if(channel.startsWith("DETECTED_OBJECTS")){
 				object_data_list_t newObjs = new object_data_list_t(ins);
-				processNewObjectMessage(newObjs);
-				newObjectsMessage = true;
+				objectManager.update(newObjs);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-    }
-
-    private void processNewObjectMessage(object_data_list_t newObjs){
-    	// Set of objects that didn't appear in the new update
-    	// (remove ids as we see them)
-    	HashSet<Integer> oldIds = new HashSet<Integer>();
-    	oldIds.addAll(objects.keySet());
-
-		for(object_data_t newObj : newObjs.objects){
-			Integer objID = newObj.id;
-			if(oldIds.contains(objID)){
-				oldIds.remove(objID);
-			}
-
-			WorldObject obj = objects.get(objID);
-			if(obj == null){
-				if(objsToRemove.containsKey(objID)){
-    				// Object was going to be removed
-    				// Transfer it to the normal list and update
-					obj = objsToRemove.get(objID);
-					objsToRemove.remove(objID);
-				} else {
-    				// It's a new object, add it to the map
-					obj = new WorldObject(newObj);
-				}
-			}
-
-    		obj.update(newObj);
-    	}
-
-    	for(Integer oldID : oldIds){
-    		WorldObject oldObj = objects.get(oldID);
-    		objects.remove(oldID);
-    		objsToRemove.put(oldID, oldObj);
-    	}
     }
 
 	/***************************
@@ -157,42 +114,26 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     }
 
     private void updateObjects(){
-    	if(objectsId == null){
-    		objectsId = soarAgent.getAgent().GetInputLink().CreateIdWME("objects");
-    	}
     	StringBuilder svsCommands = new StringBuilder();
-		for(WorldObject obj : objects.values()){
-			if(obj.isAdded()){
-				obj.updateWM(svsCommands);
-			} else {
-				obj.addToWM(objectsId, svsCommands);
-			}
+		if(objectManager.isAdded()){
+			objectManager.updateWM(svsCommands);
+		} else {
+			objectManager.addToWM(soarAgent.getAgent().GetInputLink(), svsCommands);
 		}
-    	for(WorldObject obj : objsToRemove.values()){
-    		obj.removeFromWM(svsCommands);
-    	}
+
     	if(svsCommands.length() > 0){
     		soarAgent.getAgent().SendSVSInput(svsCommands.toString());
     	}
-    	objsToRemove.clear();
     }
 
 	@Override
 	protected void onInitSoar() {
     	StringBuilder svsCommands = new StringBuilder();
-		for(WorldObject obj : objects.values()){
-			obj.removeFromWM(svsCommands);
-		}
-		for(WorldObject obj : objsToRemove.values()){
-			obj.removeFromWM(svsCommands);
-		}
+		objectManager.removeFromWM(svsCommands);
     	if(svsCommands.length() > 0){
     		soarAgent.getAgent().SendSVSInput(svsCommands.toString());
     	}
-		if(objectsId != null){
-			objectsId.DestroyWME();
-			objectsId = null;
-		}
+
 		robot.removeFromWM();
 	}
 
