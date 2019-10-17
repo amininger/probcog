@@ -1,11 +1,13 @@
 *.swp
 *.local
 *.jar
+*.log
 
 *.project
 *.classpath
 
 *.pyc
 *__pycache__
+
 
 
