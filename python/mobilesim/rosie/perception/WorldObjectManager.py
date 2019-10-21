@@ -14,7 +14,7 @@ class WorldObjectManager:
 		return self.objects.get(handle, None)
 
 	def update(self, new_object_data):
-		new_ids = set()
+		new_ids = set( od.id for od in new_object_data.objects )
 		for obj_data in new_object_data.objects:
 			obj_id = obj_data.id
 

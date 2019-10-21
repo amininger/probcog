@@ -85,11 +85,9 @@ class Robot:
 		self.arm_id.CreateStringWME("moving-status", "wait")
 		self.held_object.add_to_wm(self.arm_id)
 
-		svs_commands.append("add robot world p %s r %s" % \
-				( SVSCommands.posToStr(self.pos), SVSCommands.rotToStr(self.rot) ))
-		svs_commands.append("add robot_pos robot")
-		svs_commands.append("add robot_body robot v %s p .2 0 0 s %s" % \
-				( SVSCommands.bboxVertices(), SVSCommands.scaleToStr(self.dims) ))
+		svs_commands.append(SVSCommands.add_node("robot", parent="world", pos=self.pos, rot=self.rot))
+		svs_commands.append(SVSCommands.add_node("robot_pos", parent="robot"))
+		svs_commands.append(SVSCommands.add_box("robot_body", parent="robot", pos=[0.2, 0.0, 0.0], scl=self.dims))
 		svs_commands.append("add robot_view robot v %s p %f %f %f" % \
 				( get_view_region_verts(), VIEW_DIST/2 + .5, 0.0, VIEW_HEIGHT/2 - self.dims[2]/2))
 	
@@ -105,9 +103,9 @@ class Robot:
 		if self.update_pose:
 			for wme in self.pose_wmes:
 				wme.update_wm()
-			svs_commands.append(SVSCommands.changePos("robot", self.pos))
-			svs_commands.append(SVSCommands.changeRot("robot", self.rot))
-			self.update_pose = false
+			svs_commands.append(SVSCommands.change_pos("robot", self.pos))
+			svs_commands.append(SVSCommands.change_rot("robot", self.rot))
+			self.update_pose = False
 	
 	def remove_from_wm(self, svs_commands):
 		if self.self_id is None: return
@@ -124,7 +122,7 @@ class Robot:
 		self.arm_id = None
 		self.pose_id = None
 		
-		svs_commands.append(String.format("delete robot"))
+		svs_commands.append("delete robot")
 	
 
 

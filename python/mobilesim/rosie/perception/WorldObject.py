@@ -7,7 +7,7 @@ class WorldObject:
 		super().__init__()
 		self.root_id = None
 		self.id = obj_data.id
-		self.handle = SoarWME("object-handle", str(id))
+		self.handle = SoarWME("object-handle", str(self.id))
 
 		self.bbox_pos = [0, 0, 0]
 		self.bbox_rot = [0, 0, 0]

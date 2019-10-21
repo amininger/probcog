@@ -11,12 +11,12 @@ from mobilesim.rosie.perception import MobileSimPerceptionConnector
 from mobilesim.rosie.actuation  import MobileSimActuationConnector
 
 class RosieAgent(SoarAgent):
-	def __init__(self, config_filename=None, **kwargs):
+	def __init__(self, lcm, config_filename=None, **kwargs):
 		SoarAgent.__init__(self, config_filename=config_filename, verbose=False, **kwargs)
 
 		self.connectors["language"] = LanguageConnector(self)
-		self.connectors["actuation"] = MobileSimActuationConnector(self)
-		self.connectors["perception"] = MobileSimPerceptionConnector(self)
+		self.connectors["actuation"] = MobileSimActuationConnector(self, lcm)
+		self.connectors["perception"] = MobileSimPerceptionConnector(self, lcm)
 	
 	def get_actuation(self):
 		return self.connectors["actuation"]

@@ -2,6 +2,11 @@ from tkinter import *
 import tkinter.font
 
 import sys
+import threading
+import time
+import select
+
+import lcm 
 
 from mobilesim.rosie import RosieAgent
 
@@ -39,7 +44,7 @@ class RosieGUI(Frame):
 		self.run_button.grid(row=1, column=2, sticky=N+S+E+W)
 
 	def init_soar_agent(self, config_file):
-		self.agent = RosieAgent(config_filename=config_file)
+		self.agent = RosieAgent(self.lcm, config_filename=config_file)
 		self.agent.connectors["language"].register_message_callback(self.receive_message)
 		self.agent.connect()
 
@@ -55,7 +60,18 @@ class RosieGUI(Frame):
 			button["command"] = lambda message=message: self.send_message(message)
 			button.grid(row=row, column=0, sticky=N+S+E+W)
 			row += 1
-
+	
+	def start_lcm_thread(self):
+		self.stop_lcm = False
+		self.lcm_thread = threading.Thread(target=RosieGUI.lcm_handle_thread, args=(self,))
+		self.lcm_thread.start()
+	
+	def lcm_handle_thread(self):
+		while not self.stop_lcm:
+			rfds, wfds, efds = select.select([self.lcm.fileno()], [], [], 0.5)
+			if rfds:
+				self.lcm.handle()
+	
 	def send_message(self, message):
 		self.messages_list.insert(END, message)
 		self.chat_entry.delete(0, END)
@@ -85,25 +101,24 @@ class RosieGUI(Frame):
 			self.chat_entry.insert(END, self.message_history[self.history_index])
 
 	def on_exit(self):
+		self.stop_lcm = True
+		self.lcm_thread.join()
 		self.agent.kill()
-		root.destroy()
+		if self.master:
+			self.master.destroy()
 
 	def __init__(self, rosie_config, master=None):
 		Frame.__init__(self, master, width=800, height=600)
+		self.master = master
 		master.columnconfigure(0, weight=1)
 		master.rowconfigure(0, weight=1)
 
 		self.message_history = []
 		self.history_index = 0
+		self.lcm = lcm.LCM()
 
 		self.create_widgets()
 		self.init_soar_agent(rosie_config)
 		self.create_script_buttons()
+		self.start_lcm_thread()
 
-if len(sys.argv) == 1:
-	print("Need to specify rosie config file as argument")
-else:
-	root = Tk()
-	rosie_gui = RosieGUI(sys.argv[1], master=root)
-	root.protocol("WM_DELETE_WINDOW", rosie_gui.on_exit)
-	root.mainloop()

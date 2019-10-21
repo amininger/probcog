@@ -2,19 +2,18 @@ import time
 current_time_us = lambda: int(time.time() * 1000000)
 import threading
 
-import lcm
-
 from pysoarlib import *
 from .SoarCommandParser import create_empty_control_law, parse_control_law
+from mobilesim.lcmtypes import control_law_status_t
 
 CONTROL_LAW_RATE = 10
 
 class MobileSimActuationConnector(AgentConnector):
-	def __init__(self, agent):
+	def __init__(self, agent, lcm):
 		AgentConnector.__init__(self, agent)
 
 		self.lock = threading.Lock()
-		self.lcm = lcm.LCM()
+		self.lcm = lcm
 		self.lcm_handler = lambda channel, data: self.message_received(channel, data)
 		self.lcm_subscriptions = []
 
@@ -56,10 +55,10 @@ class MobileSimActuationConnector(AgentConnector):
 			self.send_command_thread = None
 
 	# When we receive an LCM message with a status, update it
-	def message_received(lcm, channel, ins):
+	def message_received(self, channel, data):
 		self.lock.acquire()
 		if channel.startswith("SOAR_COMMAND_STATUS"):
-			status = control_law_status_t(ins)
+			status = control_law_status_t.decode(data)
 			if self.active_command is not None and self.active_command.id == status.id:
 				self.status_wme.set_value(str(status.status).lower())
 		self.lock.release()

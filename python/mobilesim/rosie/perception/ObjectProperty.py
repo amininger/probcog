@@ -3,6 +3,7 @@ from pysoarlib import *
 
 class ObjectProperty(WMInterface):
 	def __init__(self, name):
+		super().__init__()
 		self.name = name
 		self.root_id = None
 		self.values_id = None
@@ -17,7 +18,7 @@ class ObjectProperty(WMInterface):
 		self.last_update = {}
 	
 	def add_value(self, value, conf):
-		self.values[value] = conf
+		self.last_update[value] = conf
 
 	### Methods for managing working memory structures ###
 
@@ -28,6 +29,7 @@ class ObjectProperty(WMInterface):
 		self.values_id = self.root_id.CreateIdWME("values")
 		for val, conf in self.last_update.items():
 			self.values[val] = SoarWME(val, conf)
+			self.values[val].add_to_wm(self.values_id)
 		
 	def _update_wm_impl(self):
 		for val, conf in self.last_update.items():
@@ -46,7 +48,7 @@ class ObjectProperty(WMInterface):
 			del self.values[val]
 
 	def _remove_from_wm_impl(self):
-		for val, wme in self.values:
+		for val, wme in self.values.items():
 			wme.remove_from_wm()
 		self.root_id.DestroyWME()
 		self.root_id = None

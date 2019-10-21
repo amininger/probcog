@@ -108,7 +108,7 @@ public class WorldObject implements ISVSObject {
 			prop.addToWM(rootID);
     	}
 
-    	svsCommands.append(SVSCommands.addBox(handle.getValue(), pos, rot, scale));
+    	svsCommands.append(SVSCommands.add_box(handle.getValue(), pos=pos, rot=rot, scl=scale));
     	svsCommands.append(SVSCommands.addTag(handle.getValue(), "object-source", "perception"));
     }
 

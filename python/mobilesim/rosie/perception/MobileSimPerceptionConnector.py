@@ -4,7 +4,6 @@ current_time_us = lambda: int(time.time() * 1000000)
 
 from threading import Lock
 
-import lcm
 from mobilesim.lcmtypes import robot_info_t, object_data_list_t
 
 from pysoarlib import *
@@ -12,13 +11,12 @@ from pysoarlib import *
 from .WorldObjectManager import WorldObjectManager
 from .Robot import Robot
 
-
 class MobileSimPerceptionConnector(AgentConnector):
 	# TODO: Implement eye position?
-	def __init__(self, agent):
+	def __init__(self, agent, lcm):
 		super().__init__(agent)
 
-		self.lcm = lcm.LCM()
+		self.lcm = lcm
 		self.lcm_handler = lambda channel, data: self.message_received(channel, data)
 		self.lcm_subscriptions = []
 		self.lock = Lock()
@@ -38,12 +36,13 @@ class MobileSimPerceptionConnector(AgentConnector):
 			self.lcm.unsubscribe(sub)
 		self.lcm_subscriptions = []
 
-	def message_received(channel, data):
+	def message_received(self, channel, data):
 		self.lock.acquire()
 		if channel == "ROBOT_INFO":
-			self.robot.update(robot_info_t(data))
+			self.robot.update(robot_info_t.decode(data))
 		elif channel == "DETECTED_OBJECTS":
-			self.objects.update(object_data_list_t(data))
+			od = object_data_list_t.decode(data)
+			self.objects.update(od)
 		self.lock.release()
 
 	def on_input_phase(self, input_link):

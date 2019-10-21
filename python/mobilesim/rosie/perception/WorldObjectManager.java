@@ -31,7 +31,7 @@ public class WorldObjectManager implements ISVSObject {
 		return objects.get(id);
 	}
 
-	public void update(object_data_list_t newObjectData){
+	public void update(self, object_data_list_t newObjectData){
     	// Set of objects that didn't appear in the new update
     	// (remove ids as we see them)
     	HashSet<Integer> oldIds = new HashSet<Integer>();
