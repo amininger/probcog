@@ -1,4 +1,4 @@
-package soargroup.mobilesim.robot.control;
+package soargroup.mobilesim.commands;
 
 import java.util.*;
 

@@ -18,12 +18,11 @@ import april.vis.*;
 import april.lcm.*;
 import april.util.*;
 import april.sim.*;
+import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.commands.CommandInterpreter;
 import soargroup.mobilesim.commands.CommandCoordinator.Status;
 import soargroup.mobilesim.util.*;
 import soargroup.mobilesim.vis.*;
-import soargroup.mobilesim.robot.control.*;
-import soargroup.mobilesim.robot.perception.*;
 
 // LCM Types
 import lcm.lcm.*;

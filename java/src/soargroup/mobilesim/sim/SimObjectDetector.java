@@ -1,4 +1,4 @@
-package soargroup.mobilesim.robot.perception;
+package soargroup.mobilesim.sim;
 
 import java.io.IOException;
 import java.util.*;
@@ -33,7 +33,6 @@ public class SimObjectDetector {
 
 	protected HashSet<RosieSimObject> detectedObjects;
 
-    TagHistory tagHistory = new TagHistory();
     static Random classifierRandom = new Random(3611871);
 
     PeriodicTasks tasks = new PeriodicTasks(2);

@@ -3,7 +3,6 @@ package soargroup.mobilesim.commands.controls;
 import java.util.*;
 
 import soargroup.mobilesim.commands.*;
-import soargroup.mobilesim.robot.control.*;
 import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
 public class PutDown implements ControlLaw
