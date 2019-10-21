@@ -24,21 +24,14 @@ import soargroup.mobilesim.CommandSpoofer;
 
 // LCM Types
 import lcm.lcm.*;
-import april.lcmtypes.pose_t;
-import soargroup.mobilesim.lcmtypes.tag_classification_t;
-import soargroup.mobilesim.lcmtypes.tag_classification_list_t;
 
-
-public class MobileGUI extends JFrame implements VisConsole.Listener
+public class MobileGUI extends JFrame
 {
     private MobileSimulator simulator;
     LCM lcm = LCM.getSingleton();
 
     // Periodic tasks
     PeriodicTasks tasks = new PeriodicTasks(2);
-
-    // Message caches
-    ExpiringMessageCache<pose_t> poseCache = new ExpiringMessageCache<pose_t>(0.2);
 
     // Vis Stuff
     VisWorld vw;
@@ -62,7 +55,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
         this.add(vc, BorderLayout.CENTER);
 
         VisConsole console = new VisConsole(vw, vl, vc);
-        console.addListener(this);
 
     	// Initialize the simulator
         // CommandInterpreter ci = new CommandInterpreter();
@@ -85,96 +77,65 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
     class RenderThread extends Thread implements LCMSubscriber
     {
         int fps = 20;
-        Object classyLock = new Object();
-        HashMap<Integer, tag_classification_t> classifications =
-            new HashMap<Integer, tag_classification_t>();
 
         public RenderThread()
         {
-            lcm.subscribe("CLASSIFICATIONS", this);
-            lcm.subscribe("POSE_TRUTH", this);
+			// LCM subscriptions
         }
-
 
         public void run()
         {
             Tic tic = new Tic();
             while (true) {
                 double dt = tic.toctic();
-                drawClassifications();
                 drawObjectLabels();
                 TimeUtil.sleep(1000/fps);
             }
         }
         public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
         {
-            try {
-                if ("POSE_TRUTH".equals(channel)) {
-                    pose_t pose = new pose_t(ins);
-                    poseCache.put(pose, pose.utime);
-                } else if ("CLASSIFICATIONS".equals(channel)) {
-                    tag_classification_list_t classy_list = new tag_classification_list_t(ins);
-                    synchronized (classyLock) {
-                        for (int i = 0; i < classy_list.num_classifications; i++) {
-                            tag_classification_t classy = classy_list.classifications[i];
-                            classifications.put(classy.tag_id, classy);
-                        }
-                    }
-                }
-            } catch (IOException ex) {
-                System.err.println("WRN: Error receiving message on channel - "+channel);
-                ex.printStackTrace();
-            }
+            //try {
+
+            //} catch (IOException ex) {
+            //    System.err.println("WRN: Error receiving message on channel - "+channel);
+            //    ex.printStackTrace();
+            //}
         }
 
-        public void drawClassifications()
-        {
-            synchronized (classyLock) {
-                pose_t pose = poseCache.get();
+		public double[][] calcFaceCameraMatrix(){
+			CameraPosition camera = vl.cameraManager.getCameraTarget();
+			double[] forward = LinAlg.normalize(LinAlg.subtract(camera.eye, camera.lookat));
+			// Spherical coordinates
+			double psi = Math.PI/2.0 - Math.asin(forward[2]);   // psi = Pi/2 - asin(z)
+			double theta = Math.atan2(forward[1], forward[0]);  // theta = atan(y/x)
+			if(forward[0] == 0 && forward[1] == 0){
+				theta = -Math.PI/2;
+			}
+			double[][] tilt = LinAlg.rotateX(psi); 				// tilt up or down to face the camera vertically
+			double[][] rot = LinAlg.rotateZ(theta + Math.PI/2); // rotate flat to face the camera horizontally
+			double[][] faceCamera = LinAlg.matrixAB(rot, tilt);
+			return faceCamera;
+		}
 
-                // Text rendering of labels.
-                HashMap<Integer, String> labels = new HashMap<Integer, String>();
-                HashMap<Integer, double[]> poses = new HashMap<Integer, double[]>();
+		public void drawObjectLabels(){
+			double[][] faceCamera = calcFaceCameraMatrix();
+			VisWorld.Buffer buffer = vw.getBuffer("obj-labels");
+			synchronized (simulator) {
+				for (SimObject obj: simulator.getWorld().objects) {
+					if (!(obj instanceof soargroup.mobilesim.sim.RosieSimObject))
+						continue;
+					soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
 
-                VisWorld.Buffer vb = vw.getBuffer("classifications");
-                if (pose == null || classifications.size() < 1) {
-                    vb.swap();
-                    vw.getBuffer("classifications-labels").swap();
-                    return;
-                }
-                VisVertexData vvd = new VisVertexData();
-                VisColorData vcd = new VisColorData();
-                for (tag_classification_t classy: classifications.values()) {
+					String tf="<<monospaced,black,dropshadow=false>>";
+					String text = String.format("%s%s\n", tf, pcobj.getDescription());
 
-                    double yaw = LinAlg.quatToRollPitchYaw(pose.orientation)[2];
-                    double[] rel_xyz = LinAlg.transform(LinAlg.rotateZ(yaw), LinAlg.resize(classy.xyzrpy, 3));
-                    double[] xyz = LinAlg.add(pose.pos, rel_xyz);
-                    if (labels.get(classy.tag_id) == null) {
-                        labels.put(classy.tag_id, "");
-                        poses.put(classy.tag_id, xyz);
-                    }
-                    labels.put(classy.tag_id, labels.get(classy.tag_id)+classy.name+"\n");
-
-                    vvd.add(xyz);
-                    vcd.add(ColorUtil.swapRedBlue(ColorUtil.seededColor(classy.name.hashCode()).getRGB()));
-                }
-                classifications.clear();
-
-                vb.addBack(new VzPoints(vvd, new VzPoints.Style(vcd, 10)));
-                vb.swap();
-
-                vb = vw.getBuffer("classifications-labels");
-                for (int id: labels.keySet()) {
-                    String text = "<<monospaced-128>>"+labels.get(id);
-                    double[] xyz = poses.get(id);
-                    vb.addBack(new VisChain(LinAlg.translate(xyz),
-                                            LinAlg.scale(0.005),
-                                            new VzText(VzText.ANCHOR.TOP_LEFT,
-                                                       text)));
-                }
-                vb.swap();
-            }
-        }
+					VzText vzText = new VzText(text);
+					double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.5};
+					buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.05), vzText));
+				}
+			}
+			buffer.swap();
+		}
     }
 
 	/*************************************************
@@ -227,7 +188,6 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 
     private void initParameters()
     {
-        // boolean paramval = simulator.getWorld().config.getBoolean("simulator.sim_magic_robot.use_noise", false);
         // pg.addCheckBoxes("param-name", "Param Name", initValue);
 
         pg.addListener(new ParameterListener(){
@@ -239,80 +199,12 @@ public class MobileGUI extends JFrame implements VisConsole.Listener
 		});
     }
 
-
-    public double[][] calcFaceCameraMatrix(){
-    	CameraPosition camera = vl.cameraManager.getCameraTarget();
-		double[] forward = LinAlg.normalize(LinAlg.subtract(camera.eye, camera.lookat));
-		// Spherical coordinates
-        double psi = Math.PI/2.0 - Math.asin(forward[2]);   // psi = Pi/2 - asin(z)
-        double theta = Math.atan2(forward[1], forward[0]);  // theta = atan(y/x)
-        if(forward[0] == 0 && forward[1] == 0){
-        	theta = -Math.PI/2;
-        }
-        double[][] tilt = LinAlg.rotateX(psi); 				// tilt up or down to face the camera vertically
-        double[][] rot = LinAlg.rotateZ(theta + Math.PI/2); // rotate flat to face the camera horizontally
-        double[][] faceCamera = LinAlg.matrixAB(rot, tilt);
-        return faceCamera;
-    }
-
-    private void drawObjectLabels(){
-        double[][] faceCamera = calcFaceCameraMatrix();
-		VisWorld.Buffer buffer = vw.getBuffer("obj-labels");
-        synchronized (simulator) {
-            for (SimObject obj: simulator.getWorld().objects) {
-                if (!(obj instanceof soargroup.mobilesim.sim.RosieSimObject))
-                    continue;
-                soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
-
-        		String tf="<<monospaced,black,dropshadow=false>>";
-        		String text = String.format("%s%s\n", tf, pcobj.getDescription());
-
-        		VzText vzText = new VzText(text);
-        		double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.5};
-                buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.05), vzText));
-            }
-    	}
-        buffer.swap();
-    }
-
-	/*************************************************
-	 * VisConsole Commands
-	 *   Way to have the GUI respond to text-based commands
-	 ************************************************/
-
-    // === VisConsole commands ===
-	public boolean consoleCommand(VisConsole console, PrintStream out, String command)
-    {
-        String toks[] = command.trim().split("\\s+");
-        if (toks.length == 0)
-            return false;
-
-		// Handle tokens (toks array) and return true
-
-        return false;
-    }
-
-    public ArrayList<String> consoleCompletions(VisConsole console, String prefix)
-    {
-        String cs[] = new String[] {  }; // Add any console command completions
-
-        ArrayList<String> as = new ArrayList<String>();
-        for (String s: cs)
-            as.add(s);
-
-        return as;
-    }
-    // ============================
-
-
     public static void main(String args[])
     {
         GetOpt opts = new GetOpt();
 
         opts.addBoolean('h', "help", false, "Show this help screen");
-        //opts.addString('c', "config", null, "Global configuration file");
         opts.addString('w', "world", null, "Simulated world file");
-		opts.addString('m', "map", null, "File with information about the waypoint map");
         opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
 
         if (!opts.parse(args)) {

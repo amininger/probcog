@@ -21,8 +21,6 @@ public class DriveParams
     public double dt;
     public double heading;          // XXX
 
-    public PotentialUtil.Params pp = null;
-
     public DriveParams()
     {
 

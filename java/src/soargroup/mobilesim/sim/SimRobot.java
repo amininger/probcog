@@ -26,7 +26,6 @@ import soargroup.mobilesim.vis.*;
 
 // LCM Types
 import lcm.lcm.*;
-import april.lcmtypes.gamepad_t;
 import april.lcmtypes.laser_t;
 import soargroup.mobilesim.lcmtypes.diff_drive_t;
 import soargroup.mobilesim.lcmtypes.grid_map_t;
@@ -49,10 +48,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     SimWorld sw;
     DifferentialDrive drive;
 
-    boolean useCoarseShape;
-    boolean perfectPose;
-    boolean useNoise;
-    boolean drawSensor;
     int robotID;
 
     CommandInterpreter ci;
@@ -64,7 +59,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     VisObject visObj;
 
     ExpiringMessageCache<diff_drive_t> diffdriveCache = new ExpiringMessageCache<diff_drive_t>(0.25);
-    ExpiringMessageCache<gamepad_t> gamepadCache = new ExpiringMessageCache<gamepad_t>(0.25);
 
     PeriodicTasks tasks = new PeriodicTasks(2);
 
@@ -77,19 +71,11 @@ public class SimRobot implements SimObject, LCMSubscriber
     public SimRobot(SimWorld sw)
     {
         this.sw = sw;
-        // XXX These don't exist?
-        useCoarseShape = sw.config.getBoolean("simulator.sim_magic_robot.use_coarse_shape", true);
-        perfectPose = sw.config.getBoolean("simulator.sim_magic_robot.use_perfect_pose", true);
-        useNoise = sw.config.getBoolean("simulator.sim_magic_robot.use_noise", false);
-        drawSensor = sw.config.getBoolean("simulator.sim_magic_robot.draw_sensor", false);
         this.robotID = ROBOT_ID;
 
         shape = makeShape();
 
-        if (drawSensor) {
-            visObj = new VisChain(model4, Model4.Model4Head(Util.getConfig(), 0, 0, 0));
-        } else
-            visObj = model4;
+		visObj = model4;
 
         // visObj = new VzSphere(.5, new VzMesh.Style(Color.RED));
 
@@ -124,7 +110,6 @@ public class SimRobot implements SimObject, LCMSubscriber
 
         objDetector = new SimObjectDetector(this, sw);
 
-        lcm.subscribe("GAMEPAD", this);
         lcm.subscribe("DIFF_DRIVE", this);
         lcm.subscribe("SOAR_COMMAND.*", this);
 
@@ -142,67 +127,57 @@ public class SimRobot implements SimObject, LCMSubscriber
     private CompoundShape makeShape()
     {
         CompoundShape shape = new CompoundShape();
-        if (useCoarseShape) // coarse only
-            shape.add(LinAlg.translate(MagicRobot.CENTER_X_OFFSET, 0, 0.5*MagicRobot.COARSE_SIZE[2]),
-                      new BoxShape(MagicRobot.COARSE_SIZE));
-        else {
-            shape.add(
-                LinAlg.translate(0, 0, MagicRobot.ORIGIN_Z_OFFSET_GROUND),
+		shape.add(
+			LinAlg.translate(0, 0, MagicRobot.ORIGIN_Z_OFFSET_GROUND),
 
-                // chassis
-                LinAlg.translate(MagicRobot.CHASSIS_MAIN_POS),
-                new BoxShape(MagicRobot.CHASSIS_MAIN_SIZE),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.CHASSIS_MAIN_POS)),
+			// chassis
+			LinAlg.translate(MagicRobot.CHASSIS_MAIN_POS),
+			new BoxShape(MagicRobot.CHASSIS_MAIN_SIZE),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.CHASSIS_MAIN_POS)),
 
-                LinAlg.translate(MagicRobot.CHASSIS_BATTERY_POS),
-                new BoxShape(MagicRobot.CHASSIS_BATTERY_SIZE),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.CHASSIS_BATTERY_POS)),
+			LinAlg.translate(MagicRobot.CHASSIS_BATTERY_POS),
+			new BoxShape(MagicRobot.CHASSIS_BATTERY_SIZE),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.CHASSIS_BATTERY_POS)),
 
-                // front handle
-                LinAlg.translate(MagicRobot.HANDLE_FRONT_POS),
-                new BoxShape(MagicRobot.HANDLE_CENTER_SIZE),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_FRONT_POS)),
+			// front handle
+			LinAlg.translate(MagicRobot.HANDLE_FRONT_POS),
+			new BoxShape(MagicRobot.HANDLE_CENTER_SIZE),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_FRONT_POS)),
 
-                LinAlg.translate(MagicRobot.HANDLE_FRONT_TOP_POS),
-                LinAlg.rotateY(Math.PI/6),
-                new BoxShape(MagicRobot.HANDLE_OTHER_SIZE),
-                LinAlg.rotateY(-Math.PI/6),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_FRONT_TOP_POS)),
+			LinAlg.translate(MagicRobot.HANDLE_FRONT_TOP_POS),
+			LinAlg.rotateY(Math.PI/6),
+			new BoxShape(MagicRobot.HANDLE_OTHER_SIZE),
+			LinAlg.rotateY(-Math.PI/6),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_FRONT_TOP_POS)),
 
-                LinAlg.translate(MagicRobot.HANDLE_FRONT_BOTTOM_POS),
-                LinAlg.rotateY(-Math.PI/6),
-                new BoxShape(MagicRobot.HANDLE_OTHER_SIZE),
-                LinAlg.rotateY(Math.PI/6),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_FRONT_BOTTOM_POS)),
+			LinAlg.translate(MagicRobot.HANDLE_FRONT_BOTTOM_POS),
+			LinAlg.rotateY(-Math.PI/6),
+			new BoxShape(MagicRobot.HANDLE_OTHER_SIZE),
+			LinAlg.rotateY(Math.PI/6),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_FRONT_BOTTOM_POS)),
 
-                // rear handle
-                LinAlg.translate(MagicRobot.HANDLE_REAR_POS),
-                new BoxShape(MagicRobot.HANDLE_CENTER_SIZE),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_REAR_POS)),
+			// rear handle
+			LinAlg.translate(MagicRobot.HANDLE_REAR_POS),
+			new BoxShape(MagicRobot.HANDLE_CENTER_SIZE),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_REAR_POS)),
 
-                LinAlg.translate(MagicRobot.HANDLE_REAR_TOP_POS),
-                LinAlg.rotateY(-Math.PI/6),
-                new BoxShape(MagicRobot.HANDLE_OTHER_SIZE),
-                LinAlg.rotateY(Math.PI/6),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_REAR_TOP_POS)),
+			LinAlg.translate(MagicRobot.HANDLE_REAR_TOP_POS),
+			LinAlg.rotateY(-Math.PI/6),
+			new BoxShape(MagicRobot.HANDLE_OTHER_SIZE),
+			LinAlg.rotateY(Math.PI/6),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_REAR_TOP_POS)),
 
-                LinAlg.translate(MagicRobot.HANDLE_REAR_BOTTOM_POS),
-                LinAlg.rotateY(Math.PI/6),
-                new BoxShape(MagicRobot.HANDLE_OTHER_SIZE),
-                LinAlg.rotateY(-Math.PI/6),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_REAR_BOTTOM_POS)),
+			LinAlg.translate(MagicRobot.HANDLE_REAR_BOTTOM_POS),
+			LinAlg.rotateY(Math.PI/6),
+			new BoxShape(MagicRobot.HANDLE_OTHER_SIZE),
+			LinAlg.rotateY(-Math.PI/6),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.HANDLE_REAR_BOTTOM_POS)),
 
-                // sensor head
-                LinAlg.translate(MagicRobot.SENSOR_HEAD_POS),
-                new BoxShape(MagicRobot.SENSOR_HEAD_SIZE),
-                LinAlg.inverse(LinAlg.translate(MagicRobot.SENSOR_HEAD_POS))
-                );
-            if (drawSensor) {
-                shape.add(
-
-                    );
-            }
-        }
+			// sensor head
+			LinAlg.translate(MagicRobot.SENSOR_HEAD_POS),
+			new BoxShape(MagicRobot.SENSOR_HEAD_SIZE),
+			LinAlg.inverse(LinAlg.translate(MagicRobot.SENSOR_HEAD_POS))
+			);
         return shape;
     }
 
@@ -238,13 +213,6 @@ public class SimRobot implements SimObject, LCMSubscriber
         double[] lxyt = LinAlg.matrixToXYT(getNoisyPose(null));
         double[] L2G = new double[3];
 
-        // L2G * lxyt = gxyt
-        // c = cos(L2G[2])
-        // s = sin(L2G[2])
-        // gxyt[0] = c*lxyt[0] - s*lxyt[1] + L2G[0];
-        // gxyt[1] = s*lxyt[0] + c*lxyt[1] + L2G[1];
-        // gxyt[2] = lxyt[2] + L2G[2];
-
         // Angle is easy to compute
         L2G[2] = gxyt[2] - lxyt[2];
         double s = Math.sin(L2G[2]);
@@ -276,11 +244,6 @@ public class SimRobot implements SimObject, LCMSubscriber
         if (channel.equals("DIFF_DRIVE")) {
             diff_drive_t msg = new diff_drive_t(ins);
             diffdriveCache.put(msg, msg.utime);
-        }
-
-        if (channel.startsWith("GAMEPAD")) {
-            gamepad_t msg = new gamepad_t(ins);
-            gamepadCache.put(msg, msg.utime);
         }
 
         // AM: Added so that simulated drive-xy commands teleport the robot
@@ -396,19 +359,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     	return false;
     }
 
-    public void setNoise(boolean noise)
-    {
-        useNoise = noise;
-    }
-    public boolean usesNoise(){
-    	return useNoise;
-    }
-
-    public void setPerfectPose(boolean pp)
-    {
-        perfectPose = pp;
-    }
-
     class ImageTask implements PeriodicTasks.Task
     {
         double gridmap_range = 10;
@@ -453,14 +403,6 @@ public class SimRobot implements SimObject, LCMSubscriber
             // XXX Config file
             double mean = 0;
             double stddev = 0.01;
-            if (useNoise) {
-                Random r = new Random();
-                for (int i = 0; i < ranges.length; i++) {
-                    if (ranges[i] == maxRange)
-                        continue;
-                    ranges[i] = Math.min(maxRange, ranges[i] + r.nextGaussian()*stddev*ranges[i]);
-                }
-            }
 
             laser_t laser = new laser_t();
             laser.utime = TimeUtil.utime();
@@ -476,12 +418,7 @@ public class SimRobot implements SimObject, LCMSubscriber
                 grid_map_t gm = new grid_map_t();
                 gm.utime = laser.utime;
 
-                double[] xyt;
-                if (perfectPose) {
-                    xyt = LinAlg.matrixToXYT(T_truth);
-                } else {
-                    xyt = LinAlg.matrixToXYT(T_odom);
-                }
+                double[] xyt = LinAlg.matrixToXYT(T_truth);
                 double x0 = xyt[0] - 5;
                 double y0 = xyt[1] - 5;
 
@@ -597,9 +534,6 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
 
         public void run(double dt) {
-
-
-
             double[] mcmd = new double[2];
 
             double center_xyz[] = LinAlg.add(drive.poseOdom.pos, LinAlg.quatRotate(drive.poseOdom.orientation, drive.centerOfRotation));
@@ -609,23 +543,6 @@ public class SimRobot implements SimObject, LCMSubscriber
             diff_drive_t dd = diffdriveCache.get();
             if (dd != null) {
                 mcmd = new double[] { dd.left, dd.right };
-            }
-            // Gamepad override
-            gamepad_t gp = gamepadCache.get();
-            if (gp != null) {
-
-                final int RIGHT_VERT_AXIS = 5;//3;
-                final int RIGHT_HORZ_AXIS = 4;//2;
-
-                double speed = -gp.axes[RIGHT_VERT_AXIS];
-                if ((gp.buttons & (16 | 32)) == (16 | 32))  // if holding both buttons go faster
-                    speed *= 4;
-
-                double turn = gp.axes[RIGHT_HORZ_AXIS];
-
-                if (gp.buttons != 0) {
-                    mcmd = new double[] { speed + turn, speed - turn };
-                }
             }
 
             // Add in some resistance to turning. Let's call it the
@@ -637,7 +554,6 @@ public class SimRobot implements SimObject, LCMSubscriber
             double dr = avg-mcmd[1];
             mcmd[0] += tankFactor*dl;
             mcmd[1] += tankFactor*dr;
-
 
             drive.motorCommands = mcmd;
         }

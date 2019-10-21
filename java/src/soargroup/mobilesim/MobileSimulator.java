@@ -23,14 +23,11 @@ import soargroup.mobilesim.sim.*;
 import lcm.lcm.*;
 import soargroup.mobilesim.lcmtypes.control_law_t;
 
-public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
+public class MobileSimulator implements LCMSubscriber
 {
 	// Sim stuff
     SimWorld world;
     Simulator sim;
-
-    // Vis stuff
-    VisConsole console;
 
     private Timer simulateDynamicsTimer;
     private static final int DYNAMICS_RATE = 30; // FPS to simulate dynamics at
@@ -43,9 +40,6 @@ public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
                             VisCanvas vc,
                             VisConsole console)
     {
-	    this.console = console;//new VisConsole(vw, vl, vc);
-	    this.console.addListener(this);
-
         loadWorld(opts);
         sim = new Simulator(vw, vl, console, world);
 
@@ -73,48 +67,6 @@ public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
     	return world;
     }
 
-	private RosieSimObject getSimObject(Integer id){
-        ArrayList<SimObject> simObjects;
-		synchronized(world.objects){
-			simObjects = (ArrayList<SimObject>)world.objects.clone();
-		}
-		for(SimObject obj : simObjects){
-			if(obj instanceof RosieSimObject){
-				RosieSimObject simObj = (RosieSimObject)obj;
-				if(simObj.getID().equals(id)){
-					return simObj;
-				}
-			}
-		}
-		return null;
-	}
-
-    private void loadWorld(GetOpt opts)
-    {
-    	try {
-            Config config = new Config();
-            //if (opts.wasSpecified("sim-config"))
-            //    config = new ConfigFile(EnvUtil.expandVariables(opts.getString("sim-config")));
-
-            if (opts.getString("world").length() > 0) {
-                String worldFilePath = EnvUtil.expandVariables(opts.getString("world"));
-                world = new SimWorld(worldFilePath, config);
-            } else {
-                world = new SimWorld(config);
-            }
-
-        } catch (IOException ex) {
-            System.err.println("ERR: Error loading sim world.");
-            ex.printStackTrace();
-            return;
-        }
-        world.setRunning(true);
-    }
-
-	/*************************************
-	 * Handling Simulated SOAR COMMANDS
-	 ************************************/
-
 	@Override
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins) {
         try {
@@ -134,6 +86,22 @@ public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
             System.out.println("WRN: "+ex);
         }
     }
+
+	private RosieSimObject getSimObject(Integer id){
+        ArrayList<SimObject> simObjects;
+		synchronized(world.objects){
+			simObjects = (ArrayList<SimObject>)world.objects.clone();
+		}
+		for(SimObject obj : simObjects){
+			if(obj instanceof RosieSimObject){
+				RosieSimObject simObj = (RosieSimObject)obj;
+				if(simObj.getID().equals(id)){
+					return simObj;
+				}
+			}
+		}
+		return null;
+	}
 
 	private void handlePickUpCommand(control_law_t controlLaw){
 		for(int p = 0; p < controlLaw.num_params; p++){
@@ -188,16 +156,26 @@ public class MobileSimulator implements VisConsole.Listener, LCMSubscriber
 		// TODO: obj.setState(prop, val);
 	}
 
-    // === VisConsole commands ===
-    // Currently not implemented
-	public boolean consoleCommand(VisConsole console, PrintStream out, String command)
+    private void loadWorld(GetOpt opts)
     {
-        return false;
-    }
+    	try {
+            Config config = new Config();
+            //if (opts.wasSpecified("sim-config"))
+            //    config = new ConfigFile(EnvUtil.expandVariables(opts.getString("sim-config")));
 
-    public ArrayList<String> consoleCompletions(VisConsole console, String prefix)
-    {
-        return null;    // Only using start and stop from sim, still
+            if (opts.getString("world").length() > 0) {
+                String worldFilePath = EnvUtil.expandVariables(opts.getString("world"));
+                world = new SimWorld(worldFilePath, config);
+            } else {
+                world = new SimWorld(config);
+            }
+
+        } catch (IOException ex) {
+            System.err.println("ERR: Error loading sim world.");
+            ex.printStackTrace();
+            return;
+        }
+        world.setRunning(true);
     }
 
     class SimulateDynamicsTask extends TimerTask
