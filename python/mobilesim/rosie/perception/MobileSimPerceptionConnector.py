@@ -50,7 +50,7 @@ class MobileSimPerceptionConnector(AgentConnector):
 
 		self.lock.acquire()
 
-		self.robot.set_moving_status(self.agent.get_actuation().get_moving_status())
+		self.robot.set_moving_status(self.agent.connectors["actuation"].get_moving_status())
 		self.robot.update_wm(input_link, svs_commands)
 		self.objects.update_wm(input_link, svs_commands)
 
