@@ -1,3 +1,4 @@
+scale 0.5
 robot 32.0 20.0
 
 # Building map with an outer ring of rooms surrounding inner rooms and a ring hallway in between

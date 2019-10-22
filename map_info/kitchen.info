@@ -1,19 +1,19 @@
 robot 2.5 2.5
 
-object 1 0.50 0.38 1.00 0 0 0 1.00 0.75 2.00 200 200 200 3 category fridge1 activation1 on2 door2 closed2 Fridge
-object 2 1.75 0.38 0.50 0 0 0 1.50 0.75 1.00 100 100 100 2 category sink1 activation1 off2 Sink
-object 3 3.75 0.38 0.95 0 0 0 2.50 0.75 0.10 250 230 140 1 category counter1 Counter
-object 4 3.00 0.38 0.45 0 0 0 1.00 0.75 0.90 94 76 28 2 category cupboard1 door2 closed2 Cupboard
-object 5 4.50 0.38 0.80 0 0 0 1.00 0.75 0.20 94 76 28 2 category drawer1 door2 closed2 Drawer
-object 6 1.00 4.50 0.50 0 0 0 2.00 1.00 1.00 94 76 28 1 category table1 Table
-object 7 4.50 4.00 1.00 0 0 0 1.00 2.00 2.00 94 76 28 2 category pantry1 door2 closed2 Pantry
-object 8 4.80 2.80 0.20 0 0 0 0.40 0.40 0.40 40 40 40 1 category garbage1 Garbage
-object 9 4.70 0.20 1.20 0 0 0 0.60 0.40 0.40 40 40 40 3 category microwave1 activation1 off2 door2 closed2 Microwave
+SimBoxObject Fridge 0.50 0.38 1.00 0 1.00 0.75 2.00 3 category fridge1 activation1 on2 door2 closed2 200 200 200 
+SimBoxObject Sink 1.75 0.38 0.50 0 1.50 0.75 1.00 2 category sink1 activation1 off2 100 100 100 
+SimBoxObject Counter 3.75 0.38 0.95 0 2.50 0.75 0.10 1 category counter1 250 230 140 
+SimBoxObject Cupboard 3.00 0.38 0.45 0 1.00 0.75 0.90 2 category cupboard1 door2 closed2 94 76 28 
+SimBoxObject Drawer 4.50 0.38 0.80 0 1.00 0.75 0.20 2 category drawer1 door2 closed2 94 76 28 
+SimBoxObject Table 1.00 4.50 0.50 0 2.00 1.00 1.00 1 category table1 94 76 28 
+SimBoxObject Pantry 4.50 4.00 1.00 0 1.00 2.00 2.00 2 category pantry1 door2 closed2 94 76 28 
+SimBoxObject Garbage 4.80 2.80 0.20 0 0.40 0.40 0.40 1 category garbage1 40 40 40 
+SimBoxObject Microwave 4.70 0.20 1.20 0 0.60 0.40 0.40 3 category microwave1 activation1 off2 door2 closed2 40 40 40 
 
-object 20 0.80 4.30 1.10 0 0 0 0.20 0.20 0.20 255 0 0 2 category apple1 color red1 apple
-object 21 1.20 4.30 1.20 0 0 0 0.20 0.20 0.40 0 0 255 2 category soda1 color blue1 soda
-object 22 3.50 0.55 1.15 0 0 0 0.20 0.20 0.20 0 255 0 2 category mug1 color green1 mug
-object 23 4.00 0.55 1.15 0 0 0 0.10 0.20 0.10 50 50 50 2 category fork1 color gray1 fork
+SimBoxObject apple 0.80 4.30 1.10 0 0.20 0.20 0.20 2 category apple1 color red1 255 0 0 
+SimBoxObject soda 1.20 4.30 1.20 0 0.20 0.20 0.40 2 category soda1 color blue1 0 0 255 
+SimBoxObject mug 3.50 0.55 1.15 0 0.20 0.20 0.20 2 category mug1 color green1 0 255 0 
+SimBoxObject fork 4.00 0.55 1.15 0 0.10 0.20 0.10 2 category fork1 color gray1 50 50 50 
 
 region 1 2.5 2.5 0 5 5 room1
 

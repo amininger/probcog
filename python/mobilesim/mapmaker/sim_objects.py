@@ -12,19 +12,19 @@ class RosieSimObject:
 	def sim_class(self):
 		return "soargroup.mobilesim.sim.RosieSimObject"
 
-	def read_info(self, reader):
+	def read_info(self, reader, scale=1.0):
 		self.obj_id = RosieSimObject.NEXT_OBJ_ID
 		RosieSimObject.NEXT_OBJ_ID += 1
 		# 1 string - short object description
 		self.desc = reader.nextWord()
 		# 3 floats - xyz coordinate of center
 		for i in range(0, 3):
-			self.vals[i] = float(reader.nextWord()) 
+			self.vals[i] = float(reader.nextWord()) * scale
 		# 1 float - yaw (rotation in xy plane)
 		self.vals[5] = float(reader.nextWord())
 		# 3 floats - scale in xyz directions (compared to 1m unit cube)
 		for i in range(6, 9):
-			self.vals[i] = float(reader.nextWord()) 
+			self.vals[i] = float(reader.nextWord()) * scale
 		# 1 int - number of properties
 		num_labels = int(reader.nextWord())
 		# followed by 2N strings, of property_category property_value
@@ -34,12 +34,6 @@ class RosieSimObject:
 			self.cats.append(reader.nextWord())
 			self.labels.append(reader.nextWord())
 		return self
-
-	def scale(self, scale_factor):
-		for i in range(0, 3):
-			self.vals[i] *= scale_factor
-		for i in range(6, 9):
-			self.vals[i] *= scale_factor
 
 	def write_info(self, writer):
 		writer.write("  # Object Description\n")
@@ -69,8 +63,8 @@ class SimBoxObject(RosieSimObject):
 	def sim_class(self):
 		return "soargroup.mobilesim.sim.SimBoxObject"
 
-	def read_info(self, reader):
-		super().read_info(reader)
+	def read_info(self, reader, scale=1.0):
+		super().read_info(reader, scale)
 		# 3 ints - RGB color value
 		self.rgb = []
 		self.rgb.append(int(reader.nextWord()))
