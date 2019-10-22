@@ -22,10 +22,10 @@ class MobileSimActuationConnector(AgentConnector):
 
 		self.moving_status = "stopped"
 
-		self.nextControlLawId = 1
+		self.next_control_law_id = 1
 		self.active_command = create_empty_control_law("RESTART")
-		self.active_command.id = self.nextControlLawId
-		self.nextControlLawId += 1
+		self.active_command.id = self.next_control_law_id
+		self.next_control_law_id += 1
 
 		self.active_command_id = None
 		self.status_wme = SoarWME("status", "none")
@@ -106,7 +106,7 @@ class MobileSimActuationConnector(AgentConnector):
 			self.process_stop_command(root_id)
 
 	def process_do_control_law(self, root_id):
-		control_law = parseControlLaw(root_id)
+		control_law = parse_control_law(root_id)
 		if control_law is None:
 			root_id.CreateStringWME("status", "error")
 			root_id.CreateStringWME("error-type", "syntax-error")
@@ -118,8 +118,8 @@ class MobileSimActuationConnector(AgentConnector):
 			self.status_wme.update_wm(self.active_command_id)
 
 		self.active_command = control_law
-		self.active_command.id = self.nextControlLawId
-		self.nextControlLawId += 1
+		self.active_command.id = self.next_control_law_id
+		self.next_control_law_id += 1
 
 		self.active_command_id = root_id
 		self.status_wme = SoarWME("status", "sent")
@@ -133,9 +133,9 @@ class MobileSimActuationConnector(AgentConnector):
 			self.status_wme.set_value("interrupted")
 			self.status_wme.update_wm(self.active_command_id)
 
-		self.active_command = SoarCommandParser.createEmptyControlLaw("STOP")
-		self.active_command.id = self.nextControlLawId
-		self.nextControlLawId += 1
+		self.active_command = create_empty_control_law("STOP")
+		self.active_command.id = self.next_control_law_id
+		self.next_control_law_id += 1
 
 		self.active_command.id = root_id
 		self.status_wme = SoarWME("status", "sent")

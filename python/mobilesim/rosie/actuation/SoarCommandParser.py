@@ -39,25 +39,25 @@ def create_empty_control_law(name):
 
 # Given the root identifier for a soar output command representing a control law, 
 #   parses the control law and returns an LCM type with the proper info
-def parse_control_law(rood_id):
+def parse_control_law(root_id):
 	cl = control_law_t()
 	cl.utime = current_time_us()
 	cl.id = -1
 
 	# Name of the condition test
-	cl.name = rood_id.GetChildStringi("name")
+	cl.name = root_id.GetChildString("name")
 	if cl.name is None:
 		print("parse_control_law Error: No ^name attribute")
 		return None
 
 	# Parameters of the control law
-	params = parse_parameters(rood_id, "parameters")
+	params = parse_parameters(root_id, "parameters")
 	cl.num_params = len(params)
 	cl.param_names = list(params.keys())
 	cl.param_values = [ params[name] for name in cl.param_names ]
 
 	# Termination condition - when to stop
-	term_id = rootid.GetChildIdentifier("termination-condition")
+	term_id = root_id.GetChildId("termination-condition")
 	cl.termination_condition = parse_condition_test(term_id)
 	if cl.termination_condition is None:
 		print("parse_control_law Error: Invalid termination condition")
@@ -121,11 +121,11 @@ def parse_condition_test(cond_id):
 
 def parse_parameters(id, att):
 	params = {}
-	params_id = id.GetChildIdentifier(att)
+	params_id = id.GetChildId(att)
 	if params_id is not None:
 		for i in range(params_id.GetNumberChildren()):
 			wme = params_id.GetChild(i)
 			name = wme.GetAttribute()
-			params.put(name, wrapWme(wme))
+			params[name] = make_typed_value(wme)
 
 	return params
