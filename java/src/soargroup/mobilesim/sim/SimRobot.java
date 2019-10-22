@@ -67,6 +67,8 @@ public class SimRobot implements SimObject, LCMSubscriber
     static Model4 model4 = new Model4();
 
     private RosieSimObject grabbedObject = null;
+	protected SimRegion curRegion = null;
+	protected boolean staleRegion = true;
 
     public SimRobot(SimWorld sw)
     {
@@ -228,7 +230,34 @@ public class SimRobot implements SimObject, LCMSubscriber
     {
         drive.poseTruth.orientation = LinAlg.matrixToQuat(T);
         drive.poseTruth.pos = new double[] { T[0][3], T[1][3], 0 };
+		staleRegion = true;
     }
+
+	// Return the closest region from the list that contains the position of the object
+	//   It will cache this result in curRegion and not recompute until its position changes
+	public SimRegion getRegion(){
+		if(staleRegion){
+			Double bestDist = Double.MAX_VALUE;
+			curRegion = null;
+			synchronized(sw.objects){
+				for(SimObject obj : sw.objects){
+					if(!(obj instanceof SimRegion)){
+						continue;
+					}
+					SimRegion region = (SimRegion)obj;
+					if(region.contains(drive.poseTruth.pos)){
+						double dist2 = region.getDistanceSq(drive.poseTruth.pos);
+						if(dist2 < bestDist){
+							bestDist = dist2;
+							curRegion = region;
+						}
+					}
+				}
+			}
+			staleRegion = false;
+		}
+		return curRegion;
+	}
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
@@ -273,24 +302,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     public RosieSimObject getGrabbedObject(){
     	return grabbedObject;
     }
-
-	public String getCurrentWaypoint(double[] pose){
-		Double closestDist = Double.MAX_VALUE;
-		SimRegion closest = null;
-		for(SimObject obj : sw.objects){
-			if(obj instanceof SimRegion){
-				SimRegion reg = (SimRegion)obj;
-				if(reg.pointInRegion(pose)){
-					double distSq = reg.getDistanceSq(pose);
-					if(distSq < closestDist){
-						closest = reg;
-						closestDist = distSq;
-					}
-				}
-			}
-		}
-		return (closest == null ? "none" : closest.getHandle());
-	}
 
     public void pickUpObject(RosieSimObject obj){
 		System.out.println("SimRobot: picking up object " + obj.getID().toString());
@@ -518,7 +529,8 @@ public class SimRobot implements SimObject, LCMSubscriber
             robot_info_t robotInfo = new robot_info_t();
             robotInfo.utime = TimeUtil.utime();
             robotInfo.xyzrpy = xyzrpy;
-			robotInfo.current_waypoint = getCurrentWaypoint(xyzrpy);
+			SimRegion region = getRegion();
+			robotInfo.current_waypoint = (region == null ? "none" : region.getHandle());
             robotInfo.held_object = (grabbedObject == null ? -1 : grabbedObject.getID());
             lcm.publish("ROBOT_INFO", robotInfo);
         }
@@ -574,6 +586,7 @@ public class SimRobot implements SimObject, LCMSubscriber
             drive.poseOdom.orientation = LinAlg.matrixToQuat(Todom);
             drive.poseOdom.pos = new double[] { Todom[0][3], Todom[1][3], Todom[2][3] };
         }
+		this.staleRegion = true;
     }
 
     /** Write one or more lines that serialize this instance. No line

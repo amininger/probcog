@@ -69,7 +69,7 @@ public class SimRegion extends SimObjectPC implements SimObject
 
 	// Given a point p with x,y coordinates, 
 	//   returns true if the point falls within the 2D region 
-	public boolean pointInRegion(double[] p){
+	public boolean contains(double[] p){
 		double dx = p[0] - xyzrpy[0];
 		double dy = p[1] - xyzrpy[1];
 		double dist_sq = dx*dx + dy*dy;

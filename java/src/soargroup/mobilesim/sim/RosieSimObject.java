@@ -2,9 +2,7 @@ package soargroup.mobilesim.sim;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import soargroup.mobilesim.util.BoundingBox;
 import april.jmat.LinAlg;
@@ -24,6 +22,9 @@ public abstract class RosieSimObject implements SimObject{
 	protected Integer id;
     protected String desc;
 	protected HashMap<String, String> properties = new HashMap<String, String>();
+
+	protected SimRegion curRegion = null;
+	protected boolean staleRegion = true;
 
 	private static int NEXT_ID = 1;
 
@@ -51,8 +52,29 @@ public abstract class RosieSimObject implements SimObject{
 
     public void setPose(double T[][])
     {
+		this.staleRegion = true;
     	this.xyzrpy = LinAlg.matrixToXyzrpy(T);
     }    
+
+	// Return the closest region from the list that contains the position of the object
+	//   It will cache this result in curRegion and not recompute until its position changes
+	public SimRegion getRegion(List<SimRegion> regions){
+		if(staleRegion){
+			Double bestDist = Double.MAX_VALUE;
+			curRegion = null;
+			for(SimRegion region : regions){
+				if(region.contains(xyzrpy)){
+					double dist2 = region.getDistanceSq(xyzrpy);
+					if(dist2 < bestDist){
+						bestDist = dist2;
+						curRegion = region;
+					}
+				}
+			}
+			staleRegion = false;
+		}
+		return curRegion;
+	}
 
     public synchronized void setRunning(boolean isRunning){ }
 

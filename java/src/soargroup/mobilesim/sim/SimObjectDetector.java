@@ -32,6 +32,7 @@ public class SimObjectDetector {
 	protected SimWorld world;
 
 	protected HashSet<RosieSimObject> detectedObjects;
+	protected List<SimRegion> regions = null;
 
     static Random classifierRandom = new Random(3611871);
 
@@ -42,7 +43,8 @@ public class SimObjectDetector {
 		this.world = world;
 		this.detectedObjects = new HashSet<RosieSimObject>();
 
-		tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
+		this.tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
+
 	}
 
 	public void setRunning(boolean b){
@@ -54,28 +56,35 @@ public class SimObjectDetector {
             ArrayList<SimObject> simObjects;
             synchronized(world.objects){
             	simObjects = (ArrayList<SimObject>)world.objects.clone();
+				if(regions == null){
+					regions = new ArrayList<SimRegion>();
+					for(SimObject obj : world.objects){
+						if(obj instanceof SimRegion){
+							regions.add((SimRegion)obj);
+						}
+					}
+				}
             }
+			
 
 			updateDetectedObjects(simObjects);
 			sendObjectMessage();
         }
 
         private void updateDetectedObjects(ArrayList<SimObject> simObjects){
-			HashSet<SimRegion> regions = new HashSet<SimRegion>();
 			HashSet<RosieSimObject> rosieObjects = new HashSet<RosieSimObject>();
 			for(SimObject obj : simObjects){
-				if(obj instanceof SimRegion){
-					regions.add((SimRegion)obj);
-				} else if(obj instanceof RosieSimObject){
+				if(obj instanceof RosieSimObject){
 					rosieObjects.add((RosieSimObject)obj);
 				}
 			}
 
 			synchronized(detectedObjects){
 				detectedObjects.clear();
-
 				for(RosieSimObject obj : rosieObjects){
-					if (obj == robot.getGrabbedObject() || robot.inViewRange(obj.getBoundingBox().xyzrpy)){
+					SimRegion robotRegion = robot.getRegion();
+					if (obj == robot.getGrabbedObject() || obj.getRegion(regions) == robotRegion){
+						//robot.inViewRange(obj.getBoundingBox().xyzrpy)){
 						detectedObjects.add(obj);
 					}
 				}
