@@ -8,6 +8,7 @@ import java.awt.event.WindowEvent;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.ArrayList;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -143,16 +144,12 @@ public class RosieGUI extends JFrame
             opts.doHelp();
             System.exit(0);
         }
-
-        String configFile = opts.getString("config");
-        if(configFile == null){
-        	configFile = StringUtil.replaceEnvironmentVariables("$ROSIE_CONFIG");
-        }
-
-        if(configFile.equals("")){
-          System.err.println("ERR: No $ROSIE_CONFIG environment variable set");
-          System.exit(1);
-        }
+		ArrayList<String> xargs = opts.getExtraArgs();
+		if(xargs.size() == 0){
+			System.err.println("Requires the rosie agent config file as an argument");
+			System.exit(1);
+		}
+		String configFile = xargs.get(0);
 
         // Load the properties file
         Properties props = new Properties();

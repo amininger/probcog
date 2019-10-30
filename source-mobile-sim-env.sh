@@ -17,9 +17,6 @@ alias build_mobile_sim="$MOBILE_SIM_HOME/scripts/build_mobile_sim.sh"
 alias run_mobile_sim="$MOBILE_SIM_HOME/scripts/run_mobile_sim.sh"
 complete -F _mobile_worlds_completion run_mobile_sim
 
-alias make_mobile_sim_world="$MOBILE_SIM_HOME/scripts/make_mobile_sim_world.sh"
-complete -F _mobile_map_info_completion make_mobile_sim_world
-
 
 
 
