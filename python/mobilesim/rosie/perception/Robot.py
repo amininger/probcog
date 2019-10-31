@@ -51,6 +51,7 @@ class Robot:
 
 	def update(self, robot_info):
 		self.held_object.set_value("none" if robot_info.held_object is None else str(robot_info.held_object))
+		self.current_wp.set_value(robot_info.current_waypoint)
 
 		for d in range(3):
 			if abs(self.pos[d] - robot_info.xyzrpy[d]) > 0.02:

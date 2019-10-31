@@ -96,7 +96,7 @@ public class SimRegion extends SimObjectPC implements SimObject
         // The handle of the location
         objs.add(new VisChain(LinAlg.translate(0,0,0.01),
                               LinAlg.scale(0.05),
-                              new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle))));
+                              new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle.replace("wp", "")))));
 
         return new VisChain(objs.toArray());
     }
