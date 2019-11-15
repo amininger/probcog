@@ -818,7 +818,7 @@
   # Properties
   3
     color=black1
-    category=switch1
+    category=lightswitch1
     activation1=off2
   # Color rgb (int 0-255)
   ivec 3
@@ -839,7 +839,7 @@
   # Properties
   3
     color=black1
-    category=switch1
+    category=lightswitch1
     activation1=off2
   # Color rgb (int 0-255)
   ivec 3
@@ -860,7 +860,7 @@
   # Properties
   3
     color=black1
-    category=switch1
+    category=lightswitch1
     activation1=off2
   # Color rgb (int 0-255)
   ivec 3
@@ -881,7 +881,7 @@
   # Properties
   3
     color=black1
-    category=switch1
+    category=lightswitch1
     activation1=off2
   # Color rgb (int 0-255)
   ivec 3
@@ -902,7 +902,7 @@
   # Properties
   3
     color=black1
-    category=switch1
+    category=lightswitch1
     activation1=off2
   # Color rgb (int 0-255)
   ivec 3
@@ -923,7 +923,7 @@
   # Properties
   3
     color=black1
-    category=switch1
+    category=lightswitch1
     activation1=off2
   # Color rgb (int 0-255)
   ivec 3

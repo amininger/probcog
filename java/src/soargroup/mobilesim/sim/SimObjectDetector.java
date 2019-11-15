@@ -83,8 +83,8 @@ public class SimObjectDetector {
 				detectedObjects.clear();
 				for(RosieSimObject obj : rosieObjects){
 					SimRegion robotRegion = robot.getRegion();
-					if (obj == robot.getGrabbedObject() || obj.getRegion(regions) == robotRegion){
-						//robot.inViewRange(obj.getBoundingBox().xyzrpy)){
+					if (obj == robot.getGrabbedObject() || (obj.getRegion(regions) == robotRegion &&
+						robot.inViewRange(obj.getBoundingBox().xyzrpy))){
 						detectedObjects.add(obj);
 					}
 				}

@@ -22,9 +22,6 @@ import soargroup.mobilesim.lcmtypes.typed_value_t;
 import soargroup.mobilesim.lcmtypes.control_law_t;
 import soargroup.mobilesim.lcmtypes.control_law_status_t;
 
-import javax.swing.JButton;
-import javax.swing.JMenuBar;
-
 public class MobileActuationConnector extends AgentConnector implements LCMSubscriber{
 	private static int CL_FPS = 10;
 
@@ -81,9 +78,6 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     public String getMovingState(){
     	return movingState;
     }
-
-	@Override
-	public void createMenu(JMenuBar menuBar) {}
 
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){

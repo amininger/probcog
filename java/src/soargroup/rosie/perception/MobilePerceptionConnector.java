@@ -9,8 +9,6 @@ import java.util.Properties;
 
 import java.nio.ByteBuffer;
 
-import javax.swing.JMenuBar;
-
 import edu.umich.rosie.soar.AgentConnector;
 import edu.umich.rosie.soar.SoarAgent;
 import edu.umich.rosie.soar.SoarUtil;
@@ -63,9 +61,6 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
         lcm.unsubscribe("DETECTED_OBJECTS", this);
     }
 
-	@Override
-	public void createMenu(JMenuBar menuBar) {}
-
 	/***************************
 	 *
 	 * LCM HANDLING
@@ -105,7 +100,7 @@ public class MobilePerceptionConnector extends AgentConnector implements LCMSubs
     }
 
     private void updateRobot(){
-    	robot.updateMovingState(((MobileActuationConnector)soarAgent.getActuationConnector()).getMovingState());
+    	robot.updateMovingState(soarAgent.getConnector(MobileActuationConnector.class).getMovingState());
     	if(!robot.isAdded()){
     		robot.addToWM(soarAgent.getAgent().GetInputLink());
     	} else {

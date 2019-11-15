@@ -68,7 +68,6 @@ public class SimRobot implements SimObject, LCMSubscriber
 
     private RosieSimObject grabbedObject = null;
 	protected SimRegion curRegion = null;
-	protected boolean staleRegion = true;
 
     public SimRobot(SimWorld sw)
     {
@@ -230,31 +229,26 @@ public class SimRobot implements SimObject, LCMSubscriber
     {
         drive.poseTruth.orientation = LinAlg.matrixToQuat(T);
         drive.poseTruth.pos = new double[] { T[0][3], T[1][3], 0 };
-		staleRegion = true;
     }
 
 	// Return the closest region from the list that contains the position of the object
-	//   It will cache this result in curRegion and not recompute until its position changes
 	public SimRegion getRegion(){
-		if(staleRegion){
-			Double bestDist = Double.MAX_VALUE;
-			curRegion = null;
-			synchronized(sw.objects){
-				for(SimObject obj : sw.objects){
-					if(!(obj instanceof SimRegion)){
-						continue;
-					}
-					SimRegion region = (SimRegion)obj;
-					if(region.contains(drive.poseTruth.pos)){
-						double dist2 = region.getDistanceSq(drive.poseTruth.pos);
-						if(dist2 < bestDist){
-							bestDist = dist2;
-							curRegion = region;
-						}
+		Double bestDist = Double.MAX_VALUE;
+		curRegion = null;
+		synchronized(sw.objects){
+			for(SimObject obj : sw.objects){
+				if(!(obj instanceof SimRegion)){
+					continue;
+				}
+				SimRegion region = (SimRegion)obj;
+				if(region.contains(drive.poseTruth.pos)){
+					double dist2 = region.getDistanceSq(drive.poseTruth.pos);
+					if(dist2 < bestDist){
+						bestDist = dist2;
+						curRegion = region;
 					}
 				}
 			}
-			staleRegion = false;
 		}
 		return curRegion;
 	}
@@ -288,9 +282,9 @@ public class SimRobot implements SimObject, LCMSubscriber
 						newy = Double.parseDouble(controlLaw.param_values[p].value);
 					}
 				}
-        // UNCOMMENT TO TELEPORT
-		//		drive.poseTruth.pos[0] = newx;
-		//		drive.poseTruth.pos[1] = newy;
+				// UNCOMMENT TO TELEPORT
+				drive.poseTruth.pos[0] = newx;
+				drive.poseTruth.pos[1] = newy;
 			} else if (controlLaw.name.toLowerCase().equals("pause")){
 				this.setRunning(false);
 			} else if (controlLaw.name.toLowerCase().equals("resume")){
@@ -586,7 +580,6 @@ public class SimRobot implements SimObject, LCMSubscriber
             drive.poseOdom.orientation = LinAlg.matrixToQuat(Todom);
             drive.poseOdom.pos = new double[] { Todom[0][3], Todom[1][3], Todom[2][3] };
         }
-		this.staleRegion = true;
     }
 
     /** Write one or more lines that serialize this instance. No line
