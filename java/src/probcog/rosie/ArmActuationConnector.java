@@ -229,7 +229,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
 //    	} else {
 //        	SoarUtil.updateStringWME(selfId, "prev-action", prevStatus.action.toLowerCase());
 //    	}
-    	ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
+    	ArmPerceptionConnector perception = soarAgent.getConnector(ArmPerceptionConnector.class);
     	if (curStatus.obj_id == -1){
     		SoarUtil.updateStringWME(armId, "holding-object", "none");
     	} else {
@@ -311,7 +311,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     {
         String objectHandleStr = SoarUtil.getValueOfAttribute(pickUpId,
                 "object-handle", "pick-up does not have an ^object-id attribute");
-        ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
+    	ArmPerceptionConnector perception = soarAgent.getConnector(ArmPerceptionConnector.class);
         Integer percId = perception.getWorld().getPerceptionId(Integer.parseInt(objectHandleStr));
         if(percId == null){
         	System.err.println("Pick up: unknown id " + objectHandleStr);
@@ -368,7 +368,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     {
         String objHandleStr = SoarUtil.getValueOfAttribute(id, "object-handle",
                 "Error (set-state): No ^object-handle attribute");
-        ArmPerceptionConnector perception = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
+    	ArmPerceptionConnector perception = soarAgent.getConnector(ArmPerceptionConnector.class);
         Integer percId = perception.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
         if(percId == null){
         	System.err.println("Set: unknown id " + objHandleStr);
@@ -394,7 +394,7 @@ public class ArmActuationConnector extends AgentConnector implements LCMSubscrib
     {
     	String objHandleStr = SoarUtil.getValueOfAttribute(pointId, "object-handle", 
     			"Error (point): No ^object-handle attribute");
-    	ArmPerceptionConnector perc = (ArmPerceptionConnector)soarAgent.getPerceptionConnector();
+    	ArmPerceptionConnector perc = soarAgent.getConnector(ArmPerceptionConnector.class);
         Integer percId = perc.getWorld().getPerceptionId(Integer.parseInt(objHandleStr));
         if(percId == null){
         	System.err.println("Set: unknown handle " + objHandleStr);

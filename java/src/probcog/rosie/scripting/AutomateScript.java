@@ -1,6 +1,6 @@
 package probcog.rosie.scripting;
 
-import edu.umich.insoar.testing.Settings;
+//import edu.umich.insoar.testing.Settings;
 
 public class AutomateScript implements UiCommand {
 	boolean automated;
@@ -10,6 +10,6 @@ public class AutomateScript implements UiCommand {
 	}
 	@Override
 	public void execute() {
-		Settings.getInstance().setAutomated(automated);
+		//Settings.getInstance().setAutomated(automated);
 	}
 }

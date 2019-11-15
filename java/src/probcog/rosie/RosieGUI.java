@@ -50,14 +50,14 @@ public class RosieGUI extends JFrame
     	soarAgent = new SoarAgent(props);
     	
     	actuation = new ArmActuationConnector(soarAgent, props);
-    	soarAgent.setActuationConnector(actuation);
+    	soarAgent.addConnector(actuation);
     	
     	perception = new ArmPerceptionConnector(soarAgent, props);
-    	soarAgent.setPerceptionConnector(perception);
+    	soarAgent.addConnector(perception);
     	
     	InternalMessagePasser messagePasser = new InternalMessagePasser();
     	language = new LanguageConnector(soarAgent, props, messagePasser);
-    	soarAgent.setLanguageConnector(language);
+    	soarAgent.addConnector(language);
 
     	ChatPanel chat = new ChatPanel(soarAgent, this, messagePasser);
     	this.add(chat);
@@ -92,7 +92,6 @@ public class RosieGUI extends JFrame
     	menuBar.add(new AgentMenu(soarAgent));
     	menuBar.add(EnvironmentMenu.createMenu());
     	
-    	language.createMenu(menuBar);
     	perception.createMenu(menuBar);
     	actuation.createMenu(menuBar);
 
