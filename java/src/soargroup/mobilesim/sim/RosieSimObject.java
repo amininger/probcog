@@ -45,6 +45,11 @@ public abstract class RosieSimObject implements SimObject{
         return xyzrpy;
     }
 
+	public void setXYZRPY(double[] newpose){
+		this.staleRegion = true;
+    	this.xyzrpy = newpose;
+	}
+
     public double[][] getPose()
     {
     	return LinAlg.xyzrpyToMatrix(xyzrpy);
@@ -55,6 +60,10 @@ public abstract class RosieSimObject implements SimObject{
 		this.staleRegion = true;
     	this.xyzrpy = LinAlg.matrixToXyzrpy(T);
     }    
+
+	public double[] getScale(){
+		return LinAlg.copy(scale_xyz);
+	}
 
 	// Return the closest region from the list that contains the position of the object
 	//   It will cache this result in curRegion and not recompute until its position changes
@@ -139,6 +148,7 @@ public abstract class RosieSimObject implements SimObject{
      * is allowed to consist of just an asterisk. **/
     public void write(StructureWriter outs) throws IOException
     {
+		outs.writeString(desc);
     	outs.writeDoubles(LinAlg.copy(xyzrpy, 3));
 		outs.writeDouble(xyzrpy[5]);
     	outs.writeDoubles(scale_xyz);

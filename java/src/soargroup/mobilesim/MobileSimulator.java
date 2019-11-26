@@ -30,7 +30,7 @@ public class MobileSimulator implements LCMSubscriber
     Simulator sim;
 
     private Timer simulateDynamicsTimer;
-    private static final int DYNAMICS_RATE = 30; // FPS to simulate dynamics at
+    private static final int DYNAMICS_RATE = 1; // FPS to simulate dynamics at
 
 	SimRobot robot = null;
 
@@ -43,10 +43,8 @@ public class MobileSimulator implements LCMSubscriber
         loadWorld(opts);
         sim = new Simulator(vw, vl, console, world);
 
-	    simulateDynamicsTimer = new Timer();
-	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(), 1000, 1000/DYNAMICS_RATE);
-
         ArrayList<SimObject> simObjects;
+		ArrayList<RosieSimObject> rosieObjs = new ArrayList<RosieSimObject>();
 		synchronized(world.objects){
 			simObjects = (ArrayList<SimObject>)world.objects.clone();
 		}
@@ -54,10 +52,16 @@ public class MobileSimulator implements LCMSubscriber
 			if(obj instanceof SimRobot){
 				robot = (SimRobot)obj;
 			}
+			if(obj instanceof RosieSimObject){
+				rosieObjs.add((RosieSimObject)obj);
+			}
 		}
 		if(robot == null){
 			System.err.println("WARNING: No SimRobot defined in the world file");
 		}
+
+	    simulateDynamicsTimer = new Timer();
+	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(rosieObjs), 1000, 1000/DYNAMICS_RATE);
 
 		LCM.getSingleton().subscribe("SOAR_COMMAND.*", this);
 	}
@@ -78,6 +82,8 @@ public class MobileSimulator implements LCMSubscriber
 					handlePutDownCommand(controlLaw);
 				} else if(controlLaw.name.equals("put-at-xyz")){
 					handlePutAtXYZCommand(controlLaw);
+				} else if(controlLaw.name.equals("put-on-object")){
+					handlePutOnObjectCommand(controlLaw);
 				} else if(controlLaw.name.equals("change-state")){
 					handleChangeStateCommand(controlLaw);
 				}
@@ -135,6 +141,20 @@ public class MobileSimulator implements LCMSubscriber
 		robot.putObjectAtXYZ(xyz);
 	}
 
+	private void handlePutOnObjectCommand(control_law_t controlLaw){
+		for(int p = 0; p < controlLaw.num_params; p++){
+			if(controlLaw.param_names[p].equals("object-id")){
+				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
+				RosieSimObject obj = getSimObject(objectId);
+				if(obj != null){
+					robot.putObjectOnObject(obj);
+				} else {
+					System.err.println("MobileSimulator::handlePutOnObjectCommand: object-id '" + objectId.toString() + "' not recognized");
+				}
+			}
+		}
+	}
+
 	private void handleChangeStateCommand(control_law_t controlLaw){
 		RosieSimObject obj = null;
 		String prop = null;
@@ -180,9 +200,15 @@ public class MobileSimulator implements LCMSubscriber
 
     class SimulateDynamicsTask extends TimerTask
     {
+		ArrayList<RosieSimObject> rosieObjs;
+		public SimulateDynamicsTask(ArrayList<RosieSimObject> rosieObjs){
+			this.rosieObjs = rosieObjs;
+		}
 		@Override
 		public void run() {
-
+			for(RosieSimObject obj : rosieObjs){
+				obj.performDynamics(rosieObjs);
+			}
 		}
     }
 

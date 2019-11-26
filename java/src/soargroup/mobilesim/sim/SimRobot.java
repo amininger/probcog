@@ -307,11 +307,10 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
     	double dist = LinAlg.distance(robPos, objPos, 2);
 
-    	if(dist <= 1.0){
-    		grabbedObject = obj;
-    		double[][] robPose = LinAlg.xyzrpyToMatrix(LinAlg.quatPosToXyzrpy(this.drive.poseTruth.orientation, robPos));
-    		obj.setPose(robPose);
-		}
+		grabbedObject = obj;
+		double[] xyzrpy = LinAlg.quatPosToXyzrpy(this.drive.poseTruth.orientation, robPos);
+		xyzrpy[2] = 0.5;
+		obj.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
     }
 
     public void putDownObject(){
@@ -320,7 +319,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     	}
     	double[] robotPos = LinAlg.copy(this.drive.poseTruth.pos);
     	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
-    	forward = LinAlg.scale(forward, 1.5);
+    	forward = LinAlg.scale(forward, 1.0);
     	double[] newPos = LinAlg.add(robotPos, forward);
     	double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
     	grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
@@ -333,11 +332,22 @@ public class SimRobot implements SimObject, LCMSubscriber
 		}
     	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
     	double dist = LinAlg.distance(robPos, xyz, 2);
-		if(dist <= 1.0){
-			grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ xyz[0], xyz[1], xyz[2], 0, 0, 0 }));
-			grabbedObject = null;
-		}
+		grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ xyz[0], xyz[1], xyz[2], 0, 0, 0 }));
+		grabbedObject = null;
 	}
+
+	public void putObjectOnObject(RosieSimObject obj){
+		if(grabbedObject == null){
+			return;
+		}
+		if(obj instanceof SimSurface){
+			((SimSurface)obj).addObject(grabbedObject);
+		} else if(obj instanceof SimReceptacle){
+			((SimReceptacle)obj).addObject(grabbedObject);
+		}
+		grabbedObject = null;
+	}
+
 
     public boolean inViewRange(double[] xyz){
     	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
@@ -516,7 +526,9 @@ public class SimRobot implements SimObject, LCMSubscriber
 
             double[] xyzrpy = LinAlg.quatPosToXyzrpy(drive.poseTruth.orientation, drive.poseTruth.pos);
             if(grabbedObject != null){
-            	double[][] robPose = LinAlg.xyzrpyToMatrix(xyzrpy);
+				double[] xyzrpy2 = LinAlg.copy(xyzrpy);
+				xyzrpy2[2] = 0.5;
+            	double[][] robPose = LinAlg.xyzrpyToMatrix(xyzrpy2);
     		    grabbedObject.setPose(robPose);
             }
 

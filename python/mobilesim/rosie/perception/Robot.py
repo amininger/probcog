@@ -30,7 +30,7 @@ class Robot:
 		self.pos = [ 0.0, 0.0, 0.0 ]
 		self.rot = [ 0.0, 0.0, 0.0 ]
 
-		self.dims = [ 0.5, 0.5, 0.5 ]
+		self.dims = [ 0.5, 0.5, 2.0 ]
 
 		self.pose_id = None
 		self.pose_wmes = [ SoarWME(d, 0.0) for d in ['x', 'y', 'z', 'roll', 'pitch', 'yaw' ] ]
@@ -88,9 +88,9 @@ class Robot:
 
 		svs_commands.append(SVSCommands.add_node("robot", parent="world", pos=self.pos, rot=self.rot))
 		svs_commands.append(SVSCommands.add_node("robot_pos", parent="robot"))
-		svs_commands.append(SVSCommands.add_box("robot_body", parent="robot", pos=[0.2, 0.0, 0.0], scl=self.dims))
+		svs_commands.append(SVSCommands.add_box("robot_body", parent="robot", pos=[0.2, 0.0, 1.0], scl=self.dims))
 		svs_commands.append("add robot_view robot v %s p %f %f %f" % \
-				( get_view_region_verts(), VIEW_DIST/2 + .5, 0.0, VIEW_HEIGHT/2 - self.dims[2]/2))
+				( get_view_region_verts(), VIEW_DIST/2 + .5, 0.0, VIEW_HEIGHT/2))
 	
 	def update_wm(self, parent_id, svs_commands):
 		if self.self_id is None:
