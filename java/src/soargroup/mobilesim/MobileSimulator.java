@@ -61,7 +61,7 @@ public class MobileSimulator implements LCMSubscriber
 		}
 
 	    simulateDynamicsTimer = new Timer();
-	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(rosieObjs), 1000, 1000/DYNAMICS_RATE);
+	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(rosieObjs, simObjects), 1000, 1000/DYNAMICS_RATE);
 
 		LCM.getSingleton().subscribe("SOAR_COMMAND.*", this);
 	}
@@ -173,7 +173,7 @@ public class MobileSimulator implements LCMSubscriber
 				val = controlLaw.param_values[p].value;
 			} 
 		}
-		// TODO: obj.setState(prop, val);
+		obj.setState(prop, val);
 	}
 
     private void loadWorld(GetOpt opts)
@@ -201,13 +201,15 @@ public class MobileSimulator implements LCMSubscriber
     class SimulateDynamicsTask extends TimerTask
     {
 		ArrayList<RosieSimObject> rosieObjs;
-		public SimulateDynamicsTask(ArrayList<RosieSimObject> rosieObjs){
+		ArrayList<SimObject> simObjs;
+		public SimulateDynamicsTask(ArrayList<RosieSimObject> rosieObjs, ArrayList<SimObject> simObjects){
 			this.rosieObjs = rosieObjs;
+			this.simObjs = simObjects;
 		}
 		@Override
 		public void run() {
 			for(RosieSimObject obj : rosieObjs){
-				obj.performDynamics(rosieObjs);
+				obj.performDynamics(simObjs);
 			}
 		}
     }

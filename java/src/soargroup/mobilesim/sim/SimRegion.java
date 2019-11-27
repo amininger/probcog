@@ -25,7 +25,10 @@ public class SimRegion extends SimObjectPC implements SimObject
 {
 	protected double[] xyzrpy = new double[]{ 0, 0, 0, 0, 0, 0 };
     protected double T[][] = LinAlg.identity(4);  // position
-	protected static Color  color = new Color(175, 175, 175);
+
+	protected static Color onColor = new Color(255, 225, 225);
+	protected static Color offColor = new Color(100, 100, 100);
+	protected boolean isOn = true;
 	
 	protected double width = 1.0;
 	protected double length = 1.0;
@@ -33,6 +36,8 @@ public class SimRegion extends SimObjectPC implements SimObject
 	
 	protected String handle = null;
 	private String label = null;
+
+	private VisObject cachedVisObject = null;
 
     public SimRegion(SimWorld sw)
     {
@@ -87,19 +92,29 @@ public class SimRegion extends SimObjectPC implements SimObject
 	
     public VisObject getVisObject()
     {
-        ArrayList<Object> objs = new ArrayList<Object>();
+		if(cachedVisObject != null){ 
+			return cachedVisObject;
+		}
+		VisChain vc = new VisChain();
 
-        // Actual Rectangle
-        objs.add(new VisChain(new VzRectangle(width, length, new VzMesh.Style(color)), new VzRectangle(width+0.001, length+0.001, new VzLines.Style(Color.black, 2))));
-        //objs.add(new VzRectangle(width, length, new VzMesh.Style(color)));
+		// Center Rectangle
+		vc.add(new VisChain(LinAlg.translate(0, 0, -0.002), new VzRectangle(width, length, new VzMesh.Style(isOn ? onColor : offColor))));
+
+		// Black Border
+		vc.add(new VisChain(LinAlg.translate(0, 0, -0.004), new VzRectangle(width + 0.002, length + 0.002, new VzLines.Style(Color.black, 2))));
 
         // The handle of the location
-        objs.add(new VisChain(LinAlg.translate(0,0,0.01),
-                              LinAlg.scale(0.05),
+        vc.add(new VisChain(LinAlg.scale(0.05),
                               new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle.replace("wp", "")))));
 
-        return new VisChain(objs.toArray());
+		cachedVisObject = vc;
+		return vc;
     }
+
+	public void setLights(boolean isOn){
+		this.isOn = isOn;
+		cachedVisObject = null;
+	}
 
     public Shape getShape()
     {

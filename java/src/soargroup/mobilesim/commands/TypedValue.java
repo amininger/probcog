@@ -138,6 +138,8 @@ public class TypedValue implements Serializable
     public Boolean getBoolean()
     {
         assert (type == TYPE_BOOLEAN);
+		if(value.toString().toLowerCase().equals("true")){ return true; }
+		if(value.toString().toLowerCase().equals("false")){ return false; }
         return (Boolean)value;
     }
 

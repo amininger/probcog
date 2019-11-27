@@ -31,6 +31,7 @@ public class ConditionTestFactory
         registerConditionTest("timeout", TimeoutTest.class.getName());
         registerConditionTest("stabilized", Stabilized.class.getName());
         registerConditionTest("holding", Holding.class.getName());
+        registerConditionTest("object-state", ObjectState.class.getName());
     }
 
     /** Register condition tests with the factory. It is the job of the

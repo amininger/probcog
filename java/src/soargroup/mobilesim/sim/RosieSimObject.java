@@ -85,13 +85,24 @@ public abstract class RosieSimObject implements SimObject{
 		return curRegion;
 	}
 
+	public void setState(String property, String value){
+		if(properties.containsKey(property)){
+			properties.put(property, value);
+		} else {
+			System.err.println("Object " + desc + " does not recognize property " + property);
+		}
+	}
+
     public synchronized void setRunning(boolean isRunning){ }
 
-	public abstract void performDynamics(ArrayList<RosieSimObject> worldObjects);
+	public abstract void performDynamics(ArrayList<SimObject> worldObjects);
     
     public abstract VisObject getVisObject();
 
-    public abstract Shape getShape();
+    public Shape getShape() {
+		return new BoxShape(scale_xyz);
+	}
+		
     
     public BoundingBox getBoundingBox(){
     	return new BoundingBox(scale_xyz, xyzrpy);

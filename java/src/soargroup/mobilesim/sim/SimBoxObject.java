@@ -24,12 +24,6 @@ public class SimBoxObject extends RosieSimObject {
 	}
 
 	@Override
-	public Shape getShape() {
-		// No shape so the robot doesn't do collision with it
-		return new SphereShape(-.5);
-	}
-
-	@Override
 	public void performDynamics(ArrayList<RosieSimObject> worldObjects){ 
 		// No dynamics
 	}

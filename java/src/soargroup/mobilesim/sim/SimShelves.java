@@ -58,9 +58,19 @@ public class SimShelves extends SimReceptacle {
 	}
 
 	@Override
+	public void setState(String property, String value){
+		super.setState(property, value);
+		if(property.equals("door2")){
+			isOpen = value.equals("open2");
+			staleVis = true;
+		}
+	}
+
+	@Override
 	public VisObject getVisObject(){
 		if(staleVis){
 			visObject = createVisObject();
+			staleVis = false;
 		}
 		return visObject;
 	}
