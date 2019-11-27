@@ -31,7 +31,9 @@ public class SimPerson extends RosieSimObject {
 			double shoulder_h = scale_xyz[2]/2 - head_r*2;
 			double torso_h = (scale_xyz[2] - head_r*2)*0.5;
 			double legs_h = (scale_xyz[2] - head_r*2 - torso_h);
-			double limb_w = 0.1;
+			double limb_w = 0.12;
+
+			anchor = new AnchorPoint(limb_w, -scale_xyz[1]/2+limb_w/2, shoulder_h - torso_h);
 
 			Color legColor = new Color(50, 20, 20);
 
@@ -47,10 +49,10 @@ public class SimPerson extends RosieSimObject {
 			vc.add(new VisChain(LinAlg.translate(0.0, -scale_xyz[1]/2+limb_w/2, shoulder_h - limb_w - torso_h/2), 
 						new VzBox(limb_w, limb_w, torso_h, new VzMesh.Style(shirtColor))));
 
-			vc.add(new VisChain(LinAlg.translate(0.0, -limb_w, -scale_xyz[2]/2 + legs_h/2),
+			vc.add(new VisChain(LinAlg.translate(0.0, -limb_w*0.6, -scale_xyz[2]/2 + legs_h/2),
 						new VzBox(limb_w, limb_w, legs_h, new VzMesh.Style(legColor))));
 
-			vc.add(new VisChain(LinAlg.translate(0.0, limb_w, -scale_xyz[2]/2 + legs_h/2),
+			vc.add(new VisChain(LinAlg.translate(0.0, limb_w*0.6, -scale_xyz[2]/2 + legs_h/2),
 						new VzBox(limb_w, limb_w, legs_h, new VzMesh.Style(legColor))));
 
 			cachedVisObject = vc;

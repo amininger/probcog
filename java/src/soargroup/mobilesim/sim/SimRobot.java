@@ -344,6 +344,8 @@ public class SimRobot implements SimObject, LCMSubscriber
 			((SimSurface)obj).addObject(grabbedObject);
 		} else if(obj instanceof SimReceptacle){
 			((SimReceptacle)obj).addObject(grabbedObject);
+		} else if(obj instanceof SimPerson){
+			((SimPerson)obj).addObject(grabbedObject);
 		}
 		grabbedObject = null;
 	}
