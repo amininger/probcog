@@ -9,58 +9,77 @@
   vec 6
     0.00   0.00   0.00   0.00   0.00   0.00
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimShelves"
 {
   # Object Description
-  Fridge
+  fridge
   # Object xyz
   vec 3
-    0.50   0.38   1.00
+    0.60   0.52   1.00
   # Rotation (yaw)
   1.571
   # Scale xyz
   vec 3
-    0.75   1.00   2.00
+    0.80   1.00   2.00
   # Properties
-  2
+  1
     category=fridge1
-    door2=closed2
   # Color rgb (int 0-255)
   ivec 3
     200 200 200
+closed
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimReceptacle"
 {
   # Object Description
-  Sink
+  sink
   # Object xyz
   vec 3
-    1.75   0.38   0.50
+    1.95   0.52   1.00
   # Rotation (yaw)
   1.571
   # Scale xyz
   vec 3
-    0.75   1.50   1.00
+    0.80   1.50   1.00
   # Properties
-  2
+  1
     category=sink1
-    activation1=off2
   # Color rgb (int 0-255)
   ivec 3
-    100 100 100
+    150 150 150
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimShelves"
 {
   # Object Description
-  Counter
+  cupboard
   # Object xyz
   vec 3
-    3.75   0.38   0.95
+    3.30   0.52   0.45
   # Rotation (yaw)
   1.571
   # Scale xyz
   vec 3
-    0.75   2.50   0.10
+    0.80   1.00   0.90
+  # Properties
+  1
+    category=cupboard1
+  # Color rgb (int 0-255)
+  ivec 3
+    94 76 28
+closed
+}
+"soargroup.mobilesim.sim.SimSurface"
+{
+  # Object Description
+  counter
+  # Object xyz
+  vec 3
+    4.05   0.52   0.96
+  # Rotation (yaw)
+  1.571
+  # Scale xyz
+  vec 3
+    0.80   2.50   0.10
   # Properties
   1
     category=counter1
@@ -68,58 +87,38 @@
   ivec 3
     250 230 140
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimShelves"
 {
   # Object Description
-  Cupboard
+  microwave
   # Object xyz
   vec 3
-    3.00   0.38   0.45
+    4.70   0.32   1.22
   # Rotation (yaw)
   1.571
   # Scale xyz
   vec 3
-    0.75   1.00   0.90
+    0.40   0.60   0.40
   # Properties
-  2
-    category=cupboard1
-    door2=closed2
+  1
+    category=microwave1
   # Color rgb (int 0-255)
   ivec 3
-    94 76 28
+    50 50 50
+closed
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimTable"
 {
   # Object Description
-  Drawer
+  table
   # Object xyz
   vec 3
-    4.50   0.38   0.80
-  # Rotation (yaw)
-  1.571
-  # Scale xyz
-  vec 3
-    0.75   1.00   0.20
-  # Properties
-  2
-    category=drawer1
-    door2=closed2
-  # Color rgb (int 0-255)
-  ivec 3
-    94 76 28
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Table
-  # Object xyz
-  vec 3
-    1.00   9.50   0.50
+    1.00   5.48   0.50
   # Rotation (yaw)
   4.712
   # Scale xyz
   vec 3
-    1.00   2.00   1.00
+    0.80   1.80   1.00
   # Properties
   1
     category=table1
@@ -127,33 +126,33 @@
   ivec 3
     94 76 28
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimShelves"
 {
   # Object Description
-  Pantry
+  pantry
   # Object xyz
   vec 3
-    9.50   8.00   1.00
+    5.48   5.00   1.00
   # Rotation (yaw)
   3.142
   # Scale xyz
   vec 3
-    1.00   2.00   2.00
+    0.80   1.80   2.00
   # Properties
-  2
+  1
     category=pantry1
-    door2=closed2
   # Color rgb (int 0-255)
   ivec 3
     94 76 28
+open
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimReceptacle"
 {
   # Object Description
-  Garbage
+  garbage
   # Object xyz
   vec 3
-    9.80   2.80   0.20
+    5.68   1.50   0.20
   # Rotation (yaw)
   3.142
   # Scale xyz
@@ -164,28 +163,7 @@
     category=garbage1
   # Color rgb (int 0-255)
   ivec 3
-    40 40 40
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Microwave
-  # Object xyz
-  vec 3
-    4.70   0.20   1.20
-  # Rotation (yaw)
-  1.571
-  # Scale xyz
-  vec 3
-    0.40   0.60   0.40
-  # Properties
-  3
-    category=microwave1
-    activation1=off2
-    door2=closed2
-  # Color rgb (int 0-255)
-  ivec 3
-    40 40 40
+    100 100 100
 }
 "soargroup.mobilesim.sim.SimBoxObject"
 {
@@ -193,7 +171,7 @@
   apple
   # Object xyz
   vec 3
-    0.80   9.30   1.10
+    0.80   5.30   1.11
   # Rotation (yaw)
   0.0
   # Scale xyz
@@ -201,8 +179,8 @@
     0.20   0.20   0.20
   # Properties
   2
+    red1=color
     category=apple1
-    color=red1
   # Color rgb (int 0-255)
   ivec 3
     255 0 0
@@ -213,7 +191,7 @@
   soda
   # Object xyz
   vec 3
-    1.20   9.30   1.20
+    1.20   5.30   1.21
   # Rotation (yaw)
   0.0
   # Scale xyz
@@ -221,8 +199,8 @@
     0.20   0.20   0.40
   # Properties
   2
+    blue1=color
     category=soda1
-    color=blue1
   # Color rgb (int 0-255)
   ivec 3
     0 0 255
@@ -233,7 +211,7 @@
   mug
   # Object xyz
   vec 3
-    3.50   0.55   1.15
+    3.50   0.55   1.12
   # Rotation (yaw)
   0.0
   # Scale xyz
@@ -241,8 +219,8 @@
     0.20   0.20   0.20
   # Properties
   2
+    green1=color
     category=mug1
-    color=green1
   # Color rgb (int 0-255)
   ivec 3
     0 255 0
@@ -253,7 +231,7 @@
   fork
   # Object xyz
   vec 3
-    4.00   0.55   1.15
+    4.00   0.55   1.07
   # Rotation (yaw)
   0.0
   # Scale xyz
@@ -261,11 +239,31 @@
     0.10   0.20   0.10
   # Properties
   2
+    gray1=color
     category=fork1
-    color=gray1
   # Color rgb (int 0-255)
   ivec 3
     50 50 50
+}
+"soargroup.mobilesim.sim.SimPerson"
+{
+  # Object Description
+  mary
+  # Object xyz
+  vec 3
+    1.00   3.00   0.90
+  # Rotation (yaw)
+  0.0
+  # Scale xyz
+  vec 3
+    1.00   1.00   1.00
+  # Properties
+  2
+    category=chef1
+    name=mary1
+  # Color rgb (int 0-255)
+  ivec 3
+    255 200 200
 }
 "soargroup.mobilesim.sim.SimBoxObject"
 {
@@ -273,7 +271,7 @@
   book
   # Object xyz
   vec 3
-    3.00  25.00   0.50
+    3.00  11.00   0.25
   # Rotation (yaw)
   0.0
   # Scale xyz
@@ -281,150 +279,91 @@
     0.50   0.50   0.50
   # Properties
   2
+    black1=color
     category=book1
-    color=black1
   # Color rgb (int 0-255)
   ivec 3
     10 10 10
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimPerson"
 {
   # Object Description
-  stapler
+  alice
   # Object xyz
   vec 3
-   20.00  27.00   0.50
+    1.00   9.00   0.90
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
-    0.50   0.50   0.50
+    1.00   1.00   1.00
   # Properties
   2
-    category=stapler1
-    color=blue1
+    category=person
+    name=alice1
   # Color rgb (int 0-255)
   ivec 3
-    0 0 150
+    200 50 50
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimShelves"
 {
   # Object Description
-  package
+  cupboard
   # Object xyz
   vec 3
-   20.00  25.00   0.50
+    8.50   0.80   1.00
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
-    0.50   0.50   0.50
-  # Properties
-  2
-    category=package1
-    color=brown1
-  # Color rgb (int 0-255)
-  ivec 3
-    50 50 0
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Cupboard
-  # Object xyz
-  vec 3
-   13.00   2.00   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    1.00   2.00   2.00
+    0.80   1.20   2.00
   # Properties
   1
     category=cupboard1
   # Color rgb (int 0-255)
   ivec 3
     94 76 28
+closed
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimPerson"
 {
   # Object Description
-  Alice
+  bob
   # Object xyz
   vec 3
-    3.00  22.00   1.00
+   12.00   3.00   0.90
   # Rotation (yaw)
-  0.0
+  3.142
   # Scale xyz
   vec 3
-    0.50   0.50   2.00
+    1.00   1.00   1.00
   # Properties
   2
-    name=alice1
-    category=person
-  # Color rgb (int 0-255)
-  ivec 3
-    255 200 100
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Bob
-  # Object xyz
-  vec 3
-    3.00   3.00   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   2.00
-  # Properties
-  2
+    category=person1
     name=bob1
-    category=person
   # Color rgb (int 0-255)
   ivec 3
-    255 200 100
+    50 200 50
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimPerson"
 {
   # Object Description
-  Charlie
+  charlie
   # Object xyz
   vec 3
-   14.00  24.00   1.00
+   12.00   9.00   0.90
   # Rotation (yaw)
-  0.0
+  3.142
   # Scale xyz
   vec 3
-    0.50   0.50   2.00
+    1.00   1.00   1.00
   # Properties
   2
+    category=person1
     name=charlie1
-    category=person
   # Color rgb (int 0-255)
   ivec 3
-    255 200 100
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Chef
-  # Object xyz
-  vec 3
-   21.00   3.00   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   2.00
-  # Properties
-  2
-    name=mary1
-    category=chef1
-  # Color rgb (int 0-255)
-  ivec 3
-    255 200 200
+    50 50 200
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
@@ -433,103 +372,31 @@
     0.00   0.00
   # End Point 2
   vec 2
-    0.00  10.00
+    0.00  12.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-    0.00  10.00
+    0.00  12.00
   # End Point 2
   vec 2
-   10.00  10.00
+   14.00  12.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   10.00  10.00
+   14.00  12.00
   # End Point 2
   vec 2
-   10.00  20.00
+   14.00   0.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   10.00  20.00
-  # End Point 2
-  vec 2
-    0.00  20.00
-}
-"soargroup.mobilesim.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-    0.00  20.00
-  # End Point 2
-  vec 2
-    0.00  30.00
-}
-"soargroup.mobilesim.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-    0.00  30.00
-  # End Point 2
-  vec 2
-   22.00  30.00
-}
-"soargroup.mobilesim.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   22.00  30.00
-  # End Point 2
-  vec 2
-   22.00  20.00
-}
-"soargroup.mobilesim.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   22.00  20.00
-  # End Point 2
-  vec 2
-   12.00  20.00
-}
-"soargroup.mobilesim.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   12.00  20.00
-  # End Point 2
-  vec 2
-   12.00  10.00
-}
-"soargroup.mobilesim.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   12.00  10.00
-  # End Point 2
-  vec 2
-   22.00  10.00
-}
-"soargroup.mobilesim.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   22.00  10.00
-  # End Point 2
-  vec 2
-   22.00   0.00
-}
-"soargroup.mobilesim.sim.SimRoomWall"
-{
-  # End Point 1
-  vec 2
-   22.00   0.00
+   14.00   0.00
   # End Point 2
   vec 2
     0.00   0.00
@@ -538,73 +405,73 @@
 {
   # End Point 1
   vec 2
-   10.00   0.00
+    0.00   6.00
   # End Point 2
   vec 2
-   10.00   4.00
+    6.00   6.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   10.00   6.00
+    8.00   6.00
   # End Point 2
   vec 2
-   10.00  10.00
+   14.00   6.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   10.00  20.00
+    6.00   0.00
   # End Point 2
   vec 2
-   10.00  24.00
+    6.00   2.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   10.00  26.00
+    6.00   4.00
   # End Point 2
   vec 2
-   10.00  30.00
+    6.00   8.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   12.00   0.00
+    6.00  10.00
   # End Point 2
   vec 2
-   12.00   4.00
+    6.00  12.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   12.00   6.00
+    8.00   0.00
   # End Point 2
   vec 2
-   12.00  10.00
+    8.00   2.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   12.00  20.00
+    8.00   4.00
   # End Point 2
   vec 2
-   12.00  24.00
+    8.00   8.00
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {
   # End Point 1
   vec 2
-   12.00  26.00
+    8.00  10.00
   # End Point 2
   vec 2
-   12.00  30.00
+    8.00  12.00
 }
 "soargroup.mobilesim.sim.SimRegion"
 {
@@ -612,10 +479,10 @@
   wp01
   # Tag Position
   vec 6
-    5.00   5.00   0.01   0.00   0.00   0.00
+    3.00   3.00   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
-  10.0
-  10.0
+  6.0
+  6.0
 }
 "soargroup.mobilesim.sim.SimRegion"
 {
@@ -623,10 +490,10 @@
   wp02
   # Tag Position
   vec 6
-    5.00  25.00   0.01   0.00   0.00   0.00
+    3.00   9.00   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
-  10.0
-  10.0
+  6.0
+  6.0
 }
 "soargroup.mobilesim.sim.SimRegion"
 {
@@ -634,10 +501,10 @@
   wp03
   # Tag Position
   vec 6
-   17.00   5.00   0.01   0.00   0.00   0.00
+   11.00   3.00   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
-  10.0
-  10.0
+  6.0
+  6.0
 }
 "soargroup.mobilesim.sim.SimRegion"
 {
@@ -645,10 +512,10 @@
   wp04
   # Tag Position
   vec 6
-   17.00  25.00   0.01   0.00   0.00   0.00
+   11.00   9.00   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
-  10.0
-  10.0
+  6.0
+  6.0
 }
 "soargroup.mobilesim.sim.SimRegion"
 {
@@ -656,10 +523,10 @@
   wp05
   # Tag Position
   vec 6
-   11.00   5.00   0.01   0.00   0.00   0.00
+    7.00   3.00   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
   2.0
-  10.0
+  6.0
 }
 "soargroup.mobilesim.sim.SimRegion"
 {
@@ -667,19 +534,8 @@
   wp06
   # Tag Position
   vec 6
-   11.00  15.00   0.01   0.00   0.00   0.00
+    7.00   9.00   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
   2.0
-  10.0
-}
-"soargroup.mobilesim.sim.SimRegion"
-{
-  # Region ID
-  wp07
-  # Tag Position
-  vec 6
-   11.00  25.00   0.01   0.00   0.00   0.00
-  # Width (dx) and Length (dy)
-  2.0
-  10.0
+  6.0
 }

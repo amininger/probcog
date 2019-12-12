@@ -79,23 +79,12 @@ public class SimPerson extends RosieSimObject {
     /** Restore state that was previously written **/
     public void read(StructureReader ins) throws IOException
     {
-        // [Str] description
-        desc = ins.readString();
+		super.read(ins);
 
-    	// [Dbl]x3 xyz center of object
-    	double[] xyz = ins.readDoubles();
-
-		// [Dbl] rotation (xy plane)
-		double yaw = ins.readDouble();
-		xyzrpy = new double[]{ xyz[0], xyz[1], xyz[2], 0.0, 0.0, yaw };
-
-    	scale_xyz = new double[]{ 0.25, 0.5, 1.8 };
-
-		// [String] category
-		properties.put("category", ins.readString());
-
-		// [String] name
-		properties.put("name", ins.readString());
+		// Default size
+		scale_xyz[0] *= 0.25;
+		scale_xyz[1] *= 0.5;
+		scale_xyz[2] *= 1.8;
 
 		// [Int]x3 shirt color
     	int rgb[] = ins.readInts();
@@ -106,11 +95,7 @@ public class SimPerson extends RosieSimObject {
      * is allowed to consist of just an asterisk. **/
     public void write(StructureWriter outs) throws IOException
     {
-		outs.writeString(desc);
-    	outs.writeDoubles(LinAlg.copy(xyzrpy, 3));
-		outs.writeDouble(xyzrpy[5]);
-		outs.writeString(properties.get("category"));
-		outs.writeString(properties.get("name"));
+		super.write(outs);
     	int rgb[] = new int[]{ shirtColor.getRed(), shirtColor.getGreen(), shirtColor.getBlue() };
     	outs.writeInts(rgb);
 	}
