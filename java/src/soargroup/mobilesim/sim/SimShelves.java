@@ -13,18 +13,17 @@ import soargroup.mobilesim.vis.VzOpenBox;
 
 public class SimShelves extends SimReceptacle {
 	private static final double SHELF_SPACING = 0.50;
-	private VisObject visObject = null;
 
 	private String door;
 	private boolean useDoor = false;
 	private boolean isOpen = true;
-	private boolean staleVis = true;
 
 	public SimShelves(SimWorld sw){
 		super(sw);
 	}
 
-	private VisObject createVisObject(){
+	@Override
+	public VisChain createVisObject(){
 		VisChain c = new VisChain();
 		VzMesh.Style style = new VzMesh.Style(color);
 
@@ -49,11 +48,6 @@ public class SimShelves extends SimReceptacle {
 				new VzRectangle(scale_xyz[2], scale_xyz[1], new VzMesh.Style(color))));
 		}
 
-		// Uncomment to also draw anchor points
-		//for(AnchorPoint anchor : anchors){
-		//	c.add(new VisChain(LinAlg.translate(anchor.xyz), 
-		//				new VzBox(new double[]{ 0.04, 0.04, 0.04}, new VzMesh.Style(Color.black))));
-		//}
 		return c;
 	}
 
@@ -62,17 +56,8 @@ public class SimShelves extends SimReceptacle {
 		super.setState(property, value);
 		if(property.equals("door2")){
 			isOpen = value.equals("open2");
-			staleVis = true;
+			recreateVisObject();
 		}
-	}
-
-	@Override
-	public VisObject getVisObject(){
-		if(staleVis){
-			visObject = createVisObject();
-			staleVis = false;
-		}
-		return visObject;
 	}
 
 	@Override
@@ -94,7 +79,7 @@ public class SimShelves extends SimReceptacle {
 		int nshelves = (int)Math.ceil(scale_xyz[2]/SHELF_SPACING)-1;
 		double sz = -(nshelves-1)/2.0;
 		for(int i = 0; i < nshelves; i += 1){
-			anchors.addAll(AnchorPoint.create(scale_xyz[0], scale_xyz[1], (sz + i)*SHELF_SPACING, ANCHOR_SPACING));
+			anchors.addAll(AnchorPoint.create(scale_xyz[0], scale_xyz[1], (sz + i)*SHELF_SPACING, ANCHOR_SPACING, this));
 		}
 	}
 

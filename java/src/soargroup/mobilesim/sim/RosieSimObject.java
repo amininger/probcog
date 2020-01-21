@@ -20,50 +20,61 @@ public abstract class RosieSimObject implements SimObject{
 	protected double[] scale_xyz = new double[]{ 1, 1, 1 };
 
 	protected Integer id;
-    protected String desc;
+	protected String desc;
 	protected HashMap<String, String> properties = new HashMap<String, String>();
+
+	// Anchors are locations where objects can be placed
+	protected ArrayList<AnchorPoint> anchors = new ArrayList<AnchorPoint>();
 
 	protected SimRegion curRegion = null;
 	protected boolean staleRegion = true;
 
+	private VisObject visObject = null;
+	private boolean staleVis = true;
+
 	private static int NEXT_ID = 1;
 
-    public RosieSimObject(SimWorld sw){
+	public RosieSimObject(SimWorld sw){
 		id = RosieSimObject.NEXT_ID;
 		RosieSimObject.NEXT_ID += 1;
-    }
-    
-    public Integer getID(){
-    	return id;
-    }
-
-    public String getDescription(){
-        return desc;
-    }
-
-    public double[] getXYZRPY(){
-        return xyzrpy;
-    }
-
-	public void setXYZRPY(double[] newpose){
-		this.staleRegion = true;
-    	this.xyzrpy = newpose;
+	}
+	
+	public Integer getID(){
+		return id;
 	}
 
-    public double[][] getPose()
-    {
-    	return LinAlg.xyzrpyToMatrix(xyzrpy);
-    }
+	public String getDescription(){
+		return desc;
+	}
 
-    public void setPose(double T[][])
-    {
+	public double[] getXYZRPY(){
+		return xyzrpy;
+	}
+
+	public void setXYZRPY(double[] newpose){
+		for(AnchorPoint pt : anchors){ pt.checkObject(); }
 		this.staleRegion = true;
-    	this.xyzrpy = LinAlg.matrixToXyzrpy(T);
-    }    
+		this.xyzrpy = newpose;
+		for(AnchorPoint pt : anchors){ pt.move(); }
+	}
+
+	public double[][] getPose() {
+		return LinAlg.xyzrpyToMatrix(xyzrpy);
+	}
+
+	public void setPose(double T[][]) {
+		this.setXYZRPY(LinAlg.matrixToXyzrpy(T));
+	}	
 
 	public double[] getScale(){
 		return LinAlg.copy(scale_xyz);
 	}
+
+	public synchronized void setRunning(boolean isRunning){ }
+
+	public abstract void performDynamics(ArrayList<SimObject> worldObjects);
+
+	public abstract VisChain createVisObject();
 
 	// Return the closest region from the list that contains the position of the object
 	//   It will cache this result in curRegion and not recompute until its position changes
@@ -93,20 +104,44 @@ public abstract class RosieSimObject implements SimObject{
 		}
 	}
 
-    public synchronized void setRunning(boolean isRunning){ }
+	public boolean addObject(RosieSimObject obj){
+		for(AnchorPoint pt : anchors){
+			if(!pt.hasObject()){
+				pt.addObject(obj);
+				return true;
+			}
+		}
+		System.err.println("Error adding " + obj.getDescription() + " to " + 
+				desc + ", anchors are full");
+		return false;
+	}
 
-	public abstract void performDynamics(ArrayList<SimObject> worldObjects);
-    
-    public abstract VisObject getVisObject();
+	protected void recreateVisObject(){
+		this.staleVis = true;
+	}
 
-    public Shape getShape() {
+	public VisObject getVisObject(){
+		if(this.staleVis){
+			VisChain vc = createVisObject();
+			// Uncomment to also draw anchor points
+			//for(AnchorPoint anchor : anchors){
+			//	vc.add(new VisChain(LinAlg.translate(anchor.xyz), 
+			//				new VzBox(new double[]{ 0.04, 0.04, 0.04}, new VzMesh.Style(Color.black))));
+			//}
+			visObject = vc;
+			this.staleVis = false;
+		}
+		return visObject;
+	}
+
+	public Shape getShape() {
 		return new BoxShape(scale_xyz);
 	}
 		
-    
-    public BoundingBox getBoundingBox(){
-    	return new BoundingBox(scale_xyz, xyzrpy);
-    }
+	
+	public BoundingBox getBoundingBox(){
+		return new BoundingBox(scale_xyz, xyzrpy);
+	}
 
 	public object_data_t getObjectData(){
 		object_data_t objdat = new object_data_t();
@@ -129,22 +164,22 @@ public abstract class RosieSimObject implements SimObject{
 		return objdat;
 	}
 
-    
-    /** Restore state that was previously written **/
-    public void read(StructureReader ins) throws IOException
-    {
-        // [Str] description
-        desc = ins.readString();
+	
+	/** Restore state that was previously written **/
+	public void read(StructureReader ins) throws IOException
+	{
+		// [Str] description
+		desc = ins.readString();
 
-    	// [Dbl]x3 xyz center of object
-    	double[] xyz = ins.readDoubles();
+		// [Dbl]x3 xyz center of object
+		double[] xyz = ins.readDoubles();
 
 		// [Dbl] rotation (xy plane)
 		double yaw = ins.readDouble();
 		xyzrpy = new double[]{ xyz[0], xyz[1], xyz[2], 0.0, 0.0, yaw };
 
-    	// [Dbl]x3 scale xyz
-    	scale_xyz = ins.readDoubles();
+		// [Dbl]x3 scale xyz
+		scale_xyz = ins.readDoubles();
 
 		// [Int] number of properties
 		int num_props = ins.readInt();
@@ -153,20 +188,20 @@ public abstract class RosieSimObject implements SimObject{
 			String[] prop = ins.readString().trim().split("=");
 			properties.put(prop[0], prop[1]);
 		}
-    }
+	}
 
-    /** Write one or more lines that serialize this instance. No line
-     * is allowed to consist of just an asterisk. **/
-    public void write(StructureWriter outs) throws IOException
-    {
+	/** Write one or more lines that serialize this instance. No line
+	 * is allowed to consist of just an asterisk. **/
+	public void write(StructureWriter outs) throws IOException
+	{
 		outs.writeString(desc);
-    	outs.writeDoubles(LinAlg.copy(xyzrpy, 3));
+		outs.writeDoubles(LinAlg.copy(xyzrpy, 3));
 		outs.writeDouble(xyzrpy[5]);
-    	outs.writeDoubles(scale_xyz);
+		outs.writeDoubles(scale_xyz);
 		outs.writeInt(properties.size());
 		for(Map.Entry<String, String> e : properties.entrySet()){
 			outs.writeString(e.getKey());
 			outs.writeString(e.getValue());
 		}
-    }
+	}
 }

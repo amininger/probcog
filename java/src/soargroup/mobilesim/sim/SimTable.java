@@ -17,7 +17,8 @@ public class SimTable extends SimSurface {
 		super(sw);
 	}
 
-	private VisObject createVisObject(){
+	@Override
+	public VisObject createVisObject(){
 		VisChain c = new VisChain();
 		VzMesh.Style style = new VzMesh.Style(color);
 
@@ -49,13 +50,5 @@ public class SimTable extends SimSurface {
 			new VzBox(new double[]{ THICKNESS, THICKNESS, dZ*2 }, style)
 		));
 		return c;
-	}
-
-	@Override
-	public VisObject getVisObject() {
-		if(visObject == null){
-			visObject = createVisObject();
-		}
-		return visObject;
 	}
 }

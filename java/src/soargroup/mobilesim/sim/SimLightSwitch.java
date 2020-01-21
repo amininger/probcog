@@ -22,8 +22,10 @@ public class SimLightSwitch extends RosieSimObject {
 	}
 
 	@Override
-	public VisObject getVisObject() {
-		return new VzBox(scale_xyz, new VzMesh.Style(isOn ? Color.green : Color.red));
+	public VisChain createVisObject() {
+		return new VisChain(
+					new VzBox(scale_xyz, new VzMesh.Style(isOn ? Color.green : Color.red))
+				);
 	}
 
 	@Override

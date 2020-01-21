@@ -17,14 +17,16 @@ public class SimBoxObject extends RosieSimObject {
 	}
 
 	@Override
-	public VisObject getVisObject() {
+	public VisChain createVisObject() {
+		VisChain vc = new VisChain();
 		// This is a wireframe box
 		//	return new VzBox(scale_xyz, new VzLines.Style(color, 1));
-		return new VzBox(scale_xyz, new VzMesh.Style(color));
+		vc.add(new VzBox(scale_xyz, new VzMesh.Style(color)));
+		return vc;
 	}
 
 	@Override
-	public void performDynamics(ArrayList<RosieSimObject> worldObjects){ 
+	public void performDynamics(ArrayList<SimObject> worldObjects){ 
 		// No dynamics
 	}
 

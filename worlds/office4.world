@@ -35,12 +35,12 @@ closed
   sink
   # Object xyz
   vec 3
-    1.95   0.52   1.00
+    1.95   0.52   0.75
   # Rotation (yaw)
   1.571
   # Scale xyz
   vec 3
-    0.80   1.50   1.00
+    0.80   1.50   0.50
   # Properties
   1
     category=sink1
@@ -105,6 +105,26 @@ closed
   # Color rgb (int 0-255)
   ivec 3
     50 50 50
+closed
+}
+"soargroup.mobilesim.sim.SimDrawer"
+{
+  # Object Description
+  drawer
+  # Object xyz
+  vec 3
+    4.50   0.52   0.90
+  # Rotation (yaw)
+  1.571
+  # Scale xyz
+  vec 3
+    0.80   1.00   0.20
+  # Properties
+  1
+    category=drawer1
+  # Color rgb (int 0-255)
+  ivec 3
+    94 76 28
 closed
 }
 "soargroup.mobilesim.sim.SimTable"
@@ -339,7 +359,7 @@ closed
     1.00   1.00   1.00
   # Properties
   2
-    category=person1
+    category=person
     name=bob1
   # Color rgb (int 0-255)
   ivec 3
@@ -359,7 +379,7 @@ closed
     1.00   1.00   1.00
   # Properties
   2
-    category=person1
+    category=person
     name=charlie1
   # Color rgb (int 0-255)
   ivec 3

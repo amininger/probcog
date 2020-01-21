@@ -112,8 +112,6 @@ public class RosieGUI extends JFrame
 
     	menuBar.add(new AgentMenu(soarAgent));
 
-    	perception.createMenu(menuBar);
-
     	stopRobotButton = new JButton("STOP");
     	stopRobotButton.setBackground(Color.red);
         stopRobotButton.addActionListener(new ActionListener(){
