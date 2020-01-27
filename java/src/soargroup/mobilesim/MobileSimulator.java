@@ -142,16 +142,25 @@ public class MobileSimulator implements LCMSubscriber
 	}
 
 	private void handlePutOnObjectCommand(control_law_t controlLaw){
+		Integer objectId = null;
+		String relation = "on";
 		for(int p = 0; p < controlLaw.num_params; p++){
 			if(controlLaw.param_names[p].equals("object-id")){
-				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
-				RosieSimObject obj = getSimObject(objectId);
-				if(obj != null){
-					robot.putObjectOnObject(obj);
-				} else {
-					System.err.println("MobileSimulator::handlePutOnObjectCommand: object-id '" + objectId.toString() + "' not recognized");
-				}
+				objectId = Integer.parseInt(controlLaw.param_values[p].value);
+			} else if(controlLaw.param_names[p].equals("relation")){
+				relation = controlLaw.param_values[p].value;
 			}
+		}
+		relation = relation.replace("1", "");
+		if(objectId == null){
+			System.err.println("MobileSimulator::handlePutOnObjectCommand: object-id not given");
+			return;
+		}
+		RosieSimObject obj = getSimObject(objectId);
+		if(obj != null){
+			robot.putObjectOnObject(obj, relation);
+		} else {
+			System.err.println("MobileSimulator::handlePutOnObjectCommand: object-id '" + objectId.toString() + "' not recognized");
 		}
 	}
 

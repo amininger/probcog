@@ -308,6 +308,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double dist = LinAlg.distance(robPos, objPos, 2);
 
 		grabbedObject = obj;
+		grabbedObject.setIsHeld(true);
 		double[] xyzrpy = LinAlg.quatPosToXyzrpy(this.drive.poseTruth.orientation, robPos);
 		xyzrpy[2] = 0.5;
 		obj.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
@@ -323,6 +324,7 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double[] newPos = LinAlg.add(robotPos, forward);
     	double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
     	grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+		grabbedObject.setIsHeld(false);
     	grabbedObject = null;
     }
 
@@ -333,20 +335,25 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
     	double dist = LinAlg.distance(robPos, xyz, 2);
 		grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ xyz[0], xyz[1], xyz[2], 0, 0, 0 }));
+		grabbedObject.setIsHeld(false);
 		grabbedObject = null;
 	}
 
-	public void putObjectOnObject(RosieSimObject obj){
+	public void putObjectOnObject(RosieSimObject obj, String relation){
 		if(grabbedObject == null){
 			return;
 		}
-		if(obj.addObject(grabbedObject)){
+		if(obj.addObject(grabbedObject, relation)){
+			grabbedObject.setIsHeld(false);
 			grabbedObject = null;
 		}
 	}
 
 
     public boolean inViewRange(double[] xyz){
+		return true;
+	}
+    public boolean inViewRange2(double[] xyz){
     	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
     	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
     	toPoint[2] = 0.0;
@@ -495,7 +502,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     }
 
     // Aaron Mininger: Implementaton of this task moved to robot.perception.SimObjectDetector
-
     // class ClassifyTask implements PeriodicTasks.Task
 
     class PoseTask implements PeriodicTasks.Task

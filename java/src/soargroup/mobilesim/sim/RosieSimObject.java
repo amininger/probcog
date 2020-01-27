@@ -32,6 +32,8 @@ public abstract class RosieSimObject implements SimObject{
 	private VisObject visObject = null;
 	private boolean staleVis = true;
 
+	private boolean isHeld = false;
+
 	private static int NEXT_ID = 1;
 
 	public RosieSimObject(SimWorld sw){
@@ -70,6 +72,10 @@ public abstract class RosieSimObject implements SimObject{
 		return LinAlg.copy(scale_xyz);
 	}
 
+	public void setIsHeld(boolean isHeld){
+		this.isHeld = isHeld;
+	}
+
 	public synchronized void setRunning(boolean isRunning){ }
 
 	public abstract void performDynamics(ArrayList<SimObject> worldObjects);
@@ -104,9 +110,9 @@ public abstract class RosieSimObject implements SimObject{
 		}
 	}
 
-	public boolean addObject(RosieSimObject obj){
+	public boolean addObject(RosieSimObject obj, String relation){
 		for(AnchorPoint pt : anchors){
-			if(!pt.hasObject()){
+			if(pt.relation.equals(relation) && !pt.hasObject()){
 				pt.addObject(obj);
 				return true;
 			}
@@ -124,10 +130,10 @@ public abstract class RosieSimObject implements SimObject{
 		if(this.staleVis){
 			VisChain vc = createVisObject();
 			// Uncomment to also draw anchor points
-			//for(AnchorPoint anchor : anchors){
-			//	vc.add(new VisChain(LinAlg.translate(anchor.xyz), 
-			//				new VzBox(new double[]{ 0.04, 0.04, 0.04}, new VzMesh.Style(Color.black))));
-			//}
+			for(AnchorPoint anchor : anchors){
+				vc.add(new VisChain(LinAlg.translate(anchor.xyz), 
+							new VzBox(new double[]{ 0.04, 0.04, 0.04}, new VzMesh.Style(Color.black))));
+			}
 			visObject = vc;
 			this.staleVis = false;
 		}
@@ -135,9 +141,13 @@ public abstract class RosieSimObject implements SimObject{
 	}
 
 	public Shape getShape() {
-		return new BoxShape(scale_xyz);
+		if(isHeld){
+			// Don't have collision on, otherwise the robot won't drive
+			return new april.sim.SphereShape(0.0);
+		} else {
+			return new BoxShape(scale_xyz);
+		}
 	}
-		
 	
 	public BoundingBox getBoundingBox(){
 		return new BoundingBox(scale_xyz, xyzrpy);

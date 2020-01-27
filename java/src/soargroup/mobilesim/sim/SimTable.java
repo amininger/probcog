@@ -18,7 +18,7 @@ public class SimTable extends SimSurface {
 	}
 
 	@Override
-	public VisObject createVisObject(){
+	public VisChain createVisObject(){
 		VisChain c = new VisChain();
 		VzMesh.Style style = new VzMesh.Style(color);
 

@@ -31,6 +31,6 @@ public class SimReceptacle extends SimBoxObject {
     {
 		super.read(ins);
 		// Create anchors inside on the bottom
-		anchors = AnchorPoint.create(scale_xyz[0], scale_xyz[1], -scale_xyz[2]/2, ANCHOR_SPACING, this);
+		anchors = AnchorPoint.create(scale_xyz[0], scale_xyz[1], -scale_xyz[2]/2, ANCHOR_SPACING, this, "in");
 	}
 }

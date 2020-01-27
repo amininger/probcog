@@ -20,6 +20,10 @@ public class PutOnObject implements ControlLaw
     {
         assert (parameters.containsKey("object-id"));
         System.out.println("PUT ON OBJECT: " + parameters.get("object-id").getInt().toString());
+
+		if(!parameters.containsKey("relation")){
+			parameters.put("relation", new TypedValue("on"));
+		}
     }
 
     /** Start/stop the execution of the control law.
@@ -49,6 +53,8 @@ public class PutOnObject implements ControlLaw
         // No parameters, so this can just return an empty container
     	ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
     	params.add(new TypedParameter("object-id", TypedValue.TYPE_INT, true));
+
+    	params.add(new TypedParameter("relation", TypedValue.TYPE_STRING, false));
     	return params;
     }
 

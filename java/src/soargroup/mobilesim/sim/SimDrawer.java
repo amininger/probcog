@@ -63,7 +63,7 @@ public class SimDrawer extends SimReceptacle {
 		// [String] Door State: << open closed >>
 		String door = ins.readString().toLowerCase();
 
-		anchors = AnchorPoint.create(ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3, ANCHOR_SPACING, this);
+		anchors = AnchorPoint.create(ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3, ANCHOR_SPACING, this, "in");
 		properties.put("door2", "closed2");
 		if(door.equals("open")){
 

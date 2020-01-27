@@ -8,7 +8,7 @@ import april.jmat.LinAlg;
 public class AnchorPoint {
 	// Creates a set of points centered at 0, 0 that fit onto a rectange of the given dx and dy size
 	//   at the given height and spacing
-	public static ArrayList<AnchorPoint> create(double dx, double dy, double height, double spacing, RosieSimObject parent){
+	public static ArrayList<AnchorPoint> create(double dx, double dy, double height, double spacing, RosieSimObject parent, String relation){
 		ArrayList<AnchorPoint> anchors = new ArrayList<AnchorPoint>();
 		int nrows = (int)Math.ceil(dy/spacing)-1;
 		int ncols = (int)Math.ceil(dx/spacing)-1;
@@ -16,18 +16,20 @@ public class AnchorPoint {
 		double scol = -(ncols-1)/2.0;
 		for(int r = 0; r < nrows; r += 1){
 			for(int c = 0; c < ncols; c += 1){
-				anchors.add(new AnchorPoint((scol+c)*spacing, (srow+r)*spacing, height, parent));
+				anchors.add(new AnchorPoint((scol+c)*spacing, (srow+r)*spacing, height, parent, relation));
 			}
 		}
 		return anchors;
 	}
-	public AnchorPoint(double x, double y, double z, RosieSimObject parent){
+	public AnchorPoint(double x, double y, double z, RosieSimObject parent, String relation){
 		this.xyz = new double[]{ x, y, z };
 		this.parent = parent;
+		this.relation = relation;
 	}
 	public double[] xyz;
 	public RosieSimObject parent = null;
 	public RosieSimObject object = null;
+	public String relation;
 
 	// Gets the target pose of an object if it were to be added to this anchor
 	public double[][] calcObjectPose(RosieSimObject obj){

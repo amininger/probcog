@@ -21,6 +21,6 @@ public class SimSurface extends SimBoxObject {
     {
 		super.read(ins);
 		// Create anchors on the top (+height/2)
-		anchors = AnchorPoint.create(scale_xyz[0], scale_xyz[1], scale_xyz[2]/2, ANCHOR_SPACING, this);
+		anchors = AnchorPoint.create(scale_xyz[0], scale_xyz[1], scale_xyz[2]/2, ANCHOR_SPACING, this, "on");
 	}
 }

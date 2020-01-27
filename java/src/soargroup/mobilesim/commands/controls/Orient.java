@@ -135,13 +135,16 @@ public class Orient implements ControlLaw, LCMSubscriber
     /** Get a drive command from the CL. */
     public diff_drive_t drive(DriveParams params)
     {
+		System.out.format("ORIENT(%f)\n", goalYaw);
         diff_drive_t dd = new diff_drive_t();
         dd.left_enabled = dd.right_enabled = true;
         dd.left = 0;
         dd.right = 0;
 
-        if (params.pose == null)
+        if (params.pose == null){
+			System.out.println("No Pose");
             return dd;
+		}
 
         double yaw = LinAlg.quatPosToXYT(params.pose.orientation, params.pose.pos)[2];
 
@@ -152,13 +155,18 @@ public class Orient implements ControlLaw, LCMSubscriber
                                       minSpeed,
                                       MAX_SPEED);
 
+		System.out.format("  current yaw = %f, delta = %f\n", yaw, dyaw);
+
+
         // A little filtering
         speed = Math.min((speed + lastSpeed) / 2, MAX_SPEED);
         if (dyaw > 0) {
+			System.out.println("  turning LEFT");
             // We need to go LEFT
             dd.left = -speed;
             dd.right = speed;
         } else {
+			System.out.println("  turning RIGHT");
             dd.left = speed;
             dd.right = -speed;
         }
