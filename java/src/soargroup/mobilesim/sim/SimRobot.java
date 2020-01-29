@@ -293,6 +293,10 @@ public class SimRobot implements SimObject, LCMSubscriber
 		}
     }
 
+	public void setFullyObservable(boolean b){
+		objDetector.setFullyObservable(b);
+	}
+
     public RosieSimObject getGrabbedObject(){
     	return grabbedObject;
     }
@@ -351,9 +355,6 @@ public class SimRobot implements SimObject, LCMSubscriber
 
 
     public boolean inViewRange(double[] xyz){
-		return true;
-	}
-    public boolean inViewRange2(double[] xyz){
     	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
     	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);
     	toPoint[2] = 0.0;

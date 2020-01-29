@@ -32,6 +32,7 @@ public class ConditionTestFactory
         registerConditionTest("stabilized", Stabilized.class.getName());
         registerConditionTest("holding", Holding.class.getName());
         registerConditionTest("object-state", ObjectState.class.getName());
+        registerConditionTest("distance-traveled", DistanceTraveled.class.getName());
     }
 
     /** Register condition tests with the factory. It is the job of the

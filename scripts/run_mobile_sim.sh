@@ -5,6 +5,7 @@ BG="FALSE"
 # Iterate over each argument given
 
 SPOOF=""
+FULLY=""
 
 while [[ $# -gt 0 ]]
 do
@@ -15,6 +16,9 @@ do
 			;;
 		-s|--spoof)
 			SPOOF="-s"
+			;;
+		-f|--fully)
+			FULLY="-f"
 			;;
 		*)
 			WORLD_FILE=$1
@@ -34,8 +38,8 @@ WORLD_FILE=$MOBILE_SIM_HOME/worlds/$WORLD_FILE
 
 cd $MOBILE_SIM_HOME
 if [ "$BG" == "TRUE" ]; then
-	java soargroup.mobilesim.MobileGUI -w $WORLD_FILE $SPOOF &
+	java soargroup.mobilesim.MobileGUI -w $WORLD_FILE $SPOOF $FULLY &
 else
-	java soargroup.mobilesim.MobileGUI -w $WORLD_FILE $SPOOF
+	java soargroup.mobilesim.MobileGUI -w $WORLD_FILE $SPOOF $FULLY
 fi
 

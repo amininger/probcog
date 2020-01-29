@@ -78,7 +78,7 @@ public abstract class RosieSimObject implements SimObject{
 
 	public synchronized void setRunning(boolean isRunning){ }
 
-	public abstract void performDynamics(ArrayList<SimObject> worldObjects);
+	public void performDynamics(ArrayList<SimObject> worldObjects) { }
 
 	public abstract VisChain createVisObject();
 

@@ -206,6 +206,7 @@ public class MobileGUI extends JFrame
         opts.addBoolean('h', "help", false, "Show this help screen");
         opts.addString('w', "world", null, "Simulated world file");
         opts.addBoolean('s', "spoof", false, "Open small GUI to spoof soar commands");
+		opts.addBoolean('f', "fully", false, "Whether a room is fully observable");
 
         if (!opts.parse(args)) {
             System.err.println("ERR: Error parsing args - "+opts.getReason());

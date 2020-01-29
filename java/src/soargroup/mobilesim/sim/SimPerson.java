@@ -53,8 +53,6 @@ public class SimPerson extends RosieSimObject {
 		return vc;
 	}
 
-	public void performDynamics(ArrayList<SimObject> worldObjects){ }
-
     /** Restore state that was previously written **/
     public void read(StructureReader ins) throws IOException
     {

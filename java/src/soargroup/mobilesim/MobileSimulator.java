@@ -51,6 +51,7 @@ public class MobileSimulator implements LCMSubscriber
 		for(SimObject obj : simObjects){
 			if(obj instanceof SimRobot){
 				robot = (SimRobot)obj;
+				robot.setFullyObservable(opts.getBoolean("fully"));
 			}
 			if(obj instanceof RosieSimObject){
 				rosieObjs.add((RosieSimObject)obj);

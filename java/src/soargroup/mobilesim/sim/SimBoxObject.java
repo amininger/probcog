@@ -26,11 +26,6 @@ public class SimBoxObject extends RosieSimObject {
 	}
 
 	@Override
-	public void performDynamics(ArrayList<SimObject> worldObjects){ 
-		// No dynamics
-	}
-
-	@Override
     public void read(StructureReader ins) throws IOException
     {
 		super.read(ins);

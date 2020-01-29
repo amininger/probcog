@@ -38,6 +38,8 @@ public class SimObjectDetector {
 
     PeriodicTasks tasks = new PeriodicTasks(2);
 
+	private boolean fullyObservable = false;
+
 	public SimObjectDetector(SimRobot robot, SimWorld world){
 		this.robot = robot;
 		this.world = world;
@@ -49,6 +51,10 @@ public class SimObjectDetector {
 
 	public void setRunning(boolean b){
 		tasks.setRunning(b);
+	}
+
+	public void setFullyObservable(boolean b){
+		this.fullyObservable = b;
 	}
 
 	protected class DetectorTask implements PeriodicTasks.Task {
@@ -71,6 +77,27 @@ public class SimObjectDetector {
 			sendObjectMessage();
         }
 
+		private boolean isVisible(RosieSimObject obj, SimRobot robot, SimRegion curRegion){
+			if (obj == robot.getGrabbedObject()){
+				// Grabbed object always visible
+				return true;
+			}
+			if(obj.getRegion(regions) != curRegion){
+				// Objects not in the current region are not visible
+				return false;
+			}
+			if(fullyObservable){
+				// If we are not using the robot's viewpoint, 
+				//    then return true for all objects in current region
+				return true;
+			}
+			if(robot.inViewRange(obj.getBoundingBox().xyzrpy)){
+				// Otherwise, check that the object is actually visible from the robot's perspective
+				return true;
+			}
+			return false;
+		}
+
         private void updateDetectedObjects(ArrayList<SimObject> simObjects){
 			HashSet<RosieSimObject> rosieObjects = new HashSet<RosieSimObject>();
 			for(SimObject obj : simObjects){
@@ -81,10 +108,9 @@ public class SimObjectDetector {
 
 			synchronized(detectedObjects){
 				detectedObjects.clear();
+				SimRegion robotRegion = robot.getRegion();
 				for(RosieSimObject obj : rosieObjects){
-					SimRegion robotRegion = robot.getRegion();
-					if (obj == robot.getGrabbedObject() || (obj.getRegion(regions) == robotRegion &&
-						robot.inViewRange(obj.getBoundingBox().xyzrpy))){
+					if(isVisible(obj, robot, robotRegion)){
 						detectedObjects.add(obj);
 					}
 				}
