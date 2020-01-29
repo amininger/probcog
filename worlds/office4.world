@@ -22,8 +22,9 @@
   vec 3
     0.80   1.00   2.00
   # Properties
-  1
+  2
     category=fridge1
+    door2=closed2
   # Color rgb (int 0-255)
   ivec 3
     200 200 200
@@ -61,8 +62,9 @@ closed
   vec 3
     0.80   1.00   0.90
   # Properties
-  1
+  2
     category=cupboard1
+    door2=closed2
   # Color rgb (int 0-255)
   ivec 3
     94 76 28
@@ -100,8 +102,9 @@ closed
   vec 3
     0.40   0.60   0.40
   # Properties
-  1
+  2
     category=microwave1
+    door2=closed2
   # Color rgb (int 0-255)
   ivec 3
     50 50 50
@@ -159,8 +162,9 @@ closed
   vec 3
     0.80   1.80   2.00
   # Properties
-  1
+  2
     category=pantry1
+    door2=open2
   # Color rgb (int 0-255)
   ivec 3
     94 76 28
@@ -338,8 +342,9 @@ open
   vec 3
     0.80   1.20   2.00
   # Properties
-  1
+  2
     category=cupboard1
+    door2=closed2
   # Color rgb (int 0-255)
   ivec 3
     94 76 28

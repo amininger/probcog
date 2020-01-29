@@ -60,20 +60,8 @@ public class SimDrawer extends SimReceptacle {
     public void read(StructureReader ins) throws IOException
     {
 		super.read(ins);
-		// [String] Door State: << open closed >>
-		String door = ins.readString().toLowerCase();
 
 		anchors = AnchorPoint.create(ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3, ANCHOR_SPACING, this, "in");
-		properties.put("door2", "closed2");
-		if(door.equals("open")){
-
-		}
-	}
-
-	@Override
-	public void write(StructureWriter outs) throws IOException
-	{
-		super.write(outs);
-		outs.writeString(door);
+		setState("door2", properties.get("door2"));
 	}
 }

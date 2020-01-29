@@ -41,7 +41,7 @@ public class SimShelves extends SimReceptacle {
 						new VzRectangle(scale_xyz[0], scale_xyz[1], new VzMesh.Style(color))));
 		}
 
-		if(!isOpen){
+		if(useDoor && !isOpen){
 			// Door
 			c.add(new VisChain(
 				LinAlg.translate(scale_xyz[0]/2, 0.0, 0.0), LinAlg.rotateY(Math.PI/2), 
@@ -64,15 +64,10 @@ public class SimShelves extends SimReceptacle {
     public void read(StructureReader ins) throws IOException
     {
 		super.read(ins);
-		// [String] Door State: << open closed none >>
-		door = ins.readString().toLowerCase();
-		if(door.equals("none")){
-			useDoor = false;
-			isOpen = true;
-		} else {
+		if(properties.containsKey("door2")){
 			useDoor = true;
-			isOpen = (door.equals("open"));
-			properties.put("door2", isOpen ? "open2" : "closed2");
+			isOpen = (properties.get("door2").equals("open2"));
+			recreateVisObject();
 		}
 
 		anchors = new ArrayList<AnchorPoint>();
@@ -81,12 +76,5 @@ public class SimShelves extends SimReceptacle {
 		for(int i = 0; i < nshelves; i += 1){
 			anchors.addAll(AnchorPoint.create(scale_xyz[0], scale_xyz[1], (sz + i)*SHELF_SPACING, ANCHOR_SPACING, this, "in"));
 		}
-	}
-
-	@Override
-	public void write(StructureWriter outs) throws IOException
-	{
-		super.write(outs);
-		outs.writeString(door);
 	}
 }
