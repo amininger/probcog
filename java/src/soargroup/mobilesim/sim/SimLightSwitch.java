@@ -10,6 +10,7 @@ import april.util.*;
 import april.jmat.LinAlg;
 
 import soargroup.mobilesim.vis.VzOpenBox;
+import soargroup.rosie.RosieConstants;
 
 public class SimLightSwitch extends RosieSimObject {
 	private boolean isOn = true;
@@ -24,15 +25,12 @@ public class SimLightSwitch extends RosieSimObject {
 	@Override
 	public VisChain createVisObject() {
 		return new VisChain(
-					new VzBox(scale_xyz, new VzMesh.Style(isOn ? Color.green : Color.red))
-				);
+			new VzBox(scale_xyz, new VzMesh.Style(isOn ? Color.green : Color.red))
+		);
 	}
 
 	@Override
-	public void performDynamics(ArrayList<SimObject> worldObjects){
-		if(region != null){
-			return;
-		}
+	public void setup(ArrayList<SimObject> worldObjects){
 		for(SimObject obj : worldObjects){
 			if(!(obj instanceof SimRegion)){
 				continue;
@@ -44,13 +42,16 @@ public class SimLightSwitch extends RosieSimObject {
 				return;
 			}
 		}
+		if(region == null){
+			System.err.println("ERROR: LightSwitch cannot find region " + regionHandle);
+		}
 	}
 
 	@Override
 	public void setState(String property, String value){
 		super.setState(property, value);
-		if(property.equals("activation1")){
-			isOn = value.equals("on2");
+		if(property.equals(RosieConstants.ACTIVATION)){
+			isOn = value.equals(RosieConstants.ACT_ON);
 			region.setLights(isOn);
 		}
 	}
@@ -58,20 +59,17 @@ public class SimLightSwitch extends RosieSimObject {
 	@Override
     public void read(StructureReader ins) throws IOException
     {
-		super.read(ins);
-		// [String] Switch State: << on off >>
-		isOn = ins.readString().toLowerCase().equals("on");
-		properties.put("activation1", isOn ? "on2" : "off2");
-
 		// [String] regionHandle
 		regionHandle = ins.readString();
+
+		super.read(ins);
+		isOn = properties.get(RosieConstants.ACTIVATION).equals(RosieConstants.ACT_ON);
 	}
 
 	@Override
 	public void write(StructureWriter outs) throws IOException
 	{
-		super.write(outs);
-		outs.writeString(isOn ? "on" : "off");
 		outs.writeString(regionHandle);
+		super.write(outs);
 	}
 }

@@ -10,6 +10,7 @@ import april.util.*;
 import april.jmat.LinAlg;
 
 import soargroup.mobilesim.vis.VzOpenBox;
+import soargroup.rosie.RosieConstants;
 
 public class SimShelves extends SimReceptacle {
 	private static final double SHELF_SPACING = 0.50;
@@ -54,8 +55,8 @@ public class SimShelves extends SimReceptacle {
 	@Override
 	public void setState(String property, String value){
 		super.setState(property, value);
-		if(property.equals("door2")){
-			isOpen = value.equals("open2");
+		if(property.equals(RosieConstants.DOOR)){
+			isOpen = value.equals(RosieConstants.DOOR_OPEN);
 			recreateVisObject();
 		}
 	}
@@ -64,9 +65,9 @@ public class SimShelves extends SimReceptacle {
     public void read(StructureReader ins) throws IOException
     {
 		super.read(ins);
-		if(properties.containsKey("door2")){
+		if(properties.containsKey(RosieConstants.DOOR)){
 			useDoor = true;
-			isOpen = (properties.get("door2").equals("open2"));
+			isOpen = properties.get(RosieConstants.DOOR).equals(RosieConstants.DOOR_OPEN);
 			recreateVisObject();
 		}
 
@@ -74,7 +75,7 @@ public class SimShelves extends SimReceptacle {
 		int nshelves = (int)Math.ceil(scale_xyz[2]/SHELF_SPACING)-1;
 		double sz = -(nshelves-1)/2.0;
 		for(int i = 0; i < nshelves; i += 1){
-			anchors.addAll(AnchorPoint.create(scale_xyz[0], scale_xyz[1], (sz + i)*SHELF_SPACING, ANCHOR_SPACING, this, "in"));
+			anchors.addAll(AnchorPoint.create(scale_xyz[0], scale_xyz[1], (sz + i)*SHELF_SPACING, ANCHOR_SPACING, this, RosieConstants.REL_ON));
 		}
 	}
 }

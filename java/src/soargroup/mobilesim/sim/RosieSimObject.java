@@ -30,9 +30,9 @@ public abstract class RosieSimObject implements SimObject{
 	protected boolean staleRegion = true;
 
 	private VisObject visObject = null;
-	private boolean staleVis = true;
 
-	private boolean isHeld = false;
+	protected boolean isRunning = false;
+	protected boolean isHeld = false;
 
 	private static int NEXT_ID = 1;
 
@@ -76,11 +76,23 @@ public abstract class RosieSimObject implements SimObject{
 		this.isHeld = isHeld;
 	}
 
-	public synchronized void setRunning(boolean isRunning){ }
+	public synchronized void setRunning(boolean isRunning){ 
+		this.isRunning = isRunning;
+	}
 
-	public void performDynamics(ArrayList<SimObject> worldObjects) { }
-
+	// Children must implement this,
+	//   create a VisChain that will model the object
+	//   this result is cached, call recreateVisObject() to invalidate the cached VisObject
 	public abstract VisChain createVisObject();
+
+	protected void recreateVisObject(){  this.visObject = null;  }
+
+
+	// Children can override to do any initialization once all world objects are created
+	public void setup(ArrayList<SimObject> worldObjects) { }
+
+	// Children can override to implement any dynamics, this is called multiple times/second
+	public void performDynamics(ArrayList<SimObject> worldObjects) { }
 
 	// Return the closest region from the list that contains the position of the object
 	//   It will cache this result in curRegion and not recompute until its position changes
@@ -122,12 +134,8 @@ public abstract class RosieSimObject implements SimObject{
 		return false;
 	}
 
-	protected void recreateVisObject(){
-		this.staleVis = true;
-	}
-
 	public VisObject getVisObject(){
-		if(this.staleVis){
+		if(visObject == null){
 			VisChain vc = createVisObject();
 			// Uncomment to also draw anchor points
 			for(AnchorPoint anchor : anchors){
@@ -135,7 +143,6 @@ public abstract class RosieSimObject implements SimObject{
 							new VzBox(new double[]{ 0.04, 0.04, 0.04}, new VzMesh.Style(Color.black))));
 			}
 			visObject = vc;
-			this.staleVis = false;
 		}
 		return visObject;
 	}

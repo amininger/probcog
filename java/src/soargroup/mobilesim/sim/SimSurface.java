@@ -9,6 +9,8 @@ import april.vis.*;
 import april.util.*;
 import april.jmat.LinAlg;
 
+import soargroup.rosie.RosieConstants;
+
 public class SimSurface extends SimBoxObject {
 	public static final double ANCHOR_SPACING = 0.40;
 
@@ -21,6 +23,6 @@ public class SimSurface extends SimBoxObject {
     {
 		super.read(ins);
 		// Create anchors on the top (+height/2)
-		anchors = AnchorPoint.create(scale_xyz[0], scale_xyz[1], scale_xyz[2]/2, ANCHOR_SPACING, this, "on");
+		anchors = AnchorPoint.create(scale_xyz[0], scale_xyz[1], scale_xyz[2]/2, ANCHOR_SPACING, this, RosieConstants.REL_ON);
 	}
 }

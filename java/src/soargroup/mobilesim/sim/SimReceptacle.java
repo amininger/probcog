@@ -10,6 +10,7 @@ import april.util.*;
 import april.jmat.LinAlg;
 
 import soargroup.mobilesim.vis.VzOpenBox;
+import soargroup.rosie.RosieConstants;
 
 public class SimReceptacle extends SimBoxObject {
 	public static final double ANCHOR_SPACING = 0.40;
@@ -31,6 +32,6 @@ public class SimReceptacle extends SimBoxObject {
     {
 		super.read(ins);
 		// Create anchors inside on the bottom
-		anchors = AnchorPoint.create(scale_xyz[0], scale_xyz[1], -scale_xyz[2]/2, ANCHOR_SPACING, this, "in");
+		anchors = AnchorPoint.create(scale_xyz[0], scale_xyz[1], -scale_xyz[2]/2, ANCHOR_SPACING, this, RosieConstants.REL_IN);
 	}
 }

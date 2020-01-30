@@ -10,6 +10,7 @@ import april.util.*;
 import april.jmat.LinAlg;
 
 import soargroup.mobilesim.vis.VzOpenBox;
+import soargroup.rosie.RosieConstants;
 
 public class SimDrawer extends SimReceptacle {
 	public static final double ANCHOR_SPACING = 0.40;
@@ -39,20 +40,24 @@ public class SimDrawer extends SimReceptacle {
 		return c;
 	}
 
+	private void setDoorPosition(boolean open){
+		if(open != isOpen){
+			double[][] pose = this.getPose();
+			double[][] translate = LinAlg.translate(isOpen ? scale_xyz[0] : -scale_xyz[0], 0.0, 0.0);
+			pose = LinAlg.matrixAB(pose, translate);
+			this.setPose(pose);
+
+			recreateVisObject();
+			isOpen = open;
+		}
+	}
+
 	@Override
 	public void setState(String property, String value){
 		super.setState(property, value);
-		if(property.equals("door2")){
-			boolean newOpen = value.equals("open2");
-			if(newOpen != isOpen){
-				isOpen = newOpen;
-				double[][] pose = this.getPose();
-				double[][] translate = LinAlg.translate(isOpen ? scale_xyz[0] : -scale_xyz[0], 0.0, 0.0);
-				pose = LinAlg.matrixAB(pose, translate);
-				this.setPose(pose);
-
-				recreateVisObject();
-			}
+		if(property.equals(RosieConstants.DOOR)){
+			boolean newOpen = value.equals(RosieConstants.DOOR_OPEN);
+			setDoorPosition(newOpen);
 		}
 	}
 
@@ -62,6 +67,8 @@ public class SimDrawer extends SimReceptacle {
 		super.read(ins);
 
 		anchors = AnchorPoint.create(ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3, ANCHOR_SPACING, this, "in");
-		setState("door2", properties.get("door2"));
+
+		boolean newOpen = properties.get(RosieConstants.DOOR).equals(RosieConstants.DOOR_OPEN);
+		setDoorPosition(newOpen);
 	}
 }

@@ -18,6 +18,7 @@ import april.vis.VisLayer;
 import april.vis.VisWorld;
 
 import soargroup.mobilesim.sim.*;
+import soargroup.rosie.RosieConstants;
 
 // LCM Types
 import lcm.lcm.*;
@@ -54,7 +55,9 @@ public class MobileSimulator implements LCMSubscriber
 				robot.setFullyObservable(opts.getBoolean("fully"));
 			}
 			if(obj instanceof RosieSimObject){
-				rosieObjs.add((RosieSimObject)obj);
+				RosieSimObject rosieObj = (RosieSimObject)obj;
+				rosieObjs.add(rosieObj);
+				rosieObj.setup(simObjects);
 			}
 		}
 		if(robot == null){
@@ -144,7 +147,7 @@ public class MobileSimulator implements LCMSubscriber
 
 	private void handlePutOnObjectCommand(control_law_t controlLaw){
 		Integer objectId = null;
-		String relation = "on";
+		String relation = RosieConstants.REL_ON;
 		for(int p = 0; p < controlLaw.num_params; p++){
 			if(controlLaw.param_names[p].equals("object-id")){
 				objectId = Integer.parseInt(controlLaw.param_values[p].value);
@@ -152,7 +155,6 @@ public class MobileSimulator implements LCMSubscriber
 				relation = controlLaw.param_values[p].value;
 			}
 		}
-		relation = relation.replace("1", "");
 		if(objectId == null){
 			System.err.println("MobileSimulator::handlePutOnObjectCommand: object-id not given");
 			return;
