@@ -308,43 +308,43 @@ public class SimRobot implements SimObject, LCMSubscriber
     }
 
 	public void setupActionRules(){
-		// PickUpAction: Valid if not holding anything
-		ActionHandler.addValidateRule(PickUpAction.class, new ValidateRule<PickUpAction>(){
-			public IsValid validate(PickUpAction pickup){
+		// PickUp: Valid if not holding anything
+		ActionHandler.addValidateRule(PickUp.class, new ValidateRule<PickUp>(){
+			public IsValid validate(PickUp pickup){
 				if(grabbedObject != null)
 					return IsValid.False("SimRobot: Already holding object " + grabbedObject);
 				return IsValid.True();
 			}
 		});
 
-		// PickUpAction Apply: Set grabbedObject
-		ActionHandler.addApplyRule(PickUpAction.class, new ApplyRule<PickUpAction>(){
-			public Result apply(PickUpAction pickup){
+		// PickUp Apply: Set grabbedObject
+		ActionHandler.addApplyRule(PickUp.class, new ApplyRule<PickUp>(){
+			public Result apply(PickUp pickup){
 				grabbedObject = pickup.object;
 				return Result.Ok();
 			}
 		});
 
-		// PutDownAction: Valid if not holding anything
-		ActionHandler.addValidateRule(PutDownAction.class, new ValidateRule<PutDownAction>(){
-			public IsValid validate(PutDownAction putdown){
+		// PutDown: Valid if not holding anything
+		ActionHandler.addValidateRule(PutDown.class, new ValidateRule<PutDown>(){
+			public IsValid validate(PutDown putdown){
 				if(grabbedObject == null || grabbedObject != putdown.object)
 					return IsValid.False("SimRobot: Not holding object " + putdown.object);
 				return IsValid.True();
 			}
 		});
 
-		// PutDownAction Apply: Set grabbedObject
-		ActionHandler.addApplyRule(PutDownAction.class, new ApplyRule<PutDownAction>(){
-			public Result apply(PutDownAction putdown){
+		// PutDown Apply: Set grabbedObject
+		ActionHandler.addApplyRule(PutDown.class, new ApplyRule<PutDown>(){
+			public Result apply(PutDown putdown){
 				grabbedObject = null;
 				return Result.Ok();
 			}
 		});
 
-		// PutDownFloorAction Apply: Set the position of the object to in front of the robot
-		ActionHandler.addApplyRule(PutDownFloorAction.class, new ApplyRule<PutDownFloorAction>(){
-			public Result apply(PutDownFloorAction putdown){
+		// PutDownFloor Apply: Set the position of the object to in front of the robot
+		ActionHandler.addApplyRule(PutDownFloor.class, new ApplyRule<PutDownFloor>(){
+			public Result apply(PutDownFloor putdown){
 				double[] robotPos = LinAlg.copy(drive.poseTruth.pos);
 				double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
 				forward = LinAlg.scale(forward, 1.0);
@@ -354,26 +354,14 @@ public class SimRobot implements SimObject, LCMSubscriber
 				return Result.Ok();
 			}
 		});
-	}
 
-
-	public void putObjectAtXYZ(double[] xyz){
-		if(grabbedObject == null){
-			return;
-		}
-    	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
-    	double dist = LinAlg.distance(robPos, xyz, 2);
-		grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ xyz[0], xyz[1], xyz[2], 0, 0, 0 }));
-		grabbedObject = null;
-	}
-
-	public void putObjectOnObject(RosieSimObject obj, String relation){
-		if(grabbedObject == null){
-			return;
-		}
-		if(obj.addObject(grabbedObject, relation)){
-			grabbedObject = null;
-		}
+		// PutDownXYZ Apply: Set the position of the object to the given coordinates
+		ActionHandler.addApplyRule(PutDownXYZ.class, new ApplyRule<PutDownXYZ>(){
+			public Result apply(PutDownXYZ putdown){
+				grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ putdown.x, putdown.y, putdown.z, 0, 0, 0 }));
+				return Result.Ok();
+			}
+		});
 	}
 
 

@@ -20,35 +20,26 @@ public class Grabbable implements IAttribute {
 	
 	// Registering Action Handling Rules
 	static {
-		PickUpRules rules = new PickUpRules();
-		ActionHandler.addApplyRule(PickUpAction.class, rules);
-	}
-	static {
-		PutDownRules rules = new PutDownRules();
-		ActionHandler.addApplyRule(PutDownAction.class, rules);
-	}
-
-	// Rules for Handling PickUp Action
-	private static class PickUpRules implements ApplyRule<PickUpAction> {
-		// PickUpAction Apply: Update isGrabbed flag on object
-		public Result apply(PickUpAction pickup){
-			Grabbable grabbable = pickup.object.getAttr(Grabbable.class);
-			if(grabbable != null){
-				grabbable.setGrabbed(true);
+		// PickUp Apply: Update isGrabbed flag on object
+		ActionHandler.addApplyRule(PickUp.class, new ApplyRule<PickUp>() {
+			public Result apply(PickUp pickup){
+				Grabbable grabbable = pickup.object.getAttr(Grabbable.class);
+				if(grabbable != null){
+					grabbable.setGrabbed(true);
+				}
+				return Result.Ok();
 			}
-			return Result.Ok();
-		}
-	}
+		});
 
-	// Rules for Handling PutDown Action
-	private static class PutDownRules implements ApplyRule<PutDownAction> {
-		// PutDownAction Apply: Update isGrabbed flag on object
-		public Result apply(PutDownAction putdown){
-			Grabbable grabbable = putdown.object.getAttr(Grabbable.class);
-			if(grabbable != null){
-				grabbable.setGrabbed(false);
+		// PutDown Apply: Update isGrabbed flag on object
+		ActionHandler.addApplyRule(PutDown.class, new ApplyRule<PutDown>() {
+			public Result apply(PutDown putdown){
+				Grabbable grabbable = putdown.object.getAttr(Grabbable.class);
+				if(grabbable != null){
+					grabbable.setGrabbed(false);
+				}
+				return Result.Ok();
 			}
-			return Result.Ok();
-		}
+		});
 	}
 }

@@ -2,13 +2,13 @@ package soargroup.mobilesim.sim.actions;
 
 import soargroup.mobilesim.sim.*;
 
-public class PickUpAction extends Action {
+public class PickUp extends Action {
 	public final RosieSimObject object;
-	public PickUpAction(RosieSimObject object){
+	public PickUp(RosieSimObject object){
 		this.object = object;
 	}
 
 	public String toString(){
-		return "PickUp(" + object.toString() + ")";
+		return "PickUp(" + object + ")";
 	}
 }

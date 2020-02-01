@@ -93,11 +93,11 @@ public class MobileSimulator implements LCMSubscriber
 
 				Action action = null;
 				if(controlLaw.name.equals("pick-up")){
-					action = parsePickUpAction(controlLaw);
+					action = parsePickUp(controlLaw);
 				} else if(controlLaw.name.equals("put-down")){
-					action = parsePutDownAction(controlLaw);
+					action = parsePutDown(controlLaw);
 				} else if(controlLaw.name.equals("put-at-xyz")){
-					handlePutAtXYZCommand(controlLaw);
+					action = parsePutAtXYZ(controlLaw);
 				} else if(controlLaw.name.equals("put-on-object")){
 					handlePutOnObjectCommand(controlLaw);
 				} else if(controlLaw.name.equals("change-state")){
@@ -137,15 +137,15 @@ public class MobileSimulator implements LCMSubscriber
 		return null;
 	}
 
-	private PickUpAction parsePickUpAction(control_law_t controlLaw){
+	private PickUp parsePickUp(control_law_t controlLaw){
 		for(int p = 0; p < controlLaw.num_params; p++){
 			if(controlLaw.param_names[p].equals("object-id")){
 				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
 				RosieSimObject obj = getSimObject(objectId);
 				if(obj != null){
-					return new PickUpAction(obj);
+					return new PickUp(obj);
 				} else {
-					System.err.println("MobileSimulator::parsePickUpAction: object-id '" + objectId.toString() + "' not recognized");
+					System.err.println("MobileSimulator::parsePickUp: object-id '" + objectId.toString() + "' not recognized");
 					return null;
 				}
 			}
@@ -153,16 +153,21 @@ public class MobileSimulator implements LCMSubscriber
 		return null;
 	}
 
-	private PutDownFloorAction parsePutDownAction(control_law_t controlLaw){
+	private PutDownFloor parsePutDown(control_law_t controlLaw){
 		RosieSimObject obj = robot.getGrabbedObject();
 		if(obj == null){
-			System.err.println("MobileSimulator::parsePutDownAction: SimRobot's grabbedObject is null");
+			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
 			return null;
 		}
-		return new PutDownFloorAction(obj);
+		return new PutDownFloor(obj);
 	}
 
-	private void handlePutAtXYZCommand(control_law_t controlLaw){
+	private PutDownXYZ parsePutAtXYZ(control_law_t controlLaw){
+		RosieSimObject obj = robot.getGrabbedObject();
+		if(obj == null){
+			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
+			return null;
+		}
 		double[] xyz = new double[]{ 0, 0, 0 };
 		for(int p = 0; p < controlLaw.num_params; p++){
 			if(controlLaw.param_names[p].equals("x")){
@@ -173,28 +178,34 @@ public class MobileSimulator implements LCMSubscriber
 				xyz[2] = Double.parseDouble(controlLaw.param_values[p].value);
 			} 
 		}
-		robot.putObjectAtXYZ(xyz);
+		return new PutDownXYZ(obj, xyz);
 	}
 
-	private void handlePutOnObjectCommand(control_law_t controlLaw){
-		Integer objectId = null;
+	private PlaceObject parsePutOnObject(control_law_t controlLaw){
+		RosieSimObject grabbedObj = robot.getGrabbedObject();
+		if(grabbedObj == null){
+			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
+			return null;
+		}
+		Integer targetId = null;
 		String relation = RosieConstants.REL_ON;
 		for(int p = 0; p < controlLaw.num_params; p++){
 			if(controlLaw.param_names[p].equals("object-id")){
-				objectId = Integer.parseInt(controlLaw.param_values[p].value);
+				targetId = Integer.parseInt(controlLaw.param_values[p].value);
 			} else if(controlLaw.param_names[p].equals("relation")){
 				relation = controlLaw.param_values[p].value;
 			}
 		}
-		if(objectId == null){
-			System.err.println("MobileSimulator::handlePutOnObjectCommand: object-id not given");
-			return;
+		if(targetId == null){
+			System.err.println("MobileSimulator::parsePutOnObject: object-id not given");
+			return null;
 		}
-		RosieSimObject obj = getSimObject(objectId);
-		if(obj != null){
-			robot.putObjectOnObject(obj, relation);
+		RosieSimObject targetObj = getSimObject(targetId);
+		if(targetObj != null){
+			return new PlaceObject(grabbedObj, relation, targetObj);
 		} else {
-			System.err.println("MobileSimulator::handlePutOnObjectCommand: object-id '" + objectId.toString() + "' not recognized");
+			System.err.println("MobileSimulator::parsePutOnObject: object-id '" + objectId.toString() + "' not recognized");
+			return null;
 		}
 	}
 
