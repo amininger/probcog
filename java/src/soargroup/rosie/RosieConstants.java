@@ -11,4 +11,6 @@ public class RosieConstants {
 
 	public final static String REL_IN = "in1";
 	public final static String REL_ON = "on1";
+
+	public final static String TEMPERATURE = "temperature";
 }

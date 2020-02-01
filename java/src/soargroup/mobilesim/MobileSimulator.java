@@ -17,8 +17,11 @@ import april.vis.VisConsole;
 import april.vis.VisLayer;
 import april.vis.VisWorld;
 
+import soargroup.mobilesim.util.ResultTypes.*;
 import soargroup.mobilesim.sim.*;
 import soargroup.rosie.RosieConstants;
+
+import soargroup.mobilesim.sim.actions.*;
 
 // LCM Types
 import lcm.lcm.*;
@@ -79,9 +82,11 @@ public class MobileSimulator implements LCMSubscriber
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins) {
         try {
         	if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")){
+				Result result = null;
 		  		control_law_t controlLaw = new control_law_t(ins);
 				if(controlLaw.name.equals("pick-up")){
-					handlePickUpCommand(controlLaw);
+					PickUpAction action = parsePickUpAction(controlLaw);
+					result = ActionHandler.handle(action);
 				} else if(controlLaw.name.equals("put-down")){
 					handlePutDownCommand(controlLaw);
 				} else if(controlLaw.name.equals("put-at-xyz")){
@@ -90,6 +95,10 @@ public class MobileSimulator implements LCMSubscriber
 					handlePutOnObjectCommand(controlLaw);
 				} else if(controlLaw.name.equals("change-state")){
 					handleChangeStateCommand(controlLaw);
+				}
+				if(result != null && result instanceof Err){
+					Err err = (Err)result;
+					System.err.println(err.reason);
 				}
 	      	}
         } catch (IOException ex) {
@@ -113,18 +122,20 @@ public class MobileSimulator implements LCMSubscriber
 		return null;
 	}
 
-	private void handlePickUpCommand(control_law_t controlLaw){
+	private PickUpAction parsePickUpAction(control_law_t controlLaw){
 		for(int p = 0; p < controlLaw.num_params; p++){
 			if(controlLaw.param_names[p].equals("object-id")){
 				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
 				RosieSimObject obj = getSimObject(objectId);
 				if(obj != null){
-					robot.pickUpObject(obj);
+					return new PickUpAction(obj);
 				} else {
-					System.err.println("MobileSimulator::handlePickUpCommand: object-id '" + objectId.toString() + "' not recognized");
+					System.err.println("MobileSimulator::parsePickUpAction: object-id '" + objectId.toString() + "' not recognized");
+					return null;
 				}
 			}
 		}
+		return null;
 	}
 
 	private void handlePutDownCommand(control_law_t controlLaw){

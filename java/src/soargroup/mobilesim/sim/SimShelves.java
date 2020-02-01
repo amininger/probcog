@@ -75,7 +75,7 @@ public class SimShelves extends SimReceptacle {
 		int nshelves = (int)Math.ceil(scale_xyz[2]/SHELF_SPACING)-1;
 		double sz = -(nshelves-1)/2.0;
 		for(int i = 0; i < nshelves; i += 1){
-			anchors.addAll(AnchorPoint.create(scale_xyz[0], scale_xyz[1], (sz + i)*SHELF_SPACING, ANCHOR_SPACING, this, RosieConstants.REL_ON));
+			anchors.addAll(AnchorPoint.create(scale_xyz[0], scale_xyz[1], (sz + i)*SHELF_SPACING, ANCHOR_SPACING, this, RosieConstants.REL_IN));
 		}
 	}
 }

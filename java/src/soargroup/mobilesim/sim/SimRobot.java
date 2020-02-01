@@ -22,7 +22,13 @@ import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.commands.CommandInterpreter;
 import soargroup.mobilesim.commands.CommandCoordinator.Status;
 import soargroup.mobilesim.util.*;
+import soargroup.mobilesim.util.ResultTypes.*;
 import soargroup.mobilesim.vis.*;
+
+import soargroup.mobilesim.sim.attributes.*;
+import soargroup.mobilesim.sim.actions.*;
+import soargroup.mobilesim.sim.actions.Action.*;
+import soargroup.mobilesim.sim.actions.ActionHandler.*;
 
 // LCM Types
 import lcm.lcm.*;
@@ -301,22 +307,34 @@ public class SimRobot implements SimObject, LCMSubscriber
     	return grabbedObject;
     }
 
-    public void pickUpObject(RosieSimObject obj){
-		System.out.println("SimRobot: picking up object " + obj.getID().toString());
-    	if(grabbedObject != null && obj != grabbedObject){
-    		System.err.println("ERROR: already holding different object");
-    		return;
-    	}
-    	double[] objPos = LinAlg.copy(LinAlg.matrixToXyzrpy(obj.getPose()), 3);
-    	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
-    	double dist = LinAlg.distance(robPos, objPos, 2);
+	public void setupRules(){
+		// PickUp
+		PickUpRules rules = new PickUpRules();
+		ActionHandler.addValidateRule(PickUpAction.class, rules);
+		ActionHandler.addApplyRule(PickUpAction.class, rules);
+	}
 
-		grabbedObject = obj;
-		grabbedObject.setIsHeld(true);
-		double[] xyzrpy = LinAlg.quatPosToXyzrpy(this.drive.poseTruth.orientation, robPos);
-		xyzrpy[2] = 0.5;
-		obj.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
-    }
+	// Rules for Handling PickUp Action
+	private class PickUpRules implements ValidateRule<PickUpAction>, ApplyRule<PickUpAction> {
+		// PickUpAction: Valid if not holding anything
+		public IsValid validate(PickUpAction pickup){
+			if(grabbedObject == null)
+				return IsValid.True();
+			return IsValid.False("SimRobot: Already holding object " + grabbedObject);
+		}
+
+		// PickUpAction Apply: Update isGrabbed flag on object
+		public Result apply(PickUpAction pickup){
+			double[] objPos = LinAlg.copy(LinAlg.matrixToXyzrpy(pickup.object.getPose()), 3);
+			double[] robPos = LinAlg.copy(drive.poseTruth.pos, 3);
+			double dist = LinAlg.distance(robPos, objPos, 2);
+
+			grabbedObject = pickup.object;
+			double[] xyzrpy = LinAlg.quatPosToXyzrpy(drive.poseTruth.orientation, robPos);
+			xyzrpy[2] = 0.5;
+			return Result.Ok();
+		}
+	}
 
     public void putDownObject(){
     	if(grabbedObject == null){
@@ -328,7 +346,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double[] newPos = LinAlg.add(robotPos, forward);
     	double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
     	grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
-		grabbedObject.setIsHeld(false);
     	grabbedObject = null;
     }
 
@@ -339,7 +356,6 @@ public class SimRobot implements SimObject, LCMSubscriber
     	double[] robPos = LinAlg.copy(this.drive.poseTruth.pos, 3);
     	double dist = LinAlg.distance(robPos, xyz, 2);
 		grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ xyz[0], xyz[1], xyz[2], 0, 0, 0 }));
-		grabbedObject.setIsHeld(false);
 		grabbedObject = null;
 	}
 
@@ -348,7 +364,6 @@ public class SimRobot implements SimObject, LCMSubscriber
 			return;
 		}
 		if(obj.addObject(grabbedObject, relation)){
-			grabbedObject.setIsHeld(false);
 			grabbedObject = null;
 		}
 	}

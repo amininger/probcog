@@ -10,8 +10,10 @@ import april.util.*;
 import april.sim.*;
 import april.vis.*;
 
+import soargroup.rosie.RosieConstants;
 import soargroup.mobilesim.lcmtypes.object_data_t;
 import soargroup.mobilesim.lcmtypes.classification_t;
+import soargroup.mobilesim.sim.attributes.*;
 
 public abstract class RosieSimObject implements SimObject{
 	// Pose is the center of the object's bounding box
@@ -32,21 +34,32 @@ public abstract class RosieSimObject implements SimObject{
 	private VisObject visObject = null;
 
 	protected boolean isRunning = false;
-	protected boolean isHeld = false;
 
 	private static int NEXT_ID = 1;
+
+	protected Double temperature = 70.0;
+
+	protected HashMap<Class<?>, IAttribute> attributes = new HashMap<Class<?>, IAttribute>();
+	public <T extends IAttribute> boolean is(Class<T> cls){
+		return attributes.containsKey(cls);
+	}
+	public <T extends IAttribute> T getAttr(Class<T> cls){
+		IAttribute attr = attributes.get(cls);
+		return attr == null ? null : (T)attr;
+	}
 
 	public RosieSimObject(SimWorld sw){
 		id = RosieSimObject.NEXT_ID;
 		RosieSimObject.NEXT_ID += 1;
+		properties.put(RosieConstants.TEMPERATURE, temperature.toString());
 	}
 	
 	public Integer getID(){
 		return id;
 	}
 
-	public String getDescription(){
-		return desc;
+	public String toString(){
+		return desc + "_" + id.toString();
 	}
 
 	public double[] getXYZRPY(){
@@ -72,12 +85,14 @@ public abstract class RosieSimObject implements SimObject{
 		return LinAlg.copy(scale_xyz);
 	}
 
-	public void setIsHeld(boolean isHeld){
-		this.isHeld = isHeld;
-	}
-
 	public synchronized void setRunning(boolean isRunning){ 
 		this.isRunning = isRunning;
+	}
+
+	// Doesn't directly set temperature, instead will gradually move towards the given value
+	public void changeTemperature(double targetTemp){
+		temperature += (targetTemp - temperature) * 0.02; 
+		properties.put(RosieConstants.TEMPERATURE, temperature.toString());
 	}
 
 	// Children must implement this,
@@ -89,7 +104,10 @@ public abstract class RosieSimObject implements SimObject{
 
 
 	// Children can override to do any initialization once all world objects are created
-	public void setup(ArrayList<SimObject> worldObjects) { }
+	public void setup(ArrayList<SimObject> worldObjects) { 
+		attributes.put(Grabbable.class, new Grabbable());
+	
+	}
 
 	// Children can override to implement any dynamics, this is called multiple times/second
 	public void performDynamics(ArrayList<SimObject> worldObjects) { }
@@ -129,8 +147,7 @@ public abstract class RosieSimObject implements SimObject{
 				return true;
 			}
 		}
-		System.err.println("Error adding " + obj.getDescription() + " to " + 
-				desc + ", anchors are full");
+		System.err.println("Error adding " + obj + " to " + this + ", anchors are full.");
 		return false;
 	}
 
@@ -148,12 +165,7 @@ public abstract class RosieSimObject implements SimObject{
 	}
 
 	public Shape getShape() {
-		if(isHeld){
-			// Don't have collision on, otherwise the robot won't drive
-			return new april.sim.SphereShape(0.0);
-		} else {
-			return new BoxShape(scale_xyz);
-		}
+		return new BoxShape(scale_xyz);
 	}
 	
 	public BoundingBox getBoundingBox(){
