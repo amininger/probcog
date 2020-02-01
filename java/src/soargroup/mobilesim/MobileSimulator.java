@@ -38,6 +38,8 @@ public class MobileSimulator implements LCMSubscriber
 
 	SimRobot robot = null;
 
+	private int lastHandledCommand = -1;
+
     public MobileSimulator(GetOpt opts,
                             VisWorld vw,
                             VisLayer vl,
@@ -56,6 +58,7 @@ public class MobileSimulator implements LCMSubscriber
 			if(obj instanceof SimRobot){
 				robot = (SimRobot)obj;
 				robot.setFullyObservable(opts.getBoolean("fully"));
+				robot.setupActionRules();
 			}
 			if(obj instanceof RosieSimObject){
 				RosieSimObject rosieObj = (RosieSimObject)obj;
@@ -82,24 +85,36 @@ public class MobileSimulator implements LCMSubscriber
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins) {
         try {
         	if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")){
-				Result result = null;
 		  		control_law_t controlLaw = new control_law_t(ins);
+				if(controlLaw.id == lastHandledCommand){
+					return;
+				}
+				lastHandledCommand = controlLaw.id;
+
+				Action action = null;
 				if(controlLaw.name.equals("pick-up")){
-					PickUpAction action = parsePickUpAction(controlLaw);
-					result = ActionHandler.handle(action);
+					action = parsePickUpAction(controlLaw);
 				} else if(controlLaw.name.equals("put-down")){
-					handlePutDownCommand(controlLaw);
+					action = parsePutDownAction(controlLaw);
 				} else if(controlLaw.name.equals("put-at-xyz")){
 					handlePutAtXYZCommand(controlLaw);
 				} else if(controlLaw.name.equals("put-on-object")){
 					handlePutOnObjectCommand(controlLaw);
 				} else if(controlLaw.name.equals("change-state")){
 					handleChangeStateCommand(controlLaw);
+				} else {
+					return;
 				}
-				if(result != null && result instanceof Err){
-					Err err = (Err)result;
-					System.err.println(err.reason);
+				if(action == null){
+					System.err.println("ERROR: Could not parse action of type " + controlLaw.name);
+					return;
 				}
+
+				Result result = ActionHandler.handle(action);
+				if(result instanceof Err){
+					System.err.println(((Err)result).reason);
+				}
+				System.out.println("Performed: " + action);
 	      	}
         } catch (IOException ex) {
             System.out.println("WRN: "+ex);
@@ -138,8 +153,13 @@ public class MobileSimulator implements LCMSubscriber
 		return null;
 	}
 
-	private void handlePutDownCommand(control_law_t controlLaw){
-		robot.putDownObject();
+	private PutDownFloorAction parsePutDownAction(control_law_t controlLaw){
+		RosieSimObject obj = robot.getGrabbedObject();
+		if(obj == null){
+			System.err.println("MobileSimulator::parsePutDownAction: SimRobot's grabbedObject is null");
+			return null;
+		}
+		return new PutDownFloorAction(obj);
 	}
 
 	private void handlePutAtXYZCommand(control_law_t controlLaw){

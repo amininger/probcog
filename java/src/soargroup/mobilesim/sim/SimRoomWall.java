@@ -21,9 +21,7 @@ import april.vis.VzMesh;
 import april.vis.VzRectangle;
 import april.vis.VzText;
 
-public class SimRoomWall extends SimObjectPC implements SimObject
-{
-    protected double T[][] = LinAlg.identity(4);  // position
+public class SimRoomWall extends BaseSimObject {
 	protected static Color  color = new Color(100, 100, 100);//Color.gray;   // default wall color
 	protected static double height = 1.5;         // default wall height (meters)
 	protected static double thickness = 0.2;	  // default wall thickness (meters)
@@ -32,35 +30,19 @@ public class SimRoomWall extends SimObjectPC implements SimObject
 	protected double[] p2 = new double[]{  1.0,  0.0 }; // second endpoint of the wall
 	protected double length = 2.0;
 	
-    public SimRoomWall(SimWorld sw)
-    {
+    public SimRoomWall(SimWorld sw){
     	super(sw);
+		this.collide = false;
     }
     
-    public double[][] getPose()
-    {
-        return LinAlg.copy(T);
-    }
-
-    public void setPose(double T[][])
-    {
-        this.T = LinAlg.copy(T);
-    }    
-    
-    public VisObject getVisObject()
-    {
-    	return new VzBox(length, thickness, height, new VzMesh.Style(color));
-    }
-
-    public Shape getShape()
-    {
-    	//return new april.sim.BoxShape(length, thickness, height);
-    	return new april.sim.SphereShape(0.0);
+    public VisChain createVisObject(){
+		VisChain vc = new VisChain();
+    	vc.add(new VzBox(length, thickness, height, new VzMesh.Style(color)));
+		return vc;
     }
 
     /** Restore state that was previously written **/
-    public void read(StructureReader ins) throws IOException
-    {
+    public void read(StructureReader ins) throws IOException {
     	// 1st end point [x, y]
         p1 = ins.readDoubles();
     	
@@ -74,7 +56,7 @@ public class SimRoomWall extends SimObjectPC implements SimObject
         double z = height/2;
         double yaw = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]);
         double[] xyzrpy = new double[]{x, y, z, 0.0, 0.0, yaw};
-        this.T = LinAlg.xyzrpyToMatrix(xyzrpy);
+		this.setXYZRPY(xyzrpy);
     }
 
     /** Write one or more lines that serialize this instance. No line
@@ -83,9 +65,5 @@ public class SimRoomWall extends SimObjectPC implements SimObject
     {
     	outs.writeDoubles(p1);
     	outs.writeDoubles(p2);
-    }
-
-    public void setRunning(boolean b){
-    	
     }
 }

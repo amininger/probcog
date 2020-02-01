@@ -7,29 +7,28 @@ public class ActionHandler {
 
 	/************************ Handle Actions *************************/
 
-	public static <A extends Action> Result handle(A action){
-		if(action == null){
-			return Result.Err("Could not parse action of type " + action.getClass());
-		}
+	// First validates the action by checking it against each validate rule for that action type
+	// If it validates, then it applies the action by running each apply rule for the action type
+	public static Result handle(Action action){
 		IsValid isValid = ActionHandler.validate(action);
 		if(isValid instanceof NotValid){
-			NotValid notValid = (NotValid)isValid;
 			return Result.Err("Action " + action.toString() + " is not valid\n" + 
-					"Reason: " + notValid.reason);
+					"Reason: " + ((NotValid)isValid).reason);
 		}
 		Result result = ActionHandler.apply(action);
 		if(result instanceof Err){
-			Err err = (Err)result;
 			return Result.Err("Action " + action.toString() + " failed\n" + 
-					"Reason: " + err.reason);
+					"Reason: " + ((Err)result).reason);
 		}
 		return Result.Ok();
 	}
 
+	private interface Rule { } 
+
 	/*********************** Validate Actions *************************/
 	// Before applying an action, we make sure it is valid
 	
-	public interface ValidateRule<A extends Action> {
+	public interface ValidateRule<A extends Action> extends Rule {
 		IsValid validate(A action);
 	}
 
@@ -37,56 +36,75 @@ public class ActionHandler {
 	public static <A extends Action> void addValidateRule(Class<A> actionType, ValidateRule<A> rule){
 		if(!validateRules.containsKey(actionType)){
 			// If this is the first validate rule for a certain type, create a new list in the validateRules map
-			validateRules.put(actionType, new ArrayList< ValidateRule<A> >());
+			validateRules.put(actionType, new ArrayList<Rule>());
 		}
-		List< ValidateRule<A> > rules = (List< ValidateRule<A> >)validateRules.get(actionType);
-		rules.add(rule);
+		validateRules.get(actionType).add(rule);
 	}
 
 	// Checks the given action against all the validation rules to make sure it is ok to apply
-	public static <A extends Action> IsValid validate(A action) {
-		// Loop through every ValidateRule for the given action type and make sure none of them are invalid
+	private static IsValid validate(Action action) {
 		IsValid isValid = IsValid.True();
-		HashSet< ValidateRule<A> > rules = (HashSet< ValidateRule<A> >)validateRules.get(action.getClass());
-		for(ValidateRule<A> rule : rules){
-			isValid = isValid.AND(rule.validate(action));
+
+		// Look for handler rules for the given class and any superclasses that are also Actions
+		// Keep traversing up by superclass until no longer an Action
+		Class cls = action.getClass();
+		while(Action.class.isAssignableFrom(cls)){
+			List<Rule> rules = validateRules.get(cls);
+			// Loop through every ValidateRule for the given action type and make sure none of them are invalid
+			if(rules == null){
+				break;
+			}
+			for(Rule rule : rules){
+				ValidateRule<Action> vrule = (ValidateRule<Action>)rule;
+				isValid = isValid.AND(vrule.validate(action));
+			}
+			cls = cls.getSuperclass();
 		}
 		return isValid;
 	}
 
 	// Map from an action class to a list of ValidateRules for that action type
-	private static HashMap<Class<?>, Object>validateRules = new HashMap<Class<?>, Object>();
+	private static HashMap<Class, List<Rule> >validateRules = new HashMap<Class, List<Rule> >();
 
 
 	/*********************** Apply Actions *************************/
 	// once an action is validated, then apply it via the given handlers
 
-	public interface ApplyRule<A extends Action> {
+	public interface ApplyRule<A extends Action> extends Rule{
 		Result apply(A action);
 	}
 
 	public static <A extends Action> void addApplyRule(Class<A> actionType, ApplyRule<A> rule){
 		if(!applyRules.containsKey(actionType)){
 			// If this is the first apply rule for a certain type, create a new list in the applyRules map
-			applyRules.put(actionType, new ArrayList< ApplyRule<A> >());
+			applyRules.put(actionType, new ArrayList<Rule>());
 		}
-		List< ApplyRule<A> > rules = (List< ApplyRule<A> >)applyRules.get(actionType);
-		rules.add(rule);
+		applyRules.get(actionType).add(rule);
 	}
 
 	// Calls each apply rule involving the given action and reports whether it succeeded or failed
-	public static <A extends Action> Result apply(A action) {
-		// Loop through every ApplyRule for the given action type and make sure none of them fail
-		List< ApplyRule<A> > rules = (List< ApplyRule<A> >)applyRules.get(action.getClass());
-		for(ApplyRule<A> rule : rules){
-			Result result = rule.apply(action);
-			if(result instanceof Err){
-				return result;
+	private static Result apply(Action action) {
+		// Look for handler rules for the given class and any superclasses that are also Actions
+		// Keep traversing up by superclass until no longer an Action
+		Class cls = action.getClass();
+		while(Action.class.isAssignableFrom(cls)){
+			List<Rule> rules = applyRules.get(cls);
+			if(rules == null){
+				break;
 			}
+			// Loop through every ApplyRule for the given action type
+			for(Rule rule : rules){
+				ApplyRule<Action> arule = (ApplyRule<Action>)rule;
+				Result result = arule.apply(action);
+				if(result instanceof Err){
+					return result;
+				}
+			}
+			cls = cls.getSuperclass();
 		}
 		return Result.Ok();
 	}
 
 	// Map from an action class to a list of ApplyRules for that action type
-	private static HashMap<Class<?>, Object> applyRules = new HashMap<Class<?>, Object>();
+	private static HashMap<Class, List<Rule> > applyRules = new HashMap<Class, List<Rule> >();
 }

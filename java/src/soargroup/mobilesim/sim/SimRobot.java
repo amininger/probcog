@@ -307,47 +307,55 @@ public class SimRobot implements SimObject, LCMSubscriber
     	return grabbedObject;
     }
 
-	public void setupRules(){
-		// PickUp
-		PickUpRules rules = new PickUpRules();
-		ActionHandler.addValidateRule(PickUpAction.class, rules);
-		ActionHandler.addApplyRule(PickUpAction.class, rules);
-	}
-
-	// Rules for Handling PickUp Action
-	private class PickUpRules implements ValidateRule<PickUpAction>, ApplyRule<PickUpAction> {
+	public void setupActionRules(){
 		// PickUpAction: Valid if not holding anything
-		public IsValid validate(PickUpAction pickup){
-			if(grabbedObject == null)
+		ActionHandler.addValidateRule(PickUpAction.class, new ValidateRule<PickUpAction>(){
+			public IsValid validate(PickUpAction pickup){
+				if(grabbedObject != null)
+					return IsValid.False("SimRobot: Already holding object " + grabbedObject);
 				return IsValid.True();
-			return IsValid.False("SimRobot: Already holding object " + grabbedObject);
-		}
+			}
+		});
 
-		// PickUpAction Apply: Update isGrabbed flag on object
-		public Result apply(PickUpAction pickup){
-			double[] objPos = LinAlg.copy(LinAlg.matrixToXyzrpy(pickup.object.getPose()), 3);
-			double[] robPos = LinAlg.copy(drive.poseTruth.pos, 3);
-			double dist = LinAlg.distance(robPos, objPos, 2);
+		// PickUpAction Apply: Set grabbedObject
+		ActionHandler.addApplyRule(PickUpAction.class, new ApplyRule<PickUpAction>(){
+			public Result apply(PickUpAction pickup){
+				grabbedObject = pickup.object;
+				return Result.Ok();
+			}
+		});
 
-			grabbedObject = pickup.object;
-			double[] xyzrpy = LinAlg.quatPosToXyzrpy(drive.poseTruth.orientation, robPos);
-			xyzrpy[2] = 0.5;
-			return Result.Ok();
-		}
+		// PutDownAction: Valid if not holding anything
+		ActionHandler.addValidateRule(PutDownAction.class, new ValidateRule<PutDownAction>(){
+			public IsValid validate(PutDownAction putdown){
+				if(grabbedObject == null || grabbedObject != putdown.object)
+					return IsValid.False("SimRobot: Not holding object " + putdown.object);
+				return IsValid.True();
+			}
+		});
+
+		// PutDownAction Apply: Set grabbedObject
+		ActionHandler.addApplyRule(PutDownAction.class, new ApplyRule<PutDownAction>(){
+			public Result apply(PutDownAction putdown){
+				grabbedObject = null;
+				return Result.Ok();
+			}
+		});
+
+		// PutDownFloorAction Apply: Set the position of the object to in front of the robot
+		ActionHandler.addApplyRule(PutDownFloorAction.class, new ApplyRule<PutDownFloorAction>(){
+			public Result apply(PutDownFloorAction putdown){
+				double[] robotPos = LinAlg.copy(drive.poseTruth.pos);
+				double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
+				forward = LinAlg.scale(forward, 1.0);
+				double[] newPos = LinAlg.add(robotPos, forward);
+				double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
+				grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+				return Result.Ok();
+			}
+		});
 	}
 
-    public void putDownObject(){
-    	if(grabbedObject == null){
-    		return;
-    	}
-    	double[] robotPos = LinAlg.copy(this.drive.poseTruth.pos);
-    	double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(this.drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
-    	forward = LinAlg.scale(forward, 1.0);
-    	double[] newPos = LinAlg.add(robotPos, forward);
-    	double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
-    	grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
-    	grabbedObject = null;
-    }
 
 	public void putObjectAtXYZ(double[] xyz){
 		if(grabbedObject == null){

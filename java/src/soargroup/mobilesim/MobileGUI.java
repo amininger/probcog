@@ -127,11 +127,11 @@ public class MobileGUI extends JFrame
 					soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
 
 					String tf="<<monospaced,black,dropshadow=false>>";
-					String text = String.format("%s%s\n", tf, pcobj.getDescription());
+					String text = String.format("%s%s\n", tf, pcobj);
 
 					VzText vzText = new VzText(text);
 					double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.5};
-					buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.05), vzText));
+					buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.02), vzText));
 				}
 			}
 			buffer.swap();

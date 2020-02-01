@@ -17,17 +17,19 @@ public class Grabbable implements IAttribute {
 	public void setGrabbed(boolean isGrabbed){
 		this._isGrabbed = isGrabbed;
 	}
+	
+	// Registering Action Handling Rules
+	static {
+		PickUpRules rules = new PickUpRules();
+		ActionHandler.addApplyRule(PickUpAction.class, rules);
+	}
+	static {
+		PutDownRules rules = new PutDownRules();
+		ActionHandler.addApplyRule(PutDownAction.class, rules);
+	}
 
 	// Rules for Handling PickUp Action
-	private static class PickUpRules implements ValidateRule<PickUpAction>, ApplyRule<PickUpAction> {
-		// PickUpAction Valid: If Grabbable -> valid if not grabbed
-		public IsValid validate(PickUpAction pickup){
-			Grabbable grabbable = pickup.object.getAttr(Grabbable.class);
-			if(grabbable == null || !grabbable.isGrabbed()){
-				return IsValid.True();
-			}
-			return IsValid.False("Grabbable: The object is already grabbed");
-		}
+	private static class PickUpRules implements ApplyRule<PickUpAction> {
 		// PickUpAction Apply: Update isGrabbed flag on object
 		public Result apply(PickUpAction pickup){
 			Grabbable grabbable = pickup.object.getAttr(Grabbable.class);
@@ -37,19 +39,16 @@ public class Grabbable implements IAttribute {
 			return Result.Ok();
 		}
 	}
-	static {
-		PickUpRules rules = new PickUpRules();
-		ActionHandler.addValidateRule(PickUpAction.class, rules);
-		ActionHandler.addApplyRule(PickUpAction.class, rules);
+
+	// Rules for Handling PutDown Action
+	private static class PutDownRules implements ApplyRule<PutDownAction> {
+		// PutDownAction Apply: Update isGrabbed flag on object
+		public Result apply(PutDownAction putdown){
+			Grabbable grabbable = putdown.object.getAttr(Grabbable.class);
+			if(grabbable != null){
+				grabbable.setGrabbed(false);
+			}
+			return Result.Ok();
+		}
 	}
-
-	//public Shape getShape() {
-	//	if(isHeld){
-	//		// Don't have collision on, otherwise the robot won't drive
-	//		return new april.sim.SphereShape(0.0);
-	//	} else {
-	//		return new BoxShape(scale_xyz);
-	//	}
-	//}
-
 }

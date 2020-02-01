@@ -21,11 +21,8 @@ import april.vis.VzRectangle;
 import april.vis.VzText;
 import april.vis.VzLines;
 
-public class SimRegion extends SimObjectPC implements SimObject
+public class SimRegion extends BaseSimObject
 {
-	protected double[] xyzrpy = new double[]{ 0, 0, 0, 0, 0, 0 };
-    protected double T[][] = LinAlg.identity(4);  // position
-
 	protected static Color onColor = new Color(255, 225, 225);
 	protected static Color offColor = new Color(100, 100, 100);
 	protected boolean isOn = true;
@@ -37,11 +34,10 @@ public class SimRegion extends SimObjectPC implements SimObject
 	protected String handle = null;
 	private String label = null;
 
-	private VisObject cachedVisObject = null;
-
     public SimRegion(SimWorld sw)
     {
     	super(sw);
+		this.collide = false;
     }
     
     public String getHandle(){
@@ -50,16 +46,6 @@ public class SimRegion extends SimObjectPC implements SimObject
     public void setHandle(String handle){
     	this.handle = handle;
     }
-
-    public double[][] getPose()
-    {
-        return LinAlg.copy(T);
-    }
-
-    public void setPose(double T[][])
-    {
-        this.T = LinAlg.copy(T);
-    }    
 
 	public String getLabel(){
 		return label;
@@ -90,11 +76,7 @@ public class SimRegion extends SimObjectPC implements SimObject
 		return (Math.abs(xproj) < width/2 && Math.abs(yproj) < length/2);
 	}
 	
-    public VisObject getVisObject()
-    {
-		if(cachedVisObject != null){ 
-			return cachedVisObject;
-		}
+    public VisChain createVisObject(){
 		VisChain vc = new VisChain();
 
 		// Center Rectangle
@@ -107,13 +89,12 @@ public class SimRegion extends SimObjectPC implements SimObject
         vc.add(new VisChain(LinAlg.scale(0.05),
                               new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle.replace("wp", "")))));
 
-		cachedVisObject = vc;
 		return vc;
     }
 
 	public void setLights(boolean isOn){
 		this.isOn = isOn;
-		cachedVisObject = null;
+		this.recreateVisObject();
 	}
 
     public Shape getShape()
@@ -134,8 +115,6 @@ public class SimRegion extends SimObjectPC implements SimObject
     	width = ins.readDouble();
     	length = ins.readDouble();
 		dist_threshold_sq = (width*width + length*length)/4;
-
-        this.T = LinAlg.xyzrpyToMatrix(xyzrpy);
     }
 
     /** Write one or more lines that serialize this instance. No line
@@ -143,7 +122,7 @@ public class SimRegion extends SimObjectPC implements SimObject
     public void write(StructureWriter outs) throws IOException
     {
     	outs.writeString(handle);
-    	outs.writeDoubles(LinAlg.matrixToXyzrpy(T));
+    	outs.writeDoubles(xyzrpy);
     	outs.writeDouble(width);
     	outs.writeDouble(length);
     }

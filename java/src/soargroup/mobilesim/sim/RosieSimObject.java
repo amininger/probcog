@@ -15,12 +15,7 @@ import soargroup.mobilesim.lcmtypes.object_data_t;
 import soargroup.mobilesim.lcmtypes.classification_t;
 import soargroup.mobilesim.sim.attributes.*;
 
-public abstract class RosieSimObject implements SimObject{
-	// Pose is the center of the object's bounding box
-	protected double[] xyzrpy = new double[6];
-	// Scale is in relation to a unit cube centered at the xyz coordinate
-	protected double[] scale_xyz = new double[]{ 1, 1, 1 };
-
+public abstract class RosieSimObject extends BaseSimObject{
 	protected Integer id;
 	protected String desc;
 	protected HashMap<String, String> properties = new HashMap<String, String>();
@@ -30,10 +25,6 @@ public abstract class RosieSimObject implements SimObject{
 
 	protected SimRegion curRegion = null;
 	protected boolean staleRegion = true;
-
-	private VisObject visObject = null;
-
-	protected boolean isRunning = false;
 
 	private static int NEXT_ID = 1;
 
@@ -49,6 +40,7 @@ public abstract class RosieSimObject implements SimObject{
 	}
 
 	public RosieSimObject(SimWorld sw){
+		super(sw);
 		id = RosieSimObject.NEXT_ID;
 		RosieSimObject.NEXT_ID += 1;
 		properties.put(RosieConstants.TEMPERATURE, temperature.toString());
@@ -58,35 +50,20 @@ public abstract class RosieSimObject implements SimObject{
 		return id;
 	}
 
+	public String getDesc(){
+		return desc;
+	}
+
 	public String toString(){
 		return desc + "_" + id.toString();
 	}
 
-	public double[] getXYZRPY(){
-		return xyzrpy;
-	}
-
+	@Override
 	public void setXYZRPY(double[] newpose){
 		for(AnchorPoint pt : anchors){ pt.checkObject(); }
 		this.staleRegion = true;
 		this.xyzrpy = newpose;
 		for(AnchorPoint pt : anchors){ pt.move(); }
-	}
-
-	public double[][] getPose() {
-		return LinAlg.xyzrpyToMatrix(xyzrpy);
-	}
-
-	public void setPose(double T[][]) {
-		this.setXYZRPY(LinAlg.matrixToXyzrpy(T));
-	}	
-
-	public double[] getScale(){
-		return LinAlg.copy(scale_xyz);
-	}
-
-	public synchronized void setRunning(boolean isRunning){ 
-		this.isRunning = isRunning;
 	}
 
 	// Doesn't directly set temperature, instead will gradually move towards the given value
@@ -95,19 +72,14 @@ public abstract class RosieSimObject implements SimObject{
 		properties.put(RosieConstants.TEMPERATURE, temperature.toString());
 	}
 
-	// Children must implement this,
-	//   create a VisChain that will model the object
-	//   this result is cached, call recreateVisObject() to invalidate the cached VisObject
-	public abstract VisChain createVisObject();
-
-	protected void recreateVisObject(){  this.visObject = null;  }
-
 
 	// Children can override to do any initialization once all world objects are created
 	public void setup(ArrayList<SimObject> worldObjects) { 
 		attributes.put(Grabbable.class, new Grabbable());
-	
+		setupRules();
 	}
+
+	private void setupRules(){}
 
 	// Children can override to implement any dynamics, this is called multiple times/second
 	public void performDynamics(ArrayList<SimObject> worldObjects) { }
@@ -151,27 +123,6 @@ public abstract class RosieSimObject implements SimObject{
 		return false;
 	}
 
-	public VisObject getVisObject(){
-		if(visObject == null){
-			VisChain vc = createVisObject();
-			// Uncomment to also draw anchor points
-			for(AnchorPoint anchor : anchors){
-				vc.add(new VisChain(LinAlg.translate(anchor.xyz), 
-							new VzBox(new double[]{ 0.04, 0.04, 0.04}, new VzMesh.Style(Color.black))));
-			}
-			visObject = vc;
-		}
-		return visObject;
-	}
-
-	public Shape getShape() {
-		return new BoxShape(scale_xyz);
-	}
-	
-	public BoundingBox getBoundingBox(){
-		return new BoundingBox(scale_xyz, xyzrpy);
-	}
-
 	public object_data_t getObjectData(){
 		object_data_t objdat = new object_data_t();
 		objdat.utime = TimeUtil.utime();
@@ -200,15 +151,7 @@ public abstract class RosieSimObject implements SimObject{
 		// [Str] description
 		desc = ins.readString();
 
-		// [Dbl]x3 xyz center of object
-		double[] xyz = ins.readDoubles();
-
-		// [Dbl] rotation (xy plane)
-		double yaw = ins.readDouble();
-		xyzrpy = new double[]{ xyz[0], xyz[1], xyz[2], 0.0, 0.0, yaw };
-
-		// [Dbl]x3 scale xyz
-		scale_xyz = ins.readDoubles();
+		super.read(ins); // xyzryp scale_xyz
 
 		// [Int] number of properties
 		int num_props = ins.readInt();
@@ -224,9 +167,7 @@ public abstract class RosieSimObject implements SimObject{
 	public void write(StructureWriter outs) throws IOException
 	{
 		outs.writeString(desc);
-		outs.writeDoubles(LinAlg.copy(xyzrpy, 3));
-		outs.writeDouble(xyzrpy[5]);
-		outs.writeDoubles(scale_xyz);
+		super.write(outs);
 		outs.writeInt(properties.size());
 		for(Map.Entry<String, String> e : properties.entrySet()){
 			outs.writeString(e.getKey());
