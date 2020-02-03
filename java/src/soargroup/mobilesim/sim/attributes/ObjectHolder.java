@@ -14,8 +14,8 @@ import soargroup.mobilesim.util.ResultTypes.*;
 public class ObjectHolder extends Attribute {
 	// Anchors are locations where objects can be placed
 	protected ArrayList<AnchorPoint> anchors;
-	public ObjectHolder(RosieSimObject object){
-		super(object);
+	public ObjectHolder(RosieSimObject baseObject){
+		super(baseObject);
 		this.anchors = anchors;
 	}
 
@@ -53,45 +53,67 @@ public class ObjectHolder extends Attribute {
 		}
 	}
 
+	public boolean hasOpenPoint(){
+		for(AnchorPoint pt : anchors){
+			pt.checkObject();
+			if(!pt.hasObject()){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public Result addObject(RosieSimObject object){
+		for(AnchorPoint pt : anchors){
+			pt.checkObject();
+			if(!pt.hasObject()){
+				pt.addObject(object);
+				return Result.Ok();
+			}
+		}
+		return Result.Err("ObjectHolder: No open points");
+	}
+
+	public void removeObject(RosieSimObject object){
+		for(AnchorPoint pt : anchors){
+			if(pt.heldObj == object){
+				pt.heldObj = null;
+			}
+		}
+	}
+
 	// Registering Action Handling Rules
 	@Override
 	protected void setupRules(){
-		//  PlaceObject: Valid if there is a free anchor available
-		ActionHandler.addValidateRule(PlaceObject.class, new ValidateRule<PlaceObject>() {
-			public IsValid validate(PlaceObject place){
-				for(AnchorPoint pt : anchors){
-					pt.checkObject();
-					if(!pt.hasObject()){
-						return IsValid.True();
-					}
-				}
-				return IsValid.False("ObjectHolder: No free anchors");
-			}
-		});
-
-		// PlaceObject Apply: Add the object to the anchors
-		ActionHandler.addApplyRule(PlaceObject.class, new ApplyRule<PlaceObject>() {
-			public Result apply(PlaceObject place){
-				for(AnchorPoint pt : anchors){
-					pt.checkObject();
-					if(!pt.hasObject()){
-						pt.addObject(place.object);
-						return Result.Ok();
-					}
-				}
-				return Result.Err("ObjectHolder: No free anchors");
-			}
-		});
-
 		// PickUp Apply: Remove the object from any anchors
 		ActionHandler.addApplyRule(PickUp.class, new ApplyRule<PickUp>() {
 			public Result apply(PickUp pickup){
-				for(AnchorPoint pt : anchors){
-					if(pt.heldObj == pickup.object){
-						pt.heldObj = null;
-					}
-				}
+				removeObject(pickup.object);
 				return Result.Ok();
+			}
+		});
+	}
+
+	static {
+		//  PutDown.Target: Valid if there is a free anchor available
+		ActionHandler.addValidateRule(PutDown.Target.class, new ValidateRule<PutDown.Target>() {
+			public IsValid validate(PutDown.Target putdown){
+				ObjectHolder holder = putdown.target.getAttr(ObjectHolder.class);
+				if(holder == null){
+					return IsValid.False("Target is not an ObjectHolder");
+				}
+				return holder.hasOpenPoint() ? IsValid.True() : IsValid.False("ObjectHolder: No open points");
+			}
+		});
+
+		// PutDown.Target Apply: Add the object to the anchors
+		ActionHandler.addApplyRule(PutDown.Target.class, new ApplyRule<PutDown.Target>() {
+			public Result apply(PutDown.Target putdown){
+				ObjectHolder holder = putdown.target.getAttr(ObjectHolder.class);
+				if(holder == null){
+					return Result.Err("Target is not an ObjectHolder");
+				}
+				return holder.addObject(putdown.object);
 			}
 		});
 	}
@@ -134,10 +156,10 @@ public class ObjectHolder extends Attribute {
 			}
 		}
 
-		// Gets the pose of the held object at the anchor point (in world coordinates, apply parent transform)
+		// Gets the pose of the held object at the anchor point (in world coordinates, apply base transform)
 		private double[][] calcObjectPose(){
 			double[][] local_pose = LinAlg.translate(xyz[0], xyz[1], xyz[2] + heldObj.getScale()[2]/2 + 0.001);
-			return LinAlg.matrixAB(object.getPose(), local_pose);
+			return LinAlg.matrixAB(baseObject.getPose(), local_pose);
 		}
 	}
 }

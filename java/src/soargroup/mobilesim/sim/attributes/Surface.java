@@ -1,10 +1,10 @@
 package soargroup.mobilesim.sim.attributes;
 
 import soargroup.rosie.RosieConstants;
-import soargroup.mobilesim.sim.RosieSimObject;
-import soargroup.mobilesim.sim.actions.*;
-import soargroup.mobilesim.sim.actions.ActionHandler.*;
 import soargroup.mobilesim.util.ResultTypes.*;
+import soargroup.mobilesim.sim.RosieSimObject;
+import soargroup.mobilesim.sim.actions.PutDown;
+import soargroup.mobilesim.sim.actions.ActionHandler;
 
 public class Surface extends ObjectHolder {
 	public static final double ANCHOR_SPACING = 0.40;
@@ -19,15 +19,14 @@ public class Surface extends ObjectHolder {
 		}
 	}
 
-	@Override
-	protected void setupRules(){
-		//  PlaceObject: Valid if Relation == ON
-		ActionHandler.addValidateRule(PlaceObject.class, new ValidateRule<PlaceObject>() {
-			public IsValid validate(PlaceObject place){
-				if(place.relation.equals(RosieConstants.REL_ON)){
-					return IsValid.True();
+	static {
+		//  PutDown.Target: NotValid if target is a Surface and relation != ON
+		ActionHandler.addValidateRule(PutDown.Target.class, new ActionHandler.ValidateRule<PutDown.Target>() {
+			public IsValid validate(PutDown.Target putdown){
+				if(putdown.target.is(Surface.class) && !putdown.relation.equals(RosieConstants.REL_ON)){
+					return IsValid.False("Surface: relation must be on");
 				}
-				return IsValid.False("Surface: relation must be on");
+				return IsValid.True();
 			}
 		});
 	}

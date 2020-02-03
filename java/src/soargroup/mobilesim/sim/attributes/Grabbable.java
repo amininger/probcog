@@ -8,8 +8,8 @@ import soargroup.mobilesim.util.ResultTypes.*;
 public class Grabbable extends Attribute {
 	private boolean _isGrabbed = false;
 
-	public Grabbable(RosieSimObject object){
-		super(object);
+	public Grabbable(RosieSimObject baseObject){
+		super(baseObject);
 	}
 
 	public boolean isGrabbed(){

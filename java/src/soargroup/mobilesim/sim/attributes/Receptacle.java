@@ -3,7 +3,7 @@ package soargroup.mobilesim.sim.attributes;
 import soargroup.rosie.RosieConstants;
 import soargroup.mobilesim.util.ResultTypes.*;
 import soargroup.mobilesim.sim.RosieSimObject;
-import soargroup.mobilesim.sim.actions.PlaceObject;
+import soargroup.mobilesim.sim.actions.PutDown;
 import soargroup.mobilesim.sim.actions.ActionHandler;
 
 public class Receptacle extends ObjectHolder {
@@ -25,15 +25,14 @@ public class Receptacle extends ObjectHolder {
 		addPoints(dx, dy, z, spacing);
 	}
 
-	@Override
-	protected void setupRules(){
-		//  PlaceObject: Valid if relation == IN
-		ActionHandler.addValidateRule(PlaceObject.class, new ActionHandler.ValidateRule<PlaceObject>() {
-			public IsValid validate(PlaceObject place){
-				if(place.relation.equals(RosieConstants.REL_IN)){
-					return IsValid.True();
+	static {
+		//  PutDown.Target: NotValid if target is a Receptacle and relation != IN
+		ActionHandler.addValidateRule(PutDown.Target.class, new ActionHandler.ValidateRule<PutDown.Target>() {
+			public IsValid validate(PutDown.Target putdown){
+				if(putdown.target.is(Receptacle.class) && !putdown.relation.equals(RosieConstants.REL_IN)){
+					return IsValid.False("Receptacle: relation must be in");
 				}
-				return IsValid.False("Receptacle: relation must be in");
+				return IsValid.True();
 			}
 		});
 	}

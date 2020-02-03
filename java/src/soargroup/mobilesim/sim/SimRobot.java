@@ -343,8 +343,8 @@ public class SimRobot implements SimObject, LCMSubscriber
 		});
 
 		// PutDownFloor Apply: Set the position of the object to in front of the robot
-		ActionHandler.addApplyRule(PutDownFloor.class, new ApplyRule<PutDownFloor>(){
-			public Result apply(PutDownFloor putdown){
+		ActionHandler.addApplyRule(PutDown.Floor.class, new ApplyRule<PutDown.Floor>(){
+			public Result apply(PutDown.Floor putdown){
 				double[] robotPos = LinAlg.copy(drive.poseTruth.pos);
 				double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
 				forward = LinAlg.scale(forward, 1.0);
@@ -355,9 +355,9 @@ public class SimRobot implements SimObject, LCMSubscriber
 			}
 		});
 
-		// PutDownXYZ Apply: Set the position of the object to the given coordinates
-		ActionHandler.addApplyRule(PutDownXYZ.class, new ApplyRule<PutDownXYZ>(){
-			public Result apply(PutDownXYZ putdown){
+		// PutDown.XYZ Apply: Set the position of the object to the given coordinates
+		ActionHandler.addApplyRule(PutDown.XYZ.class, new ApplyRule<PutDown.XYZ>(){
+			public Result apply(PutDown.XYZ putdown){
 				grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ putdown.x, putdown.y, putdown.z, 0, 0, 0 }));
 				return Result.Ok();
 			}

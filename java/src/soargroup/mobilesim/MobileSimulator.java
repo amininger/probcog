@@ -153,16 +153,16 @@ public class MobileSimulator implements LCMSubscriber
 		return null;
 	}
 
-	private PutDownFloor parsePutDown(control_law_t controlLaw){
+	private PutDown.Floor parsePutDown(control_law_t controlLaw){
 		RosieSimObject obj = robot.getGrabbedObject();
 		if(obj == null){
 			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
 			return null;
 		}
-		return new PutDownFloor(obj);
+		return new PutDown.Floor(obj);
 	}
 
-	private PutDownXYZ parsePutAtXYZ(control_law_t controlLaw){
+	private PutDown.XYZ parsePutAtXYZ(control_law_t controlLaw){
 		RosieSimObject obj = robot.getGrabbedObject();
 		if(obj == null){
 			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
@@ -178,10 +178,10 @@ public class MobileSimulator implements LCMSubscriber
 				xyz[2] = Double.parseDouble(controlLaw.param_values[p].value);
 			} 
 		}
-		return new PutDownXYZ(obj, xyz);
+		return new PutDown.XYZ(obj, xyz);
 	}
 
-	private PlaceObject parsePutOnObject(control_law_t controlLaw){
+	private PutDown.Target parsePutOnObject(control_law_t controlLaw){
 		RosieSimObject grabbedObj = robot.getGrabbedObject();
 		if(grabbedObj == null){
 			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
@@ -202,7 +202,7 @@ public class MobileSimulator implements LCMSubscriber
 		}
 		RosieSimObject targetObj = getSimObject(targetId);
 		if(targetObj != null){
-			return new PlaceObject(grabbedObj, relation, targetObj);
+			return new PutDown.Target(grabbedObj, relation, targetObj);
 		} else {
 			System.err.println("MobileSimulator::parsePutOnObject: object-id '" + targetId.toString() + "' not recognized");
 			return null;
