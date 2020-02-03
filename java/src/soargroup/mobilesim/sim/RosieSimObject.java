@@ -27,6 +27,16 @@ public abstract class RosieSimObject extends BaseSimObject{
 
 	protected Double temperature = 70.0;
 
+	public RosieSimObject(SimWorld sw){
+		super(sw);
+		id = RosieSimObject.NEXT_ID;
+		RosieSimObject.NEXT_ID += 1;
+		properties.put(RosieConstants.TEMPERATURE, temperature.toString());
+	}
+
+	// A RosieSimObject is composed of Attributes that define its behavior 
+	//    and how it responds to different actions
+	// (e.g., if it is Grabbable, then you can issue PickUp commands for the object)
 	protected HashMap<Class<?>, Attribute> attributes = new HashMap<Class<?>, Attribute>();
 	public <T extends Attribute> boolean is(Class<T> cls){
 		return attributes.containsKey(cls);
@@ -36,12 +46,6 @@ public abstract class RosieSimObject extends BaseSimObject{
 		return attr == null ? null : (T)attr;
 	}
 
-	public RosieSimObject(SimWorld sw){
-		super(sw);
-		id = RosieSimObject.NEXT_ID;
-		RosieSimObject.NEXT_ID += 1;
-		properties.put(RosieConstants.TEMPERATURE, temperature.toString());
-	}
 	
 	public Integer getID(){
 		return id;

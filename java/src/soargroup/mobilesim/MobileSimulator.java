@@ -121,7 +121,13 @@ public class MobileSimulator implements LCMSubscriber
         }
     }
 
-	private RosieSimObject getSimObject(Integer id){
+	private RosieSimObject getRosieObject(control_law_t controlLaw, String param_name){
+		String objectIdStr = getParam(controlLaw, param_name, null);
+		if(objectIdStr == null){
+			return null;
+		}
+		Integer objectId = new Integer(objectIdStr);
+
         ArrayList<SimObject> simObjects;
 		synchronized(world.objects){
 			simObjects = (ArrayList<SimObject>)world.objects.clone();
@@ -129,34 +135,41 @@ public class MobileSimulator implements LCMSubscriber
 		for(SimObject obj : simObjects){
 			if(obj instanceof RosieSimObject){
 				RosieSimObject simObj = (RosieSimObject)obj;
-				if(simObj.getID().equals(id)){
+				if(simObj.getID().equals(objectId)){
 					return simObj;
 				}
 			}
 		}
+		System.err.println("MobileSimulator: parsing " + controlLaw.name);
+		System.err.println("  The rosie object given by " + objectIdStr + " is invalid");
+		return null;
+	}
+
+	private String getParam(control_law_t controlLaw, String param_name, String default_value){
+		for(int p = 0; p < controlLaw.num_params; p++){
+			if(controlLaw.param_names[p].equals(param_name)){
+				return controlLaw.param_values[p].value;
+			}
+		}
+		if(default_value != null){
+			return default_value;
+		}
+		System.err.println("MobileSimulator: parsing " + controlLaw.name);
+		System.err.println("   Missing parameter " + param_name);
 		return null;
 	}
 
 	private PickUp parsePickUp(control_law_t controlLaw){
-		for(int p = 0; p < controlLaw.num_params; p++){
-			if(controlLaw.param_names[p].equals("object-id")){
-				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
-				RosieSimObject obj = getSimObject(objectId);
-				if(obj != null){
-					return new PickUp(obj);
-				} else {
-					System.err.println("MobileSimulator::parsePickUp: object-id '" + objectId.toString() + "' not recognized");
-					return null;
-				}
-			}
-		}
-		return null;
+		RosieSimObject obj = getRosieObject(controlLaw, "object-id");
+		if(obj == null){ return null; }
+		return new PickUp(obj);
 	}
 
 	private PutDown.Floor parsePutDown(control_law_t controlLaw){
 		RosieSimObject obj = robot.getGrabbedObject();
 		if(obj == null){
-			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
+			System.err.println("MobileSimulator: parsing " + controlLaw.name);
+			System.err.println("   SimRobot's grabbedObject is null");
 			return null;
 		}
 		return new PutDown.Floor(obj);
@@ -165,7 +178,8 @@ public class MobileSimulator implements LCMSubscriber
 	private PutDown.XYZ parsePutAtXYZ(control_law_t controlLaw){
 		RosieSimObject obj = robot.getGrabbedObject();
 		if(obj == null){
-			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
+			System.err.println("MobileSimulator: parsing " + controlLaw.name);
+			System.err.println("   SimRobot's grabbedObject is null");
 			return null;
 		}
 		double[] xyz = new double[]{ 0, 0, 0 };
@@ -184,51 +198,30 @@ public class MobileSimulator implements LCMSubscriber
 	private PutDown.Target parsePutOnObject(control_law_t controlLaw){
 		RosieSimObject grabbedObj = robot.getGrabbedObject();
 		if(grabbedObj == null){
-			System.err.println("MobileSimulator::parsePutDown: SimRobot's grabbedObject is null");
+			System.err.println("MobileSimulator: parsing " + controlLaw.name);
+			System.err.println("   SimRobot's grabbedObject is null");
 			return null;
 		}
-		Integer targetId = null;
-		String relation = RosieConstants.REL_ON;
-		for(int p = 0; p < controlLaw.num_params; p++){
-			if(controlLaw.param_names[p].equals("object-id")){
-				targetId = Integer.parseInt(controlLaw.param_values[p].value);
-			} else if(controlLaw.param_names[p].equals("relation")){
-				relation = controlLaw.param_values[p].value;
-			}
-		}
-		if(targetId == null){
-			System.err.println("MobileSimulator::parsePutOnObject: object-id not given");
-			return null;
-		}
-		RosieSimObject targetObj = getSimObject(targetId);
-		if(targetObj != null){
-			return new PutDown.Target(grabbedObj, relation, targetObj);
-		} else {
-			System.err.println("MobileSimulator::parsePutOnObject: object-id '" + targetId.toString() + "' not recognized");
-			return null;
-		}
+
+		RosieSimObject target = getRosieObject(controlLaw, "object-id");
+		if(target == null){ return null; }
+
+		String relation = getParam(controlLaw, "relation", RosieConstants.REL_ON);
+
+		return new PutDown.Target(grabbedObj, relation, target);
 	}
 
-	private Action parseChangeState(control_law_t controlLaw){
-		RosieSimObject obj = null;
-		String prop = null;
-		String val = null;
-		for(int p = 0; p < controlLaw.num_params; p++){
-			if(controlLaw.param_names[p].equals("object-id")){
-				Integer objectId = Integer.parseInt(controlLaw.param_values[p].value);
-				obj = getSimObject(objectId);
-				if(obj == null){
-					System.err.println("MobileSimulator::handleChangeStateCommand: object-id '" + objectId.toString() + "' not recognized");
-					return null;
-				}
-			} else if(controlLaw.param_names[p].equals("property")){
-				prop = controlLaw.param_values[p].value;
-			} else if(controlLaw.param_names[p].equals("value")){
-				val = controlLaw.param_values[p].value;
-			} 
-		}
-		obj.setState(prop, val);
-		return null;
+	private SetProp parseChangeState(control_law_t controlLaw){
+		RosieSimObject obj = getRosieObject(controlLaw, "object-id");
+		if(obj == null){ return null; }
+
+		String prop = getParam(controlLaw, "property", null);
+		if(prop == null){ return null; }
+
+		String val = getParam(controlLaw, "value", null);
+		if(val == null){ return null; }
+
+		return SetProp.construct(obj, prop, val);
 	}
 
     private void loadWorld(GetOpt opts)
