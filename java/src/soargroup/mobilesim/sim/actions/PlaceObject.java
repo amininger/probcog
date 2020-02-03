@@ -12,6 +12,6 @@ public class PlaceObject extends PutDown {
 	}
 
 	public String toString(){
-		return "PlaceObject(" + object + " " + relation + " " + target);
+		return "PlaceObject(" + object + " " + relation + " " + target + ")";
 	}
 }

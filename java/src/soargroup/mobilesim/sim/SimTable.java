@@ -9,7 +9,7 @@ import april.vis.*;
 import april.util.*;
 import april.jmat.LinAlg;
 
-public class SimTable extends SimSurface {
+public class SimTable extends SimBoxObject {
 	private final double THICKNESS = 0.1;
 	private VisObject visObject = null;
 

@@ -21,14 +21,14 @@ public class SimFridge extends SimShelves {
 
 	// Children can override to implement any dynamics, this is called multiple times/second
 	public void performDynamics(ArrayList<SimObject> worldObjects) {
-		for(AnchorPoint pt : anchors){
-			if(!pt.hasObject()){
-				continue;
-			}
-			pt.checkObject();
-			if(pt.object != null){
-				pt.object.changeTemperature(TEMPERATURE);
-			}
-		}
+		//for(AnchorPoint pt : anchors){
+		//	if(!pt.hasObject()){
+		//		continue;
+		//	}
+		//	pt.checkObject();
+		//	if(pt.object != null){
+		//		pt.object.changeTemperature(TEMPERATURE);
+		//	}
+		//}
 	}
 }

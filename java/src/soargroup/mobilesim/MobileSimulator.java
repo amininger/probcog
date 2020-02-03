@@ -99,9 +99,9 @@ public class MobileSimulator implements LCMSubscriber
 				} else if(controlLaw.name.equals("put-at-xyz")){
 					action = parsePutAtXYZ(controlLaw);
 				} else if(controlLaw.name.equals("put-on-object")){
-					handlePutOnObjectCommand(controlLaw);
+					action = parsePutOnObject(controlLaw);
 				} else if(controlLaw.name.equals("change-state")){
-					handleChangeStateCommand(controlLaw);
+					action = parseChangeState(controlLaw);
 				} else {
 					return;
 				}
@@ -204,12 +204,12 @@ public class MobileSimulator implements LCMSubscriber
 		if(targetObj != null){
 			return new PlaceObject(grabbedObj, relation, targetObj);
 		} else {
-			System.err.println("MobileSimulator::parsePutOnObject: object-id '" + objectId.toString() + "' not recognized");
+			System.err.println("MobileSimulator::parsePutOnObject: object-id '" + targetId.toString() + "' not recognized");
 			return null;
 		}
 	}
 
-	private void handleChangeStateCommand(control_law_t controlLaw){
+	private Action parseChangeState(control_law_t controlLaw){
 		RosieSimObject obj = null;
 		String prop = null;
 		String val = null;
@@ -219,7 +219,7 @@ public class MobileSimulator implements LCMSubscriber
 				obj = getSimObject(objectId);
 				if(obj == null){
 					System.err.println("MobileSimulator::handleChangeStateCommand: object-id '" + objectId.toString() + "' not recognized");
-					return;
+					return null;
 				}
 			} else if(controlLaw.param_names[p].equals("property")){
 				prop = controlLaw.param_values[p].value;
@@ -228,6 +228,7 @@ public class MobileSimulator implements LCMSubscriber
 			} 
 		}
 		obj.setState(prop, val);
+		return null;
 	}
 
     private void loadWorld(GetOpt opts)

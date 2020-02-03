@@ -29,7 +29,7 @@ public class SimPerson extends RosieSimObject {
 		double legs_h = (scale_xyz[2] - head_r*2 - torso_h);
 		double limb_w = 0.12;
 
-		this.anchors.add(new AnchorPoint(limb_w, -scale_xyz[1]/2+limb_w/2, shoulder_h - torso_h, this, RosieConstants.REL_ON));
+		//this.anchors.add(new AnchorPoint(limb_w, -scale_xyz[1]/2+limb_w/2, shoulder_h - torso_h, this, RosieConstants.REL_ON));
 
 		Color legColor = new Color(50, 20, 20);
 

@@ -364,7 +364,6 @@ public class SimRobot implements SimObject, LCMSubscriber
 		});
 	}
 
-
     public boolean inViewRange(double[] xyz){
     	double[] robotPos  = LinAlg.copy(this.drive.poseTruth.pos);
     	double[] toPoint = LinAlg.subtract(LinAlg.copy(xyz, 3), robotPos);

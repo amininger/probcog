@@ -5,9 +5,11 @@ import soargroup.mobilesim.sim.actions.*;
 import soargroup.mobilesim.sim.actions.ActionHandler.*;
 import soargroup.mobilesim.util.ResultTypes.*;
 
-public class Grabbable implements IAttribute {
+public class Grabbable extends Attribute {
 	private boolean _isGrabbed = false;
-	public Grabbable(){
+
+	public Grabbable(RosieSimObject object){
+		super(object);
 	}
 
 	public boolean isGrabbed(){
@@ -20,6 +22,15 @@ public class Grabbable implements IAttribute {
 	
 	// Registering Action Handling Rules
 	static {
+		// PickUp: Valid if the object is Grabbable
+		ActionHandler.addValidateRule(PickUp.class, new ValidateRule<PickUp>() {
+			public IsValid validate(PickUp pickup){
+				if(pickup.object.is(Grabbable.class)){
+					return IsValid.True();
+				}
+				return IsValid.False("Grabbable: Object is not grabbable");
+			}
+		});
 		// PickUp Apply: Update isGrabbed flag on object
 		ActionHandler.addApplyRule(PickUp.class, new ApplyRule<PickUp>() {
 			public Result apply(PickUp pickup){

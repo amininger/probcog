@@ -12,7 +12,7 @@ import april.jmat.LinAlg;
 import soargroup.mobilesim.vis.VzOpenBox;
 import soargroup.rosie.RosieConstants;
 
-public class SimDrawer extends SimReceptacle {
+public class SimDrawer extends SimBoxObject {
 	public static final double ANCHOR_SPACING = 0.40;
 
 	private String door;
@@ -20,7 +20,6 @@ public class SimDrawer extends SimReceptacle {
 
 	public SimDrawer(SimWorld sw){
 		super(sw);
-		anchors = new ArrayList<AnchorPoint>();
 	}
 
 	@Override
@@ -66,7 +65,7 @@ public class SimDrawer extends SimReceptacle {
     {
 		super.read(ins);
 
-		anchors = AnchorPoint.create(ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3, ANCHOR_SPACING, this, "in");
+		//anchors = AnchorPoint.create(ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3, ANCHOR_SPACING, this, "in");
 
 		boolean newOpen = properties.get(RosieConstants.DOOR).equals(RosieConstants.DOOR_OPEN);
 		setDoorPosition(newOpen);

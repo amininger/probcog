@@ -20,9 +20,6 @@ public abstract class RosieSimObject extends BaseSimObject{
 	protected String desc;
 	protected HashMap<String, String> properties = new HashMap<String, String>();
 
-	// Anchors are locations where objects can be placed
-	protected ArrayList<AnchorPoint> anchors = new ArrayList<AnchorPoint>();
-
 	protected SimRegion curRegion = null;
 	protected boolean staleRegion = true;
 
@@ -30,12 +27,12 @@ public abstract class RosieSimObject extends BaseSimObject{
 
 	protected Double temperature = 70.0;
 
-	protected HashMap<Class<?>, IAttribute> attributes = new HashMap<Class<?>, IAttribute>();
-	public <T extends IAttribute> boolean is(Class<T> cls){
+	protected HashMap<Class<?>, Attribute> attributes = new HashMap<Class<?>, Attribute>();
+	public <T extends Attribute> boolean is(Class<T> cls){
 		return attributes.containsKey(cls);
 	}
-	public <T extends IAttribute> T getAttr(Class<T> cls){
-		IAttribute attr = attributes.get(cls);
+	public <T extends Attribute> T getAttr(Class<T> cls){
+		Attribute attr = attributes.get(cls);
 		return attr == null ? null : (T)attr;
 	}
 
@@ -60,10 +57,11 @@ public abstract class RosieSimObject extends BaseSimObject{
 
 	@Override
 	public void setXYZRPY(double[] newpose){
-		for(AnchorPoint pt : anchors){ pt.checkObject(); }
 		this.staleRegion = true;
 		this.xyzrpy = newpose;
-		for(AnchorPoint pt : anchors){ pt.move(); }
+		for(Attribute attr : attributes.values()){
+			attr.moveHandler(newpose);
+		}
 	}
 
 	// Doesn't directly set temperature, instead will gradually move towards the given value
@@ -75,7 +73,7 @@ public abstract class RosieSimObject extends BaseSimObject{
 
 	// Children can override to do any initialization once all world objects are created
 	public void setup(ArrayList<SimObject> worldObjects) { 
-		attributes.put(Grabbable.class, new Grabbable());
+		attributes.put(Grabbable.class, new Grabbable(this));
 		setupRules();
 	}
 
@@ -112,16 +110,26 @@ public abstract class RosieSimObject extends BaseSimObject{
 		}
 	}
 
-	public boolean addObject(RosieSimObject obj, String relation){
-		for(AnchorPoint pt : anchors){
-			if(pt.relation.equals(relation) && !pt.hasObject()){
-				pt.addObject(obj);
-				return true;
+	@Override
+	public VisObject getVisObject(){
+		if(visObject == null){
+			VisChain vc = createVisObject();
+			for(Attribute attr : attributes.values()){
+				attr.render(vc);
 			}
+			visObject = vc;
 		}
-		System.err.println("Error adding " + obj + " to " + this + ", anchors are full.");
-		return false;
+		return visObject;
 	}
+
+	//Receptacle
+//	@Override
+//	public VisChain createVisObject() {
+//		// Use an OpenBox instead of a regular box
+//		VisChain c = new VisChain();
+//		c.add(new VzOpenBox(scale_xyz, new VzMesh.Style(color)));
+//		return c;
+//	}
 
 	public object_data_t getObjectData(){
 		object_data_t objdat = new object_data_t();

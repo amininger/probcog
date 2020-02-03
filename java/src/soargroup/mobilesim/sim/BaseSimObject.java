@@ -19,7 +19,7 @@ public abstract class BaseSimObject implements SimObject{
 	// Scale is in relation to a unit cube centered at the xyz coordinate
 	protected double scale_xyz[] = new double[]{ 1, 1, 1 };
 
-	private VisObject visObject = null;
+	protected VisObject visObject = null;
 
 	protected boolean isRunning = false;
 	protected boolean collide = true;
