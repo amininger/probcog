@@ -1,5 +1,6 @@
 package soargroup.mobilesim.sim.attributes;
 
+import soargroup.rosie.RosieConstants;
 import soargroup.mobilesim.sim.*;
 import soargroup.mobilesim.sim.actions.*;
 import soargroup.mobilesim.sim.actions.ActionHandler.*;
@@ -8,8 +9,9 @@ import soargroup.mobilesim.util.ResultTypes.*;
 public class Activatable extends Attribute {
 	private boolean _isOn = false;
 
-	public Activatable(RosieSimObject baseObject){
+	public Activatable(RosieSimObject baseObject, boolean isOn){
 		super(baseObject);
+		this.setOn(isOn);
 	}
 
 	public boolean isOn(){
@@ -18,6 +20,8 @@ public class Activatable extends Attribute {
 
 	public void setOn(boolean isOn){
 		this._isOn = isOn;
+		baseObject.setProperty(RosieConstants.ACTIVATION, 
+				isOn ? RosieConstants.ACT_ON : RosieConstants.ACT_OFF);
 	}
 	
 	// Registering Action Handling Rules
@@ -39,6 +43,7 @@ public class Activatable extends Attribute {
 					return Result.Err("Activatable: Object is not activatable");
 				}
 				activatable.setOn(true);
+				turnon.object.recreateVisObject();
 				return Result.Ok();
 			}
 		});
@@ -59,7 +64,8 @@ public class Activatable extends Attribute {
 				if(activatable == null){
 					return Result.Err("Activatable: Object is not activatable");
 				}
-				activatable.setOn(true);
+				activatable.setOn(false);
+				turnoff.object.recreateVisObject();
 				return Result.Ok();
 			}
 		});

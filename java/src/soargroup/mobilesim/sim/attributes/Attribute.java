@@ -17,6 +17,10 @@ public class Attribute {
 	// Use to set up any action handler rules
 	protected void setupRules(){ }
 
+	// Called multiple times per second, do any dynamics or updating here
+	// dt is time since last update (fraction of a second)
+	public void update(double dt){ }
+
 	// Called when the baseObject moves
 	public void moveHandler(double[] xyzrpy){ }
 

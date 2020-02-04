@@ -11,22 +11,38 @@ import april.jmat.LinAlg;
 
 import soargroup.mobilesim.vis.VzOpenBox;
 import soargroup.rosie.RosieConstants;
+import soargroup.mobilesim.util.ResultTypes.*;
+
+import soargroup.mobilesim.sim.actions.*;
+import soargroup.mobilesim.sim.attributes.*;
 
 public class SimDrawer extends SimBoxObject {
 	public static final double ANCHOR_SPACING = 0.40;
 
-	private String door;
-	private boolean isOpen = false;
+	// Attributes
+	private Openable openable;
+	private Receptacle receptacle;
 
 	public SimDrawer(SimWorld sw){
 		super(sw);
 	}
 
 	@Override
+	public void init(ArrayList<SimObject> worldObjects) { 
+		openable = new Openable(this, false);
+		attributes.put(Openable.class, openable);
+
+		// only have a single point to put things
+		receptacle = new Receptacle(this, false);
+		receptacle.addPoint(new double[]{ ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3 });
+		attributes.put(Receptacle.class, receptacle);
+	}
+
+	@Override
 	public VisChain createVisObject() {
 		VisChain c = new VisChain();
 
-		if(isOpen){
+		if(openable.isOpen()){
 			// Draw open drawer
 			c.add(new VzOpenBox(scale_xyz, new VzMesh.Style(color)));
 			// Draw body of drawer
@@ -39,35 +55,34 @@ public class SimDrawer extends SimBoxObject {
 		return c;
 	}
 
-	private void setDoorPosition(boolean open){
-		if(open != isOpen){
-			double[][] pose = this.getPose();
-			double[][] translate = LinAlg.translate(isOpen ? scale_xyz[0] : -scale_xyz[0], 0.0, 0.0);
-			pose = LinAlg.matrixAB(pose, translate);
-			this.setPose(pose);
-
-			recreateVisObject();
-			isOpen = open;
-		}
+	private void setDoorPosition(String doorValue){
+		boolean open = doorValue.equals(RosieConstants.DOOR_OPEN);
+		// Move drawer either forward or backward
+		double[][] pose = this.getPose();
+		double[][] translate = LinAlg.translate(open ? scale_xyz[0] : -scale_xyz[0], 0.0, 0.0);
+		pose = LinAlg.matrixAB(pose, translate);
+		this.setPose(pose);
 	}
 
-	@Override
-	public void setState(String property, String value){
-		super.setState(property, value);
-		if(property.equals(RosieConstants.DOOR)){
-			boolean newOpen = value.equals(RosieConstants.DOOR_OPEN);
-			setDoorPosition(newOpen);
-		}
-	}
-
-	@Override
-    public void read(StructureReader ins) throws IOException
-    {
-		super.read(ins);
-
-		//anchors = AnchorPoint.create(ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3, ANCHOR_SPACING, this, "in");
-
-		boolean newOpen = properties.get(RosieConstants.DOOR).equals(RosieConstants.DOOR_OPEN);
-		setDoorPosition(newOpen);
+	// Action Handling Rules
+	static {
+		// SetProp.Open Apply: Move the drawer forward
+		ActionHandler.addApplyRule(SetProp.Open.class, new ActionHandler.ApplyRule<SetProp.Open>() {
+			public Result apply(SetProp.Open open){
+				if(open.object instanceof SimDrawer){
+					((SimDrawer)open.object).setDoorPosition(open.value);
+				}
+				return Result.Ok();
+			}
+		});
+		// SetProp.Close Apply: Move the drawer backward
+		ActionHandler.addApplyRule(SetProp.Close.class, new ActionHandler.ApplyRule<SetProp.Close>() {
+			public Result apply(SetProp.Close close){
+				if(close.object instanceof SimDrawer){
+					((SimDrawer)close.object).setDoorPosition(close.value);
+				}
+				return Result.Ok();
+			}
+		});
 	}
 }

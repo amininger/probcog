@@ -20,7 +20,7 @@ public class SimMicrowave extends SimShelves {
 	}
 
 	// Children can override to implement any dynamics, this is called multiple times/second
-	public void performDynamics(ArrayList<SimObject> worldObjects) {
+	public void performDynamics(double dt) {
 		//for(AnchorPoint pt : anchors){
 		//	if(!pt.hasObject()){
 		//		continue;

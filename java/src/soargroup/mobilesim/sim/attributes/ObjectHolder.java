@@ -37,10 +37,21 @@ public class ObjectHolder extends Attribute {
 		anchors.add(new AnchorPoint(xyz[0], xyz[1], xyz[2]));
 	}
 
+	public List<RosieSimObject> getHeldObjects(){
+		List<RosieSimObject> objs = new ArrayList<RosieSimObject>();
+		for(AnchorPoint pt : anchors){
+			RosieSimObject obj = pt.getObject();
+			if(obj != null){
+				objs.add(obj);
+			}
+		}
+		return objs;
+	}
+
 	@Override
 	public void moveHandler(double[] xyzrpy){
 		for(AnchorPoint pt : this.anchors){
-			pt.updateHeldObject();
+			pt.updateObject();
 		}
 	}
 
@@ -55,7 +66,6 @@ public class ObjectHolder extends Attribute {
 
 	public boolean hasOpenPoint(){
 		for(AnchorPoint pt : anchors){
-			pt.checkObject();
 			if(!pt.hasObject()){
 				return true;
 			}
@@ -65,9 +75,8 @@ public class ObjectHolder extends Attribute {
 
 	public Result addObject(RosieSimObject object){
 		for(AnchorPoint pt : anchors){
-			pt.checkObject();
 			if(!pt.hasObject()){
-				pt.addObject(object);
+				pt.setObject(object);
 				return Result.Ok();
 			}
 		}
@@ -76,8 +85,8 @@ public class ObjectHolder extends Attribute {
 
 	public void removeObject(RosieSimObject object){
 		for(AnchorPoint pt : anchors){
-			if(pt.heldObj == object){
-				pt.heldObj = null;
+			if(pt.getObject() == object){
+				pt.setObject(null);
 			}
 		}
 	}
@@ -124,35 +133,42 @@ public class ObjectHolder extends Attribute {
 		public AnchorPoint(double x, double y, double z){
 			this.xyz = new double[]{ x, y, z };
 		}
-		public double[] xyz;
-		public RosieSimObject heldObj = null;
+		public final double[] xyz;
+		private RosieSimObject heldObj = null;
+
+		public RosieSimObject getObject(){
+			checkObject();
+			return heldObj;
+		}
+
+		public void setObject(RosieSimObject obj){
+			heldObj = obj;
+			if(heldObj != null){
+				heldObj.setPose(calcObjectPose());
+			}
+		}
 
 		public boolean hasObject(){
+			checkObject();
 			return (heldObj != null);
 		}
 
-		public void addObject(RosieSimObject obj){
-			heldObj = obj;
-			heldObj.setPose(calcObjectPose());
+		// Checks the held object, then updates its pose
+		public void updateObject(){
+			checkObject();
+			if(heldObj != null){
+				heldObj.setPose(calcObjectPose());
+			}
 		}
 
 		// Makes sure the heldObject is still at the anchor point (hasn't been moved somewhere else)
-		public void checkObject(){
+		private void checkObject(){
 			if(heldObj == null){ return; }
-
 			double[][] obj_pose = calcObjectPose();
 			double[] obj_pos = LinAlg.matrixToXyzrpy(obj_pose);
 			if(LinAlg.squaredDistance(obj_pos, heldObj.getXYZRPY(), 2) > 0.01){
 				// Object must have been moved
 				heldObj = null;
-			}
-		}
-
-		// Checks the held object, then updates its pose
-		public void updateHeldObject(){
-			checkObject();
-			if(heldObj != null){
-				heldObj.setPose(calcObjectPose());
 			}
 		}
 

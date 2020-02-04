@@ -23,6 +23,12 @@ public class SetProp extends Action {
 		else if(property.equals(RosieConstants.ACTIVATION) && value.equals(RosieConstants.ACT_OFF)){
 			return new TurnOff(object);
 		} 
+		else if(property.equals(RosieConstants.DOOR) && value.equals(RosieConstants.DOOR_OPEN)){
+			return new Open(object);
+		} 
+		else if(property.equals(RosieConstants.DOOR) && value.equals(RosieConstants.DOOR_CLOSED)){
+			return new Close(object);
+		} 
 		return new SetProp(object, property, value);
 	}
 
@@ -49,6 +55,28 @@ public class SetProp extends Action {
 
 		public String toString(){
 			return "SetProp.TurnOff(" + object + ")";
+		}
+	}
+
+	// SetProp.Open -> Opens an object with a door
+	public static class Open extends SetProp {
+		public Open(RosieSimObject object){
+			super(object, RosieConstants.DOOR, RosieConstants.DOOR_OPEN);
+		}
+
+		public String toString(){
+			return "SetProp.Open(" + object + ")";
+		}
+	}
+
+	// SetProp.Close -> Closes an object with a door
+	public static class Close extends SetProp {
+		public Close(RosieSimObject object){
+			super(object, RosieConstants.DOOR, RosieConstants.DOOR_CLOSED);
+		}
+
+		public String toString(){
+			return "SetProp.Close(" + object + ")";
 		}
 	}
 

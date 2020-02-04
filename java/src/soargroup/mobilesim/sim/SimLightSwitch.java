@@ -9,28 +9,29 @@ import april.vis.*;
 import april.util.*;
 import april.jmat.LinAlg;
 
-import soargroup.mobilesim.vis.VzOpenBox;
 import soargroup.rosie.RosieConstants;
+import soargroup.mobilesim.util.ResultTypes.*;
+
+import soargroup.mobilesim.sim.actions.*;
+import soargroup.mobilesim.sim.attributes.*;
 
 public class SimLightSwitch extends RosieSimObject {
-	private boolean isOn = true;
-
 	private String regionHandle = null;
 	private SimRegion region = null;
+
+	protected Activatable activatable;
 	
 	public SimLightSwitch(SimWorld sw){
 		super(sw);
 	}
 
 	@Override
-	public VisChain createVisObject() {
-		return new VisChain(
-			new VzBox(scale_xyz, new VzMesh.Style(isOn ? Color.green : Color.red))
-		);
-	}
+	public void init(ArrayList<SimObject> worldObjects){
+		boolean isOn = properties.getOrDefault(RosieConstants.ACTIVATION, RosieConstants.ACT_ON)
+			.equals(RosieConstants.ACT_ON);
+		activatable = new Activatable(this, isOn);
+		attributes.put(Activatable.class, activatable);
 
-	@Override
-	public void setup(ArrayList<SimObject> worldObjects){
 		for(SimObject obj : worldObjects){
 			if(!(obj instanceof SimRegion)){
 				continue;
@@ -38,7 +39,7 @@ public class SimLightSwitch extends RosieSimObject {
 			SimRegion r = (SimRegion)obj;
 			if(r.getHandle().equals(regionHandle)){
 				region = (SimRegion)obj;
-				region.setLights(isOn);
+				region.setLights(activatable.isOn());
 				return;
 			}
 		}
@@ -48,27 +49,43 @@ public class SimLightSwitch extends RosieSimObject {
 	}
 
 	@Override
-	public void setState(String property, String value){
-		super.setState(property, value);
-		if(property.equals(RosieConstants.ACTIVATION)){
-			isOn = value.equals(RosieConstants.ACT_ON);
-			region.setLights(isOn);
-		}
+	public VisChain createVisObject() {
+		return new VisChain(
+			new VzBox(scale_xyz, new VzMesh.Style(activatable.isOn() ? Color.green : Color.red))
+		);
+	}
+
+	// Action Handling Rules
+	static {
+		// SetProp.TurnOn Apply: Set the region lights to on
+		ActionHandler.addApplyRule(SetProp.TurnOn.class, new ActionHandler.ApplyRule<SetProp.TurnOn>() {
+			public Result apply(SetProp.TurnOn turnon){
+				if(turnon.object instanceof SimLightSwitch){
+					((SimLightSwitch)turnon.object).region.setLights(true);
+				}
+				return Result.Ok();
+			}
+		});
+		// SetProp.TurnOff Apply: Set the region lights to off
+		ActionHandler.addApplyRule(SetProp.TurnOff.class, new ActionHandler.ApplyRule<SetProp.TurnOff>() {
+			public Result apply(SetProp.TurnOff turnoff){
+				if(turnoff.object instanceof SimLightSwitch){
+					((SimLightSwitch)turnoff.object).region.setLights(false);
+				}
+				return Result.Ok();
+			}
+		});
 	}
 
 	@Override
-    public void read(StructureReader ins) throws IOException
-    {
+    public void read(StructureReader ins) throws IOException {
 		// [String] regionHandle
 		regionHandle = ins.readString();
-
 		super.read(ins);
-		isOn = properties.get(RosieConstants.ACTIVATION).equals(RosieConstants.ACT_ON);
 	}
 
 	@Override
-	public void write(StructureWriter outs) throws IOException
-	{
+	public void write(StructureWriter outs) throws IOException {
 		outs.writeString(regionHandle);
 		super.write(outs);
 	}

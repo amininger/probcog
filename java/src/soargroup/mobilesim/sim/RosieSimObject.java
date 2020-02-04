@@ -11,27 +11,27 @@ import april.sim.*;
 import april.vis.*;
 
 import soargroup.rosie.RosieConstants;
+import soargroup.mobilesim.util.ResultTypes.*;
+import soargroup.mobilesim.sim.attributes.*;
+import soargroup.mobilesim.sim.actions.*;
+
+// Lcm Types
 import soargroup.mobilesim.lcmtypes.object_data_t;
 import soargroup.mobilesim.lcmtypes.classification_t;
-import soargroup.mobilesim.sim.attributes.*;
 
 public abstract class RosieSimObject extends BaseSimObject{
 	protected Integer id;
 	protected String desc;
 	protected HashMap<String, String> properties = new HashMap<String, String>();
 
-	protected SimRegion curRegion = null;
-	protected boolean staleRegion = true;
-
 	private static int NEXT_ID = 1;
 
-	protected Double temperature = 70.0;
+	private boolean _isVisible = true;
 
 	public RosieSimObject(SimWorld sw){
 		super(sw);
 		id = RosieSimObject.NEXT_ID;
 		RosieSimObject.NEXT_ID += 1;
-		properties.put(RosieConstants.TEMPERATURE, temperature.toString());
 	}
 
 	// A RosieSimObject is composed of Attributes that define its behavior 
@@ -45,7 +45,6 @@ public abstract class RosieSimObject extends BaseSimObject{
 		Attribute attr = attributes.get(cls);
 		return attr == null ? null : (T)attr;
 	}
-
 	
 	public Integer getID(){
 		return id;
@@ -59,59 +58,60 @@ public abstract class RosieSimObject extends BaseSimObject{
 		return desc + "_" + id.toString();
 	}
 
+	public boolean isVisible(){
+		return _isVisible;
+	}
+
 	@Override
 	public void setXYZRPY(double[] newpose){
-		this.staleRegion = true;
 		this.xyzrpy = newpose;
 		for(Attribute attr : attributes.values()){
 			attr.moveHandler(newpose);
 		}
 	}
 
-	// Doesn't directly set temperature, instead will gradually move towards the given value
-	public void changeTemperature(double targetTemp){
-		temperature += (targetTemp - temperature) * 0.02; 
-		properties.put(RosieConstants.TEMPERATURE, temperature.toString());
-	}
-
-
-	// Children can override to do any initialization once all world objects are created
-	public void setup(ArrayList<SimObject> worldObjects) { 
-		attributes.put(Grabbable.class, new Grabbable(this));
+	public void init(ArrayList<SimObject> worldObjects) { 
+		attributes.put(InRegion.class, new InRegion(this));
 		setupRules();
 	}
 
-	private void setupRules(){}
+	protected void setupRules(){ }
 
-	// Children can override to implement any dynamics, this is called multiple times/second
-	public void performDynamics(ArrayList<SimObject> worldObjects) { }
-
-	// Return the closest region from the list that contains the position of the object
-	//   It will cache this result in curRegion and not recompute until its position changes
-	public SimRegion getRegion(List<SimRegion> regions){
-		if(staleRegion){
-			Double bestDist = Double.MAX_VALUE;
-			curRegion = null;
-			for(SimRegion region : regions){
-				if(region.contains(xyzrpy)){
-					double dist2 = region.getDistanceSq(xyzrpy);
-					if(dist2 < bestDist){
-						bestDist = dist2;
-						curRegion = region;
-					}
-				}
+	// Action Handling Rules
+	static {
+		// PickUp Apply: Make object non-collidable
+		ActionHandler.addApplyRule(PickUp.class, new ActionHandler.ApplyRule<PickUp>() {
+			public Result apply(PickUp pickup){
+				pickup.object.collide = false;
+				return Result.Ok();
 			}
-			staleRegion = false;
-		}
-		return curRegion;
+		});
+		// PutDown Apply: Make object collidable again
+		ActionHandler.addApplyRule(PutDown.class, new ActionHandler.ApplyRule<PutDown>() {
+			public Result apply(PutDown putdown){
+				putdown.object.collide = true;
+				return Result.Ok();
+			}
+		});
+		//// SetProp Apply: Change the property
+		//ActionHandler.addApplyRule(SetProp.class, new ActionHandler.ApplyRule<SetProp>() {
+		//	public Result apply(SetProp setprop){
+		//		setprop.object.setProprety(setprop.property, setprop.value);
+		//		return Result.Ok();
+		//	}
+		//});
 	}
 
-	public void setState(String property, String value){
-		if(properties.containsKey(property)){
-			properties.put(property, value);
-		} else {
-			System.err.println("Object " + desc + " does not recognize property " + property);
+	// Children can override to implement any dynamics, this is called multiple times/second
+	// dt is time elapsed since last update (fraction of a second)
+	public void update(double dt) { 
+		for(Attribute attr : attributes.values()){
+			attr.update(dt);
 		}
+	}
+
+	public void setProperty(String property, String value){
+		properties.put(property, value);
 	}
 
 	@Override
@@ -163,7 +163,7 @@ public abstract class RosieSimObject extends BaseSimObject{
 		// [Str] description
 		desc = ins.readString();
 
-		super.read(ins); // xyzryp scale_xyz
+		super.read(ins); // xyz rot scale_xyz
 
 		// [Int] number of properties
 		int num_props = ins.readInt();

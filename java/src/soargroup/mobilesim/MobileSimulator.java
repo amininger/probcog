@@ -12,6 +12,7 @@ import april.sim.SimWorld;
 import april.sim.Simulator;
 import april.util.EnvUtil;
 import april.util.GetOpt;
+import april.util.TimeUtil;
 import april.vis.VisCanvas;
 import april.vis.VisConsole;
 import april.vis.VisLayer;
@@ -63,7 +64,7 @@ public class MobileSimulator implements LCMSubscriber
 			if(obj instanceof RosieSimObject){
 				RosieSimObject rosieObj = (RosieSimObject)obj;
 				rosieObjs.add(rosieObj);
-				rosieObj.setup(simObjects);
+				rosieObj.init(simObjects);
 			}
 		}
 		if(robot == null){
@@ -250,15 +251,20 @@ public class MobileSimulator implements LCMSubscriber
     {
 		ArrayList<RosieSimObject> rosieObjs;
 		ArrayList<SimObject> simObjs;
+		private long lastUpdate;
 		public SimulateDynamicsTask(ArrayList<RosieSimObject> rosieObjs, ArrayList<SimObject> simObjects){
 			this.rosieObjs = rosieObjs;
 			this.simObjs = simObjects;
+			this.lastUpdate = TimeUtil.utime();
 		}
 		@Override
 		public void run() {
+			long time = TimeUtil.utime();
+			double dt = (double)(time - lastUpdate)/1000000.0;
 			for(RosieSimObject obj : rosieObjs){
-				obj.performDynamics(simObjs);
+				obj.update(dt);
 			}
+			lastUpdate = time;
 		}
     }
 

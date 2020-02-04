@@ -49,6 +49,10 @@ public abstract class BaseSimObject implements SimObject{
 	public double[] getScale(){
 		return LinAlg.copy(scale_xyz);
 	}
+	
+	public BoundingBox getBoundingBox(){
+		return new BoundingBox(scale_xyz, xyzrpy);
+	}
 
 	// isRunning
 	public void setRunning(boolean isRunning){ 
@@ -61,7 +65,7 @@ public abstract class BaseSimObject implements SimObject{
 	//   this result is cached, call recreateVisObject() to invalidate the cached VisObject
 	public abstract VisChain createVisObject();
 
-	protected void recreateVisObject(){  this.visObject = null;  }
+	public void recreateVisObject(){  this.visObject = null;  }
 
 	public VisObject getVisObject(){
 		if(visObject == null){
@@ -80,10 +84,12 @@ public abstract class BaseSimObject implements SimObject{
 			return new april.sim.SphereShape(0.0);
 		}
 	}
-	
-	public BoundingBox getBoundingBox(){
-		return new BoundingBox(scale_xyz, xyzrpy);
-	}
+
+
+	// Read/Write
+	// [Dbl]x3 for xyz center
+	// [Dbl] for rotation (xy plane)
+	// [Dbl]x3 for scale xyz (bounding box dimensions)
 	
 	/** Restore state that was previously written **/
 	public void read(StructureReader ins) throws IOException

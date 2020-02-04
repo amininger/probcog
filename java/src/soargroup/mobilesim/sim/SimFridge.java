@@ -1,8 +1,7 @@
 package soargroup.mobilesim.sim;
 
-import java.awt.Color;
+import java.util.List;
 import java.util.ArrayList;
-import java.io.IOException;
 
 import april.sim.*;
 import april.vis.*;
@@ -12,6 +11,8 @@ import april.jmat.LinAlg;
 import soargroup.mobilesim.vis.VzOpenBox;
 import soargroup.rosie.RosieConstants;
 
+import soargroup.mobilesim.sim.attributes.*;
+
 public class SimFridge extends SimShelves {
 	public static final double TEMPERATURE = 35.0;
 
@@ -20,15 +21,13 @@ public class SimFridge extends SimShelves {
 	}
 
 	// Children can override to implement any dynamics, this is called multiple times/second
-	public void performDynamics(ArrayList<SimObject> worldObjects) {
-		//for(AnchorPoint pt : anchors){
-		//	if(!pt.hasObject()){
-		//		continue;
-		//	}
-		//	pt.checkObject();
-		//	if(pt.object != null){
-		//		pt.object.changeTemperature(TEMPERATURE);
-		//	}
-		//}
+	@Override
+	public void update(double dt) {
+		List<RosieSimObject> objects = receptacle.getHeldObjects();
+		for(RosieSimObject obj : objects){
+			if(obj.is(HasTemp.class)){
+				obj.getAttr(HasTemp.class).changeTemperature(TEMPERATURE);
+			}
+		}
 	}
 }

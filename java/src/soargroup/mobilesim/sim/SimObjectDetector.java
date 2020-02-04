@@ -15,6 +15,7 @@ import april.util.TimeUtil;
 import soargroup.mobilesim.sim.SimRobot;
 import soargroup.mobilesim.sim.RosieSimObject;
 import soargroup.mobilesim.sim.SimRegion;
+import soargroup.mobilesim.sim.attributes.InRegion;
 import soargroup.mobilesim.util.BoundingBox;
 import soargroup.mobilesim.util.Util;
 
@@ -78,11 +79,11 @@ public class SimObjectDetector {
         }
 
 		private boolean isVisible(RosieSimObject obj, SimRobot robot, SimRegion curRegion){
-			if (obj == robot.getGrabbedObject()){
+			if(obj == robot.getGrabbedObject()){
 				// Grabbed object always visible
 				return true;
 			}
-			if(obj.getRegion(regions) != curRegion){
+			if(obj.is(InRegion.class) && obj.getAttr(InRegion.class).getRegion(regions) != curRegion){
 				// Objects not in the current region are not visible
 				return false;
 			}
@@ -90,6 +91,10 @@ public class SimObjectDetector {
 				// If we are not using the robot's viewpoint, 
 				//    then return true for all objects in current region
 				return true;
+			}
+			if(!obj.isVisible()){
+				// Object may report that it is not visible 
+				return false;
 			}
 			if(robot.inViewRange(obj.getBoundingBox().xyzrpy)){
 				// Otherwise, check that the object is actually visible from the robot's perspective
