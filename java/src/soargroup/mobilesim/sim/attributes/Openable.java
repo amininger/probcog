@@ -27,13 +27,17 @@ public class Openable extends Attribute {
 
 	// Registering Action Handling Rules
 	static {
-		// SetProp.Open: Valid if the object is Openable
+		// SetProp.Open: Valid if the object is Openable and not open
 		ActionHandler.addValidateRule(SetProp.Open.class, new ValidateRule<SetProp.Open>() {
 			public IsValid validate(SetProp.Open open){
-				if(open.object.is(Openable.class)){
-					return IsValid.True();
+				Openable openable = open.object.getAttr(Openable.class);
+				if(openable == null){
+					return IsValid.False("Openable: Object is not openable");
 				}
-				return IsValid.False("Openable: Object is not openable");
+				if(openable.isOpen()){
+					return IsValid.False("Openable: Object is already open");
+				}
+				return IsValid.True();
 			}
 		});
 		// SetProp.Open Apply: Update isOpen flag on object
@@ -49,13 +53,17 @@ public class Openable extends Attribute {
 			}
 		});
 
-		// SetProp.Close: Valid if the object is Openable
+		// SetProp.Close: Valid if the object is Openable and open
 		ActionHandler.addValidateRule(SetProp.Close.class, new ValidateRule<SetProp.Close>() {
 			public IsValid validate(SetProp.Close close){
-				if(close.object.is(Openable.class)){
-					return IsValid.True();
+				Openable openable = close.object.getAttr(Openable.class);
+				if(openable == null){
+					return IsValid.False("Openable: Object is not openable");
 				}
-				return IsValid.False("Openable: Object is not openable");
+				if(!openable.isOpen()){
+					return IsValid.False("Openable: Object is not open");
+				}
+				return IsValid.True();
 			}
 		});
 		// SetProp.Close Apply: Update isOpen flag on object

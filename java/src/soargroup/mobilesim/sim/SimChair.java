@@ -9,7 +9,7 @@ import april.vis.*;
 import april.util.*;
 import april.jmat.LinAlg;
 
-public class SimChair extends SimBoxObject {
+public class SimChair extends RosieSimObject {
 	public SimChair(SimWorld sw){
 		super(sw);
 	}

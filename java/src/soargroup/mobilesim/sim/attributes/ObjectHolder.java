@@ -16,7 +16,7 @@ public class ObjectHolder extends Attribute {
 	protected ArrayList<AnchorPoint> anchors;
 	public ObjectHolder(RosieSimObject baseObject){
 		super(baseObject);
-		this.anchors = anchors;
+		this.anchors = new ArrayList<AnchorPoint>();
 	}
 
 	// Creates a set of points centered at 0, 0 that fit onto a rectange of the given dx and dy size
@@ -37,6 +37,10 @@ public class ObjectHolder extends Attribute {
 		anchors.add(new AnchorPoint(xyz[0], xyz[1], xyz[2]));
 	}
 
+	public void addPoint(double x, double y, double z){
+		anchors.add(new AnchorPoint(x, y, z));
+	}
+
 	public List<RosieSimObject> getHeldObjects(){
 		List<RosieSimObject> objs = new ArrayList<RosieSimObject>();
 		for(AnchorPoint pt : anchors){
@@ -50,8 +54,9 @@ public class ObjectHolder extends Attribute {
 
 	@Override
 	public void moveHandler(double[] xyzrpy){
+		double[][] newPose = LinAlg.xyzrpyToMatrix(xyzrpy);
 		for(AnchorPoint pt : this.anchors){
-			pt.updateObject();
+			pt.updateObject(newPose);
 		}
 	}
 
@@ -144,7 +149,7 @@ public class ObjectHolder extends Attribute {
 		public void setObject(RosieSimObject obj){
 			heldObj = obj;
 			if(heldObj != null){
-				heldObj.setPose(calcObjectPose());
+				heldObj.setPose(calcObjectPose(baseObject.getPose()));
 			}
 		}
 
@@ -154,17 +159,17 @@ public class ObjectHolder extends Attribute {
 		}
 
 		// Checks the held object, then updates its pose
-		public void updateObject(){
+		public void updateObject(double[][] newPose){
 			checkObject();
 			if(heldObj != null){
-				heldObj.setPose(calcObjectPose());
+				heldObj.setPose(calcObjectPose(newPose));
 			}
 		}
 
 		// Makes sure the heldObject is still at the anchor point (hasn't been moved somewhere else)
 		private void checkObject(){
 			if(heldObj == null){ return; }
-			double[][] obj_pose = calcObjectPose();
+			double[][] obj_pose = calcObjectPose(baseObject.getPose());
 			double[] obj_pos = LinAlg.matrixToXyzrpy(obj_pose);
 			if(LinAlg.squaredDistance(obj_pos, heldObj.getXYZRPY(), 2) > 0.01){
 				// Object must have been moved
@@ -173,9 +178,9 @@ public class ObjectHolder extends Attribute {
 		}
 
 		// Gets the pose of the held object at the anchor point (in world coordinates, apply base transform)
-		private double[][] calcObjectPose(){
+		private double[][] calcObjectPose(double[][] parentPose){
 			double[][] local_pose = LinAlg.translate(xyz[0], xyz[1], xyz[2] + heldObj.getScale()[2]/2 + 0.001);
-			return LinAlg.matrixAB(baseObject.getPose(), local_pose);
+			return LinAlg.matrixAB(parentPose, local_pose);
 		}
 	}
 }

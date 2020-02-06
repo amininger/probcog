@@ -11,7 +11,7 @@ import april.jmat.LinAlg;
 
 import soargroup.mobilesim.sim.attributes.Surface;
 
-public class SimDesk extends SimBoxObject {
+public class SimDesk extends RosieSimObject {
 	private final double THICKNESS = 0.1;
 
 	public SimDesk(SimWorld sw){
@@ -19,9 +19,9 @@ public class SimDesk extends SimBoxObject {
 	}
 
 	@Override
-	public void init(){
-		super.init();
-		attributes.put(Surface.class, new Surface(this, true));
+	public void init(ArrayList<SimObject> simObjects){
+		super.init(simObjects);
+		addAttribute(new Surface(this, true));
 	}
 
 	@Override

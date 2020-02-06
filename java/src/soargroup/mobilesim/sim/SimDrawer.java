@@ -16,9 +16,7 @@ import soargroup.mobilesim.util.ResultTypes.*;
 import soargroup.mobilesim.sim.actions.*;
 import soargroup.mobilesim.sim.attributes.*;
 
-public class SimDrawer extends SimBoxObject {
-	public static final double ANCHOR_SPACING = 0.40;
-
+public class SimDrawer extends RosieSimObject {
 	// Attributes
 	private Openable openable;
 	private Receptacle receptacle;
@@ -30,12 +28,12 @@ public class SimDrawer extends SimBoxObject {
 	@Override
 	public void init(ArrayList<SimObject> worldObjects) { 
 		openable = new Openable(this, false);
-		attributes.put(Openable.class, openable);
+		addAttribute(openable);
 
 		// only have a single point to put things
 		receptacle = new Receptacle(this, false);
-		receptacle.addPoint(new double[]{ ANCHOR_SPACING*1.1, scale_xyz[1], -scale_xyz[2]/3 });
-		attributes.put(Receptacle.class, receptacle);
+		receptacle.addPoint(new double[]{ scale_xyz[0]*0.2, 0.0, -scale_xyz[2]*0.5 + 0.001 });
+		addAttribute(receptacle);
 	}
 
 	@Override

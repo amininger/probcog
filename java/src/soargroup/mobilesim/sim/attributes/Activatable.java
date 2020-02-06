@@ -26,13 +26,17 @@ public class Activatable extends Attribute {
 	
 	// Registering Action Handling Rules
 	static {
-		// SetProp.TurnOn: Valid if the object is Activatable
+		// SetProp.TurnOn: Valid if the object is Activatable and off
 		ActionHandler.addValidateRule(SetProp.TurnOn.class, new ValidateRule<SetProp.TurnOn>() {
 			public IsValid validate(SetProp.TurnOn turnon){
-				if(turnon.object.is(Activatable.class)){
-					return IsValid.True();
+				Activatable activatable = turnon.object.getAttr(Activatable.class);
+				if(activatable == null){
+					return IsValid.False("Activatable: Object is not activatable");
 				}
-				return IsValid.False("Activatable: Object is not activatable");
+				if(activatable.isOn()){
+					return IsValid.False("Activatable: Object is already on");
+				}
+				return IsValid.True();
 			}
 		});
 		// SetProp.TurnOn Apply: Update isOn flag on object
@@ -48,13 +52,17 @@ public class Activatable extends Attribute {
 			}
 		});
 
-		// SetProp.TurnOff: Valid if the object is Activatable
+		// SetProp.TurnOff: Valid if the object is Activatable and on
 		ActionHandler.addValidateRule(SetProp.TurnOff.class, new ValidateRule<SetProp.TurnOff>() {
 			public IsValid validate(SetProp.TurnOff turnoff){
-				if(turnoff.object.is(Activatable.class)){
-					return IsValid.True();
+				Activatable activatable = turnoff.object.getAttr(Activatable.class);
+				if(activatable == null){
+					return IsValid.False("Activatable: Object is not activatable");
 				}
-				return IsValid.False("Activatable: Object is not activatable");
+				if(!activatable.isOn()){
+					return IsValid.False("Activatable: Object is not on");
+				}
+				return IsValid.True();
 			}
 		});
 		// SetProp.TurnOff Apply: Update isOn flag on object

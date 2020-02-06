@@ -9,12 +9,19 @@ import april.vis.*;
 import april.util.*;
 import april.jmat.LinAlg;
 
-public class SimTable extends SimBoxObject {
+import soargroup.mobilesim.sim.attributes.Surface;
+
+public class SimTable extends RosieSimObject {
 	private final double THICKNESS = 0.1;
-	private VisObject visObject = null;
 
 	public SimTable(SimWorld sw){
 		super(sw);
+	}
+
+	@Override
+	public void init(ArrayList<SimObject> simObjects){
+		super.init(simObjects);
+		addAttribute(new Surface(this, true));
 	}
 
 	@Override

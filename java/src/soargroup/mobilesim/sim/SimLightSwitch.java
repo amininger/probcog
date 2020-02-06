@@ -29,8 +29,9 @@ public class SimLightSwitch extends RosieSimObject {
 	public void init(ArrayList<SimObject> worldObjects){
 		boolean isOn = properties.getOrDefault(RosieConstants.ACTIVATION, RosieConstants.ACT_ON)
 			.equals(RosieConstants.ACT_ON);
+
 		activatable = new Activatable(this, isOn);
-		attributes.put(Activatable.class, activatable);
+		addAttribute(activatable);
 
 		for(SimObject obj : worldObjects){
 			if(!(obj instanceof SimRegion)){
@@ -79,14 +80,14 @@ public class SimLightSwitch extends RosieSimObject {
 
 	@Override
     public void read(StructureReader ins) throws IOException {
+		super.read(ins);
 		// [String] regionHandle
 		regionHandle = ins.readString();
-		super.read(ins);
 	}
 
 	@Override
 	public void write(StructureWriter outs) throws IOException {
-		outs.writeString(regionHandle);
 		super.write(outs);
+		outs.writeString(regionHandle);
 	}
 }

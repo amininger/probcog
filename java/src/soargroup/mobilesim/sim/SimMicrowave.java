@@ -19,16 +19,16 @@ public class SimMicrowave extends SimShelves {
 		super(sw);
 	}
 
-	// Children can override to implement any dynamics, this is called multiple times/second
-	public void performDynamics(double dt) {
-		//for(AnchorPoint pt : anchors){
-		//	if(!pt.hasObject()){
-		//		continue;
-		//	}
-		//	pt.checkObject();
-		//	if(pt.object != null){
-		//		pt.object.changeTemperature(TEMPERATURE);
-		//	}
-		//}
-	}
+	//// Children can override to implement any dynamics, this is called multiple times/second
+	//public void performDynamics(double dt) {
+	//	//for(AnchorPoint pt : anchors){
+	//	//	if(!pt.hasObject()){
+	//	//		continue;
+	//	//	}
+	//	//	pt.checkObject();
+	//	//	if(pt.object != null){
+	//	//		pt.object.changeTemperature(TEMPERATURE);
+	//	//	}
+	//	//}
+	//}
 }
