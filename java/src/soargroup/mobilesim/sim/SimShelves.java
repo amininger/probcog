@@ -48,30 +48,11 @@ public class SimShelves extends RosieSimObject {
 
 	@Override
 	public VisChain createVisObject(){
-		VisChain c = new VisChain();
-		VzMesh.Style style = new VzMesh.Style(color);
-
-		// Outer Bounds
-		c.add(new VisChain(
-			LinAlg.rotateY(Math.PI/2),
-			new VzOpenBox(new double[]{ scale_xyz[2], scale_xyz[1], scale_xyz[0] }, style)
-		));
-
-		// Shelves
-		int nshelves = (int)Math.ceil(scale_xyz[2]/SHELF_SPACING)-1;
-		double sz = -(nshelves-1)/2.0;
-		for(int i = 0; i < nshelves; i += 1){
-			c.add(new VisChain(LinAlg.translate(0.0, 0.0, (sz + i)*SHELF_SPACING), 
-						new VzRectangle(scale_xyz[0], scale_xyz[1], new VzMesh.Style(color))));
+		boolean closed = (openable != null && !openable.isOpen());
+		if(closed){
+			return ObjectModels.createShelfModel(scale_xyz, color);
+		} else {
+			return new VisChain(new VzBox(scale_xyz, new VzMesh.Style(color)));
 		}
-
-		if(openable != null && !openable.isOpen()){
-			// Door
-			c.add(new VisChain(
-				LinAlg.translate(scale_xyz[0]/2, 0.0, 0.0), LinAlg.rotateY(Math.PI/2), 
-				new VzRectangle(scale_xyz[2], scale_xyz[1], new VzMesh.Style(color))));
-		}
-
-		return c;
 	}
 }

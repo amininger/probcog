@@ -9,410 +9,442 @@
   vec 6
     0.00   0.00   0.00   0.00   0.00   0.00
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Williams
+  bunk
   # Object xyz
   vec 3
-    7.50  17.50   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   2.00
-  # Properties
-  2
-    category=officer1
-    name=Williams
-  # Color rgb (int 0-255)
-  ivec 3
-    0 0 100
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Bunk
-  # Object xyz
-  vec 3
-    2.50  19.00   1.00
+    2.50  18.75   1.00
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     1.50   2.00   2.00
-  # Properties
-  2
-    color=gray1
-    category=bunk1
   # Color rgb (int 0-255)
   ivec 3
     100 100 100
+  # Properties
+  3
+    model
+    color=gray1
+    category=bunk1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Bunk
+  bunk
   # Object xyz
   vec 3
-    6.50  19.00   1.00
+    6.50  18.75   1.00
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     1.50   2.00   2.00
-  # Properties
-  2
-    color=gray1
-    category=bunk1
   # Color rgb (int 0-255)
   ivec 3
     100 100 100
+  # Properties
+  3
+    model
+    color=gray1
+    category=bunk1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Bunk
+  bunk
   # Object xyz
   vec 3
-   10.50  19.00   1.00
+   10.50  18.75   1.00
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     1.50   2.00   2.00
-  # Properties
-  2
-    color=gray1
-    category=bunk1
   # Color rgb (int 0-255)
   ivec 3
     100 100 100
+  # Properties
+  3
+    model
+    color=gray1
+    category=bunk1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Bunk
+  bunk
   # Object xyz
   vec 3
-   14.50  19.00   1.00
+   14.50  18.75   1.00
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     1.50   2.00   2.00
-  # Properties
-  2
-    color=gray1
-    category=bunk1
   # Color rgb (int 0-255)
   ivec 3
     100 100 100
+  # Properties
+  3
+    model
+    color=gray1
+    category=bunk1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Bunk
+  bunk
   # Object xyz
   vec 3
-   18.50  19.00   1.00
+   18.50  18.75   1.00
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     1.50   2.00   2.00
-  # Properties
-  2
-    color=gray1
-    category=bunk1
   # Color rgb (int 0-255)
   ivec 3
     100 100 100
+  # Properties
+  3
+    model
+    color=gray1
+    category=bunk1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Bunk
+  bunk
   # Object xyz
   vec 3
-   22.50  19.00   1.00
+   22.50  18.75   1.00
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     1.50   2.00   2.00
-  # Properties
-  2
-    color=gray1
-    category=bunk1
   # Color rgb (int 0-255)
   ivec 3
     100 100 100
+  # Properties
+  3
+    model
+    color=gray1
+    category=bunk1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Bunk
+  bunk
   # Object xyz
   vec 3
-   26.50  19.00   1.00
+   26.50  18.75   1.00
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     1.50   2.00   2.00
-  # Properties
-  2
-    color=gray1
-    category=bunk1
   # Color rgb (int 0-255)
   ivec 3
     100 100 100
+  # Properties
+  3
+    model
+    color=gray1
+    category=bunk1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Shelf
+  shelf
   # Object xyz
   vec 3
     4.50  19.50   1.00
   # Rotation (yaw)
-  0.0
+  4.71238898038469
   # Scale xyz
   vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=blue1
-    category=shelves1
+    0.50   2.00   2.00
   # Color rgb (int 0-255)
   ivec 3
     25 25 100
+  # Properties
+  3
+    model
+    color=blue1
+    category=shelf1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Shelf
+  shelf
   # Object xyz
   vec 3
     8.50  19.50   1.00
   # Rotation (yaw)
-  0.0
+  4.71238898038469
   # Scale xyz
   vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=blue1
-    category=shelves1
+    0.50   2.00   2.00
   # Color rgb (int 0-255)
   ivec 3
     25 25 100
+  # Properties
+  3
+    model
+    color=blue1
+    category=shelf1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Shelf
+  shelf
   # Object xyz
   vec 3
    12.50  19.50   1.00
   # Rotation (yaw)
-  0.0
+  4.71238898038469
   # Scale xyz
   vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=blue1
-    category=shelves1
+    0.50   2.00   2.00
   # Color rgb (int 0-255)
   ivec 3
     25 25 100
+  # Properties
+  3
+    model
+    color=blue1
+    category=shelf1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Shelf
+  shelf
   # Object xyz
   vec 3
    16.50  19.50   1.00
   # Rotation (yaw)
-  0.0
+  4.71238898038469
   # Scale xyz
   vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=blue1
-    category=shelves1
+    0.50   2.00   2.00
   # Color rgb (int 0-255)
   ivec 3
     25 25 100
+  # Properties
+  3
+    model
+    color=blue1
+    category=shelf1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Shelf
+  shelf
   # Object xyz
   vec 3
    20.50  19.50   1.00
   # Rotation (yaw)
-  0.0
+  4.71238898038469
   # Scale xyz
   vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=blue1
-    category=shelves1
+    0.50   2.00   2.00
   # Color rgb (int 0-255)
   ivec 3
     25 25 100
+  # Properties
+  3
+    model
+    color=blue1
+    category=shelf1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Shelf
+  shelf
   # Object xyz
   vec 3
    24.50  19.50   1.00
   # Rotation (yaw)
-  0.0
+  4.71238898038469
   # Scale xyz
   vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=blue1
-    category=shelves1
+    0.50   2.00   2.00
   # Color rgb (int 0-255)
   ivec 3
     25 25 100
+  # Properties
+  3
+    model
+    color=blue1
+    category=shelf1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Shelf
+  shelf
   # Object xyz
   vec 3
    28.50  19.50   1.00
   # Rotation (yaw)
-  0.0
+  4.71238898038469
   # Scale xyz
   vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=blue1
-    category=shelves1
+    0.50   2.00   2.00
   # Color rgb (int 0-255)
   ivec 3
     25 25 100
+  # Properties
+  3
+    model
+    color=blue1
+    category=shelf1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimTable"
 {
   # Object Description
-  Desk
+  table
   # Object xyz
   vec 3
-    2.50  12.00   0.50
+    7.00  11.50   0.45
+  # Rotation (yaw)
+  1.5707963267948966
+  # Scale xyz
+  vec 3
+    0.90   1.90   0.90
+  # Color rgb (int 0-255)
+  ivec 3
+    94 76 28
+  # Properties
+  1
+    category=table1
+}
+"soargroup.mobilesim.sim.SimDesk"
+{
+  # Object Description
+  desk
+  # Object xyz
+  vec 3
+    2.00  12.00   0.45
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
-    1.00   2.00   1.00
-  # Properties
-  2
-    color=brown1
-    category=desk1
+    0.90   1.90   0.90
   # Color rgb (int 0-255)
   ivec 3
-    100 100 50
+    94 76 28
+  # Properties
+  1
+    category=desk1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimChair"
+{
+  # Object Description
+  chair
+  # Object xyz
+  vec 3
+    1.00  12.25   0.50
+  # Rotation (yaw)
+  0.0
+  # Scale xyz
+  vec 3
+    0.50   0.50   1.00
+  # Color rgb (int 0-255)
+  ivec 3
+    20 100 20
+  # Properties
+  2
+    color=green1
+    category=chair1
+}
+"soargroup.mobilesim.sim.SimPerson"
 {
   # Object Description
   CO
   # Object xyz
   vec 3
-    1.50  12.00   1.00
+    1.50  14.00   0.95
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
-    0.50   0.50   2.00
-  # Properties
-  3
-    modifier=commanding1
-    category=officer1
-    name=CO1
+    1.00   1.00   1.00
   # Color rgb (int 0-255)
   ivec 3
     0 0 100
+  # Properties
+  3
+    name=CO1
+    modifier=commanding1
+    category=officer1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimPerson"
 {
   # Object Description
-  Sentry
+  sentry
   # Object xyz
   vec 3
-   29.00  12.50   1.00
+   29.00  12.50   0.95
   # Rotation (yaw)
-  0.0
+  4.71238898038469
   # Scale xyz
   vec 3
-    0.50   0.50   2.00
-  # Properties
-  1
-    category=sentry1
+    1.00   1.00   1.00
   # Color rgb (int 0-255)
   ivec 3
     125 100 50
+  # Properties
+  1
+    category=sentry1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimTable"
 {
   # Object Description
-  Desk
+  table
   # Object xyz
   vec 3
-   29.00  11.50   0.50
+   29.00  11.50   0.45
   # Rotation (yaw)
-  0.0
+  1.5707963267948966
   # Scale xyz
   vec 3
-    2.00   1.00   1.00
+    0.90   1.90   0.90
+  # Color rgb (int 0-255)
+  ivec 3
+    94 76 28
   # Properties
   2
     color=brown1
-    category=desk1
-  # Color rgb (int 0-255)
-  ivec 3
-    100 100 50
+    category=table1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Radio
+  radio
   # Object xyz
   vec 3
-   28.50  11.50   1.12
+   28.50  11.50   1.04
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     0.25   0.25   0.25
+  # Color rgb (int 0-255)
+  ivec 3
+    50 50 50
   # Properties
   2
     color=black1
     category=radio1
-  # Color rgb (int 0-255)
-  ivec 3
-    50 50 50
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimTable"
 {
   # Object Description
-  Table
+  table
   # Object xyz
   vec 3
    11.50  10.00   0.25
@@ -421,17 +453,17 @@
   # Scale xyz
   vec 3
     1.50   4.00   0.50
+  # Color rgb (int 0-255)
+  ivec 3
+    94 76 28
   # Properties
   1
     category=table1
-  # Color rgb (int 0-255)
-  ivec 3
-    200 150 50
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.SimFridge"
 {
   # Object Description
-  Fridge
+  fridge
   # Object xyz
   vec 3
    17.75  12.25   1.00
@@ -440,536 +472,128 @@
   # Scale xyz
   vec 3
     2.00   1.00   2.00
-  # Properties
-  2
-    door2=closed2
-    category=fridge1
   # Color rgb (int 0-255)
   ivec 3
-    150 150 255
+    200 200 200
+  # Properties
+  2
+    category=fridge1
+    door2=closed2
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Counter
+  counter
   # Object xyz
   vec 3
-   19.25  11.00   0.12
+   19.25  11.00   0.38
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
-    1.00   2.00   0.25
+    1.00   2.00   0.75
+  # Color rgb (int 0-255)
+  ivec 3
+    250 230 140
   # Properties
   1
     category=counter1
-  # Color rgb (int 0-255)
-  ivec 3
-    100 100 100
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Sink
+  sink
   # Object xyz
   vec 3
-   19.25   9.00   0.12
+   19.25   9.00   0.38
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
-    1.00   2.00   0.25
+    1.00   2.00   0.75
+  # Color rgb (int 0-255)
+  ivec 3
+    150 150 150
   # Properties
   1
     category=sink1
-  # Color rgb (int 0-255)
-  ivec 3
-    25 25 25
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Stove
+  garbage
   # Object xyz
   vec 3
-   18.00   7.75   0.25
+   16.50   7.75   0.21
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
-    1.50   1.00   0.50
-  # Properties
-  1
-    category=stove1
+    1.00   1.00   0.40
   # Color rgb (int 0-255)
   ivec 3
     100 100 100
+  # Properties
+  2
+    openbox
+    category=garbage1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Plate
+  plate
   # Object xyz
   vec 3
-   12.00   9.00   0.55
+   12.00   9.00   0.61
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     0.38   0.38   0.20
-  # Properties
-  1
-    category=plate1
   # Color rgb (int 0-255)
   ivec 3
     100 100 225
+  # Properties
+  1
+    category=plate1
 }
-"soargroup.mobilesim.sim.SimBoxObject"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
-  Ketchup
+  plate
   # Object xyz
   vec 3
-   12.00  10.00   0.62
+   12.00  11.00   0.56
+  # Rotation (yaw)
+  0.0
+  # Scale xyz
+  vec 3
+    0.25   0.25   0.10
+  # Color rgb (int 0-255)
+  ivec 3
+    225 225 225
+  # Properties
+  1
+    category=plate1
+}
+"soargroup.mobilesim.sim.RosieSimObject"
+{
+  # Object Description
+  ketchup
+  # Object xyz
+  vec 3
+   12.00  10.00   0.76
   # Rotation (yaw)
   0.0
   # Scale xyz
   vec 3
     0.25   0.25   0.50
+  # Color rgb (int 0-255)
+  ivec 3
+    255 0 0
   # Properties
   1
     category=ketchup1
-  # Color rgb (int 0-255)
-  ivec 3
-    255 0 0
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Sentry
-  # Object xyz
-  vec 3
-    1.00   7.50   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   2.00
-  # Properties
-  1
-    category=sentry1
-  # Color rgb (int 0-255)
-  ivec 3
-    125 100 50
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Desk
-  # Object xyz
-  vec 3
-    1.00   8.50   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    2.00   1.00   1.00
-  # Properties
-  2
-    color=brown1
-    category=desk1
-  # Color rgb (int 0-255)
-  ivec 3
-    100 100 50
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Radio
-  # Object xyz
-  vec 3
-    1.50   8.50   1.12
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.25   0.25   0.25
-  # Properties
-  2
-    color=black1
-    category=radio1
-  # Color rgb (int 0-255)
-  ivec 3
-    50 50 50
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  FE
-  # Object xyz
-  vec 3
-   24.00   6.75   0.12
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   0.50
-  # Properties
-  3
-    shape=cylinder1
-    color=blue1
-    category=extinguisher1
-  # Color rgb (int 0-255)
-  ivec 3
-    255 0 0
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  FE
-  # Object xyz
-  vec 3
-   25.00   6.75   0.12
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   0.50
-  # Properties
-  3
-    shape=cylinder1
-    color=red1
-    category=extinguisher1
-  # Color rgb (int 0-255)
-  ivec 3
-    255 0 0
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  FE
-  # Object xyz
-  vec 3
-   26.00   6.75   0.12
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   0.50
-  # Properties
-  3
-    shape=cylinder1
-    color=red1
-    category=extinguisher1
-  # Color rgb (int 0-255)
-  ivec 3
-    255 0 0
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  FE
-  # Object xyz
-  vec 3
-   27.00   6.75   0.12
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   0.50
-  # Properties
-  3
-    shape=cylinder1
-    color=red1
-    category=extinguisher1
-  # Color rgb (int 0-255)
-  ivec 3
-    255 0 0
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Armorer
-  # Object xyz
-  vec 3
-   12.00   4.00   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.50   2.00
-  # Properties
-  1
-    category=armorer1
-  # Color rgb (int 0-255)
-  ivec 3
-    125 100 50
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Table
-  # Object xyz
-  vec 3
-    1.00   2.50   0.25
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    1.00   4.00   0.50
-  # Properties
-  1
-    category=table1
-  # Color rgb (int 0-255)
-  ivec 3
-    100 100 100
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Table
-  # Object xyz
-  vec 3
-   14.00   2.50   0.25
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    1.00   4.00   0.50
-  # Properties
-  1
-    category=table1
-  # Color rgb (int 0-255)
-  ivec 3
-    100 100 100
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Cab
-  # Object xyz
-  vec 3
-    4.00   0.50   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=black1
-    category=cabinet1
-  # Color rgb (int 0-255)
-  ivec 3
-    25 25 25
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Cab
-  # Object xyz
-  vec 3
-    8.00   0.50   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=black1
-    category=cabinet1
-  # Color rgb (int 0-255)
-  ivec 3
-    25 25 25
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Cab
-  # Object xyz
-  vec 3
-   12.00   0.50   1.00
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    2.00   0.50   2.00
-  # Properties
-  2
-    color=black1
-    category=cabinet1
-  # Color rgb (int 0-255)
-  ivec 3
-    25 25 25
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  LS
-  # Object xyz
-  vec 3
-   10.50  15.12   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.25   0.25   0.25
-  # Properties
-  3
-    color=black1
-    category=lightswitch1
-    activation1=off2
-  # Color rgb (int 0-255)
-  ivec 3
-    10 10 10
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  LS
-  # Object xyz
-  vec 3
-    7.88  12.50   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.25   0.25   0.25
-  # Properties
-  3
-    color=black1
-    category=lightswitch1
-    activation1=off2
-  # Color rgb (int 0-255)
-  ivec 3
-    10 10 10
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  LS
-  # Object xyz
-  vec 3
-   22.12  11.50   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.25   0.25   0.25
-  # Properties
-  3
-    color=black1
-    category=lightswitch1
-    activation1=off2
-  # Color rgb (int 0-255)
-  ivec 3
-    10 10 10
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  LS
-  # Object xyz
-  vec 3
-   13.50  12.88   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.25   0.25   0.25
-  # Properties
-  3
-    color=black1
-    category=lightswitch1
-    activation1=off2
-  # Color rgb (int 0-255)
-  ivec 3
-    10 10 10
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  LS
-  # Object xyz
-  vec 3
-    7.88   8.50   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.25   0.25   0.25
-  # Properties
-  3
-    color=black1
-    category=lightswitch1
-    activation1=off2
-  # Color rgb (int 0-255)
-  ivec 3
-    10 10 10
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  LS
-  # Object xyz
-  vec 3
-    7.50   4.88   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.25   0.25   0.25
-  # Properties
-  3
-    color=black1
-    category=lightswitch1
-    activation1=off2
-  # Color rgb (int 0-255)
-  ivec 3
-    10 10 10
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Alarm
-  # Object xyz
-  vec 3
-   22.05  10.88   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    0.50   0.25   0.50
-  # Properties
-  4
-    category=alarm1
-    modifier1=firey1
-    color=red1
-    activation1=off2
-  # Color rgb (int 0-255)
-  ivec 3
-    255 0 0
-}
-"soargroup.mobilesim.sim.SimBoxObject"
-{
-  # Object Description
-  Fire
-  # Object xyz
-  vec 3
-    2.50   2.50   0.50
-  # Rotation (yaw)
-  0.0
-  # Scale xyz
-  vec 3
-    1.00   1.00   1.00
-  # Properties
-  2
-    category=fire1
-    color=red1
-  # Color rgb (int 0-255)
-  ivec 3
-    255 0 0
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {

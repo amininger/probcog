@@ -64,11 +64,11 @@ public class SimPerson extends RosieSimObject {
 					new VzBox(scale_xyz[0], scale_xyz[1]-2*limb_w, torso_h, new VzMesh.Style(color))));
 
 		// Arms
-		vc.add(new VisChain(LinAlg.translate(0.0, scale_xyz[1]/2-limb_w/2, shoulder_h - limb_w - torso_h/2), 
-					new VzBox(limb_w, limb_w, torso_h, new VzMesh.Style(color))));
+		vc.add(new VisChain(LinAlg.translate(0.0, scale_xyz[1]/2-limb_w/2, shoulder_h - limb_w/2 - torso_h/2), 
+					new VzBox(limb_w, limb_w, torso_h+limb_w, new VzMesh.Style(color))));
 
-		vc.add(new VisChain(LinAlg.translate(0.0, -scale_xyz[1]/2+limb_w/2, shoulder_h - limb_w - torso_h/2), 
-					new VzBox(limb_w, limb_w, torso_h, new VzMesh.Style(color))));
+		vc.add(new VisChain(LinAlg.translate(0.0, -scale_xyz[1]/2+limb_w/2, shoulder_h - limb_w/2 - torso_h/2), 
+					new VzBox(limb_w, limb_w, torso_h+limb_w, new VzMesh.Style(color))));
 
 		// Legs
 		vc.add(new VisChain(LinAlg.translate(0.0, -limb_w*0.6, -scale_xyz[2]/2 + legs_h/2),

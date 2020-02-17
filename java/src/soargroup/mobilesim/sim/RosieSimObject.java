@@ -22,7 +22,7 @@ import soargroup.mobilesim.lcmtypes.classification_t;
 
 public class RosieSimObject extends BaseSimObject{
 	protected enum ModelType {
-		BOX, OPENBOX
+		BOX, OPENBOX, CUSTOM
 	}
 	protected Integer id;
 	protected String desc;
@@ -156,6 +156,12 @@ public class RosieSimObject extends BaseSimObject{
 			case OPENBOX:
 				vc.add(new VzOpenBox(scale_xyz, new VzMesh.Style(color)));
 				break;
+			case CUSTOM:
+				String modelName = properties.get("category").replaceAll("\\d", "");
+				VisChain vobj = ObjectModels.createModel(modelName, scale_xyz, color);
+				if(vobj != null){
+					vc.add(vobj);
+				}
 		}
 		return vc;
 	}
@@ -203,6 +209,8 @@ public class RosieSimObject extends BaseSimObject{
 				addAttribute(new Grabbable(this));
 			} else if(prop.equals("openbox")){
 				model = ModelType.OPENBOX;
+			} else if(prop.equals("model")){
+				model = ModelType.CUSTOM;
 			} else if(prop.contains("=")){
 				String[] splitProp = prop.split("=");
 				properties.put(splitProp[0], splitProp[1]);
