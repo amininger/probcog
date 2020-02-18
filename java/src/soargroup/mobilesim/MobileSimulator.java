@@ -111,7 +111,7 @@ public class MobileSimulator implements LCMSubscriber
 					return;
 				}
 
-				Result result = ActionHandler.handle(action);
+				Result result = ActionHandler.handle(action, robot);
 				if(result instanceof Err){
 					System.err.println(((Err)result).reason);
 				}

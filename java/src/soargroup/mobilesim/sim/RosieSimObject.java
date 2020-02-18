@@ -22,7 +22,7 @@ import soargroup.mobilesim.lcmtypes.classification_t;
 
 public class RosieSimObject extends BaseSimObject{
 	protected enum ModelType {
-		BOX, OPENBOX, CUSTOM
+		BOX, WIRE_BOX, OPENBOX, CYLINDER, CONE, CUSTOM,
 	}
 	protected Integer id;
 	protected String desc;
@@ -70,6 +70,10 @@ public class RosieSimObject extends BaseSimObject{
 
 	public String getDesc(){
 		return desc;
+	}
+
+	public String getLabel(boolean includeId){
+		return desc + (includeId ? "_" + id.toString() : "");
 	}
 
 	public String toString(){
@@ -149,12 +153,21 @@ public class RosieSimObject extends BaseSimObject{
 		VisChain vc = new VisChain();
 		switch(model){
 			case BOX:
-				// This is a wireframe box
-				//	return new VzBox(scale_xyz, new VzLines.Style(color, 1));
 				vc.add(new VzBox(scale_xyz, new VzMesh.Style(color)));
 				break;
 			case OPENBOX:
 				vc.add(new VzOpenBox(scale_xyz, new VzMesh.Style(color)));
+				break;
+			case WIRE_BOX:
+				// This is a wireframe box
+				vc.add(new VzBox(scale_xyz, new VzLines.Style(Color.black, 1)));
+				break;
+			case CYLINDER:
+				vc.add(new VzCylinder(scale_xyz[0]*0.5, scale_xyz[2], new VzMesh.Style(color)));
+				break;
+			case CONE:
+				// Need to move down because VzCone's circle face is on the xy plane
+				vc.add(LinAlg.translate(0.0, 0.0, -scale_xyz[2]*0.5), new VzCone(scale_xyz[0]*0.5, scale_xyz[1], new VzMesh.Style(color)));
 				break;
 			case CUSTOM:
 				String modelName = properties.get("category").replaceAll("\\d", "");
@@ -207,9 +220,17 @@ public class RosieSimObject extends BaseSimObject{
 			String prop = ins.readString().toLowerCase().trim();
 			if(prop.equals("grabbable")){
 				addAttribute(new Grabbable(this));
+			} else if(prop.equals("surface")){
+				addAttribute(new Surface(this, true));
+			} else if(prop.equals("receptacle")){
+				addAttribute(new Receptacle(this, true));
 			} else if(prop.equals("openbox")){
 				model = ModelType.OPENBOX;
-			} else if(prop.equals("model")){
+			} else if(prop.equals("cylinder")){
+				model = ModelType.CYLINDER;
+			} else if(prop.equals("cone")){
+				model = ModelType.CONE;
+			} else if(prop.equals("custom-model")){
 				model = ModelType.CUSTOM;
 			} else if(prop.contains("=")){
 				String[] splitProp = prop.split("=");

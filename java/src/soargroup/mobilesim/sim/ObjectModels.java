@@ -10,23 +10,28 @@ import april.jmat.LinAlg;
 import soargroup.mobilesim.vis.VzOpenBox;
 
 public class ObjectModels {
+
 	public static VisChain createModel(String modelName, double[] scale, Color color){
 		modelName = modelName.toLowerCase();
-		if(modelName.equals("chair")){
+		if(modelName.equals("chair"))
 			return createChairModel(scale, color);
-		}
-		if(modelName.equals("bunk")){
+		if(modelName.equals("bunk"))
 			return createBunkModel(scale, color);
-		}
-		if(modelName.equals("shelf")){
+		if(modelName.equals("shelf"))
 			return createShelfModel(scale, color);
-		}
-
+		if(modelName.equals("table"))
+			return createTableModel(scale, color);
+		if(modelName.equals("desk"))
+			return createDeskModel(scale, color);
+		if(modelName.equals("car"))
+			return createCarModel(scale, color);
+		if(modelName.equals("extinguisher"))
+			return createExtinguisherModel(scale, color);
 		return null;
 	}
 
 	public static VisChain createChairModel(double[] scale, Color color){
-		VisChain c = new VisChain();
+		VisChain vc = new VisChain();
 		VzMesh.Style chair_color = new VzMesh.Style(color);
 		VzMesh.Style leg_color = new VzMesh.Style(new Color(94, 76, 28)); // brown
 
@@ -36,25 +41,23 @@ public class ObjectModels {
 
 		// Chair Back
 		double back_height = scale[2]/2 - SEAT_H/2;
-		c.add(new VisChain(LinAlg.translate(-scale[0]/2 + BACK_W/2, 0.0, SEAT_H/2 + back_height/2), 
-					new VzBox(BACK_W, scale[1], back_height, chair_color)
-		));
+		addBox(vc, -scale[0]/2 + BACK_W/2, 0.0, SEAT_H/2 + back_height/2,
+				   BACK_W, scale[1], back_height, chair_color);
 
 		// Seat
-		c.add(new VzBox(scale[0], scale[1], SEAT_H, chair_color));
+		addBox(vc, 0.0, 0.0, 0.0, scale[0], scale[1], SEAT_H, chair_color);
 
 		double leg_h = (scale[2] - LEG_W)/2;
-
 		double leg_x = (scale[0] - LEG_W)/2;
 		double leg_y = (scale[1] - LEG_W)/2;
 		double leg_z = -SEAT_H/2 - leg_h/2;
 
 		// Legs of Chair
-		c.add(new VisChain(LinAlg.translate(leg_x, leg_y, leg_z), new VzBox(LEG_W, LEG_W, leg_h, leg_color)));
-		c.add(new VisChain(LinAlg.translate(-leg_x, leg_y, leg_z), new VzBox(LEG_W, LEG_W, leg_h, leg_color)));
-		c.add(new VisChain(LinAlg.translate(-leg_x, -leg_y, leg_z), new VzBox(LEG_W, LEG_W, leg_h, leg_color)));
-		c.add(new VisChain(LinAlg.translate(leg_x, -leg_y, leg_z), new VzBox(LEG_W, LEG_W, leg_h, leg_color)));
-		return c;
+		addBox(vc,  leg_x,  leg_y, leg_z, LEG_W, LEG_W, leg_h, leg_color);
+		addBox(vc, -leg_x,  leg_y, leg_z, LEG_W, LEG_W, leg_h, leg_color);
+		addBox(vc, -leg_x, -leg_y, leg_z, LEG_W, LEG_W, leg_h, leg_color);
+		addBox(vc,  leg_x, -leg_y, leg_z, LEG_W, LEG_W, leg_h, leg_color);
+		return vc;
 	}
 
 	public static VisChain createBunkModel(double[] scale, Color color){
@@ -66,16 +69,16 @@ public class ObjectModels {
 		// Corner Poles
 		double pole_x = (scale[0] - POLE_W)/2;
 		double pole_y = (scale[1] - POLE_W)/2;
-		vc.add(new VisChain(LinAlg.translate( pole_x,  pole_y, 0.0), new VzBox(POLE_W, POLE_W, scale[2], bunk_color)));
-		vc.add(new VisChain(LinAlg.translate( pole_x, -pole_y, 0.0), new VzBox(POLE_W, POLE_W, scale[2], bunk_color)));
-		vc.add(new VisChain(LinAlg.translate(-pole_x,  pole_y, 0.0), new VzBox(POLE_W, POLE_W, scale[2], bunk_color)));
-		vc.add(new VisChain(LinAlg.translate(-pole_x, -pole_y, 0.0), new VzBox(POLE_W, POLE_W, scale[2], bunk_color)));
+		addBox(vc,  pole_x,  pole_y, 0.0, POLE_W, POLE_W, scale[2], bunk_color);
+		addBox(vc,  pole_x, -pole_y, 0.0, POLE_W, POLE_W, scale[2], bunk_color);
+		addBox(vc, -pole_x,  pole_y, 0.0, POLE_W, POLE_W, scale[2], bunk_color);
+		addBox(vc, -pole_x, -pole_y, 0.0, POLE_W, POLE_W, scale[2], bunk_color);
 
 		// Bottom Bunk
-		vc.add(new VisChain(LinAlg.translate(0.0, 0.0, -scale[2]*0.25), new VzBox(scale[0], scale[1], 0.2, bunk_color)));
+		addBox(vc, 0.0, 0.0, -scale[2]*0.25, scale[0], scale[1], 0.2, bunk_color);
 
 		// Top Bunk
-		vc.add(new VisChain(LinAlg.translate(0.0, 0.0, scale[2]*0.25), new VzBox(scale[0], scale[1], 0.2, bunk_color)));
+		addBox(vc, 0.0, 0.0, scale[2]*0.25, scale[0], scale[1], 0.2, bunk_color);
 
 		return vc;
 	}
@@ -98,5 +101,95 @@ public class ObjectModels {
 		}
 
 		return c;
+	}
+
+	public static VisChain createTableModel(double[] scale, Color color){
+		VisChain vc = new VisChain();
+		VzMesh.Style style = new VzMesh.Style(color);
+
+		// Leg Thickness
+		final double THICKNESS = 0.1;
+
+		// Top of table
+		addBox(vc, 0.0, 0.0, (scale[2]-THICKNESS)*0.5, scale[0], scale[1], THICKNESS, style);
+
+		// Legs of table
+		double leg_dX = (scale[0] - THICKNESS)/2;
+		double leg_dY = (scale[1] - THICKNESS)/2;
+		addBox(vc,  leg_dX,  leg_dY, 0.0, THICKNESS, THICKNESS, scale[2], style);
+		addBox(vc, -leg_dX,  leg_dY, 0.0, THICKNESS, THICKNESS, scale[2], style);
+		addBox(vc, -leg_dX, -leg_dY, 0.0, THICKNESS, THICKNESS, scale[2], style);
+		addBox(vc,  leg_dX, -leg_dY, 0.0, THICKNESS, THICKNESS, scale[2], style);
+
+		return vc;
+	}
+
+	public static VisChain createDeskModel(double[] scale, Color color){
+		VisChain vc = new VisChain();
+		VzMesh.Style style = new VzMesh.Style(color);
+	
+		// Top of table/leg thickness
+		final double THICKNESS = 0.1;
+
+		// Top Surface
+		addBox(vc, 0.0, 0.0, (scale[2]-THICKNESS)*0.5, scale[0], scale[1], THICKNESS, style);
+		// Side Support
+		addBox(vc, 0.0, (scale[1]-THICKNESS)*0.5, 0.0, scale[0], THICKNESS, scale[2], style);
+		// Drawer
+		addBox(vc, 0.0, -scale[1]*0.25, 0.0, scale[0], scale[1]*0.5, scale[2], style);
+
+		return vc;
+	}
+
+	public static VisChain createCarModel(double[] scale, Color color){
+		VisChain vc = new VisChain();
+		VzMesh.Style style = new VzMesh.Style(color);
+		VzMesh.Style black = new VzMesh.Style(Color.black);
+
+		// Body
+		addBox(vc, 0.0, 0.0, -scale[2]*0.10, scale[0], scale[1]*0.95, scale[2]*0.4, style);
+		addBox(vc, 0.0, 0.0,  scale[2]*0.30, scale[0]*0.5, scale[1]*0.95, scale[2]*0.4, style);
+
+		// Wheels
+		final double THICKNESS = 0.2;
+		double wheel_dX = scale[0]*0.25;
+		double wheel_dY = (scale[1] - THICKNESS)/2;
+		double wheel_z  = -scale[2]*0.2;
+		vc.add(new VisChain(LinAlg.translate( wheel_dX,  wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));
+		vc.add(new VisChain(LinAlg.translate( wheel_dX, -wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));
+		vc.add(new VisChain(LinAlg.translate(-wheel_dX,  wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));
+		vc.add(new VisChain(LinAlg.translate(-wheel_dX, -wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));
+
+		return vc;
+	}
+
+	public static VisChain createExtinguisherModel(double[] scale, Color color){
+		VisChain vc = new VisChain();
+		VzMesh.Style style = new VzMesh.Style(color);
+		VzMesh.Style black = new VzMesh.Style(Color.black);
+
+		// Body
+		addCyl(vc, 0.0, 0.0, -scale[2]*0.10, scale[0]*0.4, scale[2]*0.8, style); 
+		// Top cylinder
+		addCyl(vc, 0.0, 0.0, scale[2]*0.40, 0.05, scale[2]*0.2, black);
+		// Side Box
+		addBox(vc, -scale[0]*0.5+0.10, 0.0, scale[2]*0.2, 0.15, 0.05, scale[2]*0.6, black);
+
+		return vc;
+	}
+
+	// Adds a VzBox to the given VisChain with the given x,y,z center and dx,dy,dz bounds, with the given style
+	public static void addBox(VisChain vc, double x, double y, double z, double dx, double dy, double dz, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzBox(dx, dy, dz, style)));
+	}
+
+	// Adds a VzCylinder to the given VisChain with the given x,y,z center with given radius, height, and style
+	public static void addCyl(VisChain vc, double x, double y, double z, double r, double h, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzCylinder(r, h, style)));
+	}
+
+	// Adds a VzCone to the given VisChain with the given x,y,z center with given face radius, height, and style
+	public static void addCone(VisChain vc, double x, double y, double z, double r, double h, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z-h*0.5), new VzCylinder(r, h, style)));
 	}
 }

@@ -27,6 +27,13 @@ import lcm.lcm.*;
 
 public class MobileGUI extends JFrame
 {
+	public static class Settings {
+		public final static boolean PRINT_IDS = true;
+		public final static boolean DRAW_ANCHORS = true;
+		public final static boolean DRAW_REGION_IDS = true;
+		public final static boolean LARGE_LABELS = false;
+	}
+
     private MobileSimulator simulator;
     LCM lcm = LCM.getSingleton();
 
@@ -127,11 +134,15 @@ public class MobileGUI extends JFrame
 					soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
 
 					String tf="<<monospaced,black,dropshadow=false>>";
-					String text = String.format("%s%s\n", tf, pcobj);
+					String text = String.format("%s%s\n", tf, pcobj.getLabel(Settings.PRINT_IDS));
 
 					VzText vzText = new VzText(text);
 					double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.5};
-					buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.02), vzText));
+					if(Settings.LARGE_LABELS){
+						buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.04), vzText));
+					} else {
+						buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.04), vzText));
+					}
 				}
 			}
 			buffer.swap();

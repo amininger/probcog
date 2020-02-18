@@ -82,12 +82,14 @@ public class SimRegion extends BaseSimObject
 		// Center Rectangle
 		vc.add(new VisChain(LinAlg.translate(0, 0, -0.002), new VzRectangle(width, length, new VzMesh.Style(isOn ? onColor : offColor))));
 
-		// Black Border
-		vc.add(new VisChain(LinAlg.translate(0, 0, -0.004), new VzRectangle(width + 0.002, length + 0.002, new VzLines.Style(Color.black, 2))));
+		if(soargroup.mobilesim.MobileGUI.Settings.DRAW_REGION_IDS){
+			// Black Border
+			vc.add(new VisChain(LinAlg.translate(0, 0, -0.004), new VzRectangle(width + 0.002, length + 0.002, new VzLines.Style(Color.black, 2))));
 
-        // The handle of the location
-        vc.add(new VisChain(LinAlg.scale(0.05),
-                              new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle.replace("wp", "")))));
+			// The handle of the location
+			vc.add(new VisChain(LinAlg.scale(0.05),
+								  new VzText(VzText.ANCHOR.CENTER, String.format("<<black>> %s", handle.replace("wp", "")))));
+		}
 
 		return vc;
     }

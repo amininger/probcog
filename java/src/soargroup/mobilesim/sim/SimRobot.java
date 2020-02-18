@@ -199,6 +199,11 @@ public class SimRobot implements SimObject, LCMSubscriber
                                       drive.poseTruth.pos);
     }
 
+	public double[] getXYZRPY(){
+        return LinAlg.matrixToXyzrpy(LinAlg.quatPosToMatrix(
+					drive.poseTruth.orientation, drive.poseTruth.pos));
+	}
+
     public double[][] getNoisyPose(double[] L2G)
     {
         double[][] M = LinAlg.quatPosToMatrix(drive.poseOdom.orientation,

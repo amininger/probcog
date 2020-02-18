@@ -62,10 +62,12 @@ public class ObjectHolder extends Attribute {
 
 	@Override
 	public void render(VisChain vc){
-		// Add a small wireframe box for each anchor
-		for(AnchorPoint anchor : anchors){
-			vc.add(new VisChain(LinAlg.translate(anchor.xyz),
-						new VzBox(new double[]{ 0.04, 0.04, 0.04}, new VzLines.Style(Color.black, 0.01))));
+		if(soargroup.mobilesim.MobileGUI.Settings.DRAW_ANCHORS){
+			// Add a small wireframe box for each anchor
+			for(AnchorPoint anchor : anchors){
+				vc.add(new VisChain(LinAlg.translate(anchor.xyz),
+							new VzBox(new double[]{ 0.04, 0.04, 0.04}, new VzLines.Style(Color.black, 0.01))));
+			}
 		}
 	}
 
@@ -78,14 +80,24 @@ public class ObjectHolder extends Attribute {
 		return false;
 	}
 
-	public Result addObject(RosieSimObject object){
+	public Result addObject(RosieSimObject object, double[] robotPos){
+		double[][] parentPose = baseObject.getPose();
+		AnchorPoint closestPt = null;
+		double closestDistance = Double.MAX_VALUE;
 		for(AnchorPoint pt : anchors){
 			if(!pt.hasObject()){
-				pt.setObject(object);
-				return Result.Ok();
+				double dist = pt.getDistanceSq(robotPos, parentPose);
+				if(dist < closestDistance){
+					closestDistance = dist;
+					closestPt = pt;
+				}
 			}
 		}
-		return Result.Err("ObjectHolder: No open points");
+		if(closestPt == null){
+			return Result.Err("ObjectHolder: No open points");
+		}
+		closestPt.setObject(object);
+		return Result.Ok();
 	}
 
 	public void removeObject(RosieSimObject object){
@@ -127,7 +139,7 @@ public class ObjectHolder extends Attribute {
 				if(holder == null){
 					return Result.Err("Target is not an ObjectHolder");
 				}
-				return holder.addObject(putdown.object);
+				return holder.addObject(putdown.object, putdown.robot.getXYZRPY());
 			}
 		});
 	}
@@ -166,6 +178,15 @@ public class ObjectHolder extends Attribute {
 			}
 		}
 
+		// Returns the squared distance from the anchor point to the given pos (in world space)
+		public double getDistanceSq(double[] pos, double[][] parentPose){
+			double[][] local_translate = LinAlg.translate(xyz[0], xyz[1], xyz[2]);
+			double[][] world_pose = LinAlg.matrixAB(parentPose, local_translate);
+			double[] world_xyz = LinAlg.matrixToXyzrpy(world_pose);
+			return LinAlg.squaredDistance(world_xyz, pos, 3);
+
+		}
+
 		// Makes sure the heldObject is still at the anchor point (hasn't been moved somewhere else)
 		private void checkObject(){
 			if(heldObj == null){ return; }
@@ -179,8 +200,8 @@ public class ObjectHolder extends Attribute {
 
 		// Gets the pose of the held object at the anchor point (in world coordinates, apply base transform)
 		private double[][] calcObjectPose(double[][] parentPose){
-			double[][] local_pose = LinAlg.translate(xyz[0], xyz[1], xyz[2] + heldObj.getScale()[2]/2 + 0.001);
-			return LinAlg.matrixAB(parentPose, local_pose);
+			double[][] local_translate = LinAlg.translate(xyz[0], xyz[1], xyz[2] + heldObj.getScale()[2]/2 + 0.001);
+			return LinAlg.matrixAB(parentPose, local_translate);
 		}
 	}
 }

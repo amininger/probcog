@@ -2,6 +2,7 @@ package soargroup.mobilesim.sim.actions;
 
 import java.util.*;
 import soargroup.mobilesim.util.ResultTypes.*;
+import soargroup.mobilesim.sim.SimRobot;
 
 public class ActionHandler {
 
@@ -9,7 +10,8 @@ public class ActionHandler {
 
 	// First validates the action by checking it against each validate rule for that action type
 	// If it validates, then it applies the action by running each apply rule for the action type
-	public static Result handle(Action action){
+	public static Result handle(Action action, SimRobot robot){
+		action.setRobot(robot);
 		IsValid isValid = ActionHandler.validate(action);
 		if(isValid instanceof NotValid){
 			return Result.Err("Action " + action.toString() + " is not valid\n" + 
