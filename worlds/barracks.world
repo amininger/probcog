@@ -1005,9 +1005,10 @@
   ivec 3
     0 0 150
   # Properties
-  3
+  4
     custom-model
     color=blue1
+    is-locked1=not-locked1
     category=car1
 }
 "soargroup.mobilesim.sim.SimLightSwitch"

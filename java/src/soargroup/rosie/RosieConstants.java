@@ -9,6 +9,10 @@ public class RosieConstants {
 	public final static String DOOR_OPEN = "open2";
 	public final static String DOOR_CLOSED = "closed2";
 
+	public final static String LOCK = "is-locked1";
+	public final static String LOCKED = "locked1";
+	public final static String UNLOCKED = "not-locked1";
+
 	public final static String REL_IN = "in1";
 	public final static String REL_ON = "on1";
 	public final static String REL_TO = "to1";

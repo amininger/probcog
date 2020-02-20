@@ -32,7 +32,7 @@ public class SimRoomWall extends BaseSimObject {
 	
     public SimRoomWall(SimWorld sw){
     	super(sw);
-		this.collide = false;
+		//this.collide = false;
     }
     
     public VisChain createVisObject(){

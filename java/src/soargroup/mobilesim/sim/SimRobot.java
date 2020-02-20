@@ -293,9 +293,10 @@ public class SimRobot implements SimObject, LCMSubscriber
 						newy = Double.parseDouble(controlLaw.param_values[p].value);
 					}
 				}
-				// UNCOMMENT TO TELEPORT
-				drive.poseTruth.pos[0] = newx;
-				drive.poseTruth.pos[1] = newy;
+				if(soargroup.mobilesim.MobileGUI.Settings.TELEPORT_ROBOT){
+					drive.poseTruth.pos[0] = newx;
+					drive.poseTruth.pos[1] = newy;
+				}
 			} else if (controlLaw.name.toLowerCase().equals("pause")){
 				this.setRunning(false);
 			} else if (controlLaw.name.toLowerCase().equals("resume")){

@@ -32,6 +32,8 @@ public class MobileGUI extends JFrame
 		public final static boolean DRAW_ANCHORS = true;
 		public final static boolean DRAW_REGION_IDS = true;
 		public final static boolean LARGE_LABELS = false;
+		public final static boolean TELEPORT_ROBOT = false;
+
 	}
 
     private MobileSimulator simulator;

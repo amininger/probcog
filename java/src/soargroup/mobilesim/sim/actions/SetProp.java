@@ -29,6 +29,12 @@ public class SetProp extends Action {
 		else if(property.equals(RosieConstants.DOOR) && value.equals(RosieConstants.DOOR_CLOSED)){
 			return new Close(object);
 		} 
+		else if(property.equals(RosieConstants.LOCK) && value.equals(RosieConstants.LOCKED)){
+			return new Lock(object);
+		} 
+		else if(property.equals(RosieConstants.LOCK) && value.equals(RosieConstants.UNLOCKED)){
+			return new Unlock(object);
+		} 
 		return new SetProp(object, property, value);
 	}
 
@@ -77,6 +83,28 @@ public class SetProp extends Action {
 
 		public String toString(){
 			return "SetProp.Close(" + object + ")";
+		}
+	}
+
+	// SetProp.Lock -> Locks an object with a lock
+	public static class Lock extends SetProp {
+		public Lock(RosieSimObject object){
+			super(object, RosieConstants.LOCK, RosieConstants.LOCKED);
+		}
+
+		public String toString(){
+			return "SetProp.Lock(" + object + ")";
+		}
+	}
+
+	// SetProp.Unlock -> Unlocks an object with a lock
+	public static class Unlock extends SetProp {
+		public Unlock(RosieSimObject object){
+			super(object, RosieConstants.LOCK, RosieConstants.UNLOCKED);
+		}
+
+		public String toString(){
+			return "SetProp.Unlock(" + object + ")";
 		}
 	}
 
