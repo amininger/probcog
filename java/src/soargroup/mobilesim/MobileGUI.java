@@ -24,6 +24,7 @@ import soargroup.mobilesim.CommandSpoofer;
 
 // LCM Types
 import lcm.lcm.*;
+import soargroup.mobilesim.lcmtypes.rosie_agent_command_t;
 
 public class MobileGUI extends JFrame
 {
@@ -250,7 +251,17 @@ public class MobileGUI extends JFrame
 				panThread.startPan(0, 1);
 			} else if (e.getKeyCode() == KeyEvent.VK_LEFT){
 				panThread.startPan(0, -1);
-	 		} else {
+	 		} else if (e.getKeyCode() == KeyEvent.VK_SPACE){
+				rosie_agent_command_t agent_command = new rosie_agent_command_t();
+				agent_command.utime = TimeUtil.utime();
+				agent_command.command_type = rosie_agent_command_t.CONTINUE;
+                lcm.publish("ROSIE_AGENT_COMMAND", agent_command);
+			} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE){
+				rosie_agent_command_t agent_command = new rosie_agent_command_t();
+				agent_command.utime = TimeUtil.utime();
+				agent_command.command_type = rosie_agent_command_t.INTERRUPT;
+                lcm.publish("ROSIE_AGENT_COMMAND", agent_command);
+			} else {
 				return false;
 			}
 
