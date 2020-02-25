@@ -83,6 +83,10 @@ public class SimObjectDetector {
 				// Grabbed object always visible
 				return true;
 			}
+			if(obj.is(InRegion.class) && obj.getAttr(InRegion.class).getRegion(regions) == null){
+				// Objects not in the current region are not visible
+				return false;
+			}
 			if(obj.is(InRegion.class) && obj.getAttr(InRegion.class).getRegion(regions) != curRegion){
 				// Objects not in the current region are not visible
 				return false;

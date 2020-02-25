@@ -87,7 +87,7 @@ public class ObjectModels {
 		VisChain c = new VisChain();
 		VzMesh.Style style = new VzMesh.Style(color);
 
-		final double SHELF_SPACING = 0.50; // vertical spacing between shelves
+		final double SHELF_SPACING = 0.80; // vertical spacing between shelves
 
 		// Outer Bounds
 		c.add(new VisChain(LinAlg.rotateY(Math.PI/2), new VzOpenBox(scale[2], scale[1], scale[0], style)));

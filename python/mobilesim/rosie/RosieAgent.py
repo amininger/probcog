@@ -4,7 +4,7 @@ import Python_sml_ClientInterface as sml
 
 from pysoarlib import SoarAgent, LanguageConnector
 
-from mobilesim.rosie import LCMConnector, MobileSimPerceptionConnector, MobileSimActuationConnector
+from mobilesim.rosie import LCMConnector, AgentCommandConnector, MobileSimPerceptionConnector, MobileSimActuationConnector
 
 class RosieAgent(SoarAgent):
 	def __init__(self, config_filename=None, **kwargs):
@@ -15,4 +15,5 @@ class RosieAgent(SoarAgent):
 		self.connectors["language"] = LanguageConnector(self)
 		self.connectors["actuation"] = MobileSimActuationConnector(self, lcm.lcm)
 		self.connectors["perception"] = MobileSimPerceptionConnector(self, lcm.lcm)
+		self.connectors["agent_cmd"] = AgentCommandConnector(self, lcm.lcm)
 

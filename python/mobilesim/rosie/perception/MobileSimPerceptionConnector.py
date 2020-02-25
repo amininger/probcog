@@ -53,11 +53,11 @@ class MobileSimPerceptionConnector(AgentConnector):
 		self.robot.set_moving_status(self.agent.connectors["actuation"].get_moving_status())
 		self.robot.update_wm(input_link, svs_commands)
 		self.objects.update_wm(input_link, svs_commands)
+		if len(svs_commands) > 0:
+			self.agent.agent.SendSVSInput("\n".join(svs_commands))
 
 		self.lock.release()
 
-		if len(svs_commands) > 0:
-			self.agent.agent.SendSVSInput("\n".join(svs_commands))
 
 	def on_init_soar(self):
 		svs_commands = []
@@ -66,10 +66,10 @@ class MobileSimPerceptionConnector(AgentConnector):
 
 		self.robot.remove_from_wm(svs_commands)
 		self.objects.remove_from_wm(svs_commands)
+		if len(svs_commands) > 0:
+			self.agent.agent.SendSVSInput("\n".join(svs_commands))
 
 		self.lock.release()
 
-		if len(svs_commands) > 0:
-			self.agent.agent.SendSVSInput("\n".join(svs_commands))
 
 

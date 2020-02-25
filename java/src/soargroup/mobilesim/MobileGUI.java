@@ -28,12 +28,13 @@ import lcm.lcm.*;
 public class MobileGUI extends JFrame
 {
 	public static class Settings {
-		public final static boolean PRINT_IDS = true;
-		public final static boolean DRAW_ANCHORS = true;
-		public final static boolean DRAW_REGION_IDS = true;
+		public final static boolean PRINT_IDS = false;
+		public final static boolean DRAW_ANCHORS = false;
+		public final static boolean DRAW_REGION_IDS = false;
+		public final static boolean DRAW_LABELS = true;
 		public final static boolean LARGE_LABELS = false;
 		public final static boolean TELEPORT_ROBOT = false;
-
+		public final static boolean COLLIDE_WALLS = false;
 	}
 
     private MobileSimulator simulator;
@@ -49,6 +50,8 @@ public class MobileGUI extends JFrame
 
     // Parameter Stuff
     ParameterGUI pg;
+
+	PanThread panThread;
 
     public MobileGUI(GetOpt opts) throws IOException
     {
@@ -78,8 +81,50 @@ public class MobileGUI extends JFrame
         this.setVisible(true);
 
         // Render updates about the world
-        RenderThread rt = new RenderThread();
-        rt.start();
+		if(Settings.DRAW_LABELS){
+			RenderThread rt = new RenderThread();
+			rt.start();
+		}
+
+		panThread = new PanThread(vl, vc);
+		panThread.start();
+    }
+
+    /* PanThread: Handles arrow key presses and pans the screen accordingly */
+    class PanThread extends Thread
+    {
+        int fps = 40;
+		private double[] panVel;
+		private final double PAN_SPEED = 0.3;
+		private VisLayer vl;
+		private VisCanvas vc;
+
+        public PanThread(VisLayer vl, VisCanvas vc) {
+			this.vl = vl;
+			this.vc = vc;
+			panVel = new double[]{ 0.0, 0.0, 0.0 };
+        }
+
+        public void run() {
+            while (true) {
+				VisCanvas.RenderInfo rinfo = vc.getLastRenderInfo();
+				if(rinfo != null && (panVel[0] != 0.0 || panVel[1] != 0.0)){
+					VisCameraManager.CameraPosition cameraPosition = rinfo.cameraPositions.get(vl);
+					vl.cameraManager.uiLookAt(LinAlg.add(panVel, cameraPosition.eye),
+						LinAlg.add(panVel, cameraPosition.lookat), cameraPosition.up, false);
+				}
+                TimeUtil.sleep(1000/fps);
+            }
+        }
+
+		public void startPan(int dim, int dir){
+			panVel[dim] = PAN_SPEED * dir;
+		}
+
+		public void stopPan(int dim, int dir){
+			panVel[dim] = 0.0;
+		}
+
     }
 
     /** Render ProbCog-specific content. */
@@ -134,9 +179,17 @@ public class MobileGUI extends JFrame
 					if (!(obj instanceof soargroup.mobilesim.sim.RosieSimObject))
 						continue;
 					soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
+					if(!(obj instanceof soargroup.mobilesim.sim.SimPerson)){
+						continue;
+					}
 
+					String lbl = pcobj.getLabel(Settings.PRINT_IDS);
+					lbl = lbl.substring(0, 1).toUpperCase() + lbl.substring(1);
+					if(lbl.equals("Co")){
+						lbl = "CO";
+					}
 					String tf="<<monospaced,black,dropshadow=false>>";
-					String text = String.format("%s%s\n", tf, pcobj.getLabel(Settings.PRINT_IDS));
+					String text = String.format("%s%s\n", tf, lbl);
 
 					VzText vzText = new VzText(text);
 					double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.5};
@@ -170,11 +223,38 @@ public class MobileGUI extends JFrame
             return -10000;    // Highest priority
         }
 
+        public boolean keyReleased(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, KeyEvent e)
+        {
+            if (e.getKeyCode() == KeyEvent.VK_UP){
+				panThread.stopPan(1, 1);
+			} else if (e.getKeyCode() == KeyEvent.VK_DOWN){
+				panThread.stopPan(1, -1);
+			} else if (e.getKeyCode() == KeyEvent.VK_RIGHT){
+				panThread.stopPan(0, 1);
+			} else if (e.getKeyCode() == KeyEvent.VK_LEFT){
+				panThread.stopPan(0, -1);
+	 		} else {
+				return false;
+			}
+
+			return true;
+        }
+
         public boolean keyPressed(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, KeyEvent e)
         {
-            //if (e.getKeyCode() == KeyEvent.VK_G)
-			
-            return false;
+            if (e.getKeyCode() == KeyEvent.VK_UP){
+				panThread.startPan(1, 1);
+			} else if (e.getKeyCode() == KeyEvent.VK_DOWN){
+				panThread.startPan(1, -1);
+			} else if (e.getKeyCode() == KeyEvent.VK_RIGHT){
+				panThread.startPan(0, 1);
+			} else if (e.getKeyCode() == KeyEvent.VK_LEFT){
+				panThread.startPan(0, -1);
+	 		} else {
+				return false;
+			}
+
+			return true;
         }
 
         public boolean mouseMoved(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)

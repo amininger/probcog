@@ -4,7 +4,7 @@ from pysoarlib import *
 
 
 VIEW_DIST = 3.8 
-VIEW_ANGLE = math.pi/2 * .8 
+VIEW_ANGLE = math.pi/2 * .6
 VIEW_HEIGHT = 2.0
 
 # Returns vertices for a 3D triangular region representing the view area

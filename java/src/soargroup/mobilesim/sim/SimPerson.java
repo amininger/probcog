@@ -32,6 +32,8 @@ public class SimPerson extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> simObjects){
+		super.init(simObjects);
+
 		// Default size
 		scale_xyz[0] *= 0.25;
 		scale_xyz[1] *= 0.5;

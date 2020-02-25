@@ -27,6 +27,8 @@ public class SimStove extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects){
+		super.init(worldObjects);
+
 		boolean isOn = properties.get(RosieConstants.ACTIVATION).equals(RosieConstants.ACT_ON);
 		activatable = new Activatable(this, isOn);
 		addAttribute(activatable);

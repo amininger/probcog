@@ -224,6 +224,10 @@ public class RosieSimObject extends BaseSimObject{
 				addAttribute(new Surface(this, true));
 			} else if(prop.equals("receptacle")){
 				addAttribute(new Receptacle(this, true));
+			} else if(prop.equals("locked")){
+				addAttribute(new Lockable(this, true));
+			} else if(prop.equals("unlocked")){
+				addAttribute(new Lockable(this, false));
 			} else if(prop.equals("openbox")){
 				model = ModelType.OPENBOX;
 			} else if(prop.equals("cylinder")){

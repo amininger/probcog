@@ -16,7 +16,7 @@ import soargroup.mobilesim.sim.actions.*;
 import soargroup.mobilesim.sim.attributes.*;
 
 public class SimShelves extends RosieSimObject {
-	private static final double SHELF_SPACING = 0.50; // vertical spacing between shelves
+	private static final double SHELF_SPACING = 0.80; // vertical spacing between shelves
 	private static final double OBJ_SPACING = 0.60;   // how far apart objects are placed on a shelf
 
 	// Attributes
@@ -29,6 +29,7 @@ public class SimShelves extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects) { 
+		super.init(worldObjects);
 		// Setup points to put objects on the shelves
 		receptacle = new Receptacle(this, false);
 		int nshelves = (int)Math.ceil(scale_xyz[2]/SHELF_SPACING)-1;
@@ -48,8 +49,8 @@ public class SimShelves extends RosieSimObject {
 
 	@Override
 	public VisChain createVisObject(){
-		boolean closed = (openable != null && !openable.isOpen());
-		if(closed){
+		boolean open = (openable == null || openable.isOpen());
+		if(open){
 			return ObjectModels.createShelfModel(scale_xyz, color);
 		} else {
 			return new VisChain(new VzBox(scale_xyz, new VzMesh.Style(color)));

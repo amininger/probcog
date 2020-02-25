@@ -27,6 +27,8 @@ public class SimLightSwitch extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects){
+		super.init(worldObjects);
+
 		boolean isOn = properties.getOrDefault(RosieConstants.ACTIVATION, RosieConstants.ACT_ON)
 			.equals(RosieConstants.ACT_ON);
 
