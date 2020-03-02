@@ -412,9 +412,11 @@ public class SimRobot implements SimObject, LCMSubscriber
         		ignore = new HashSet<SimObject>();
         		ignore.add(SimRobot.this);
         		for(SimObject obj : sw.objects){
-        			if(obj instanceof RosieSimObject){
-        				ignore.add(obj);
-        			}
+					// Ignore all objects (dont collide with anything)
+					ignore.add(obj);
+        			//if(obj instanceof RosieSimObject){
+        			//	ignore.add(obj);
+        			//}
         		}
         	}
             double radstep = Math.atan2(gridmap_meters_per_pixel, gridmap_range);

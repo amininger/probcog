@@ -309,7 +309,7 @@
   williams
   # Object xyz
   vec 3
-    7.50  17.50   0.95
+    5.00   6.00   0.95
   # Rotation (yaw)
   0.0
   # Scale xyz
@@ -381,19 +381,10 @@
   ivec 3
     20 100 20
   # Properties
-  12
+  3
+    custom-model
     color=green1
     category=chair1
-    c
-    u
-    s
-    t
-    o
-    m
-    -
-    d
-    e
-    l
 }
 "soargroup.mobilesim.sim.SimPerson"
 {
@@ -670,7 +661,7 @@
   mustard
   # Object xyz
   vec 3
-   11.00  10.00   0.73
+   17.50   4.00   0.73
   # Rotation (yaw)
   0.0
   # Scale xyz
@@ -1102,7 +1093,7 @@ wp08
   fire
   # Object xyz
   vec 3
-    2.50   2.50   0.50
+   25.00   4.00   0.50
   # Rotation (yaw)
   0.0
   # Scale xyz
@@ -1321,10 +1312,10 @@ wp08
   wp01
   # Tag Position
   vec 6
-   15.00  17.50   0.01   0.00   0.00   0.00
+   15.00  16.50   0.01   0.00   0.00   0.00
   # Width (dx) and Length (dy)
   30.0
-  5.0
+  3.0
 }
 "soargroup.mobilesim.sim.SimRegion"
 {

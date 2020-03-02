@@ -35,7 +35,7 @@ public class MobileGUI extends JFrame
 		public final static boolean DRAW_LABELS = true;
 		public final static boolean LARGE_LABELS = false;
 		public final static boolean TELEPORT_ROBOT = false;
-		public final static boolean COLLIDE_WALLS = false;
+		public final static boolean COLLIDE_WALLS = true;
 	}
 
     private MobileSimulator simulator;
