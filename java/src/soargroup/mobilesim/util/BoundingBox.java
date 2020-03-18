@@ -53,6 +53,23 @@ public class BoundingBox
         return new VisChain(LinAlg.xyzrpyToMatrix(xyzrpy), box);
     }
 
+	/** Returns true if the given point is inside the bounding box **/
+	public boolean containsPoint(double[] xyz){
+		// vector from the bbox center to the given point
+		double[] to_pt = new double[]{ xyz[0] - xyzrpy[0], xyz[1] - xyzrpy[1], xyz[2] - xyzrpy[2] };
+
+		// invert the bbox rotation and apply it to to_pt to
+		// get the point in the bounding box's coordinate frame
+		double[] quat = LinAlg.rollPitchYawToQuat(LinAlg.copy(xyzrpy, 3, 3));
+		double[] invQuat = LinAlg.quatInverse(quat);
+		double[] local_xyz = LinAlg.quatRotate(invQuat, to_pt);
+
+		// once we have the local point, just compare it against the three dimensions
+		return 2*Math.abs(local_xyz[0]) <= lenxyz[0] 
+			&& 2*Math.abs(local_xyz[1]) <= lenxyz[1] 
+			&& 2*Math.abs(local_xyz[2]) <= lenxyz[2];
+	}
+
     /** Return the axis-aligned bounding box for a supplied set of points.
      *  The box is defined by 2 opposition corners.
      */

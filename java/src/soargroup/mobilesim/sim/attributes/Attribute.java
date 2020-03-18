@@ -1,6 +1,8 @@
 package soargroup.mobilesim.sim.attributes;
 
 import april.vis.*;
+import april.sim.SimObject;
+import java.util.ArrayList;
 
 import soargroup.mobilesim.sim.*;
 import soargroup.mobilesim.sim.actions.*;
@@ -11,15 +13,14 @@ public class Attribute {
 	protected final RosieSimObject baseObject;
 	public Attribute(RosieSimObject baseObject){
 		this.baseObject = baseObject;
-		setupRules();
 	}
 
 	// Use to set up any action handler rules
-	protected void setupRules(){ }
+	public void init(ArrayList<SimObject> worldObjects) { }
 
 	// Called multiple times per second, do any dynamics or updating here
 	// dt is time since last update (fraction of a second)
-	public void update(double dt){ }
+	public void update(double dt, ArrayList<SimObject> worldObjects){ }
 
 	// Called when the baseObject moves
 	public void moveHandler(double[] xyzrpy){ }

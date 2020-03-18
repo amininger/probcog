@@ -27,15 +27,15 @@ public class SimAlarm extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects){
-		super.init(worldObjects);
 		properties.put(RosieConstants.ACTIVATION, RosieConstants.ACT_OFF);
 		activatable = new Activatable(this, false);
 		addAttribute(activatable);
+		super.init(worldObjects);
 	}
 
 	@Override
-	public void update(double dt) { 
-		super.update(dt);
+	public void update(double dt, ArrayList<SimObject> worldObjects){
+		super.update(dt, worldObjects);
 		if(!isOn && activatable.isOn()){
 			// Just turned on, start the timer and turn green
 			isOn = true;

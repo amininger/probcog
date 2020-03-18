@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.ArrayList;
 import april.jmat.LinAlg;
 import april.vis.*;
+import april.sim.SimObject;
 
 import soargroup.mobilesim.sim.*;
 import soargroup.mobilesim.sim.actions.*;
@@ -17,6 +18,10 @@ public class ObjectHolder extends Attribute {
 	public ObjectHolder(RosieSimObject baseObject){
 		super(baseObject);
 		this.anchors = new ArrayList<AnchorPoint>();
+	}
+
+	public void init(ArrayList<SimObject> worldObjects) {
+		setupRules();
 	}
 
 	// Creates a set of points centered at 0, 0 that fit onto a rectange of the given dx and dy size
@@ -80,6 +85,10 @@ public class ObjectHolder extends Attribute {
 		return false;
 	}
 
+	public Result addObject(RosieSimObject object){
+		return addObject(object, object.getXYZRPY());
+	}
+
 	public Result addObject(RosieSimObject object, double[] robotPos){
 		double[][] parentPose = baseObject.getPose();
 		AnchorPoint closestPt = null;
@@ -108,8 +117,18 @@ public class ObjectHolder extends Attribute {
 		}
 	}
 
+	public ArrayList<RosieSimObject> getObjects(){
+		ArrayList<RosieSimObject> objs = new ArrayList<RosieSimObject>();
+		for(AnchorPoint pt : anchors){
+			RosieSimObject obj = pt.getObject();
+			if(obj != null){
+				objs.add(obj);
+			}
+		}
+		return objs;
+	}
+
 	// Registering Action Handling Rules
-	@Override
 	protected void setupRules(){
 		// PickUp Apply: Remove the object from any anchors
 		ActionHandler.addApplyRule(PickUp.class, new ApplyRule<PickUp>() {

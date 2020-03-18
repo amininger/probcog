@@ -45,8 +45,10 @@
   ivec 3
     150 150 150
   # Properties
-  1
+  3
     category=sink1
+    openbox
+    receptacle
 }
 "soargroup.mobilesim.sim.SimShelves"
 {
@@ -84,8 +86,10 @@
   ivec 3
     250 230 140
   # Properties
-  1
+  3
     category=counter1
+    box
+    surface
 }
 "soargroup.mobilesim.sim.SimShelves"
 {
@@ -127,7 +131,7 @@
     category=drawer1
     door2=closed2
 }
-"soargroup.mobilesim.sim.SimTable"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   table
@@ -143,8 +147,10 @@
   ivec 3
     94 76 28
   # Properties
-  1
+  3
     category=table1
+    custom-model
+    surface
 }
 "soargroup.mobilesim.sim.SimShelves"
 {
@@ -180,11 +186,12 @@
     0.40   0.40   0.40
   # Color rgb (int 0-255)
   ivec 3
-    100 100 100
+    80 150 80
   # Properties
-  2
-    openbox
+  3
     category=garbage1
+    openbox
+    receptacle
 }
 "soargroup.mobilesim.sim.SimLightSwitch"
 {
@@ -223,7 +230,8 @@ wp01
   ivec 3
     255 0 0
   # Properties
-  3
+  4
+    sphere
     grabbable
     color=red1
     category=apple1
@@ -244,7 +252,8 @@ wp01
   ivec 3
     0 0 255
   # Properties
-  3
+  4
+    cylinder
     grabbable
     color=blue1
     category=soda1
@@ -265,7 +274,8 @@ wp01
   ivec 3
     0 255 0
   # Properties
-  3
+  4
+    cylinder
     grabbable
     color=green1
     category=mug1
@@ -311,7 +321,7 @@ wp01
     name=mary1
     category=chef1
 }
-"soargroup.mobilesim.sim.SimDesk"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   desk
@@ -327,10 +337,12 @@ wp01
   ivec 3
     94 76 28
   # Properties
-  1
+  3
     category=desk1
+    custom-model
+    surface
 }
-"soargroup.mobilesim.sim.SimChair"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   chair
@@ -346,11 +358,43 @@ wp01
   ivec 3
     30 30 150
   # Properties
-  2
+  12
     color=blue1
     category=chair1
+    c
+    u
+    s
+    t
+    o
+    m
+    -
+    d
+    e
+    l
 }
-"soargroup.mobilesim.sim.SimTable"
+"soargroup.mobilesim.sim.RosieSimObject"
+{
+  # Object Description
+  water
+  # Object xyz
+  vec 3
+   10.20   3.50   1.21
+  # Rotation (yaw)
+  0.0
+  # Scale xyz
+  vec 3
+    0.20   0.20   0.40
+  # Color rgb (int 0-255)
+  ivec 3
+    200 200 255
+  # Properties
+  4
+    cylinder
+    grabbable
+    color=white1
+    category=water1
+}
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   table
@@ -366,8 +410,10 @@ wp01
   ivec 3
     94 76 28
   # Properties
-  1
+  3
     category=table1
+    custom-model
+    surface
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -452,7 +498,7 @@ wp01
     name=alice1
     category=person
 }
-"soargroup.mobilesim.sim.SimTable"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   table
@@ -468,10 +514,12 @@ wp01
   ivec 3
     94 76 28
   # Properties
-  1
+  3
     category=table1
+    custom-model
+    surface
 }
-"soargroup.mobilesim.sim.SimDesk"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   desk
@@ -487,10 +535,12 @@ wp01
   ivec 3
     94 76 28
   # Properties
-  1
+  3
     category=desk1
+    custom-model
+    surface
 }
-"soargroup.mobilesim.sim.SimChair"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   chair
@@ -506,9 +556,19 @@ wp01
   ivec 3
     20 100 20
   # Properties
-  2
+  12
     color=green1
     category=chair1
+    c
+    u
+    s
+    t
+    o
+    m
+    -
+    d
+    e
+    l
 }
 "soargroup.mobilesim.sim.SimPerson"
 {
@@ -530,7 +590,7 @@ wp01
     name=bob1
     category=person
 }
-"soargroup.mobilesim.sim.SimDesk"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   desk
@@ -546,10 +606,12 @@ wp01
   ivec 3
     94 76 28
   # Properties
-  1
+  3
     category=desk1
+    custom-model
+    surface
 }
-"soargroup.mobilesim.sim.SimChair"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   chair
@@ -565,11 +627,21 @@ wp01
   ivec 3
     20 100 20
   # Properties
-  2
+  12
     color=green1
     category=chair1
+    c
+    u
+    s
+    t
+    o
+    m
+    -
+    d
+    e
+    l
 }
-"soargroup.mobilesim.sim.SimTable"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   table
@@ -585,10 +657,12 @@ wp01
   ivec 3
     94 76 28
   # Properties
-  1
+  3
     category=table1
+    custom-model
+    surface
 }
-"soargroup.mobilesim.sim.SimDesk"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   desk
@@ -604,10 +678,12 @@ wp01
   ivec 3
     94 76 28
   # Properties
-  1
+  3
     category=desk1
+    custom-model
+    surface
 }
-"soargroup.mobilesim.sim.SimChair"
+"soargroup.mobilesim.sim.RosieSimObject"
 {
   # Object Description
   chair
@@ -623,9 +699,19 @@ wp01
   ivec 3
     20 100 20
   # Properties
-  2
+  12
     color=green1
     category=chair1
+    c
+    u
+    s
+    t
+    o
+    m
+    -
+    d
+    e
+    l
 }
 "soargroup.mobilesim.sim.SimPerson"
 {

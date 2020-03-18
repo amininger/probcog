@@ -1,10 +1,15 @@
 package soargroup.mobilesim.sim.attributes;
 
+import java.util.ArrayList;
+
+import april.sim.SimObject;
+
 import soargroup.rosie.RosieConstants;
+import soargroup.mobilesim.util.BoundingBox;
 import soargroup.mobilesim.util.ResultTypes.*;
 import soargroup.mobilesim.sim.RosieSimObject;
-import soargroup.mobilesim.sim.actions.PutDown;
-import soargroup.mobilesim.sim.actions.ActionHandler;
+import soargroup.mobilesim.sim.actions.*;
+import soargroup.mobilesim.sim.actions.ActionHandler.*;
 
 public class Receptacle extends ObjectHolder {
 	public static final double ANCHOR_SPACING = 0.60;
@@ -25,14 +30,66 @@ public class Receptacle extends ObjectHolder {
 		addPoints(dx, dy, z, spacing);
 	}
 
+	@Override
+	public void init(ArrayList<SimObject> worldObjects){
+		Openable openable = baseObject.getAttr(Openable.class);
+		boolean doorClosed = (openable == null) || !openable.isOpen();
+
+		BoundingBox bbox = baseObject.getBoundingBox();
+		for(SimObject simObj : worldObjects){
+			if(!(simObj instanceof RosieSimObject)){
+				continue;
+			}
+			RosieSimObject rosieObj = (RosieSimObject)simObj;
+			if(rosieObj == baseObject){
+				continue;
+			}
+			// Check if our bounding box contains the center of the sim object
+			if(bbox.containsPoint(rosieObj.getXYZRPY())){
+				this.addObject(rosieObj);
+				rosieObj.setVisible(!doorClosed);
+			}
+		}
+		super.init(worldObjects);
+	}
+
+
 	static {
 		//  PutDown.Target: NotValid if target is a Receptacle and relation != IN
-		ActionHandler.addValidateRule(PutDown.Target.class, new ActionHandler.ValidateRule<PutDown.Target>() {
+		ActionHandler.addValidateRule(PutDown.Target.class, new ValidateRule<PutDown.Target>() {
 			public IsValid validate(PutDown.Target putdown){
 				if(putdown.target.is(Receptacle.class) && !putdown.relation.equals(RosieConstants.REL_IN)){
 					return IsValid.False("Receptacle: relation must be in");
 				}
 				return IsValid.True();
+			}
+		});
+
+		// SetProp.Open Apply: If the target is a Receptacle, make all objects visible
+		ActionHandler.addApplyRule(SetProp.Open.class, new ApplyRule<SetProp.Open>() {
+			public Result apply(SetProp.Open open){
+				Receptacle receptacle = open.object.getAttr(Receptacle.class);
+				if(receptacle != null){
+					ArrayList<RosieSimObject> objs = receptacle.getObjects();
+					for(RosieSimObject obj : objs){
+						obj.setVisible(true);
+					}
+				}
+				return Result.Ok();
+			}
+		});
+
+		// SetProp.Close Apply: If the target is a Receptacle, make all objects not visible
+		ActionHandler.addApplyRule(SetProp.Close.class, new ApplyRule<SetProp.Close>() {
+			public Result apply(SetProp.Close close){
+				Receptacle receptacle = close.object.getAttr(Receptacle.class);
+				if(receptacle != null){
+					ArrayList<RosieSimObject> objs = receptacle.getObjects();
+					for(RosieSimObject obj : objs){
+						obj.setVisible(false);
+					}
+				}
+				return Result.Ok();
 			}
 		});
 	}

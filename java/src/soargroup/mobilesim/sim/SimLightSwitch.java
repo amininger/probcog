@@ -27,8 +27,6 @@ public class SimLightSwitch extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects){
-		super.init(worldObjects);
-
 		boolean isOn = properties.getOrDefault(RosieConstants.ACTIVATION, RosieConstants.ACT_ON)
 			.equals(RosieConstants.ACT_ON);
 
@@ -49,6 +47,8 @@ public class SimLightSwitch extends RosieSimObject {
 		if(region == null){
 			System.err.println("ERROR: LightSwitch cannot find region " + regionHandle);
 		}
+
+		super.init(worldObjects);
 	}
 
 	@Override

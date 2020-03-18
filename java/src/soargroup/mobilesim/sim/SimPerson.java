@@ -31,9 +31,7 @@ public class SimPerson extends RosieSimObject {
 	}
 
 	@Override
-	public void init(ArrayList<SimObject> simObjects){
-		super.init(simObjects);
-
+	public void init(ArrayList<SimObject> worldObjects){
 		// Default size
 		scale_xyz[0] *= 0.25;
 		scale_xyz[1] *= 0.5;
@@ -49,6 +47,8 @@ public class SimPerson extends RosieSimObject {
 		objHolder = new ObjectHolder(this);
 		objHolder.addPoint(limb_w, -scale_xyz[1]/2+limb_w/2, shoulder_h - torso_h);
 		addAttribute(objHolder);
+
+		super.init(worldObjects);
 	}
 
 	@Override

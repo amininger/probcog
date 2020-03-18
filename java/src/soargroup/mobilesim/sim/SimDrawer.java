@@ -27,8 +27,6 @@ public class SimDrawer extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects) { 
-		super.init(worldObjects);
-
 		openable = new Openable(this, false);
 		addAttribute(openable);
 
@@ -36,6 +34,8 @@ public class SimDrawer extends RosieSimObject {
 		receptacle = new Receptacle(this, false);
 		receptacle.addPoint(new double[]{ scale_xyz[0]*0.2, 0.0, -scale_xyz[2]*0.5 + 0.001 });
 		addAttribute(receptacle);
+
+		super.init(worldObjects);
 	}
 
 	@Override

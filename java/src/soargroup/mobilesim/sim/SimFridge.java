@@ -22,7 +22,7 @@ public class SimFridge extends SimShelves {
 
 	// Children can override to implement any dynamics, this is called multiple times/second
 	@Override
-	public void update(double dt) {
+	public void update(double dt, ArrayList<SimObject> worldObjects){
 		List<RosieSimObject> objects = receptacle.getHeldObjects();
 		for(RosieSimObject obj : objects){
 			if(obj.is(HasTemp.class)){

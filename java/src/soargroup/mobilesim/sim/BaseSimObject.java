@@ -59,6 +59,13 @@ public abstract class BaseSimObject implements SimObject{
 		this.isRunning = isRunning;
 	}
 
+	// Use to initialize the object
+	public void init(ArrayList<SimObject> worldObjects) {  }
+
+	// Children can override to implement any dynamics, this is called multiple times/second
+	// dt is time elapsed since last update (fraction of a second)
+	public void update(double dt, ArrayList<SimObject> worldObjects) {  }
+
 	// VisObject
 	//   createVisObject - Children must implement this,
 	//   create a VisChain that will model the object

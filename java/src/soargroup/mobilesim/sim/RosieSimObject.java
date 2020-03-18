@@ -43,6 +43,9 @@ public class RosieSimObject extends BaseSimObject{
 	// A RosieSimObject is composed of Attributes that define its behavior 
 	//    and how it responds to different actions
 	// (e.g., if it is Grabbable, then you can issue PickUp commands for the object)
+	//
+	// Notes: the attributes map can have multiple keys mapped to the same Attribute object
+	//        whereas the uniqueAttrs set has only 1 of each object
 	protected HashMap<Class<?>, Attribute> attributes = new HashMap<Class<?>, Attribute>();
 	private HashSet<Attribute> uniqueAttrs = new HashSet<Attribute>();
 	public <T extends Attribute> boolean is(Class<T> cls){
@@ -84,6 +87,10 @@ public class RosieSimObject extends BaseSimObject{
 		return _isVisible;
 	}
 
+	public void setVisible(boolean isVisible){
+		this._isVisible = isVisible;
+	}
+
 	@Override
 	public void setXYZRPY(double[] newpose){
 		for(Attribute attr : uniqueAttrs){
@@ -92,12 +99,13 @@ public class RosieSimObject extends BaseSimObject{
 		this.xyzrpy = newpose;
 	}
 
+	@Override
 	public void init(ArrayList<SimObject> worldObjects) { 
 		addAttribute(new InRegion(this));
-		setupRules();
+		for(Attribute attr : uniqueAttrs){
+			attr.init(worldObjects);
+		}
 	}
-
-	protected void setupRules(){ }
 
 	// Action Handling Rules
 	static {
@@ -126,9 +134,10 @@ public class RosieSimObject extends BaseSimObject{
 
 	// Children can override to implement any dynamics, this is called multiple times/second
 	// dt is time elapsed since last update (fraction of a second)
-	public void update(double dt) { 
+	@Override
+	public void update(double dt, ArrayList<SimObject> worldObjects){
 		for(Attribute attr : uniqueAttrs){
-			attr.update(dt);
+			attr.update(dt, worldObjects);
 		}
 	}
 

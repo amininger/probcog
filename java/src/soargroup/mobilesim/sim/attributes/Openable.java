@@ -1,5 +1,7 @@
 package soargroup.mobilesim.sim.attributes;
 
+import java.util.ArrayList;
+
 import soargroup.rosie.RosieConstants;
 import soargroup.mobilesim.util.ResultTypes.*;
 

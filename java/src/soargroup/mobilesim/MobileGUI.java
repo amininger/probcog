@@ -29,13 +29,13 @@ import soargroup.mobilesim.lcmtypes.rosie_agent_command_t;
 public class MobileGUI extends JFrame
 {
 	public static class Settings {
-		public final static boolean PRINT_IDS = false;
-		public final static boolean DRAW_ANCHORS = false;
-		public final static boolean DRAW_REGION_IDS = false;
+		public final static boolean PRINT_IDS = true;
+		public final static boolean DRAW_ANCHORS = true;
+		public final static boolean DRAW_REGION_IDS = true;
 		public final static boolean DRAW_LABELS = true;
 		public final static boolean LARGE_LABELS = false;
 		public final static boolean TELEPORT_ROBOT = false;
-		public final static boolean COLLIDE_WALLS = true;
+		public final static boolean COLLIDE_WALLS = false;
 	}
 
     private MobileSimulator simulator;
@@ -180,15 +180,15 @@ public class MobileGUI extends JFrame
 					if (!(obj instanceof soargroup.mobilesim.sim.RosieSimObject))
 						continue;
 					soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
-					if(!(obj instanceof soargroup.mobilesim.sim.SimPerson)){
-						continue;
-					}
+					//if(!(obj instanceof soargroup.mobilesim.sim.SimPerson)){
+					//	continue;
+					//}
 
 					String lbl = pcobj.getLabel(Settings.PRINT_IDS);
-					lbl = lbl.substring(0, 1).toUpperCase() + lbl.substring(1);
-					if(lbl.equals("Co")){
-						lbl = "CO";
-					}
+					//lbl = lbl.substring(0, 1).toUpperCase() + lbl.substring(1);
+					//if(lbl.equals("Co")){
+					//	lbl = "CO";
+					//}
 					String tf="<<monospaced,black,dropshadow=false>>";
 					String text = String.format("%s%s\n", tf, lbl);
 
@@ -197,7 +197,7 @@ public class MobileGUI extends JFrame
 					if(Settings.LARGE_LABELS){
 						buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.04), vzText));
 					} else {
-						buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.04), vzText));
+						buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.02), vzText));
 					}
 				}
 			}

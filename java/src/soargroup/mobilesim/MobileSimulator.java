@@ -35,7 +35,7 @@ public class MobileSimulator implements LCMSubscriber
     Simulator sim;
 
     private Timer simulateDynamicsTimer;
-    private static final int DYNAMICS_RATE = 1; // FPS to simulate dynamics at
+    private static final int DYNAMICS_RATE = 10; // FPS to simulate dynamics at
 
 	SimRobot robot = null;
 
@@ -50,21 +50,21 @@ public class MobileSimulator implements LCMSubscriber
         loadWorld(opts);
         sim = new Simulator(vw, vl, console, world);
 
-        ArrayList<SimObject> simObjects;
 		ArrayList<RosieSimObject> rosieObjs = new ArrayList<RosieSimObject>();
-		synchronized(world.objects){
-			simObjects = (ArrayList<SimObject>)world.objects.clone();
-		}
-		for(SimObject obj : simObjects){
-			if(obj instanceof SimRobot){
-				robot = (SimRobot)obj;
-				robot.setFullyObservable(opts.getBoolean("fully"));
-				robot.setupActionRules();
-			}
-			if(obj instanceof RosieSimObject){
-				RosieSimObject rosieObj = (RosieSimObject)obj;
-				rosieObjs.add(rosieObj);
-				rosieObj.init(simObjects);
+		synchronized(world){
+			for(SimObject obj : world.objects){
+				if(obj instanceof SimRobot){
+					robot = (SimRobot)obj;
+					robot.setFullyObservable(opts.getBoolean("fully"));
+					robot.setupActionRules();
+				}
+				if(obj instanceof RosieSimObject){
+					RosieSimObject rosieObj = (RosieSimObject)obj;
+					rosieObjs.add(rosieObj);
+				}
+				if(obj instanceof BaseSimObject){
+					((BaseSimObject)obj).init(world.objects);
+				}
 			}
 		}
 		if(robot == null){
@@ -72,7 +72,7 @@ public class MobileSimulator implements LCMSubscriber
 		}
 
 	    simulateDynamicsTimer = new Timer();
-	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(rosieObjs, simObjects), 1000, 1000/DYNAMICS_RATE);
+	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(world), 1000, 1000/DYNAMICS_RATE);
 
 		LCM.getSingleton().subscribe("SOAR_COMMAND.*", this);
 	}
@@ -111,9 +111,11 @@ public class MobileSimulator implements LCMSubscriber
 					return;
 				}
 
-				Result result = ActionHandler.handle(action, robot);
-				if(result instanceof Err){
-					System.err.println(((Err)result).reason);
+				synchronized(world){
+					Result result = ActionHandler.handle(action, robot);
+					if(result instanceof Err){
+						System.err.println(((Err)result).reason);
+					}
 				}
 				System.out.println("Performed: " + action);
 	      	}
@@ -129,15 +131,13 @@ public class MobileSimulator implements LCMSubscriber
 		}
 		Integer objectId = new Integer(objectIdStr);
 
-        ArrayList<SimObject> simObjects;
-		synchronized(world.objects){
-			simObjects = (ArrayList<SimObject>)world.objects.clone();
-		}
-		for(SimObject obj : simObjects){
-			if(obj instanceof RosieSimObject){
-				RosieSimObject simObj = (RosieSimObject)obj;
-				if(simObj.getID().equals(objectId)){
-					return simObj;
+		synchronized(world){
+			for(SimObject obj : world.objects){
+				if(obj instanceof RosieSimObject){
+					RosieSimObject simObj = (RosieSimObject)obj;
+					if(simObj.getID().equals(objectId)){
+						return simObj;
+					}
 				}
 			}
 		}
@@ -249,20 +249,22 @@ public class MobileSimulator implements LCMSubscriber
 
     class SimulateDynamicsTask extends TimerTask
     {
-		ArrayList<RosieSimObject> rosieObjs;
-		ArrayList<SimObject> simObjs;
+		private SimWorld world;
 		private long lastUpdate;
-		public SimulateDynamicsTask(ArrayList<RosieSimObject> rosieObjs, ArrayList<SimObject> simObjects){
-			this.rosieObjs = rosieObjs;
-			this.simObjs = simObjects;
+		public SimulateDynamicsTask(SimWorld world){
+			this.world = world;
 			this.lastUpdate = TimeUtil.utime();
 		}
 		@Override
 		public void run() {
 			long time = TimeUtil.utime();
 			double dt = (double)(time - lastUpdate)/1000000.0;
-			for(RosieSimObject obj : rosieObjs){
-				obj.update(dt);
+			synchronized(world){
+				for(SimObject simObj : world.objects){
+					if(simObj instanceof BaseSimObject){
+						((BaseSimObject)simObj).update(dt, world.objects);
+					}
+				}
 			}
 			lastUpdate = time;
 		}

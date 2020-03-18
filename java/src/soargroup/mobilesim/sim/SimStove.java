@@ -27,8 +27,6 @@ public class SimStove extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects){
-		super.init(worldObjects);
-
 		boolean isOn = properties.get(RosieConstants.ACTIVATION).equals(RosieConstants.ACT_ON);
 		activatable = new Activatable(this, isOn);
 		addAttribute(activatable);
@@ -42,11 +40,13 @@ public class SimStove extends RosieSimObject {
 		surface.addPoint(-burner_dx,  burner_dy, burner_z);
 		surface.addPoint(-burner_dx, -burner_dy, burner_z);
 		addAttribute(surface);
+
+		super.init(worldObjects);
 	}
 
 	// Children can override to implement any dynamics, this is called multiple times/second
 	@Override
-	public void update(double dt) {
+	public void update(double dt, ArrayList<SimObject> worldObjects){
 		List<RosieSimObject> objects = surface.getHeldObjects();
 		for(RosieSimObject obj : objects){
 			if(obj.is(HasTemp.class)){

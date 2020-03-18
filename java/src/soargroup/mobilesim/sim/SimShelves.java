@@ -29,7 +29,6 @@ public class SimShelves extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects) { 
-		super.init(worldObjects);
 		// Setup points to put objects on the shelves
 		receptacle = new Receptacle(this, false);
 		int nshelves = (int)Math.ceil(scale_xyz[2]/SHELF_SPACING)-1;
@@ -45,6 +44,8 @@ public class SimShelves extends RosieSimObject {
 			openable = new Openable(this, isOpen);
 			addAttribute(openable);
 		}
+
+		super.init(worldObjects);
 	}
 
 	@Override
