@@ -958,7 +958,7 @@
   4
     custom-model
     color=blue1
-    unlocked
+    is-locked1=not-locked1
     category=car1
 }
 "soargroup.mobilesim.sim.SimLightSwitch"

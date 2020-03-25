@@ -7,7 +7,7 @@ import soargroup.mobilesim.sim.actions.PutDown;
 import soargroup.mobilesim.sim.actions.ActionHandler;
 
 public class Surface extends ObjectHolder {
-	public static final double ANCHOR_SPACING = 0.60;
+	public static final double ANCHOR_SPACING = 0.40;
 
 	// Setup anchors with default spacing
 	public Surface(RosieSimObject object, boolean useDefaultSpacing){

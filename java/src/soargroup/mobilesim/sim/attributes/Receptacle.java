@@ -12,7 +12,7 @@ import soargroup.mobilesim.sim.actions.*;
 import soargroup.mobilesim.sim.actions.ActionHandler.*;
 
 public class Receptacle extends ObjectHolder {
-	public static final double ANCHOR_SPACING = 0.60;
+	public static final double ANCHOR_SPACING = 0.40;
 
 	// Setup anchors with default spacing
 	public Receptacle(RosieSimObject object, boolean useDefaultSpacing){

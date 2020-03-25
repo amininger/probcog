@@ -233,10 +233,6 @@ public class RosieSimObject extends BaseSimObject{
 				addAttribute(new Surface(this, true));
 			} else if(prop.equals("receptacle")){
 				addAttribute(new Receptacle(this, true));
-			} else if(prop.equals("locked")){
-				addAttribute(new Lockable(this, true));
-			} else if(prop.equals("unlocked")){
-				addAttribute(new Lockable(this, false));
 			} else if(prop.equals("openbox")){
 				model = ModelType.OPENBOX;
 			} else if(prop.equals("cylinder")){
@@ -248,6 +244,9 @@ public class RosieSimObject extends BaseSimObject{
 			} else if(prop.contains("=")){
 				String[] splitProp = prop.split("=");
 				properties.put(splitProp[0], splitProp[1]);
+				if(splitProp[0].equals(RosieConstants.LOCK)){
+					addAttribute(new Lockable(this, splitProp[1].equals(RosieConstants.LOCKED)));
+				}
 			}
 		}
 	}

@@ -17,7 +17,7 @@ import soargroup.mobilesim.sim.attributes.*;
 
 public class SimShelves extends RosieSimObject {
 	private static final double SHELF_SPACING = 0.80; // vertical spacing between shelves
-	private static final double OBJ_SPACING = 0.60;   // how far apart objects are placed on a shelf
+	private static final double OBJ_SPACING = 0.40;   // how far apart objects are placed on a shelf
 
 	// Attributes
 	protected Openable openable = null;

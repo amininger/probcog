@@ -358,19 +358,10 @@ wp01
   ivec 3
     30 30 150
   # Properties
-  12
+  3
     color=blue1
     category=chair1
-    c
-    u
-    s
-    t
-    o
-    m
-    -
-    d
-    e
-    l
+    custom-model
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -556,19 +547,10 @@ wp01
   ivec 3
     20 100 20
   # Properties
-  12
+  3
     color=green1
     category=chair1
-    c
-    u
-    s
-    t
-    o
-    m
-    -
-    d
-    e
-    l
+    custom-model
 }
 "soargroup.mobilesim.sim.SimPerson"
 {
@@ -627,19 +609,10 @@ wp01
   ivec 3
     20 100 20
   # Properties
-  12
+  3
     color=green1
     category=chair1
-    c
-    u
-    s
-    t
-    o
-    m
-    -
-    d
-    e
-    l
+    custom-model
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -699,19 +672,10 @@ wp01
   ivec 3
     20 100 20
   # Properties
-  12
+  3
     color=green1
     category=chair1
-    c
-    u
-    s
-    t
-    o
-    m
-    -
-    d
-    e
-    l
+    custom-model
 }
 "soargroup.mobilesim.sim.SimPerson"
 {

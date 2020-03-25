@@ -23,6 +23,7 @@ import soargroup.mobilesim.sim.*;
 import soargroup.rosie.RosieConstants;
 
 import soargroup.mobilesim.sim.actions.*;
+import soargroup.mobilesim.sim.attributes.ObjectHolder;
 
 // LCM Types
 import lcm.lcm.*;
@@ -93,7 +94,10 @@ public class MobileSimulator implements LCMSubscriber
 				lastHandledCommand = controlLaw.id;
 
 				Action action = null;
-				if(controlLaw.name.equals("pick-up")){
+				if(controlLaw.name.equals("teleport-object")){
+					handleTeleportObject(controlLaw);
+					return;
+				} else if(controlLaw.name.equals("pick-up")){
 					action = parsePickUp(controlLaw);
 				} else if(controlLaw.name.equals("put-down")){
 					action = parsePutDown(controlLaw);
@@ -223,6 +227,40 @@ public class MobileSimulator implements LCMSubscriber
 		if(val == null){ return null; }
 
 		return SetProp.construct(obj, prop, val);
+	}
+
+	private void handleTeleportObject(control_law_t controlLaw){
+		RosieSimObject object = getRosieObject(controlLaw, "object-id");
+		if(object == null){ 
+			System.err.println("TeleportObject: the given object-id does not exist");
+			return;
+		}
+
+		RosieSimObject destination = getRosieObject(controlLaw, "destination");
+		if(destination == null){ 
+			System.err.println("TeleportObject: the given destinatino does not exist");
+			return;
+		}
+		if(!destination.is(ObjectHolder.class)){
+			System.err.println("TeleportObject: the given destinatino cannot hold an object");
+			return;
+		}
+
+		// Remove the object from any ObjectHolders it is currently in
+		synchronized(world){
+			for(SimObject obj : world.objects){
+				if(!(obj instanceof RosieSimObject)){
+					continue;
+				}
+				RosieSimObject rosieObj = (RosieSimObject)obj;
+				ObjectHolder holder = rosieObj.getAttr(ObjectHolder.class);
+				if(holder != null){
+					holder.removeObject(object);
+				}
+			}
+		}
+
+		destination.getAttr(ObjectHolder.class).addObject(object);
 	}
 
     private void loadWorld(GetOpt opts)
