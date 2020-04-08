@@ -49,7 +49,7 @@ public class SimRoomWall extends BaseSimObject {
     	// 2nd end point [x, y]
         p2 = ins.readDoubles();
         
-        length = LinAlg.distance(p1, p2);
+        length = LinAlg.distance(p1, p2) + thickness;
         
         double x = (p1[0] + p2[0])/2;
         double y = (p1[1] + p2[1])/2;

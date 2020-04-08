@@ -32,7 +32,7 @@ public class SimObjectDetector {
 	protected SimRobot robot;
 	protected SimWorld world;
 
-	protected HashSet<RosieSimObject> detectedObjects;
+	protected HashSet<RosieSimObject> currentObjects;
 	protected List<SimRegion> regions = null;
 
     static Random classifierRandom = new Random(3611871);
@@ -44,7 +44,7 @@ public class SimObjectDetector {
 	public SimObjectDetector(SimRobot robot, SimWorld world){
 		this.robot = robot;
 		this.world = world;
-		this.detectedObjects = new HashSet<RosieSimObject>();
+		this.currentObjects = new HashSet<RosieSimObject>();
 
 		this.tasks.addFixedDelay(new DetectorTask(), 1.0/MSG_PER_SEC);
 
@@ -74,23 +74,27 @@ public class SimObjectDetector {
             }
 			
 
-			updateDetectedObjects(simObjects);
+			updateCurrentObjects(simObjects);
 			sendObjectMessage();
         }
 
-		private boolean isVisible(RosieSimObject obj, SimRobot robot, SimRegion curRegion){
+		private boolean inCurrentRegion(RosieSimObject obj, SimRobot robot, SimRegion curRegion){
 			if(obj == robot.getGrabbedObject()){
-				// Grabbed object always visible
+				// Grabbed object always in the same region
 				return true;
 			}
 			if(obj.is(InRegion.class) && obj.getAttr(InRegion.class).getRegion(regions) == null){
-				// Objects not in the current region are not visible
+				// Object's region is null
 				return false;
 			}
 			if(obj.is(InRegion.class) && obj.getAttr(InRegion.class).getRegion(regions) != curRegion){
-				// Objects not in the current region are not visible
+				// Object's region isn't the same as curRegion
 				return false;
 			}
+			return true;
+		}
+
+		private boolean isVisible(RosieSimObject obj, SimRobot robot){
 			if(fullyObservable){
 				// If we are not using the robot's viewpoint, 
 				//    then return true for all objects in current region
@@ -107,7 +111,8 @@ public class SimObjectDetector {
 			return false;
 		}
 
-        private void updateDetectedObjects(ArrayList<SimObject> simObjects){
+		// Recompute the list of current objects (objects in the current region)
+        private void updateCurrentObjects(ArrayList<SimObject> simObjects){
 			HashSet<RosieSimObject> rosieObjects = new HashSet<RosieSimObject>();
 			for(SimObject obj : simObjects){
 				if(obj instanceof RosieSimObject){
@@ -115,12 +120,12 @@ public class SimObjectDetector {
 				}
 			}
 
-			synchronized(detectedObjects){
-				detectedObjects.clear();
+			synchronized(currentObjects){
+				currentObjects.clear();
 				SimRegion robotRegion = robot.getRegion();
 				for(RosieSimObject obj : rosieObjects){
-					if(isVisible(obj, robot, robotRegion)){
-						detectedObjects.add(obj);
+					if(inCurrentRegion(obj, robot, robotRegion)){
+						currentObjects.add(obj);
 					}
 				}
 			}
@@ -129,11 +134,12 @@ public class SimObjectDetector {
         private void sendObjectMessage(){
 			object_data_list_t objectMessage = new object_data_list_t();
 			objectMessage.utime = TimeUtil.utime();
-			synchronized(detectedObjects){
+			synchronized(currentObjects){
 				objectMessage.num_objects = 0;
-				objectMessage.objects = new object_data_t[detectedObjects.size()];
-				for(RosieSimObject obj : detectedObjects){
+				objectMessage.objects = new object_data_t[currentObjects.size()];
+				for(RosieSimObject obj : currentObjects){
 					objectMessage.objects[objectMessage.num_objects] = obj.getObjectData();
+					objectMessage.objects[objectMessage.num_objects].visible = isVisible(obj, robot);
 					objectMessage.num_objects += 1;
 				}
 			}

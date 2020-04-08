@@ -23,7 +23,7 @@ import april.vis.VzLines;
 
 public class SimRegion extends BaseSimObject
 {
-	protected static Color onColor = new Color(255, 225, 225);
+	protected static Color onColor = new Color(255, 225, 180);
 	protected static Color offColor = new Color(100, 100, 100);
 	protected boolean isOn = true;
 	

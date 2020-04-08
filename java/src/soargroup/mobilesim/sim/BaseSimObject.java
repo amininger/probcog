@@ -29,7 +29,7 @@ public abstract class BaseSimObject implements SimObject{
 	
 	// XYZRPY
 	public double[] getXYZRPY(){
-		return xyzrpy;
+		return LinAlg.copy(xyzrpy);
 	}
 
 	public void setXYZRPY(double[] newpose){

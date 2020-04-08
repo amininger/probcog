@@ -17,6 +17,7 @@ alias build_mobile_sim="$MOBILE_SIM_HOME/scripts/build_mobile_sim.sh"
 alias run_mobile_sim="$MOBILE_SIM_HOME/scripts/run_mobile_sim.sh"
 complete -F _mobile_worlds_completion run_mobile_sim
 
+export PROBCOG_CONFIG=$MOBILE_SIM_HOME/config/robot.config.local
 
 
 

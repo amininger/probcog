@@ -145,9 +145,11 @@ public class Orient implements ControlLaw, LCMSubscriber
 		}
 
         double yaw = LinAlg.quatPosToXYT(params.pose.orientation, params.pose.pos)[2];
+		System.out.println("CURRENT YAW: " + yaw);
 
         // We want to rotate toward the goal, but not overshoot.
         double dyaw = MathUtil.mod2pi(goalYaw - yaw);
+		System.out.println("YAW DIFF: " + dyaw);
         double minSpeed = sim ? MIN_SIM_SPEED : MIN_SPEED;
         double speed = MathUtil.clamp(MAX_SPEED*(Math.abs(dyaw) / SPEED_THRESH_RANGE_RAD),
                                       minSpeed,

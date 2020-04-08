@@ -3,7 +3,7 @@ current_time_us = lambda: int(time.time() * 1000000)
 import threading
 
 from pysoarlib import *
-from .SoarCommandParser import create_empty_control_law, parse_control_law
+from .ControlLawUtil import ControlLawUtil
 from mobilesim.lcmtypes import control_law_status_t
 
 CONTROL_LAW_RATE = 10
@@ -23,7 +23,7 @@ class MobileSimActuationConnector(AgentConnector):
         self.moving_status = "stopped"
 
         self.next_control_law_id = 1
-        self.active_command = create_empty_control_law("RESTART")
+        self.active_command = ControlLawUtil.create_empty_control_law("RESTART")
         self.active_command.id = self.next_control_law_id
         self.next_control_law_id += 1
 
@@ -61,6 +61,24 @@ class MobileSimActuationConnector(AgentConnector):
             status = control_law_status_t.decode(data)
             if self.active_command is not None and self.active_command.id == status.id:
                 self.status_wme.set_value(str(status.status).lower())
+        self.lock.release()
+
+    # Will replace the current command with the given one and start sending it
+    def send_command(self, control_law, root_id=None):
+        self.lock.acquire()
+        if self.active_command_id is not None:
+            self.status_wme.set_value("interrupted")
+            self.status_wme.update_wm(self.active_command_id)
+
+        self.active_command = control_law
+        self.active_command.id = self.next_control_law_id
+        self.next_control_law_id += 1
+
+        self.active_command_id = root_id
+        if root_id is not None:
+            self.status_wme = SoarWME("status", "sent")
+            self.status_wme.update_wm(self.active_command_id)
+
         self.lock.release()
     
     # Periodically re-send the currently active command
@@ -106,40 +124,17 @@ class MobileSimActuationConnector(AgentConnector):
             self.process_stop_command(root_id)
 
     def process_do_control_law(self, root_id):
-        control_law = parse_control_law(root_id)
+        control_law = ControlLawUtil.parse_control_law(root_id)
         if control_law is None:
             root_id.CreateStringWME("status", "error")
             root_id.CreateStringWME("error-type", "syntax-error")
             return
 
-        self.lock.acquire()
-        if self.active_command_id is not None:
-            self.status_wme.set_value("interrupted")
-            self.status_wme.update_wm(self.active_command_id)
-
-        self.active_command = control_law
-        self.active_command.id = self.next_control_law_id
-        self.next_control_law_id += 1
-
-        self.active_command_id = root_id
-        self.status_wme = SoarWME("status", "sent")
-        self.status_wme.update_wm(self.active_command_id)
+        self.send_command(control_law, root_id)
         self.moving_status = "moving"
-        self.lock.release()
 
     def process_stop_command(self, root_id):
-        self.lock.acquire()
-        if self.active_command_id is not None:
-            self.status_wme.set_value("interrupted")
-            self.status_wme.update_wm(self.active_command_id)
-
-        self.active_command = create_empty_control_law("STOP")
-        self.active_command.id = self.next_control_law_id
-        self.next_control_law_id += 1
-
-        self.active_command.id = root_id
-        self.status_wme = SoarWME("status", "sent")
-        self.status_wme.update_wm(self.active_command_id)
+        control_law = ControlLawUtil.create_empty_control_law("STOP")
+        self.send_command(control_law, root_id)
         self.moving_status = "stopped"
-        self.lock.release()
 

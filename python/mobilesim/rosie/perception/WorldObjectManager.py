@@ -13,6 +13,18 @@ class WorldObjectManager:
     def get_object(self, handle):
         return self.objects.get(handle, None)
 
+    def get_object_by_cat(self, cat):
+        for obj in self.objects.values():
+            if obj.get_property("category") == cat:
+                return obj
+        return None
+
+    def get_object_container(self, obj):
+        for container in self.objects.values():
+            if obj.id in container.contents:
+                return container
+        return None
+
     def update(self, new_object_data):
         new_ids = set( od.id for od in new_object_data.objects )
         for obj_data in new_object_data.objects:
@@ -52,7 +64,7 @@ class WorldObjectManager:
 
         self.objects_id = parent_id.CreateIdWME("objects")
         for obj in self.objects.values():
-            obj.add_to_wm(self.objects_id, svs_commands)
+            obj.update_wm(self.objects_id, svs_commands)
 
         self.wm_dirty = False
 
@@ -62,10 +74,7 @@ class WorldObjectManager:
             return
 
         for obj in self.objects.values():
-            if obj.is_added():
-                obj.update_wm(svs_commands)
-            else:
-                obj.add_to_wm(self.objects_id, svs_commands)
+            obj.update_wm(self.objects_id, svs_commands)
 
         for obj in self.objs_to_remove.values():
             obj.remove_from_wm(svs_commands)

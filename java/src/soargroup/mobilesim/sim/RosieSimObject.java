@@ -22,7 +22,7 @@ import soargroup.mobilesim.lcmtypes.classification_t;
 
 public class RosieSimObject extends BaseSimObject{
 	protected enum ModelType {
-		BOX, WIRE_BOX, OPENBOX, CYLINDER, CONE, CUSTOM,
+		BOX, WIRE_BOX, OPENBOX, CYLINDER, CONE, SPHERE, CUSTOM,
 	}
 	protected Integer id;
 	protected String desc;
@@ -168,11 +168,13 @@ public class RosieSimObject extends BaseSimObject{
 				vc.add(new VzOpenBox(scale_xyz, new VzMesh.Style(color)));
 				break;
 			case WIRE_BOX:
-				// This is a wireframe box
 				vc.add(new VzBox(scale_xyz, new VzLines.Style(Color.black, 1)));
 				break;
 			case CYLINDER:
 				vc.add(new VzCylinder(scale_xyz[0]*0.5, scale_xyz[2], new VzMesh.Style(color)));
+				break;
+			case SPHERE:
+				vc.add(LinAlg.scale(scale_xyz[0], scale_xyz[1], scale_xyz[2]), new VzSphere(0.5, new VzMesh.Style(color)));
 				break;
 			case CONE:
 				// Need to move down because VzCone's circle face is on the xy plane
@@ -182,7 +184,7 @@ public class RosieSimObject extends BaseSimObject{
 				String modelName = properties.get("category").replaceAll("\\d", "");
 				VisChain vobj = ObjectModels.createModel(modelName, scale_xyz, color);
 				if(vobj != null){
-					vc.add(vobj);
+					vc = vobj;
 				}
 		}
 		return vc;
@@ -206,6 +208,20 @@ public class RosieSimObject extends BaseSimObject{
 			objdat.classifications[objdat.num_classifications] = cls;
 			objdat.num_classifications += 1;
 		}
+
+		if(this.is(ObjectHolder.class)){
+			ObjectHolder objHolder = this.getAttr(ObjectHolder.class);
+			List<RosieSimObject> heldObjs = objHolder.getHeldObjects();
+			objdat.num_objects = heldObjs.size();
+			objdat.contained_objects = new int[objdat.num_objects];
+			for(int i = 0; i < heldObjs.size(); i += 1){
+				objdat.contained_objects[i] = heldObjs.get(i).getID();
+			}
+		} else {
+			objdat.num_objects = 0;
+			objdat.contained_objects = new int[0];
+		}
+
 		return objdat;
 	}
 
@@ -239,6 +255,8 @@ public class RosieSimObject extends BaseSimObject{
 				model = ModelType.CYLINDER;
 			} else if(prop.equals("cone")){
 				model = ModelType.CONE;
+			} else if(prop.equals("sphere")){
+				model = ModelType.SPHERE;
 			} else if(prop.equals("custom-model")){
 				model = ModelType.CUSTOM;
 			} else if(prop.contains("=")){

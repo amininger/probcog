@@ -20,6 +20,15 @@ class ObjectProperty(WMInterface):
     def add_value(self, value, conf):
         self.last_update[value] = conf
 
+    def get_best_value(self):
+        best_conf = 0.0
+        best_val = None
+        for val, conf in self.last_update.items():
+            if conf > best_conf:
+                best_conf = conf
+                best_val = val
+        return best_val
+
     ### Methods for managing working memory structures ###
 
     def _add_to_wm_impl(self, parent_id):

@@ -38,6 +38,10 @@ public class WorldObjectManager implements ISVSObject {
     	oldIds.addAll(objects.keySet());
 
 		for(object_data_t objData : newObjectData.objects){
+			if(!objData.visible){
+				// Ignore objects that aren't visible
+				continue;
+			}
 			Integer objID = objData.id;
 			if(oldIds.contains(objID)){
 				oldIds.remove(objID);
