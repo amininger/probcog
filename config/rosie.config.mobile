@@ -15,5 +15,3 @@ message-source = tablet
 broadcast-output = true
 send-svs-info = true
 
-object-info-file = /home/april/probcog/worlds/objects/cse.info
-map-info-file = /home/april/probcog/worlds/maps/cse.map
