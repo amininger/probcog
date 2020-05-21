@@ -528,7 +528,7 @@
   # Properties
   2
     category=fridge1
-    door2=closed2
+    is-open1=not-open1
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {

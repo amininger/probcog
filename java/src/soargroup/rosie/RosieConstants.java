@@ -5,9 +5,9 @@ public class RosieConstants {
 	public final static String ACT_ON = "activated1";
 	public final static String ACT_OFF = "not-activated1";
 
-	public final static String DOOR = "door2";
+	public final static String DOOR = "is-open1";
 	public final static String DOOR_OPEN = "open2";
-	public final static String DOOR_CLOSED = "closed2";
+	public final static String DOOR_CLOSED = "not-open1";
 
 	public final static String LOCK = "is-locked1";
 	public final static String LOCKED = "locked1";
