@@ -211,7 +211,7 @@
   # Properties
   2
     category=lightswitch1
-    activation1=off2
+    is-activated1=not-activated1
 wp01
 }
 "soargroup.mobilesim.sim.RosieSimObject"
@@ -551,6 +551,28 @@ wp01
     color=green1
     category=chair1
     custom-model
+}
+"soargroup.mobilesim.sim.RosieSimObject"
+{
+  # Object Description
+  mug
+  # Object xyz
+  vec 3
+   13.50  17.55   1.12
+  # Rotation (yaw)
+  0.0
+  # Scale xyz
+  vec 3
+    0.20   0.20   0.20
+  # Color rgb (int 0-255)
+  ivec 3
+    0 0 255
+  # Properties
+  4
+    cylinder
+    grabbable
+    color=blue1
+    category=mug1
 }
 "soargroup.mobilesim.sim.SimPerson"
 {

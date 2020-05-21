@@ -4,7 +4,7 @@ from mobilesim.lcmtypes import rosie_agent_command_t
 
 # This is a simple connector that listens for a ROSIE_AGENT_COMMAND lcm message
 # command_type == INTERRUPT:
-#    adds an interrupt-agent flag onto the input-link (triggers interrupt in debugging-rules.soar)
+#    will stop the agent
 # command_type == CONTINUE:
 #    will run the agent
 class AgentCommandConnector(AgentConnector):
@@ -14,7 +14,6 @@ class AgentCommandConnector(AgentConnector):
         self.lcm = lcm
         self.lcm_handler = lambda channel, data: self.message_received(channel, data)
         self.lcm_subscriptions = []
-        self.interrupt_wme = SoarWME("interrupt-agent", 0)
 
     def connect(self):
         super().connect()
@@ -33,12 +32,4 @@ class AgentCommandConnector(AgentConnector):
                 self.agent.stop()
             elif agent_command.command_type == rosie_agent_command_t.CONTINUE:
                 self.agent.start()
-
-
-    def on_input_phase(self, input_link):
-        self.interrupt_wme.update_wm(input_link)
-
-    def on_init_soar(self):
-        self.interrupt_wme.remove_from_wm()
-
 

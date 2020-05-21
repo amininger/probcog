@@ -1,6 +1,7 @@
 from pysoarlib import *
 
 from .WorldObject import WorldObject
+from string import digits
 
 class WorldObjectManager:
     def __init__(self):
@@ -15,7 +16,7 @@ class WorldObjectManager:
 
     def get_object_by_cat(self, cat):
         for obj in self.objects.values():
-            if obj.get_property("category") == cat:
+            if cat in obj.get_property("category"):
                 return obj
         return None
 

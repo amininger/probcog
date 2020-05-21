@@ -590,7 +590,7 @@
   # Properties
   2
     category=stove1
-    activation1=off2
+    is-activated1=not-activated1
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -979,7 +979,7 @@
   # Properties
   2
     category=lightswitch1
-    activation1=on2
+    is-activated1=activated1
 wp01
 }
 "soargroup.mobilesim.sim.SimLightSwitch"
@@ -1000,7 +1000,7 @@ wp01
   # Properties
   2
     category=lightswitch1
-    activation1=on2
+    is-activated1=activated1
 wp02
 }
 "soargroup.mobilesim.sim.SimLightSwitch"
@@ -1021,7 +1021,7 @@ wp02
   # Properties
   2
     category=lightswitch1
-    activation1=off2
+    is-activated1=not-activated1
 wp03
 }
 "soargroup.mobilesim.sim.SimLightSwitch"
@@ -1042,7 +1042,7 @@ wp03
   # Properties
   2
     category=lightswitch1
-    activation1=off2
+    is-activated1=not-activated1
 wp04
 }
 "soargroup.mobilesim.sim.SimLightSwitch"
@@ -1063,7 +1063,7 @@ wp04
   # Properties
   2
     category=lightswitch1
-    activation1=on2
+    is-activated1=activated1
 wp06
 }
 "soargroup.mobilesim.sim.SimLightSwitch"
@@ -1084,7 +1084,7 @@ wp06
   # Properties
   2
     category=lightswitch1
-    activation1=on2
+    is-activated1=activated1
 wp08
 }
 "soargroup.mobilesim.sim.RosieSimObject"

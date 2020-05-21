@@ -1,9 +1,9 @@
 package soargroup.rosie;
 
 public class RosieConstants {
-	public final static String ACTIVATION = "activation1";
-	public final static String ACT_ON = "on2";
-	public final static String ACT_OFF = "off2";
+	public final static String ACTIVATION = "is-activated1";
+	public final static String ACT_ON = "activated1";
+	public final static String ACT_OFF = "not-activated1";
 
 	public final static String DOOR = "door2";
 	public final static String DOOR_OPEN = "open2";
