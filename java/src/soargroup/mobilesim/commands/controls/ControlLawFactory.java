@@ -37,7 +37,6 @@ public class ControlLawFactory
         registerControlLaw("put-at-xyz", PutAtXYZ.class.getName());
         registerControlLaw("put-on-object", PutOnObject.class.getName());
         registerControlLaw("change-state", ChangeState.class.getName());
-        registerControlLaw("teleport-object", TeleportObject.class.getName());
     }
 
     /** Register control laws with the factory. It is the job of the

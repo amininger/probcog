@@ -3,7 +3,7 @@ import tkinter.font
 
 import sys
 
-from mobilesim.rosie import RosieAgent
+from mobilesim.rosie import MobileSimAgent
 
 class RosieGUI(Frame):
     def create_widgets(self):
@@ -39,7 +39,7 @@ class RosieGUI(Frame):
         self.run_button.grid(row=1, column=2, sticky=N+S+E+W)
 
     def init_soar_agent(self, config_file):
-        self.agent = RosieAgent(config_filename=config_file)
+        self.agent = MobileSimAgent(config_filename=config_file)
         self.agent.connectors["language"].register_message_callback(self.receive_message)
         self.agent.connect()
 

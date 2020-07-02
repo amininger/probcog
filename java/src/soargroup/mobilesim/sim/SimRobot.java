@@ -331,19 +331,12 @@ public class SimRobot implements SimObject, LCMSubscriber
 			}
 		});
 
-		// PutDown: Valid if not holding anything
-		ActionHandler.addValidateRule(PutDown.class, new ValidateRule<PutDown>(){
-			public IsValid validate(PutDown putdown){
-				if(grabbedObject == null || grabbedObject != putdown.object)
-					return IsValid.False("SimRobot: Not holding object " + putdown.object);
-				return IsValid.True();
-			}
-		});
-
 		// PutDown Apply: Set grabbedObject
 		ActionHandler.addApplyRule(PutDown.class, new ApplyRule<PutDown>(){
 			public Result apply(PutDown putdown){
-				grabbedObject = null;
+				if(putdown.object == grabbedObject){
+					grabbedObject = null;
+				}
 				return Result.Ok();
 			}
 		});
@@ -356,7 +349,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 				forward = LinAlg.scale(forward, 1.0);
 				double[] newPos = LinAlg.add(robotPos, forward);
 				double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
-				grabbedObject.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
+				putdown.object.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
 				return Result.Ok();
 			}
 		});
@@ -364,7 +357,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 		// PutDown.XYZ Apply: Set the position of the object to the given coordinates
 		ActionHandler.addApplyRule(PutDown.XYZ.class, new ApplyRule<PutDown.XYZ>(){
 			public Result apply(PutDown.XYZ putdown){
-				grabbedObject.setPose(LinAlg.xyzrpyToMatrix(new double[]{ putdown.x, putdown.y, putdown.z, 0, 0, 0 }));
+				putdown.object.setPose(LinAlg.xyzrpyToMatrix(new double[]{ putdown.x, putdown.y, putdown.z, 0, 0, 0 }));
 				return Result.Ok();
 			}
 		});

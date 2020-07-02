@@ -49,6 +49,8 @@ public class PutAtXYZ implements ControlLaw
         params.add(new TypedParameter("x", TypedValue.TYPE_DOUBLE, true));
         params.add(new TypedParameter("y", TypedValue.TYPE_DOUBLE, true));
         params.add(new TypedParameter("z", TypedValue.TYPE_DOUBLE, true));
+		// If given, will move the given object instead of the grabbed one
+    	params.add(new TypedParameter("object-id", TypedValue.TYPE_INT, false));
 
     	return params;
     }

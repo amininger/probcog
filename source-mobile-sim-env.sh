@@ -19,5 +19,7 @@ complete -F _mobile_worlds_completion run_mobile_sim
 
 export PROBCOG_CONFIG=$MOBILE_SIM_HOME/config/robot.config.local
 
+# Will print a description of each visible object in the lcm observations being sent to Rosie
+alias print_perceived_objects="python3 -m mobilesim.tools.print_perceived_objects"
 
 

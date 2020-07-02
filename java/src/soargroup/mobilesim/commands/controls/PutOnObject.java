@@ -18,8 +18,8 @@ public class PutOnObject implements ControlLaw
 
     public PutOnObject(Map<String, TypedValue> parameters)
     {
-        assert (parameters.containsKey("object-id"));
-        System.out.println("PUT ON OBJECT: " + parameters.get("object-id").getInt().toString());
+        assert (parameters.containsKey("destination-id"));
+        System.out.println("PUT ON OBJECT: " + parameters.get("destination-id").getInt().toString());
 
 		if(!parameters.containsKey("relation")){
 			parameters.put("relation", new TypedValue("on"));
@@ -52,9 +52,12 @@ public class PutOnObject implements ControlLaw
     {
         // No parameters, so this can just return an empty container
     	ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-    	params.add(new TypedParameter("object-id", TypedValue.TYPE_INT, true));
+    	params.add(new TypedParameter("destination-id", TypedValue.TYPE_INT, true));
 
     	params.add(new TypedParameter("relation", TypedValue.TYPE_STRING, false));
+
+		// If given, will move the given object instead of the grabbed one
+    	params.add(new TypedParameter("object-id", TypedValue.TYPE_INT, false));
     	return params;
     }
 

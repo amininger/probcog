@@ -94,10 +94,7 @@ public class MobileSimulator implements LCMSubscriber
 				lastHandledCommand = controlLaw.id;
 
 				Action action = null;
-				if(controlLaw.name.equals("teleport-object")){
-					handleTeleportObject(controlLaw);
-					return;
-				} else if(controlLaw.name.equals("pick-up")){
+				if(controlLaw.name.equals("pick-up")){
 					action = parsePickUp(controlLaw);
 				} else if(controlLaw.name.equals("put-down")){
 					action = parsePutDown(controlLaw);
@@ -146,7 +143,7 @@ public class MobileSimulator implements LCMSubscriber
 			}
 		}
 		System.err.println("MobileSimulator: parsing " + controlLaw.name);
-		System.err.println("  The rosie object given by " + objectIdStr + " is invalid");
+		System.err.println("  The rosie object given by " + objectIdStr + " is does not exist");
 		return null;
 	}
 
@@ -181,12 +178,18 @@ public class MobileSimulator implements LCMSubscriber
 	}
 
 	private PutDown.XYZ parsePutAtXYZ(control_law_t controlLaw){
-		RosieSimObject obj = robot.getGrabbedObject();
-		if(obj == null){
-			System.err.println("MobileSimulator: parsing " + controlLaw.name);
-			System.err.println("   SimRobot's grabbedObject is null");
-			return null;
+		RosieSimObject movingObj = getRosieObject(controlLaw, "object-id");
+		if(movingObj != null){
+			removeObjectFromHolders(movingObj);
+		} else {
+			movingObj = robot.getGrabbedObject();
+			if(movingObj == null){
+				System.err.println("MobileSimulator: parsing " + controlLaw.name);
+				System.err.println("   SimRobot's grabbedObject is null");
+				return null;
+			}
 		}
+
 		double[] xyz = new double[]{ 0, 0, 0 };
 		for(int p = 0; p < controlLaw.num_params; p++){
 			if(controlLaw.param_names[p].equals("x")){
@@ -197,23 +200,28 @@ public class MobileSimulator implements LCMSubscriber
 				xyz[2] = Double.parseDouble(controlLaw.param_values[p].value);
 			} 
 		}
-		return new PutDown.XYZ(obj, xyz);
+		return new PutDown.XYZ(movingObj, xyz);
 	}
 
 	private PutDown.Target parsePutOnObject(control_law_t controlLaw){
-		RosieSimObject grabbedObj = robot.getGrabbedObject();
-		if(grabbedObj == null){
-			System.err.println("MobileSimulator: parsing " + controlLaw.name);
-			System.err.println("   SimRobot's grabbedObject is null");
-			return null;
+		RosieSimObject movingObj = getRosieObject(controlLaw, "object-id");
+		if(movingObj != null){
+			removeObjectFromHolders(movingObj);
+		} else {
+			movingObj = robot.getGrabbedObject();
+			if(movingObj == null){
+				System.err.println("MobileSimulator: parsing " + controlLaw.name);
+				System.err.println("   SimRobot's grabbedObject is null");
+				return null;
+			}
 		}
 
-		RosieSimObject target = getRosieObject(controlLaw, "object-id");
+		RosieSimObject target = getRosieObject(controlLaw, "destination-id");
 		if(target == null){ return null; }
 
 		String relation = getParam(controlLaw, "relation", RosieConstants.REL_ON);
 
-		return new PutDown.Target(grabbedObj, relation, target);
+		return new PutDown.Target(movingObj, relation, target);
 	}
 
 	private SetProp parseChangeState(control_law_t controlLaw){
@@ -229,38 +237,20 @@ public class MobileSimulator implements LCMSubscriber
 		return SetProp.construct(obj, prop, val);
 	}
 
-	private void handleTeleportObject(control_law_t controlLaw){
-		RosieSimObject object = getRosieObject(controlLaw, "object-id");
-		if(object == null){ 
-			System.err.println("TeleportObject: the given object-id does not exist");
-			return;
-		}
-
-		RosieSimObject destination = getRosieObject(controlLaw, "destination");
-		if(destination == null){ 
-			System.err.println("TeleportObject: the given destinatino does not exist");
-			return;
-		}
-		if(!destination.is(ObjectHolder.class)){
-			System.err.println("TeleportObject: the given destinatino cannot hold an object");
-			return;
-		}
-
+	private void removeObjectFromHolders(RosieSimObject object){
 		// Remove the object from any ObjectHolders it is currently in
 		synchronized(world){
 			for(SimObject obj : world.objects){
 				if(!(obj instanceof RosieSimObject)){
 					continue;
 				}
-				RosieSimObject rosieObj = (RosieSimObject)obj;
-				ObjectHolder holder = rosieObj.getAttr(ObjectHolder.class);
+				ObjectHolder holder = ((RosieSimObject)obj).getAttr(ObjectHolder.class);
 				if(holder != null){
 					holder.removeObject(object);
 				}
 			}
+			object.setVisible(true);
 		}
-
-		destination.getAttr(ObjectHolder.class).addObject(object);
 	}
 
     private void loadWorld(GetOpt opts)

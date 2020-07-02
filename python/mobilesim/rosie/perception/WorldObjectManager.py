@@ -21,6 +21,8 @@ class WorldObjectManager:
         return None
 
     def get_object_container(self, obj):
+        if obj is None:
+            return None
         for container in self.objects.values():
             if obj.id in container.contents:
                 return container

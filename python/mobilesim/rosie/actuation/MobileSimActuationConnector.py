@@ -26,6 +26,7 @@ class MobileSimActuationConnector(AgentConnector):
         self.active_command = ControlLawUtil.create_empty_control_law("RESTART")
         self.active_command.id = self.next_control_law_id
         self.next_control_law_id += 1
+        self.command_queue = list()
 
         self.active_command_id = None
         self.status_wme = SoarWME("status", "none")
@@ -63,9 +64,12 @@ class MobileSimActuationConnector(AgentConnector):
                 self.status_wme.set_value(str(status.status).lower())
         self.lock.release()
 
+    # Queue up multiple commands
+    def queue_command(self, control_law):
+        self.command_queue.insert(0, control_law)
+
     # Will replace the current command with the given one and start sending it
     def send_command(self, control_law, root_id=None):
-        self.lock.acquire()
         if self.active_command_id is not None:
             self.status_wme.set_value("interrupted")
             self.status_wme.update_wm(self.active_command_id)
@@ -75,11 +79,9 @@ class MobileSimActuationConnector(AgentConnector):
         self.next_control_law_id += 1
 
         self.active_command_id = root_id
+        self.status_wme = SoarWME("status", "sent")
         if root_id is not None:
-            self.status_wme = SoarWME("status", "sent")
             self.status_wme.update_wm(self.active_command_id)
-
-        self.lock.release()
     
     # Periodically re-send the currently active command
     def send_command_thread_fn(self):
@@ -95,12 +97,21 @@ class MobileSimActuationConnector(AgentConnector):
     #   and stop the command broadcasting if we got a terminal status
     def on_input_phase(self, input_link):
         self.lock.acquire()
-        if self.active_command_id is not None:
-            self.status_wme.update_wm(self.active_command_id)
+
+        # Update the active command, checking to see if it was successful
+        if self.active_command is not None:
+            if self.active_command_id is not None:
+                self.status_wme.update_wm(self.active_command_id)
             if self.status_wme.get_value() in [ "success", "failure", "unknown" ]:
                 self.active_command_id = None
                 self.active_command = None
                 self.moving_status = "stopped"
+
+        # Send the next queued command if the current command finished
+        if (self.active_command is None or self.active_command.name == "RESTART") and len(self.command_queue) > 0:
+            command = self.command_queue.pop()
+            self.send_command(command)
+
         self.lock.release()
 
     def on_init_soar(self):
@@ -118,10 +129,12 @@ class MobileSimActuationConnector(AgentConnector):
     ################################################
 
     def on_output_event(self, command_name, root_id):
+        self.lock.acquire()
         if command_name == "do-control-law":
             self.process_do_control_law(root_id)
         elif command_name == "stop":
             self.process_stop_command(root_id)
+        self.lock.release()
 
     def process_do_control_law(self, root_id):
         control_law = ControlLawUtil.parse_control_law(root_id)

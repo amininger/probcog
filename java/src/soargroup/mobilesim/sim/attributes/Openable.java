@@ -80,5 +80,16 @@ public class Openable extends Attribute {
 				return Result.Ok();
 			}
 		});
+		// PutDown.Target Apply: If the target is closed, make the object not visible 
+		// (This should only happen due to simulator teleporting objects for testing, etc.)
+		ActionHandler.addApplyRule(PutDown.Target.class, new ApplyRule<PutDown.Target>() {
+			public Result apply(PutDown.Target putdown){
+				Openable openable = putdown.target.getAttr(Openable.class);
+				if(openable != null && !openable.isOpen()){
+					putdown.object.setVisible(false);
+				}
+				return Result.Ok();
+			}
+		});
 	}
 }
