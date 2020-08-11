@@ -22,7 +22,7 @@ public abstract class BaseSimObject implements SimObject{
 	protected VisObject visObject = null;
 
 	protected boolean isRunning = false;
-	protected boolean collide = soargroup.mobilesim.MobileSimulator.Settings.COLLIDE_OBJECTS;
+	protected boolean collide = true;
 
 	public BaseSimObject(SimWorld sw){
 	}

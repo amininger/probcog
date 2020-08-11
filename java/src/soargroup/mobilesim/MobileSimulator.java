@@ -34,13 +34,13 @@ public class MobileSimulator implements LCMSubscriber
 	/// Global settings for the simulator, should probably put these in a config file 
 	public static class Settings {
 		// TELEPORT_ROBOT: If true, when a move-to-xy command is sent, the robot will instantly teleport there
-		public final static boolean TELEPORT_ROBOT = false;
+		public static boolean TELEPORT_ROBOT = false;
 
 		// COLLIDE_WALLS: If true, the robot will collide with walls (not be able to drive through them)
-		public final static boolean COLLIDE_WALLS = false;
+		public static boolean COLLIDE_WALLS = false;
 
 		// COLLIDE_OBJECTS: If true, the robot will collide with objects (not be able to drive through them)
-		public final static boolean COLLIDE_OBJECTS = false;
+		public static boolean COLLIDE_OBJECTS = false;
 
 		// ANCHOR_SPACING: Sets the distance in meters between anchors in receptacles/surfaces (smaller values = closer together)
 		public final static double ANCHOR_SPACING = 0.3;

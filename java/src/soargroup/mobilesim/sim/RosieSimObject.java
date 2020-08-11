@@ -109,22 +109,21 @@ public class RosieSimObject extends BaseSimObject{
 
 	// Action Handling Rules
 	static {
-		if(soargroup.mobilesim.MobileSimulator.Settings.COLLIDE_OBJECTS){
-			// PickUp Apply: Make object non-collidable
-			ActionHandler.addApplyRule(PickUp.class, new ActionHandler.ApplyRule<PickUp>() {
-				public Result apply(PickUp pickup){
-					pickup.object.collide = false;
-					return Result.Ok();
-				}
-			});
-			// PutDown Apply: Make object collidable again
-			ActionHandler.addApplyRule(PutDown.class, new ActionHandler.ApplyRule<PutDown>() {
-				public Result apply(PutDown putdown){
-					putdown.object.collide = true;
-					return Result.Ok();
-				}
-			});
-		}
+		// PickUp Apply: Make object non-collidable
+		ActionHandler.addApplyRule(PickUp.class, new ActionHandler.ApplyRule<PickUp>() {
+			public Result apply(PickUp pickup){
+				pickup.object.collide = false;
+				return Result.Ok();
+			}
+		});
+		// PutDown Apply: Make object collidable again
+		ActionHandler.addApplyRule(PutDown.class, new ActionHandler.ApplyRule<PutDown>() {
+			public Result apply(PutDown putdown){
+				putdown.object.collide = true;
+				return Result.Ok();
+			}
+		});
+
 		//// SetProp Apply: Change the property
 		//ActionHandler.addApplyRule(SetProp.class, new ActionHandler.ApplyRule<SetProp>() {
 		//	public Result apply(SetProp setprop){
@@ -145,6 +144,14 @@ public class RosieSimObject extends BaseSimObject{
 
 	public void setProperty(String property, String value){
 		properties.put(property, value);
+	}
+
+	@Override
+	public Shape getShape(){
+		if(!soargroup.mobilesim.MobileSimulator.Settings.COLLIDE_OBJECTS){
+			return new april.sim.SphereShape(0.0);
+		}
+		return super.getShape();
 	}
 
 	@Override

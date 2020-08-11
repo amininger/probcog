@@ -30,6 +30,12 @@ public class MobileGUI extends JFrame
 {
 	/// Global settings for the GUI, should probably put these in a config file 
 	public static class Settings {
+		// DRAW_LABELS: If true, will not draw labels at all
+		public static boolean DRAW_LABELS = true;
+
+		// LARGE_LABELS: If true, will make the text labels larger 
+		public static boolean LARGE_LABELS = false;
+
 		// PRINT_IDS: If true, will print out every object's id above it
 		public static boolean PRINT_IDS = true;
 
@@ -39,12 +45,6 @@ public class MobileGUI extends JFrame
 
 		// DRAW_REGION_IDS: If true, will draw the id of each region as text in the center
 		public static boolean DRAW_REGION_IDS = false;
-
-		// LARGE_LABELS: If true, will make the text labels larger 
-		public static boolean LARGE_LABELS = false;
-
-		// HIDE_LABELS: If true, will not draw labels at all
-		public static boolean HIDE_LABELS = false;
 
 		// ONLY_LABEL_PEOPLE: If true, will only draw labels for people in the simulator (their names)
 		public static boolean ONLY_LABEL_PEOPLE = false;
@@ -185,7 +185,7 @@ public class MobileGUI extends JFrame
 		public void drawObjectLabels(){
 			double[][] faceCamera = calcFaceCameraMatrix();
 			VisWorld.Buffer buffer = vw.getBuffer("obj-labels");
-			if(!Settings.HIDE_LABELS){
+			if(Settings.DRAW_LABELS){
 				synchronized (simulator) {
 					for (SimObject obj: simulator.getWorld().objects) {
 						if (!(obj instanceof soargroup.mobilesim.sim.RosieSimObject))
@@ -306,29 +306,36 @@ public class MobileGUI extends JFrame
 
     private void initParameters()
     {
-        pg.addCheckBoxes("hide-labels", "Hide Labels", Settings.HIDE_LABELS,
-				"only-label-people", "Only People", Settings.ONLY_LABEL_PEOPLE,
+        pg.addCheckBoxes("draw-labels", "Labels", Settings.DRAW_LABELS,
+				"large-labels", "Large", Settings.LARGE_LABELS, 
 				"print-ids", "IDs", Settings.PRINT_IDS,
 				"draw-region-ids", "Regions", Settings.DRAW_REGION_IDS,
 				"draw-anchors", "Anchors", Settings.DRAW_ANCHORS,
-				"large-labels", "Large Font", Settings.LARGE_LABELS);
+				"collide-objects", "Collide Objects", MobileSimulator.Settings.COLLIDE_OBJECTS,
+				"collide-walls", "Collide Walls", MobileSimulator.Settings.COLLIDE_WALLS,
+				"teleport-robot", "Teleport", MobileSimulator.Settings.TELEPORT_ROBOT);
 
         pg.addListener(new ParameterListener(){
 			public void parameterChanged(ParameterGUI pg, String name) {
-				if(name.equals("hide-labels")){
-					Settings.HIDE_LABELS = pg.gb("hide-labels");
-				} else if(name.equals("only-label-people")){
-					Settings.ONLY_LABEL_PEOPLE = pg.gb("only-label-people");
+				Boolean value = pg.gb(name);
+				if(name.equals("draw-labels")){
+					Settings.DRAW_LABELS = value;
 				} else if(name.equals("print-ids")){
-					Settings.PRINT_IDS = pg.gb("print-ids");
+					Settings.PRINT_IDS = value;
 				} else if(name.equals("draw-region-ids")){
-					Settings.DRAW_REGION_IDS = pg.gb("draw-region-ids");
+					Settings.DRAW_REGION_IDS = value;
 					simulator.recomputeModels();
 				} else if(name.equals("draw-anchors")){
-					Settings.DRAW_ANCHORS = pg.gb("draw-anchors");
+					Settings.DRAW_ANCHORS = value;
 					simulator.recomputeModels();
 				} else if(name.equals("large-labels")){
-					Settings.LARGE_LABELS = pg.gb("large-labels");
+					Settings.LARGE_LABELS = value;
+				} else if(name.equals("collide-objects")){
+					MobileSimulator.Settings.COLLIDE_OBJECTS = value;
+				} else if(name.equals("collide-walls")){
+					MobileSimulator.Settings.COLLIDE_WALLS = value;
+				} else if(name.equals("teleport-robot")){
+					MobileSimulator.Settings.TELEPORT_ROBOT = value;
 				}
 			}
 		});
