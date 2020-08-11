@@ -28,14 +28,26 @@ import soargroup.mobilesim.lcmtypes.rosie_agent_command_t;
 
 public class MobileGUI extends JFrame
 {
+	/// Global settings for the GUI, should probably put these in a config file 
 	public static class Settings {
-		public final static boolean PRINT_IDS = true;
-		public final static boolean DRAW_ANCHORS = true;
-		public final static boolean DRAW_REGION_IDS = true;
-		public final static boolean DRAW_LABELS = true;
-		public final static boolean LARGE_LABELS = false;
-		public final static boolean TELEPORT_ROBOT = false;
-		public final static boolean COLLIDE_WALLS = false;
+		// PRINT_IDS: If true, will print out every object's id above it
+		public static boolean PRINT_IDS = true;
+
+		// DRAW_ANCHORS: If true, will draw little boxes at each container anchor point 
+		//               (positions where objects can be placed)
+		public static boolean DRAW_ANCHORS = false;
+
+		// DRAW_REGION_IDS: If true, will draw the id of each region as text in the center
+		public static boolean DRAW_REGION_IDS = false;
+
+		// LARGE_LABELS: If true, will make the text labels larger 
+		public static boolean LARGE_LABELS = false;
+
+		// HIDE_LABELS: If true, will not draw labels at all
+		public static boolean HIDE_LABELS = false;
+
+		// ONLY_LABEL_PEOPLE: If true, will only draw labels for people in the simulator (their names)
+		public static boolean ONLY_LABEL_PEOPLE = false;
 	}
 
     private MobileSimulator simulator;
@@ -76,16 +88,14 @@ public class MobileGUI extends JFrame
         // Parameter stuff
         pg = new ParameterGUI();
         initParameters();
-        this.add(pg, BorderLayout.SOUTH);
+        this.add(pg, BorderLayout.NORTH);
 
         // Set GUI modes
         this.setVisible(true);
 
         // Render updates about the world
-		if(Settings.DRAW_LABELS){
-			RenderThread rt = new RenderThread();
-			rt.start();
-		}
+		RenderThread rt = new RenderThread();
+		rt.start();
 
 		panThread = new PanThread(vl, vc);
 		panThread.start();
@@ -143,7 +153,7 @@ public class MobileGUI extends JFrame
             Tic tic = new Tic();
             while (true) {
                 double dt = tic.toctic();
-                drawObjectLabels();
+				drawObjectLabels();
                 TimeUtil.sleep(1000/fps);
             }
         }
@@ -175,29 +185,33 @@ public class MobileGUI extends JFrame
 		public void drawObjectLabels(){
 			double[][] faceCamera = calcFaceCameraMatrix();
 			VisWorld.Buffer buffer = vw.getBuffer("obj-labels");
-			synchronized (simulator) {
-				for (SimObject obj: simulator.getWorld().objects) {
-					if (!(obj instanceof soargroup.mobilesim.sim.RosieSimObject))
-						continue;
-					soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
-					//if(!(obj instanceof soargroup.mobilesim.sim.SimPerson)){
-					//	continue;
-					//}
+			if(!Settings.HIDE_LABELS){
+				synchronized (simulator) {
+					for (SimObject obj: simulator.getWorld().objects) {
+						if (!(obj instanceof soargroup.mobilesim.sim.RosieSimObject))
+							continue;
+						soargroup.mobilesim.sim.RosieSimObject pcobj = (soargroup.mobilesim.sim.RosieSimObject)obj;
+						
+						if(Settings.ONLY_LABEL_PEOPLE && !(obj instanceof soargroup.mobilesim.sim.SimPerson)){
+							continue;
+						}
 
-					String lbl = pcobj.getLabel(Settings.PRINT_IDS);
-					//lbl = lbl.substring(0, 1).toUpperCase() + lbl.substring(1);
-					//if(lbl.equals("Co")){
-					//	lbl = "CO";
-					//}
-					String tf="<<monospaced,black,dropshadow=false>>";
-					String text = String.format("%s%s\n", tf, lbl);
+						String lbl = pcobj.getLabel(Settings.PRINT_IDS);
+						if(obj instanceof soargroup.mobilesim.sim.SimPerson){
+							// Capitalize people
+							lbl = lbl.substring(0, 1).toUpperCase() + lbl.substring(1);
+						}
 
-					VzText vzText = new VzText(text);
-					double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.5};
-					if(Settings.LARGE_LABELS){
-						buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.04), vzText));
-					} else {
-						buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.02), vzText));
+						String tf="<<monospaced,black,dropshadow=false>>";
+						String text = String.format("%s%s\n", tf, lbl);
+
+						VzText vzText = new VzText(text);
+						double[] textLoc = new double[]{pcobj.getXYZRPY()[0], pcobj.getXYZRPY()[1], pcobj.getXYZRPY()[2] + 1.5};
+						if(Settings.LARGE_LABELS){
+							buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.04), vzText));
+						} else {
+							buffer.addBack(new VisChain(LinAlg.translate(textLoc), faceCamera, LinAlg.scale(0.02), vzText));
+						}
 					}
 				}
 			}
@@ -292,12 +306,29 @@ public class MobileGUI extends JFrame
 
     private void initParameters()
     {
-        // pg.addCheckBoxes("param-name", "Param Name", initValue);
+        pg.addCheckBoxes("hide-labels", "Hide Labels", Settings.HIDE_LABELS,
+				"only-label-people", "Only People", Settings.ONLY_LABEL_PEOPLE,
+				"print-ids", "IDs", Settings.PRINT_IDS,
+				"draw-region-ids", "Regions", Settings.DRAW_REGION_IDS,
+				"draw-anchors", "Anchors", Settings.DRAW_ANCHORS,
+				"large-labels", "Large Font", Settings.LARGE_LABELS);
 
         pg.addListener(new ParameterListener(){
 			public void parameterChanged(ParameterGUI pg, String name) {
-				if(name.equals("param-name")){
-					// use parameter value pg.gb(name)
+				if(name.equals("hide-labels")){
+					Settings.HIDE_LABELS = pg.gb("hide-labels");
+				} else if(name.equals("only-label-people")){
+					Settings.ONLY_LABEL_PEOPLE = pg.gb("only-label-people");
+				} else if(name.equals("print-ids")){
+					Settings.PRINT_IDS = pg.gb("print-ids");
+				} else if(name.equals("draw-region-ids")){
+					Settings.DRAW_REGION_IDS = pg.gb("draw-region-ids");
+					simulator.recomputeModels();
+				} else if(name.equals("draw-anchors")){
+					Settings.DRAW_ANCHORS = pg.gb("draw-anchors");
+					simulator.recomputeModels();
+				} else if(name.equals("large-labels")){
+					Settings.LARGE_LABELS = pg.gb("large-labels");
 				}
 			}
 		});

@@ -32,7 +32,7 @@ public class SimRoomWall extends BaseSimObject {
 	
     public SimRoomWall(SimWorld sw){
     	super(sw);
-		this.collide = soargroup.mobilesim.MobileGUI.Settings.COLLIDE_WALLS;
+		this.collide = soargroup.mobilesim.MobileSimulator.Settings.COLLIDE_WALLS;
     }
     
     public VisChain createVisObject(){

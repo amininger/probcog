@@ -9,7 +9,19 @@ import select
 import lcm
 lcm = lcm.LCM()
 
+import sys
+
 from mobilesim.lcmtypes import object_data_list_t
+
+### -h | --help : print help message
+if "-h" in sys.argv or "--help" in sys.argv:
+    print("Listens for a DETECTED_OBJECTS LCM message")
+    print("and prints out all the objects that the robot currently perceives")
+    print("  -a | --all will print out all objects, not just visible ones")
+    sys.exit(0)
+
+### -a | --all : Print out all objects in the message (default is only visible ones)
+print_all = ("-a" in sys.argv or "--all" in sys.argv)
 
 # Data shared across threads
 class SharedState:
@@ -31,7 +43,7 @@ lcm_thread.start()
 def handle_message(channel, data):
     obj_list = object_data_list_t.decode(data)
     for obj in obj_list.objects:
-        if not obj.visible:
+        if not print_all and not obj.visible:
             continue
         props = dict( (cls.category, cls.name) for cls in obj.classifications )
         cat = props["category"]

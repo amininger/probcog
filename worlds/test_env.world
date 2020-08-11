@@ -27,7 +27,7 @@
   # Properties
   2
     category=fridge1
-    door2=closed2
+    is-open1=not-open1
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -68,7 +68,7 @@
   # Properties
   2
     category=cupboard1
-    door2=closed2
+    is-open1=not-open1
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -109,7 +109,7 @@
   # Properties
   2
     category=microwave1
-    door2=closed2
+    is-open1=not-open1
 }
 "soargroup.mobilesim.sim.SimDrawer"
 {
@@ -129,7 +129,7 @@
   # Properties
   2
     category=drawer1
-    door2=closed2
+    is-open1=not-open1
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -170,7 +170,7 @@
   # Properties
   2
     category=pantry1
-    door2=open2
+    is-open1=open2
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -257,6 +257,28 @@ wp01
     grabbable
     color=blue1
     category=soda1
+}
+"soargroup.mobilesim.sim.RosieSimObject"
+{
+  # Object Description
+  juice
+  # Object xyz
+  vec 3
+    0.60   0.60   0.61
+  # Rotation (yaw)
+  0.0
+  # Scale xyz
+  vec 3
+    0.20   0.20   0.40
+  # Color rgb (int 0-255)
+  ivec 3
+    255 127 0
+  # Properties
+  4
+    cylinder
+    grabbable
+    color=orange1
+    category=juice1
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {

@@ -124,7 +124,8 @@ public class SimRobot implements SimObject, LCMSubscriber
         tasks.addFixedDelay(new PoseTask(), 0.04);
         tasks.addFixedDelay(new ControlTask(), 0.01);
 //        tasks.addFixedDelay(new ClassifyTask(), 0.04);
-    }
+
+	}
 
     public april.sim.Shape getShape()
     {
@@ -293,7 +294,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 						newy = Double.parseDouble(controlLaw.param_values[p].value);
 					}
 				}
-				if(soargroup.mobilesim.MobileGUI.Settings.TELEPORT_ROBOT){
+				if(soargroup.mobilesim.MobileSimulator.Settings.TELEPORT_ROBOT){
 					drive.poseTruth.pos[0] = newx;
 					drive.poseTruth.pos[1] = newy;
 				}

@@ -25,6 +25,8 @@ public class ObjectModels {
 			return createDeskModel(scale, color);
 		if(modelName.equals("car"))
 			return createCarModel(scale, color);
+		if(modelName.equals("truck"))
+			return createTruckModel(scale, color);
 		if(modelName.equals("extinguisher"))
 			return createExtinguisherModel(scale, color);
 		return null;
@@ -153,6 +155,28 @@ public class ObjectModels {
 		// Wheels
 		final double THICKNESS = 0.2;
 		double wheel_dX = scale[0]*0.25;
+		double wheel_dY = (scale[1] - THICKNESS)/2;
+		double wheel_z  = -scale[2]*0.2;
+		vc.add(new VisChain(LinAlg.translate( wheel_dX,  wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));
+		vc.add(new VisChain(LinAlg.translate( wheel_dX, -wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));
+		vc.add(new VisChain(LinAlg.translate(-wheel_dX,  wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));
+		vc.add(new VisChain(LinAlg.translate(-wheel_dX, -wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));
+
+		return vc;
+	}
+
+	public static VisChain createTruckModel(double[] scale, Color color){
+		VisChain vc = new VisChain();
+		VzMesh.Style style = new VzMesh.Style(color);
+		VzMesh.Style black = new VzMesh.Style(Color.black);
+
+		// Body
+		addBox(vc, 0.0, 0.0, -scale[2]*0.10, scale[0], scale[1]*0.95, scale[2]*0.4, style);
+		addBox(vc, scale[0]*0.1, 0.0,  scale[2]*0.30, scale[0]*0.3, scale[1]*0.95, scale[2]*0.4, style);
+
+		// Wheels
+		final double THICKNESS = 0.2;
+		double wheel_dX = scale[0]*0.30;
 		double wheel_dY = (scale[1] - THICKNESS)/2;
 		double wheel_z  = -scale[2]*0.2;
 		vc.add(new VisChain(LinAlg.translate( wheel_dX,  wheel_dY, wheel_z), LinAlg.rotateX(Math.PI*0.5), new VzCylinder(scale[2]*0.2, THICKNESS, black)));

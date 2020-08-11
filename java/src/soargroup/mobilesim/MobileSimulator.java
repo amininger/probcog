@@ -31,41 +31,56 @@ import soargroup.mobilesim.lcmtypes.control_law_t;
 
 public class MobileSimulator implements LCMSubscriber
 {
+	/// Global settings for the simulator, should probably put these in a config file 
+	public static class Settings {
+		// TELEPORT_ROBOT: If true, when a move-to-xy command is sent, the robot will instantly teleport there
+		public final static boolean TELEPORT_ROBOT = false;
+
+		// COLLIDE_WALLS: If true, the robot will collide with walls (not be able to drive through them)
+		public final static boolean COLLIDE_WALLS = false;
+
+		// COLLIDE_OBJECTS: If true, the robot will collide with objects (not be able to drive through them)
+		public final static boolean COLLIDE_OBJECTS = false;
+
+		// ANCHOR_SPACING: Sets the distance in meters between anchors in receptacles/surfaces (smaller values = closer together)
+		public final static double ANCHOR_SPACING = 0.3;
+	}
+
 	// Sim stuff
     SimWorld world;
     Simulator sim;
 
+	protected SimRobot robot = null;
+	protected ArrayList<RosieSimObject> rosieObjs;
+	protected ArrayList<BaseSimObject> baseObjs;
+
     private Timer simulateDynamicsTimer;
     private static final int DYNAMICS_RATE = 10; // FPS to simulate dynamics at
 
-	SimRobot robot = null;
-
 	private int lastHandledCommand = -1;
 
-    public MobileSimulator(GetOpt opts,
-                            VisWorld vw,
-                            VisLayer vl,
-                            VisCanvas vc,
-                            VisConsole console)
-    {
+    public MobileSimulator(GetOpt opts, VisWorld vw, VisLayer vl, VisCanvas vc, VisConsole console) {
         loadWorld(opts);
         sim = new Simulator(vw, vl, console, world);
 
-		ArrayList<RosieSimObject> rosieObjs = new ArrayList<RosieSimObject>();
+		rosieObjs = new ArrayList<RosieSimObject>();
+		baseObjs = new ArrayList<BaseSimObject>();
 		synchronized(world){
 			for(SimObject obj : world.objects){
 				if(obj instanceof SimRobot){
 					robot = (SimRobot)obj;
-					robot.setFullyObservable(opts.getBoolean("fully"));
-					robot.setupActionRules();
 				}
 				if(obj instanceof RosieSimObject){
-					RosieSimObject rosieObj = (RosieSimObject)obj;
-					rosieObjs.add(rosieObj);
+					rosieObjs.add((RosieSimObject)obj);
 				}
 				if(obj instanceof BaseSimObject){
-					((BaseSimObject)obj).init(world.objects);
+					baseObjs.add((BaseSimObject)obj);
 				}
+			}
+			robot.setFullyObservable(opts.getBoolean("fully"));
+			robot.setupActionRules();
+			for(BaseSimObject baseObj : baseObjs){
+				baseObj.init(world.objects);
 			}
 		}
 		if(robot == null){
@@ -75,6 +90,7 @@ public class MobileSimulator implements LCMSubscriber
 	    simulateDynamicsTimer = new Timer();
 	    simulateDynamicsTimer.schedule(new SimulateDynamicsTask(world), 1000, 1000/DYNAMICS_RATE);
 
+		// Listen for rosie commands
 		LCM.getSingleton().subscribe("SOAR_COMMAND.*", this);
 	}
 
@@ -104,26 +120,34 @@ public class MobileSimulator implements LCMSubscriber
 					action = parsePutOnObject(controlLaw);
 				} else if(controlLaw.name.equals("change-state")){
 					action = parseChangeState(controlLaw);
-				} else {
-					return;
 				}
 				if(action == null){
 					System.err.println("ERROR: Could not parse action of type " + controlLaw.name);
 					return;
 				}
-
-				synchronized(world){
-					Result result = ActionHandler.handle(action, robot);
-					if(result instanceof Err){
-						System.err.println(((Err)result).reason);
-					}
+				Result result = ActionHandler.handle(action, robot);
+				if(result instanceof Err){
+					System.err.println(((Err)result).reason);
+				} else {
+					System.out.println("Performed: " + action);
 				}
-				System.out.println("Performed: " + action);
+
 	      	}
         } catch (IOException ex) {
             System.out.println("WRN: "+ex);
         }
     }
+
+	// Will have every BaseSimObject recompute its VisObject model
+	public void recomputeModels(){
+		synchronized(world.objects){
+			for(SimObject obj : world.objects){
+				if(obj instanceof BaseSimObject){
+					((BaseSimObject)obj).recreateVisObject();
+				}
+			}
+		}
+	}
 
 	private RosieSimObject getRosieObject(control_law_t controlLaw, String param_name){
 		String objectIdStr = getParam(controlLaw, param_name, null);
@@ -132,7 +156,7 @@ public class MobileSimulator implements LCMSubscriber
 		}
 		Integer objectId = new Integer(objectIdStr);
 
-		synchronized(world){
+		synchronized(world.objects){
 			for(SimObject obj : world.objects){
 				if(obj instanceof RosieSimObject){
 					RosieSimObject simObj = (RosieSimObject)obj;
