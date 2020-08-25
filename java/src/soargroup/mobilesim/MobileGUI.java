@@ -311,8 +311,8 @@ public class MobileGUI extends JFrame
 				"print-ids", "IDs", Settings.PRINT_IDS,
 				"draw-region-ids", "Regions", Settings.DRAW_REGION_IDS,
 				"draw-anchors", "Anchors", Settings.DRAW_ANCHORS,
-				"collide-objects", "Collide Objects", MobileSimulator.Settings.COLLIDE_OBJECTS,
-				"collide-walls", "Collide Walls", MobileSimulator.Settings.COLLIDE_WALLS,
+				"collide-objects", "Obj Collision", MobileSimulator.Settings.COLLIDE_OBJECTS,
+				"collide-walls", "Wall Collision", MobileSimulator.Settings.COLLIDE_WALLS,
 				"teleport-robot", "Teleport", MobileSimulator.Settings.TELEPORT_ROBOT);
 
         pg.addListener(new ParameterListener(){

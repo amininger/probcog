@@ -3,7 +3,7 @@ import math
 from pysoarlib import *
 
 
-VIEW_DIST = 3.8 
+VIEW_DIST = 8.0
 VIEW_ANGLE = math.pi/2 * .6
 VIEW_HEIGHT = 2.0
 
@@ -90,7 +90,7 @@ class Robot:
         svs_commands.append(SVSCommands.add_node("robot_pos", parent="robot"))
         svs_commands.append(SVSCommands.add_box("robot_body", parent="robot", pos=[0.2, 0.0, 1.0], scl=self.dims))
         svs_commands.append("add robot_view robot v %s p %f %f %f" % \
-                ( get_view_region_verts(), VIEW_DIST/2 + .5, 0.0, VIEW_HEIGHT/2))
+                ( get_view_region_verts(), VIEW_DIST/2 + .5, 0.0, VIEW_HEIGHT/2-self.pos[2]))
     
     def update_wm(self, parent_id, svs_commands):
         if self.self_id is None:

@@ -14,7 +14,7 @@ import edu.umich.rosie.soar.StringWME;
 import edu.umich.rosie.soarobjects.Pose;
 
 public class Robot implements ISoarObject {
-	private static final double VIEW_DIST = 3.8;
+	private static final double VIEW_DIST = 8.0;
 	private static final double VIEW_ANGLE = Math.PI/2 * .8;
 	private static final double VIEW_HEIGHT = 2.0;
 	

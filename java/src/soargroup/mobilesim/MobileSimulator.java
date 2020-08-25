@@ -120,6 +120,9 @@ public class MobileSimulator implements LCMSubscriber
 					action = parsePutOnObject(controlLaw);
 				} else if(controlLaw.name.equals("change-state")){
 					action = parseChangeState(controlLaw);
+				} else {
+					// Unrecognized name - ignore control law
+					return;
 				}
 				if(action == null){
 					System.err.println("ERROR: Could not parse action of type " + controlLaw.name);
@@ -180,8 +183,6 @@ public class MobileSimulator implements LCMSubscriber
 		if(default_value != null){
 			return default_value;
 		}
-		System.err.println("MobileSimulator: parsing " + controlLaw.name);
-		System.err.println("   Missing parameter " + param_name);
 		return null;
 	}
 

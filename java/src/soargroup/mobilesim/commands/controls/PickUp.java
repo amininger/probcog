@@ -26,7 +26,7 @@ public class PickUp implements ControlLaw
      *
      *  @param run  True causes the control law to begin execution, false stops it
      **/
-    public void setRunning(boolean run)
+    public synchronized void setRunning(boolean run)
     {
        
     }

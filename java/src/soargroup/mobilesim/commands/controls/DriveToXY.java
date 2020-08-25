@@ -65,7 +65,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     boolean sim = false;
-    boolean stopped = false;
+    boolean is_running = false;
 
     // RobotDrive state tracking
     byte robotid = 3;
@@ -176,9 +176,9 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
      *
      *  @param run  True causes the control law to begin execution, false stops it
      **/
-    public void setRunning(boolean run)
+    public synchronized void setRunning(boolean run)
     {
-        stopped = !run;
+		is_running = run;
         if (run) {
             lcm.subscribe(mapChannel, this);
             lcm.subscribe(poseChannel, this);
@@ -275,7 +275,7 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     /** Marshal data to robotDrive from magic2 */
     synchronized public diff_drive_t driveReal(DriveParams params)
     {
-        if (stopped)
+        if (!is_running)
             return null;
 
         // Convert global goal to robot local goal

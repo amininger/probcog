@@ -111,7 +111,7 @@ public class Holding implements ConditionTest, LCMSubscriber
 
     public String toString()
     {
-        return String.format("Holding %d", objectId);
+        return String.format("HOLDING(%d)", objectId);
     }
 
     public condition_test_t getLCM()

@@ -37,7 +37,7 @@ class MobileSimActuationConnector(AgentConnector):
     # Start listening for LCM messages and start a thread to send current control law via LCM
     def connect(self):
         super().connect()
-        self.lcm_subscriptions.append(self.lcm.subscribe("SOAR_COMMAND_STATUS.*", self.lcm_handler))
+        self.lcm_subscriptions.append(self.lcm.subscribe("STATUS__SOAR_COMMAND.*", self.lcm_handler))
         self.kill_thread = False
         self.send_command_thread = threading.Thread(target=MobileSimActuationConnector.send_command_thread_fn, args=(self,))
         self.send_command_thread.start()
@@ -58,9 +58,11 @@ class MobileSimActuationConnector(AgentConnector):
     # When we receive an LCM message with a status, update it
     def message_received(self, channel, data):
         self.lock.acquire()
-        if channel.startswith("SOAR_COMMAND_STATUS"):
+        if channel.startswith("STATUS__SOAR_COMMAND"):
             status = control_law_status_t.decode(data)
             if self.active_command is not None and self.active_command.id == status.id:
+                if self.status_wme.get_value() != str(status.status).lower():
+                    print("Setting status of " + str(self.active_command.id) + " to " + status.status)
                 self.status_wme.set_value(str(status.status).lower())
         self.lock.release()
 
@@ -71,9 +73,11 @@ class MobileSimActuationConnector(AgentConnector):
     # Will replace the current command with the given one and start sending it
     def send_command(self, control_law, root_id=None):
         if self.active_command_id is not None:
+            print("Interrupting old command " + str(self.active_command.id))
             self.status_wme.set_value("interrupted")
             self.status_wme.update_wm(self.active_command_id)
 
+        print("Starting new command " + control_law.name + " [" + str(self.next_control_law_id) + "]")
         self.active_command = control_law
         self.active_command.id = self.next_control_law_id
         self.next_control_law_id += 1

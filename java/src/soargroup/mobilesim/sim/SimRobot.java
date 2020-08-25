@@ -282,7 +282,7 @@ public class SimRobot implements SimObject, LCMSubscriber
         }
 
         // AM: Added so that simulated drive-xy commands teleport the robot
-		if (channel.startsWith("SOAR_COMMAND") && !channel.startsWith("SOAR_COMMAND_STATUS")) {
+		if (channel.startsWith("SOAR_COMMAND")) {
 			control_law_t controlLaw = new control_law_t(ins);
 			if(controlLaw.name.equals("drive-xy")){
 				double newx = 0.0;

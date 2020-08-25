@@ -54,7 +54,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     @Override
     public void connect(){
     	super.connect();
-        lcm.subscribe("SOAR_COMMAND_STATUS.*", this);
+        lcm.subscribe("STATUS__SOAR_COMMAND.*", this);
         killThread = false;
         sendCommandThread = new ControlLawThread();
         sendCommandThread.start();
@@ -63,7 +63,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     @Override
     public void disconnect(){
     	super.disconnect();
-        lcm.unsubscribe("SOAR_COMMAND_STATUS.*", this);
+        lcm.unsubscribe("STATUS__SOAR_COMMAND.*", this);
         if(sendCommandThread != null){
         	killThread = true;
         	try {
@@ -82,7 +82,7 @@ public class MobileActuationConnector extends AgentConnector implements LCMSubsc
     @Override
     public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream ins){
 		try {
-			if(channel.startsWith("SOAR_COMMAND_STATUS")){
+			if(channel.startsWith("STATUS__SOAR_COMMAND")){
 				control_law_status_t status = new control_law_status_t(ins);
 				synchronized(commandLock){
 					if(activeCommand != null && activeCommand.id == status.id){

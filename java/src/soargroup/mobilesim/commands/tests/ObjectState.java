@@ -112,7 +112,7 @@ public class ObjectState implements ConditionTest, LCMSubscriber
 
     public String toString()
     {
-        return String.format("Object %d has %s=%s", objectId, property, value);
+        return String.format("PREDICATE_%s(%d)", value, objectId);
     }
 
     public condition_test_t getLCM()
