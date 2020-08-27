@@ -22,7 +22,7 @@ public class PathControl
     public static diff_drive_t getDiffDrive(double [] pos_center,
                                             double [] orientation,
                                             ArrayList<double[]> path,
-                                            Params params,
+                                            PathParams params,
                                             double requestedSpeedLimit,
                                             double dt)
     {
@@ -147,7 +147,7 @@ public class PathControl
      * errors and distance.
      */
     private static double[] getKProp(double pos[], double target[],
-                                     Params params,
+                                     PathParams params,
                                      double maxSpeed,
                                      double dt)
     {

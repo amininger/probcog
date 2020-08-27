@@ -18,8 +18,27 @@ import soargroup.mobilesim.lcmtypes.typed_value_t;
 /** Orient the robot to face along a particular heading. Automatically turns
  *  the most efficient direction.
  */
-public class Orient implements ControlLaw, LCMSubscriber
+public class Orient extends ControlLaw implements LCMSubscriber
 {
+    /** Get the parameters that can be set for this control law.
+     *
+     *  @return An iterable, immutable collection of all possible parameters
+     **/
+	private static List<TypedParameter> parameters = null;
+    public static Collection<TypedParameter> getParameters()
+    {
+		if(parameters == null){
+			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+			params.add(new TypedParameter("yaw",
+										  TypedValue.TYPE_DOUBLE,
+										  new TypedValue(-Math.PI),
+										  new TypedValue(Math.PI),
+										  true));
+			parameters = Collections.unmodifiableList(params);
+		}
+		return parameters;
+    }
+
     LCM lcm = LCM.getSingleton();
 
     static final double SPEED_THRESH_RANGE_RAD = Math.PI/2;
@@ -30,19 +49,54 @@ public class Orient implements ControlLaw, LCMSubscriber
 
 
     boolean sim = false;
-    double goalYaw = 0;
+    protected final double goalYaw;
 
     Object poseLock = new Object();
     pose_t lastPose = null;
     private double lastSpeed = 0;       // Ramp up/down
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
-    private class OrientTask implements PeriodicTasks.Task
-    {
-        public OrientTask()
-        {
 
+    public Orient(HashMap<String, TypedValue> parameters) {
+		super(parameters);
+		ControlLaw.validateParameters(parameters, Orient.getParameters());
+
+        goalYaw = parameters.get("yaw").getDouble();
+
+        if (parameters.containsKey("sim"))
+            sim = true;
+
+        tasks.addFixedDelay(new OrientTask(), 1.0/HZ);
+    }
+
+    /** Start/stop the execution of the control law.
+     *
+     *  @param run  True causes the control law to begin execution, false stops it
+     **/
+	@Override
+    public void setRunning(boolean run) {
+		if(run == is_running) return;
+		super.setRunning(run);
+
+        if (run) {
+            // No-lcm?
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
         }
+        tasks.setRunning(run);
+    }
+
+	@Override
+    public String getName() { return "Orient"; }
+
+	@Override
+    public String toString() {
+        return String.format("Orient(%.2f rad)", goalYaw);
+    }
+
+    private class OrientTask implements PeriodicTasks.Task {
+        public OrientTask() { }
 
         public void run(double dt)
         {
@@ -58,81 +112,8 @@ public class Orient implements ControlLaw, LCMSubscriber
         }
     }
 
-    public Orient() {}
-
-    public Orient(HashMap<String, TypedValue> parameters)
-    {
-        assert (parameters.containsKey("yaw"));
-        goalYaw = parameters.get("yaw").getDouble();
-
-        if (parameters.containsKey("sim"))
-            sim = true;
-
-        tasks.addFixedDelay(new OrientTask(), 1.0/HZ);
-    }
-
-    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-    {
-        try {
-            messageReceivedEx(lcm, channel, ins);
-        } catch (IOException ex) {
-            System.err.println("WRN: Error reading channel "+channel+": "+ex);
-        }
-    }
-
-    synchronized void messageReceivedEx(LCM lcm, String channel,
-            LCMDataInputStream ins) throws IOException
-    {
-        if (channel.equals("POSE")) {
-            pose_t msg = new pose_t(ins);
-            synchronized (poseLock) {
-                lastPose = msg;
-            }
-        }
-    }
-
-    /** Start/stop the execution of the control law.
-     *
-     *  @param run  True causes the control law to begin execution, false stops it
-     **/
-    public synchronized void setRunning(boolean run)
-    {
-        if (run) {
-            // No-lcm?
-            lcm.subscribe("POSE", this);
-        } else {
-            lcm.unsubscribe("POSE", this);
-        }
-        tasks.setRunning(run);
-    }
-
-    /** Get the name of this control law. Mostly useful for debugging purposes.
-     *
-     *  @return The name of the control law
-     **/
-    public String getName()
-    {
-        return "ORIENT";
-    }
-
-    /** Get the parameters that can be set for this control law.
-     *
-     *  @return An iterable collection of all possible parameters
-     **/
-    public Collection<TypedParameter> getParameters()
-    {
-        Collection<TypedParameter> params = new ArrayList<TypedParameter>();
-        params.add(new TypedParameter("yaw",
-                                      TypedValue.TYPE_DOUBLE,
-                                      new TypedValue(-Math.PI),
-                                      new TypedValue(Math.PI),
-                                      true));
-
-
-        return params;
-    }
-
     /** Get a drive command from the CL. */
+	@Override
     public diff_drive_t drive(DriveParams params)
     {
         diff_drive_t dd = new diff_drive_t();
@@ -175,6 +156,27 @@ public class Orient implements ControlLaw, LCMSubscriber
         return dd;
     }
 
+
+    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
+    {
+        try {
+            messageReceivedEx(lcm, channel, ins);
+        } catch (IOException ex) {
+            System.err.println("WRN: Error reading channel "+channel+": "+ex);
+        }
+    }
+
+    synchronized void messageReceivedEx(LCM lcm, String channel,
+            LCMDataInputStream ins) throws IOException
+    {
+        if (channel.equals("POSE")) {
+            pose_t msg = new pose_t(ins);
+            synchronized (poseLock) {
+                lastPose = msg;
+            }
+        }
+    }
+
     public control_law_t getLCM()
     {
         control_law_t cl = new control_law_t();
@@ -186,10 +188,5 @@ public class Orient implements ControlLaw, LCMSubscriber
         cl.param_values[0] = new TypedValue(goalYaw).toLCM();
 
         return cl;
-    }
-
-    public String toString()
-    {
-        return String.format("Orient to heading %f", goalYaw);
     }
 }

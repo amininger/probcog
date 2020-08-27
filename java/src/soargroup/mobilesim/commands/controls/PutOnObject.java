@@ -5,64 +5,45 @@ import java.util.*;
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
-// XXX Temporary port to new control law implementation. This is just a water-
-// through-the-pipes implementation.
-public class PutOnObject implements ControlLaw
-{
-    Params storedParams = Params.makeParams();
-
-    /** Strictly for creating instances for parameter checks */
-    public PutOnObject()
+/** Tells the robot to put the held object onto another one **/
+public class PutOnObject extends ControlLaw {
+    /** Get the parameters that can be set for this control law.
+     *
+     *  @return An iterable, immutable collection of all possible parameters
+     **/
+	private static List<TypedParameter> parameters = null;
+    public static Collection<TypedParameter> getParameters()
     {
+		if(parameters == null){
+			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+			params.add(new TypedParameter("destination-id", TypedValue.TYPE_INT, true));
+			params.add(new TypedParameter("relation", TypedValue.TYPE_STRING, false));
+			parameters = Collections.unmodifiableList(params);
+		}
+		return parameters;
     }
 
-    public PutOnObject(Map<String, TypedValue> parameters)
-    {
-        assert (parameters.containsKey("destination-id"));
-        System.out.println("PUT ON OBJECT: " + parameters.get("destination-id").getInt().toString());
+	// The coordinate to put the object at
+	public final Integer destinationId;
+	public final String relation;
 
-		if(!parameters.containsKey("relation")){
-			parameters.put("relation", new TypedValue("on"));
+    public PutOnObject(Map<String, TypedValue> parameters) {
+		super(parameters);
+		ControlLaw.validateParameters(parameters, PutOnObject.getParameters());
+
+		destinationId = parameters.get("destination-id").getInt();
+		if(parameters.containsKey("relation")){
+			relation = parameters.get("relation").toString();
+		} else {
+			relation = "on";
 		}
     }
 
-    /** Start/stop the execution of the control law.
-     *
-     *  @param run  True causes the control law to begin execution, false stops it
-     **/
-    public synchronized void setRunning(boolean run)
-    {
-       
-    }
-
-    /** Get the name of this control law. Mostly useful for debugging purposes.
-     *
-     *  @return The name of the control law
-     **/
-    public String getName()
-    {
-        return "PUT_ON_OBJECT";
-    }
-
-    /** Get the parameters that can be set for this control law.
-     *
-     *  @return An iterable collection of all possible parameters
-     **/
-    public Collection<TypedParameter> getParameters()
-    {
-        // No parameters, so this can just return an empty container
-    	ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-    	params.add(new TypedParameter("destination-id", TypedValue.TYPE_INT, true));
-
-    	params.add(new TypedParameter("relation", TypedValue.TYPE_STRING, false));
-
-		// If given, will move the given object instead of the grabbed one
-    	params.add(new TypedParameter("object-id", TypedValue.TYPE_INT, false));
-    	return params;
-    }
+	@Override
+    public String getName() { return "PutOnObject"; }
 
 	@Override
-	public diff_drive_t drive(DriveParams params) {
-		return null;
+	public String toString() { 
+		return String.format("PutOnObject( %s(%d) )", relation, destinationId); 
 	}
 }

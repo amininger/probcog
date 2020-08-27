@@ -15,14 +15,26 @@ import lcm.lcm.*;
 import april.lcmtypes.pose_t;
 import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
-// XXX Temporary port to new control law implementation. This is just a water-
-// through-the-pipes implementation.
-public class DriveForward implements ControlLaw, LCMSubscriber
+public class DriveForward extends ControlLaw implements LCMSubscriber
 {
+    /** Get the parameters that can be set for this control law.
+     *
+     *  @return An iterable, immutable collection of all possible parameters
+     **/
+	private static List<TypedParameter> parameters = null;
+    public static Collection<TypedParameter> getParameters()
+    {
+		if(parameters == null){
+			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+			parameters = Collections.unmodifiableList(params);
+		}
+		return parameters;
+    }
+
     static final int DB_HZ = 100;
     static final double VERY_FAR = 3671000;     // Earth's radius [m]
 
-    Params storedParams = Params.makeParams();
+    PathParams pathParams = PathParams.makeDefault();
     //GLineSegment2D path;
     ArrayList<double[]> path = null;
 
@@ -33,6 +45,39 @@ public class DriveForward implements ControlLaw, LCMSubscriber
     LCM lcm = LCM.getSingleton();
 
     PeriodicTasks tasks = new PeriodicTasks(1);
+
+    public DriveForward(Map<String, TypedValue> parameters)
+    {
+		super(parameters);
+		ControlLaw.validateParameters(parameters, DriveForward.getParameters());
+
+        tasks.addFixedRate(new DriveTask(), 1.0/DB_HZ);
+    }
+
+	@Override
+    public String getName() { return "DriveForward"; }
+
+	@Override
+	public String toString() { 
+		return "DriveForward()";
+	}
+
+    /** Start/stop the execution of the control law.
+     *
+     *  @param run  True causes the control law to begin execution, false stops it
+     **/
+	@Override
+    public void setRunning(boolean run) {
+		if(run == is_running) return;
+		super.setRunning(run);
+
+        if (run) {
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
+        tasks.setRunning(run);
+    }
 
     private class DriveTask implements PeriodicTasks.Task
     {
@@ -57,25 +102,7 @@ public class DriveForward implements ControlLaw, LCMSubscriber
         }
     }
 
-    private void init(pose_t initialPose)
-    {
-        if (initialPose == null)
-            return;
-
-        double[] rpy = LinAlg.quatToRollPitchYaw(initialPose.orientation);
-        double goalX = VERY_FAR*Math.cos(rpy[2]);
-        double goalY = VERY_FAR*Math.sin(rpy[2]);
-
-        double[] start2D = LinAlg.resize(initialPose.pos, 2);
-        double[] goal2D = new double[] {start2D[0]+goalX,
-            start2D[1]+goalY};
-
-        //path = new GLineSegment2D(start2D, goal2D); // XXX - update?
-        path = new ArrayList<double[]>();
-        path.add(start2D);
-        path.add(goal2D);
-    }
-
+	@Override
     public diff_drive_t drive(DriveParams params)
     {
         pose_t pose = params.pose;
@@ -102,23 +129,30 @@ public class DriveForward implements ControlLaw, LCMSubscriber
         dd = PathControl.getDiffDrive(center_pos,
                                       pose.orientation,
                                       path,
-                                      storedParams,
+                                      pathParams,
                                       0.5,
                                       dt);
 
         return dd;
     }
 
-    /** Strictly for creating instances for parameter checks */
-    public DriveForward()
+    private void init(pose_t initialPose)
     {
-    }
+        if (initialPose == null)
+            return;
 
-    public DriveForward(Map<String, TypedValue> parameters)
-    {
-        System.out.println("DRIVE FORWARD");
+        double[] rpy = LinAlg.quatToRollPitchYaw(initialPose.orientation);
+        double goalX = VERY_FAR*Math.cos(rpy[2]);
+        double goalY = VERY_FAR*Math.sin(rpy[2]);
 
-        tasks.addFixedRate(new DriveTask(), 1.0/DB_HZ);
+        double[] start2D = LinAlg.resize(initialPose.pos, 2);
+        double[] goal2D = new double[] {start2D[0]+goalX,
+            start2D[1]+goalY};
+
+        //path = new GLineSegment2D(start2D, goal2D); // XXX - update?
+        path = new ArrayList<double[]>();
+        path.add(start2D);
+        path.add(goal2D);
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
@@ -151,38 +185,5 @@ public class DriveForward implements ControlLaw, LCMSubscriber
 
         diff_drive.utime = TimeUtil.utime();
         LCM.getSingleton().publish("DIFF_DRIVE", diff_drive);
-    }
-
-    /** Start/stop the execution of the control law.
-     *
-     *  @param run  True causes the control law to begin execution, false stops it
-     **/
-    public void setRunning(boolean run)
-    {
-        if (run) {
-            lcm.subscribe("POSE", this);
-        } else {
-            lcm.unsubscribe("POSE", this);
-        }
-        tasks.setRunning(run);
-    }
-
-    /** Get the name of this control law. Mostly useful for debugging purposes.
-     *
-     *  @return The name of the control law
-     **/
-    public String getName()
-    {
-        return "DRIVE_FORWARD";
-    }
-
-    /** Get the parameters that can be set for this control law.
-     *
-     *  @return An iterable collection of all possible parameters
-     **/
-    public Collection<TypedParameter> getParameters()
-    {
-        // No parameters, so this can just return an empty container
-        return new ArrayList<TypedParameter>();
     }
 }

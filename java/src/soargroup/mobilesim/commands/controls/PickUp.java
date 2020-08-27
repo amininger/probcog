@@ -5,55 +5,36 @@ import java.util.*;
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
-// XXX Temporary port to new control law implementation. This is just a water-
-// through-the-pipes implementation.
-public class PickUp implements ControlLaw
-{
-    Params storedParams = Params.makeParams();
-
-    /** Strictly for creating instances for parameter checks */
-    public PickUp()
-    {
-    }
-
-    public PickUp(Map<String, TypedValue> parameters)
-    {
-        assert (parameters.containsKey("object-id"));
-        System.out.println("PICK UP: " + parameters.get("object-id").getInt().toString());
-    }
-
-    /** Start/stop the execution of the control law.
-     *
-     *  @param run  True causes the control law to begin execution, false stops it
-     **/
-    public synchronized void setRunning(boolean run)
-    {
-       
-    }
-
-    /** Get the name of this control law. Mostly useful for debugging purposes.
-     *
-     *  @return The name of the control law
-     **/
-    public String getName()
-    {
-        return "PICK_UP";
-    }
-
+public class PickUp extends ControlLaw {
     /** Get the parameters that can be set for this control law.
      *
-     *  @return An iterable collection of all possible parameters
+     *  @return An iterable, immutable collection of all possible parameters
      **/
-    public Collection<TypedParameter> getParameters()
+	private static List<TypedParameter> parameters = null;
+    public static Collection<TypedParameter> getParameters()
     {
-        // No parameters, so this can just return an empty container
-    	ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-    	params.add(new TypedParameter("object-id", TypedValue.TYPE_INT, true));
-    	return params;
+		if(parameters == null){
+			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+			params.add(new TypedParameter("object-id", TypedValue.TYPE_INT, true));
+			parameters = Collections.unmodifiableList(params);
+		}
+		return parameters;
+    }
+
+	public final Integer objectId;
+
+    public PickUp(Map<String, TypedValue> parameters) {
+		super(parameters);
+		ControlLaw.validateParameters(parameters, PickUp.getParameters());
+
+		objectId = parameters.get("object-id").getInt();
     }
 
 	@Override
-	public diff_drive_t drive(DriveParams params) {
-		return null;
+    public String getName() { return "PickUp"; }
+
+	@Override
+	public String toString() { 
+		return String.format("PickUp(%d)", objectId); 
 	}
 }

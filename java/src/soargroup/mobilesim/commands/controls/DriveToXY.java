@@ -29,8 +29,23 @@ import java.awt.image.*;
 import javax.swing.*;
 import april.vis.*;
 
-public class DriveToXY implements ControlLaw, LCMSubscriber
-{
+public class DriveToXY extends ControlLaw implements LCMSubscriber {
+    /** Get the parameters that can be set for this control law.
+     *
+     *  @return An iterable, immutable collection of all possible parameters
+     **/
+	private static java.util.List<TypedParameter> parameters = null;
+    public static Collection<TypedParameter> getParameters()
+    {
+		if(parameters == null){
+			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+			params.add(new TypedParameter("x", TypedValue.TYPE_DOUBLE, true));
+			params.add(new TypedParameter("y", TypedValue.TYPE_DOUBLE, true));
+			parameters = Collections.unmodifiableList(params);
+		}
+		return parameters;
+    }
+
     VisWorld vw;
 
     private boolean DEBUG = false;
@@ -65,7 +80,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     String driveChannel = Util.getConfig().getString("robot.lcm.drive_channel", "DIFF_DRIVE");
 
     boolean sim = false;
-    boolean is_running = false;
 
     // RobotDrive state tracking
     byte robotid = 3;
@@ -74,9 +88,80 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
     // The goal target as a global coordinate
     double[] globalXYT;
     double[] l2g = new double[3];
+	protected final double targetX;
+	protected final double targetY;
 
     // Alpha-beta filtering for history
     diff_drive_t lastDrive = new diff_drive_t();
+
+    public DriveToXY(HashMap<String, TypedValue> parameters) {
+		super(parameters);
+		ControlLaw.validateParameters(parameters, DriveToXY.getParameters());
+
+        String rid = System.getenv("ROBOT_ID");
+        if (rid == null)
+            rid = "3";
+        mapChannel += "_"+rid;
+        this.robotid = Byte.valueOf(rid);
+
+		targetX = parameters.get("x").getDouble();
+		targetY = parameters.get("y").getDouble();
+        globalXYT = new double[] { targetX, targetY, 0.0 };
+
+        if (parameters.containsKey("sim"))
+            sim = true;
+
+        if (parameters.containsKey("alpha"))
+            alpha = parameters.get("alpha").getDouble();
+
+        tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
+
+        if (DEBUG) {
+            JFrame jf = new JFrame("Debug DriveXY");
+            jf.setSize(400, 400);
+            jf.setLayout(new BorderLayout());
+
+            vw = new VisWorld();
+            VisLayer vl = new VisLayer(vw);
+            VisCanvas vc = new VisCanvas(vl);
+            jf.add(vc);
+
+            jf.setVisible(true);
+        }
+    }
+
+	@Override
+    public String getName() { return "DriveToXY"; }
+
+	@Override
+    public String toString() {
+        return String.format("Drive to (%.2f,%.2f)", targetX, targetY);
+    }
+
+    /** Start/stop the execution of the control law.
+     *
+     *  @param run  True causes the control law to begin execution, false stops it
+     **/
+	@Override
+    public void setRunning(boolean run) {
+		if(run == is_running) return;
+		super.setRunning(run);
+
+        if (run) {
+            lcm.subscribe(mapChannel, this);
+            lcm.subscribe(poseChannel, this);
+            lcm.subscribe(l2gChannel, this);
+        } else {
+            lcm.unsubscribe(mapChannel, this);
+            lcm.unsubscribe(poseChannel, this);
+            lcm.unsubscribe(l2gChannel, this);
+        }
+        tasks.setRunning(run);
+        if (!run) {
+            sendNullCmd();
+        }
+    }
+
 
     private class UpdateTask implements PeriodicTasks.Task
     {
@@ -104,49 +189,17 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         }
     }
 
-    /** Strictly for use in parameter checking */
-    public DriveToXY()
+	@Override
+    public diff_drive_t drive(DriveParams params)
     {
-    }
-
-    public DriveToXY(HashMap<String, TypedValue> parameters)
-    {
-        String rid = System.getenv("ROBOT_ID");
-        if (rid == null)
-            rid = "3";
-        mapChannel += "_"+rid;
-        this.robotid = Byte.valueOf(rid);
-
-        assert (parameters.containsKey("x") && parameters.containsKey("y"));
-        globalXYT = new double[] { parameters.get("x").getDouble(),
-                                   parameters.get("y").getDouble(),
-                                   0.0 };
-
-        if (parameters.containsKey("sim"))
-            sim = true;
-
-        if (parameters.containsKey("alpha"))
-            alpha = parameters.get("alpha").getDouble();
-
-        tasks.addFixedRate(new UpdateTask(), 1.0/HZ);
-
-        if (DEBUG) {
-            JFrame jf = new JFrame("Debug DriveXY");
-            jf.setSize(400, 400);
-            jf.setLayout(new BorderLayout());
-
-            vw = new VisWorld();
-            VisLayer vl = new VisLayer(vw);
-            VisCanvas vc = new VisCanvas(vl);
-            jf.add(vc);
-
-            jf.setVisible(true);
+        if (sim) {
+            return driveSim(params);
+        } else {
+            return driveReal(params);
         }
     }
 
-    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
-
-    {
+    public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins) {
         try {
             messageReceivedEx(lcm, channel, ins);
         } catch (IOException ex) {
@@ -172,53 +225,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         }
     }
 
-    /** Start/stop the execution of the control law.
-     *
-     *  @param run  True causes the control law to begin execution, false stops it
-     **/
-    public synchronized void setRunning(boolean run)
-    {
-		is_running = run;
-        if (run) {
-            lcm.subscribe(mapChannel, this);
-            lcm.subscribe(poseChannel, this);
-            lcm.subscribe(l2gChannel, this);
-        } else {
-            lcm.unsubscribe(mapChannel, this);
-            lcm.unsubscribe(poseChannel, this);
-            lcm.unsubscribe(l2gChannel, this);
-        }
-        tasks.setRunning(run);
-        if (!run) {
-            sendNullCmd();
-        }
-    }
-
-    /** Get the name of this control law. Mostly useful for debugging purposes.
-     *
-     *  @return The name of the control law
-     **/
-    public String getName()
-    {
-        return "DRIVE_XY";
-    }
-
-    /** Get the parameters that can be set for this control law.
-     *
-     *  @return An iterable collection of all possible parameters
-     **/
-    public Collection<TypedParameter> getParameters()
-    {
-        ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-        params.add(new TypedParameter("x",
-                                      TypedValue.TYPE_DOUBLE,
-                                      true));
-        params.add(new TypedParameter("y",
-                                      TypedValue.TYPE_DOUBLE,
-                                      true));
-
-        return params;
-    }
 
     // Return true if we see a hazard in the map
     private boolean evaluatePath(GridMap gm, double[] xy0, double[] xy1)
@@ -245,15 +251,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
 
         // normalize correctly for distance.
         return false;
-    }
-
-    public diff_drive_t drive(DriveParams params)
-    {
-        if (sim) {
-            return driveSim(params);
-        } else {
-            return driveReal(params);
-        }
     }
 
     synchronized public void sendNullCmd()
@@ -559,11 +556,6 @@ public class DriveToXY implements ControlLaw, LCMSubscriber
         lastDrive = dd;
 
         return dd;
-    }
-
-    public String toString()
-    {
-        return String.format("Drive to (%.1f,%.1f)", globalXYT[0], globalXYT[1]);
     }
 
     public control_law_t getLCM()

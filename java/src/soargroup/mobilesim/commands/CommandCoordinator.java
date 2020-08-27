@@ -105,7 +105,6 @@ public class CommandCoordinator
     {
         /** Query control laws for statuses, manage termination conditions, etc. */
         public void run(double dt) {
-			System.out.println("CommandCoordinator::UpdateTask.run()");
 			checkTerminationConditions();
 			publishControlLawStatusList();
         }
@@ -134,8 +133,8 @@ public class CommandCoordinator
      **/
     public synchronized int executeControlLaw(ControlLaw controlLaw, ConditionTest successTest)
     {
-		System.out.println("CommandCoordinator.executeControlLaw(" + controlLaw.getName() + ")");
 		ControlLawRecord clRecord = new ControlLawRecord(controlLaw);
+		System.out.printf("Created new control law %s <%d>\n", controlLaw.toString(), clRecord.id);
 
 		// Report success if the termination condition passed
 		clRecord.addTerminationCondition(successTest, Status.SUCCESS);
@@ -159,7 +158,7 @@ public class CommandCoordinator
 
 		controlLaws.put(clRecord.id, clRecord);
 		clRecord.setRunning(true);
-		System.out.printf("Registered and started Law %s <%d>\n", controlLaw.getName(), clRecord.id);
+		System.out.printf("Started running control law %s <%d>\n", controlLaw.toString(), clRecord.id);
 
 		return clRecord.id;
     }
@@ -170,9 +169,8 @@ public class CommandCoordinator
      *
      *  @return     True is matching control law was destroyed, else false
      **/
-    public synchronized boolean destroyControlLaw(Integer id)
-    {
-		System.out.println("CommandCoordinator.destroyControlLaw(" + id + ")");
+    public synchronized boolean destroyControlLaw(Integer id) {
+		System.out.println("Destroying control law " + id);
 		ControlLawRecord clRecord = controlLaws.remove(id);
 		if (clRecord != null) {
 			clRecord.setRunning(false);
@@ -184,7 +182,6 @@ public class CommandCoordinator
 	//    it will update the corresponding control law's status and stop it running
 	protected synchronized void checkTerminationConditions(){
 		for(ControlLawRecord clRecord : controlLaws.values()){
-			System.out.println("  Checking control law + " + clRecord.id);
 			clRecord.checkTerminationConditions();
 		}
 	}

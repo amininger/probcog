@@ -118,8 +118,8 @@ public class ControlLawFactory
             for (String name: controlLawMap.keySet()) {
                 String classname = controlLawMap.get(name);
                 Class klass = Class.forName(classname);
-                Object obj = klass.newInstance();
-                map.put(name, (Collection<TypedParameter>)klass.getDeclaredMethod("getParameters").invoke(obj));
+				Method getParams = klass.getMethod("getParameters");
+                map.put(name, (Collection<TypedParameter>)klass.getMethod("getParameters").invoke(klass));
             }
         } catch (Exception ex) {
             System.err.printf("ERR: %s\n", ex);

@@ -15,8 +15,26 @@ import soargroup.mobilesim.lcmtypes.diff_drive_t;
 import soargroup.mobilesim.lcmtypes.control_law_t;
 import soargroup.mobilesim.lcmtypes.typed_value_t;
 
-public class Turn implements ControlLaw, LCMSubscriber
-{
+public class Turn extends ControlLaw implements LCMSubscriber {
+    /** Get the parameters that can be set for this control law.
+     *
+     *  @return An iterable, immutable collection of all possible parameters
+     **/
+	private static List<TypedParameter> parameters = null;
+    public static Collection<TypedParameter> getParameters()
+    {
+		if(parameters == null){
+			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+			ArrayList<TypedValue> options = new ArrayList<TypedValue>();
+			options.add(new TypedValue(-1));
+			options.add(new TypedValue(1));
+			params.add(new TypedParameter("direction", TypedValue.TYPE_INT, options, false));
+			params.add(new TypedParameter("yaw", TypedValue.TYPE_DOUBLE, false));
+			parameters = Collections.unmodifiableList(params);
+		}
+		return parameters;
+    }
+
     LCM lcm = LCM.getSingleton();
 
     static final int DD_HZ = 100;
@@ -37,9 +55,61 @@ public class Turn implements ControlLaw, LCMSubscriber
 
     private double goalYaw = Double.MAX_VALUE;
 	enum Direction { LEFT, RIGHT };
-	Direction dir;
+	final Direction dir;
 
     private PeriodicTasks tasks = new PeriodicTasks(1);
+
+    public Turn(Map<String, TypedValue> parameters) {
+		super(parameters);
+		ControlLaw.validateParameters(parameters, Turn.getParameters());
+
+        // Needs a direction to turn, currently
+        if (parameters.containsKey("direction")){
+        	int direction = parameters.get("direction").getInt();
+            if (direction > 0) // CW
+                dir = Direction.LEFT;
+            else // CCW
+                dir = Direction.RIGHT;
+        } else {
+        	dir = Direction.LEFT;
+        }
+
+        if (parameters.containsKey("yaw")) {
+            int sign = (dir == Direction.LEFT) ? 1 : -1;
+            goalYaw = sign*Math.abs(parameters.get("yaw").getDouble());
+        }
+
+        if (parameters.containsKey("sim"))
+            sim = true;
+
+        tasks.addFixedDelay(new TurnTask(), 1.0/DD_HZ);
+    }
+
+	@Override
+    public String getName() { return "Turn"; }
+
+	@Override
+    public String toString() {
+        return String.format("Turn(%s)", dir == Direction.LEFT ? "LEFT" : "RIGHT");
+    }
+
+    /** Start/stop the execution of the control law.
+     *
+     *  @param run  True causes the control law to begin execution, false stops it
+     **/
+	@Override
+    public void setRunning(boolean run) {
+		if (run == is_running) return;
+		super.setRunning(run);
+
+        if (run) {
+            // no-lcm?
+            lcm.subscribe("POSE", this);
+        } else {
+            lcm.unsubscribe("POSE", this);
+        }
+        tasks.setRunning(run);
+    }
 
     private class TurnTask implements PeriodicTasks.Task
     {
@@ -60,7 +130,7 @@ public class Turn implements ControlLaw, LCMSubscriber
         }
     }
 
-    //public diff_drive_t drive(double dt)
+	@Override
     public diff_drive_t drive(DriveParams params)
     {
         double dt = params.dt;
@@ -108,84 +178,6 @@ public class Turn implements ControlLaw, LCMSubscriber
         currPose = null;
         lastPose = null;
         accYaw = 0;
-    }
-
-    /** Strictly for use for parameter checking */
-    public Turn()
-    {
-    }
-
-    public Turn(Map<String, TypedValue> parameters)
-    {
-        // Needs a direction to turn, currently
-        if (parameters.containsKey("direction")){
-        	int direction = parameters.get("direction").getInt();
-            if (direction > 0) // CW
-                dir = Direction.LEFT;
-            else // CCW
-                dir = Direction.RIGHT;
-        } else {
-        	dir = Direction.LEFT;
-        }
-
-        if (parameters.containsKey("yaw")) {
-            int sign = (dir == Direction.LEFT) ? 1 : -1;
-            goalYaw = sign*Math.abs(parameters.get("yaw").getDouble());
-        }
-
-        if (parameters.containsKey("sim"))
-            sim = true;
-
-        tasks.addFixedDelay(new TurnTask(), 1.0/DD_HZ);
-    }
-
-    /** Start/stop the execution of the control law.
-     *
-     *  @param run  True causes the control law to begin execution, false stops it
-     **/
-    public synchronized void setRunning(boolean run)
-    {
-        if (run) {
-            // no-lcm?
-            lcm.subscribe("POSE", this);
-        } else {
-            lcm.unsubscribe("POSE", this);
-        }
-        tasks.setRunning(run);
-    }
-
-    /** Get the name of this control law. Mostly useful for debugging purposes.
-     *
-     *  @return The name of the control law
-     **/
-    public String getName()
-    {
-        return "TURN";
-    }
-
-    public String toString()
-    {
-        return String.format("Turn %s", dir == Direction.LEFT ? "LEFT" : "RIGHT");
-    }
-
-    /** Get the parameters that can be set for this control law.
-     *
-     *  @return An iterable collection of all possible parameters
-     **/
-    public Collection<TypedParameter> getParameters()
-    {
-        ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-        ArrayList<TypedValue> options = new ArrayList<TypedValue>();
-        options.add(new TypedValue(-1));
-        options.add(new TypedValue(1));
-        params.add(new TypedParameter("direction",
-                                      TypedValue.TYPE_INT,
-                                      options,
-                                      true));
-        params.add(new TypedParameter("yaw",
-                                      TypedValue.TYPE_DOUBLE,
-                                      false));
-        return params;
     }
 
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)

@@ -4,7 +4,7 @@ import april.config.*;
 
 import soargroup.mobilesim.util.Util;
 
-public class Params
+public class PathParams
 {
     public double minSpeed_p;
     public double maxSpeed_p;
@@ -23,11 +23,11 @@ public class Params
 
     public double minMotorSpeed_p;
 
-    public static Params makeParams()
+    public static PathParams makeDefault()
     {
         Config config = Util.getConfig();
 
-        Params params = new Params();
+        PathParams params = new PathParams();
         params.minSpeed_p = config.requireDouble("pathControl.minSpeed_p");
         params.maxSpeed_p = config.requireDouble("pathControl.maxSpeed_p");
 

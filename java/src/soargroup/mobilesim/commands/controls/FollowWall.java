@@ -26,8 +26,37 @@ import soargroup.mobilesim.lcmtypes.robot_map_data_t;
  *  around because a person got in the way and 2) will typically converge to
  *  the same place as time approaches infinity.
  **/
-public class FollowWall implements ControlLaw, LCMSubscriber
-{
+public class FollowWall extends ControlLaw implements LCMSubscriber {
+    /** Get the parameters that can be set for this control law.
+     *
+     *  @return An iterable, immutable collection of all possible parameters
+     **/
+	private static List<TypedParameter> parameters = null;
+    public static Collection<TypedParameter> getParameters() {
+		if(parameters == null){
+			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+			ArrayList<TypedValue> options = new ArrayList<TypedValue>();
+			options.add(new TypedValue(-1));
+			options.add(new TypedValue(1));
+			params.add(new TypedParameter("side",
+										  TypedValue.TYPE_INT,
+										  options,
+										  true));
+
+			params.add(new TypedParameter("distance",
+										  TypedValue.TYPE_DOUBLE,
+										  false));  // Could have range limits...
+
+			params.add(new TypedParameter("heading",
+										  TypedValue.TYPE_DOUBLE,
+										  new TypedValue(-Math.PI),
+										  new TypedValue(Math.PI),
+										  false));
+			parameters = Collections.unmodifiableList(params);
+		}
+		return parameters;
+    }
+
     private static final double FW_HZ = 40;
     private static final double HEADING_THRESH = Math.toRadians(5.0);
     private static final double ROBOT_RAD = Util.getConfig().requireDouble("robot.geometry.radius");
@@ -51,7 +80,7 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     private ExpiringMessageCache<grid_map_t> gmCache =
         new ExpiringMessageCache<grid_map_t>(1.5);
 
-    Direction dir;
+    protected final Direction dir;
     private enum Direction { LEFT, RIGHT }
     private double goalDistance = 0.6;
     private double targetHeading = Double.MAX_VALUE;
@@ -67,6 +96,83 @@ public class FollowWall implements ControlLaw, LCMSubscriber
     //double K_d = 0.001;
     double lastRange = -1;
     double deriv = 0;
+
+    public FollowWall(Map<String, TypedValue> parameters) {
+		super(parameters);
+		ControlLaw.validateParameters(parameters, FollowWall.getParameters());
+
+        //System.out.println("FOLLOW WALL");
+        String rid = System.getenv("ROBOT_ID");
+        if (rid == null)
+            rid = "3";
+        mapChannel += "_"+rid;
+
+        if (parameters.get("side").getInt() < 0)
+            dir = Direction.RIGHT;
+        else
+            dir = Direction.LEFT;
+
+        if (parameters.containsKey("distance"))
+            goalDistance = Math.abs(parameters.get("distance").getDouble());
+
+        if (parameters.containsKey("heading"))
+            targetHeading = parameters.get("heading").getDouble();
+
+        if (parameters.containsKey("sim"))
+            sim = true;
+
+        if (sim) {
+            FRONT_THETA = 8*Math.PI/36;
+        }
+        tasks.addFixedRate(new UpdateTask(), 1.0/FW_HZ);
+    }
+
+	@Override
+    public String getName() { return "FollowWall"; }
+
+    public String getSide() {
+		return dir == Direction.LEFT ? "LEFT" : "RIGHT"; 
+	}
+
+    // Ignore heading for now
+    public int hashCode() {
+        return dir.hashCode() ^ new Double(goalDistance).hashCode();
+    }
+
+    public boolean equals(Object o) {
+        if (o == null)
+            return false;
+        else if (!(o instanceof FollowWall))
+            return false;
+        FollowWall fw = (FollowWall)o;
+        return dir == fw.dir && goalDistance == fw.goalDistance;
+    }
+
+	@Override
+    public String toString() {
+        return String.format("Follow %s wall @ %2.3f [m]", getSide(), goalDistance);
+    }
+
+    /** Start/stop the execution of the control law.
+     *
+     *  @param run  True causes the control law to begin execution, false stops it
+     **/
+	@Override
+    public void setRunning(boolean run) {
+		if(run == is_running){ return; }
+		super.setRunning(run);
+
+        if (run) {
+            lcm.subscribe(laserChannel, this);
+            lcm.subscribe(poseChannel, this);
+            lcm.subscribe(mapChannel, this);
+        } else {
+            lcm.unsubscribe(laserChannel, this);
+            lcm.unsubscribe(poseChannel, this);
+            lcm.unsubscribe(mapChannel, this);
+        }
+        tasks.setRunning(run);
+    }
 
     private class UpdateTask implements PeriodicTasks.Task
     {
@@ -180,7 +286,8 @@ public class FollowWall implements ControlLaw, LCMSubscriber
 
     // Publicly exposed diff drive fn (can be used repeatedly as if static obj)
     // after initialized once
-    public diff_drive_t drive(DriveParams params)
+	@Override
+    public synchronized diff_drive_t drive(DriveParams params)
     {
         if (false) {
             return handTunedFollow(params);
@@ -431,56 +538,6 @@ public class FollowWall implements ControlLaw, LCMSubscriber
         return dd;
     }
 
-    /** Strictly for use for parameter checking */
-    public FollowWall()
-    {
-    }
-
-    public FollowWall(Map<String, TypedValue> parameters)
-    {
-        //System.out.println("FOLLOW WALL");
-        String rid = System.getenv("ROBOT_ID");
-        if (rid == null)
-            rid = "3";
-        mapChannel += "_"+rid;
-
-        assert (parameters.containsKey("side"));
-        if (parameters.get("side").getInt() < 0)
-            dir = Direction.RIGHT;
-        else
-            dir = Direction.LEFT;
-
-        if (parameters.containsKey("distance"))
-            goalDistance = Math.abs(parameters.get("distance").getDouble());
-
-        if (parameters.containsKey("heading"))
-            targetHeading = parameters.get("heading").getDouble();
-
-        if (parameters.containsKey("sim"))
-            sim = true;
-
-        if (sim) {
-            FRONT_THETA = 8*Math.PI/36;
-        }
-        tasks.addFixedRate(new UpdateTask(), 1.0/FW_HZ);
-    }
-
-    // Ignore heading for now
-    public int hashCode()
-    {
-        return dir.hashCode() ^ new Double(goalDistance).hashCode();
-    }
-
-    public boolean equals(Object o)
-    {
-        if (o == null)
-            return false;
-        else if (!(o instanceof FollowWall))
-            return false;
-        FollowWall fw = (FollowWall)o;
-        return dir == fw.dir && goalDistance == fw.goalDistance;
-    }
-
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try {
@@ -503,73 +560,6 @@ public class FollowWall implements ControlLaw, LCMSubscriber
             robot_map_data_t rmd = new robot_map_data_t(ins);
             gmCache.put(rmd.gridmap, rmd.utime);
         }
-    }
-
-    /** Start/stop the execution of the control law.
-     *
-     *  @param run  True causes the control law to begin execution, false stops it
-     **/
-    public synchronized void setRunning(boolean run)
-    {
-        if (run) {
-            lcm.subscribe(laserChannel, this);
-            lcm.subscribe(poseChannel, this);
-            lcm.subscribe(mapChannel, this);
-        } else {
-            lcm.unsubscribe(laserChannel, this);
-            lcm.unsubscribe(poseChannel, this);
-            lcm.unsubscribe(mapChannel, this);
-        }
-        tasks.setRunning(run);
-    }
-
-    /** Get the name of this control law. Mostly useful for debugging purposes.
-     *
-     *  @return The name of the control law
-     **/
-    public String getName()
-    {
-        return "FOLLOW_WALL";
-    }
-
-    public String getSide()
-    {
-        if (dir == Direction.LEFT)
-            return "LEFT";
-        return "RIGHT";
-    }
-
-    public String toString()
-    {
-        return String.format("Follow %s wall @ %2.3f [m]", getSide(), goalDistance);
-    }
-
-    /** Get the parameters that can be set for this control law.
-     *
-     *  @return An iterable collection of all possible parameters
-     **/
-    public Collection<TypedParameter> getParameters()
-    {
-        ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
-        ArrayList<TypedValue> options = new ArrayList<TypedValue>();
-        options.add(new TypedValue(-1));
-        options.add(new TypedValue(1));
-        params.add(new TypedParameter("side",
-                                      TypedValue.TYPE_INT,
-                                      options,
-                                      true));
-
-        params.add(new TypedParameter("distance",
-                                      TypedValue.TYPE_DOUBLE,
-                                      false));  // Could have range limits...
-
-        params.add(new TypedParameter("heading",
-                                      TypedValue.TYPE_DOUBLE,
-                                      new TypedValue(-Math.PI),
-                                      new TypedValue(Math.PI),
-                                      false));
-
-        return params;
     }
 
     public control_law_t getLCM()

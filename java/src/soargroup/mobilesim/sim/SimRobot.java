@@ -560,11 +560,11 @@ public class SimRobot implements SimObject, LCMSubscriber
 
     class ControlTask implements PeriodicTasks.Task
     {
-        Params params;
+        PathParams params;
 
         public ControlTask()
         {
-            params = Params.makeParams();
+            params = PathParams.makeDefault();
         }
 
         public void run(double dt) {

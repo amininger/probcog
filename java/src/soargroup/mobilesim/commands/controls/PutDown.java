@@ -5,52 +5,30 @@ import java.util.*;
 import soargroup.mobilesim.commands.*;
 import soargroup.mobilesim.lcmtypes.diff_drive_t;
 
-public class PutDown implements ControlLaw
-{
-    Params storedParams = Params.makeParams();
-
-    /** Strictly for creating instances for parameter checks */
-    public PutDown()
-    {
-    }
-
-    public PutDown(Map<String, TypedValue> parameters)
-    {
-        System.out.println("PUT DOWN");
-    }
-
-    /** Start/stop the execution of the control law.
-     *
-     *  @param run  True causes the control law to begin execution, false stops it
-     **/
-    public synchronized void setRunning(boolean run)
-    {
-       
-    }
-
-    /** Get the name of this control law. Mostly useful for debugging purposes.
-     *
-     *  @return The name of the control law
-     **/
-    public String getName()
-    {
-        return "PUT_DOWN";
-    }
-
+/** Tells the robot to set the held object onto the floor **/
+public class PutDown extends ControlLaw {
     /** Get the parameters that can be set for this control law.
      *
-     *  @return An iterable collection of all possible parameters
+     *  @return An iterable, immutable collection of all possible parameters
      **/
-    public Collection<TypedParameter> getParameters()
+	private static List<TypedParameter> parameters = null;
+    public static Collection<TypedParameter> getParameters()
     {
-        // No parameters, so this can just return an empty container
-    	ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+		if(parameters == null){
+			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
+			parameters = Collections.unmodifiableList(params);
+		}
+		return parameters;
+    }
 
-    	return params;
+    public PutDown(Map<String, TypedValue> parameters) {
+		super(parameters);
+		ControlLaw.validateParameters(parameters, PutDown.getParameters());
     }
 
 	@Override
-	public diff_drive_t drive(DriveParams params) {
-		return null;
-	}
+    public String getName() { return "PutDown"; }
+
+	@Override
+	public String toString() { return "PutDown()"; }
 }

@@ -152,7 +152,6 @@ public class CommandInterpreter
 				if (law != null && test != null) {
 					int lawID = coordinator.executeControlLaw(law, test);
 					activeCommand = new CommandInfo(lawID, controlLaw.id, law.getName());
-					System.out.println("Started control law " + lawID + " (command " + controlLaw.id + ")");
 				} else {
 					System.err.println("WRN: Error constructing law/test");
 					setCommandStatus(controlLaw.id, Status.ERROR);
@@ -187,7 +186,6 @@ public class CommandInterpreter
 		}
 		status.name = clName;
 
-		System.out.println("Sending Status " + status.id + " = " + status.status);
 		lcm.publish("STATUS__SOAR_COMMAND_TX", status);
 	}
 
@@ -225,7 +223,7 @@ public class CommandInterpreter
 
 		public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
 		{
-			System.out.println("CommandInterpreter::messageReceived(" + channel + ") [" + TimeUtil.utime() + "]");
+			//System.out.println("CommandInterpreter::messageReceived(" + channel + ") [" + TimeUtil.utime() + "]");
             if (!running){
                 return;
 			}
@@ -233,7 +231,6 @@ public class CommandInterpreter
 			try {
 				messageReceivedEx(lcm, channel, ins);
 			} catch (IOException ioex) {
-				System.err.println("ERR: LCM channel " + channel);
 				System.out.println("ERR: LCM channel " + channel);
 				ioex.printStackTrace();
 			}
