@@ -147,7 +147,7 @@ public class Orient extends ControlLaw implements LCMSubscriber
             dd.right = -speed;
         }
 
-        if (Math.abs(dyaw) < Math.toRadians(3))
+        if (Math.abs(dyaw) < Math.toRadians(2))
             dd.left = dd.right = 0;
 
         lastSpeed = Math.abs(dd.left);

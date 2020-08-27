@@ -61,8 +61,6 @@ class MobileSimActuationConnector(AgentConnector):
         if channel.startswith("STATUS__SOAR_COMMAND"):
             status = control_law_status_t.decode(data)
             if self.active_command is not None and self.active_command.id == status.id:
-                if self.status_wme.get_value() != str(status.status).lower():
-                    print("Setting status of " + str(self.active_command.id) + " to " + status.status)
                 self.status_wme.set_value(str(status.status).lower())
         self.lock.release()
 
@@ -73,7 +71,6 @@ class MobileSimActuationConnector(AgentConnector):
     # Will replace the current command with the given one and start sending it
     def send_command(self, control_law, root_id=None):
         if self.active_command_id is not None:
-            print("Interrupting old command " + str(self.active_command.id))
             self.status_wme.set_value("interrupted")
             self.status_wme.update_wm(self.active_command_id)
 
