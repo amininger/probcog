@@ -22,7 +22,7 @@ import soargroup.mobilesim.lcmtypes.classification_t;
 
 public class RosieSimObject extends BaseSimObject{
 	protected enum ModelType {
-		BOX, WIRE_BOX, OPENBOX, CYLINDER, CONE, SPHERE, CUSTOM,
+		BOX, WIRE_BOX, OPENBOX, CYLINDER, OPEN_CYLINDER, CONE, SPHERE, CUSTOM,
 	}
 	protected Integer id;
 	protected String desc;
@@ -182,6 +182,9 @@ public class RosieSimObject extends BaseSimObject{
 			case CYLINDER:
 				vc.add(new VzCylinder(scale_xyz[0]*0.5, scale_xyz[2], new VzMesh.Style(color)));
 				break;
+			case OPEN_CYLINDER:
+				vc.add(new VzCylinder(scale_xyz[0]*0.5, scale_xyz[2], VzCylinder.BOTTOM, new VzMesh.Style(color)));
+				break;
 			case SPHERE:
 				vc.add(LinAlg.scale(scale_xyz[0], scale_xyz[1], scale_xyz[2]), new VzSphere(0.5, new VzMesh.Style(color)));
 				break;
@@ -262,6 +265,8 @@ public class RosieSimObject extends BaseSimObject{
 				model = ModelType.OPENBOX;
 			} else if(prop.equals("cylinder")){
 				model = ModelType.CYLINDER;
+			} else if(prop.equals("opencylinder")){
+				model = ModelType.OPEN_CYLINDER;
 			} else if(prop.equals("cone")){
 				model = ModelType.CONE;
 			} else if(prop.equals("sphere")){

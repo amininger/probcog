@@ -13,6 +13,10 @@ public class RosieConstants {
 	public final static String LOCKED = "locked1";
 	public final static String UNLOCKED = "not-locked1";
 
+	public final static String FILLED = "is-filled1";
+	public final static String FULL = "filled1";
+	public final static String EMPTY = "empty1";
+
 	public final static String REL_IN = "in1";
 	public final static String REL_ON = "on1";
 	public final static String REL_TO = "to1";

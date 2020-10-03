@@ -347,7 +347,7 @@ public class SimRobot implements SimObject, LCMSubscriber
 			public Result apply(PutDown.Floor putdown){
 				double[] robotPos = LinAlg.copy(drive.poseTruth.pos);
 				double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
-				forward = LinAlg.scale(forward, 1.0);
+				forward = LinAlg.scale(forward, 0.3);
 				double[] newPos = LinAlg.add(robotPos, forward);
 				double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
 				putdown.object.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
@@ -360,6 +360,16 @@ public class SimRobot implements SimObject, LCMSubscriber
 			public Result apply(PutDown.XYZ putdown){
 				putdown.object.setPose(LinAlg.xyzrpyToMatrix(new double[]{ putdown.x, putdown.y, putdown.z, 0, 0, 0 }));
 				return Result.Ok();
+			}
+		});
+
+		// UseObject: Valid if the actor object is held
+		ActionHandler.addValidateRule(UseObject.class, new ValidateRule<UseObject>(){
+			public IsValid validate(UseObject use){
+				if(grabbedObject != use.object){
+					return IsValid.False("SimRobot: The object " + use.object + " is not grabbed");
+				}
+				return IsValid.True();
 			}
 		});
 	}

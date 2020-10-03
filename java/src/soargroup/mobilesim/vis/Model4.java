@@ -85,6 +85,11 @@ public class Model4 extends VisChain
         // circleFwd.setThetaRange( -Math.PI/4,  Math.PI/4);
         // circleBck1.setThetaRange( Math.PI/4,    Math.PI);
         // circleBck2.setThetaRange(  -Math.PI, -Math.PI/4);
+		
+		// AM: Optional - view region parameters
+		//double view_angle = Math.PI/2;
+		//double view_dist = 3.0;
+
 
         add(
             // pose origin
@@ -98,6 +103,18 @@ public class Model4 extends VisChain
 
             // Translate to robot origin
             LinAlg.translate(0, 0, MagicRobot.ORIGIN_Z_OFFSET_GROUND),
+
+			// AM: Optional 
+			// Draw rectangles representing the boundaries of the view region (where the robot can see)
+			//new VisChain(
+			//	LinAlg.translate(Math.cos(view_angle/2)*view_dist/2, Math.sin(view_angle/2)*view_dist/2, 0.5), 
+			//	LinAlg.rotateX(Math.PI/2), LinAlg.rotateY(view_angle/2), 
+			//	new VzRectangle(view_dist, 1.0, new VzLines.Style(Color.black, 1.0))),
+
+			//new VisChain(
+			//	LinAlg.translate(Math.cos(view_angle/2)*view_dist/2, -Math.sin(view_angle/2)*view_dist/2, 0.5), 
+			//	LinAlg.rotateX(Math.PI/2), LinAlg.rotateY(-view_angle/2), 
+			//	new VzRectangle(view_dist, 1.0, new VzLines.Style(Color.black, 1.0))),
 
             // chassis
             new VisChain(LinAlg.translate(MagicRobot.CHASSIS_MAIN_POS),

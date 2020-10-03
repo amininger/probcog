@@ -140,6 +140,7 @@ class MobileSimActuationConnector(AgentConnector):
     def process_do_control_law(self, root_id):
         control_law = ControlLawUtil.parse_control_law(root_id)
         if control_law is None:
+            print("Could not parse control law")
             root_id.CreateStringWME("status", "error")
             root_id.CreateStringWME("error-type", "syntax-error")
             return

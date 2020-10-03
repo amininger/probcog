@@ -202,6 +202,11 @@ public class ObjectModels {
 		return vc;
 	}
 
+	// Adds a VzSphere to the given VisChain with the given x,y,z center and radius, with the given style
+	public static void addSphere(VisChain vc, double x, double y, double z, double r, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzSphere(r, style)));
+	}
+
 	// Adds a VzBox to the given VisChain with the given x,y,z center and dx,dy,dz bounds, with the given style
 	public static void addBox(VisChain vc, double x, double y, double z, double dx, double dy, double dz, VzMesh.Style style){
 		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzBox(dx, dy, dz, style)));
@@ -214,6 +219,6 @@ public class ObjectModels {
 
 	// Adds a VzCone to the given VisChain with the given x,y,z center with given face radius, height, and style
 	public static void addCone(VisChain vc, double x, double y, double z, double r, double h, VzMesh.Style style){
-		vc.add(new VisChain(LinAlg.translate(x, y, z-h*0.5), new VzCylinder(r, h, style)));
+		vc.add(new VisChain(LinAlg.translate(x, y, z-h*0.5), new VzCone(r, h, style)));
 	}
 }
