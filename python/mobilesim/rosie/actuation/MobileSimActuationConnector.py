@@ -27,6 +27,7 @@ class MobileSimActuationConnector(AgentConnector):
         self.active_command.id = self.next_control_law_id
         self.next_control_law_id += 1
         self.command_queue = list()
+        self.command_callback = None
 
         self.active_command_id = None
         self.status_wme = SoarWME("status", "none")
@@ -65,8 +66,8 @@ class MobileSimActuationConnector(AgentConnector):
         self.lock.release()
 
     # Queue up multiple commands
-    def queue_command(self, control_law):
-        self.command_queue.insert(0, control_law)
+    def queue_command(self, control_law, callback=None):
+        self.command_queue.insert(0, (control_law, callback) )
 
     # Will replace the current command with the given one and start sending it
     def send_command(self, control_law, root_id=None):
@@ -107,11 +108,15 @@ class MobileSimActuationConnector(AgentConnector):
                 self.active_command_id = None
                 self.active_command = None
                 self.moving_status = "stopped"
+                if self.command_callback is not None:
+                    self.command_callback(self.status_wme.get_value())
+                    self.command_callback = None
 
         # Send the next queued command if the current command finished
         if (self.active_command is None or self.active_command.name == "RESTART") and len(self.command_queue) > 0:
             command = self.command_queue.pop()
-            self.send_command(command)
+            self.send_command(command[0])
+            self.command_callback = command[1]
 
         self.lock.release()
 
@@ -119,6 +124,8 @@ class MobileSimActuationConnector(AgentConnector):
         self.lock.acquire()
         self.active_command = None
         self.active_command_id = None
+        self.command_queue = []
+        self.command_callback = None
         self.status_wme = SoarWME("status", "none")
         self.lock.release()
 

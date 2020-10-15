@@ -1,9 +1,8 @@
-__all__ = [ "MobileSimAgent", "RosieGUI", "LCMConnector", "MobileSimActuationConnector", "MobileSimPerceptionConnector", "AgentCommandConnector", "ControlLawUtil" ]
+__all__ = [ "MobileSimAgent", "LCMConnector", "MobileSimActuationConnector", "MobileSimPerceptionConnector", "MobileSimCommandConnector", "ControlLawUtil" ]
 
 from .LCMConnector import LCMConnector
-from .AgentCommandConnector import AgentCommandConnector
+from .MobileSimCommandConnector import MobileSimCommandConnector
 from .perception import MobileSimPerceptionConnector
 from .actuation import MobileSimActuationConnector, ControlLawUtil
 from .MobileSimAgent import MobileSimAgent
-from .RosieGUI import RosieGUI
 

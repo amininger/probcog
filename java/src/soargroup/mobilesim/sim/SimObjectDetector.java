@@ -79,6 +79,10 @@ public class SimObjectDetector {
         }
 
 		private boolean inCurrentRegion(RosieSimObject obj, SimRobot robot, SimRegion curRegion){
+			if(obj instanceof SimDoor){
+				// If it's a door, check if it is adjacent to the current region
+				return ((SimDoor)obj).connectsRegion(curRegion);
+			}
 			if(obj == robot.getGrabbedObject()){
 				// Grabbed object always in the same region
 				return true;
