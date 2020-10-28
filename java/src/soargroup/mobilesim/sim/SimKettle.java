@@ -16,7 +16,7 @@ import soargroup.mobilesim.sim.actions.ActionHandler;
 import soargroup.mobilesim.sim.actions.ActionHandler.*;
 import soargroup.mobilesim.sim.attributes.Fillable;
 
-public class SimKettle extends SimShelves {
+public class SimKettle extends RosieSimObject {
 
 	public SimKettle(SimWorld sw){
 		super(sw);
@@ -58,7 +58,7 @@ public class SimKettle extends SimShelves {
 			public Result apply(UseObject use){
 				if(use.object instanceof SimKettle){
 					Fillable fillable = use.target.getAttr(Fillable.class);
-					fillable.setFull(true);
+					fillable.setContents(RosieConstants.WATER);
 					use.target.recreateVisObject();
 				}
 				return Result.Ok();

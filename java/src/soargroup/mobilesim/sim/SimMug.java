@@ -23,8 +23,8 @@ public class SimMug extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects) { 
-		boolean isFull = properties.get(RosieConstants.FILLED).equals(RosieConstants.FULL);
-		fillable = new Fillable(this, isFull);
+		String contents = properties.get(RosieConstants.CONTENTS);
+		fillable = new Fillable(this, contents);
 		addAttribute(fillable);
 
 		super.init(worldObjects);
@@ -32,14 +32,14 @@ public class SimMug extends RosieSimObject {
 
 	@Override
 	public VisChain createVisObject(){
-		boolean full = fillable.isFull();
+		String contents = fillable.getContents();
 		VisChain vc = new VisChain();
 
 		VzMesh.Style style = new VzMesh.Style(color);
 		vc.add(new VzCylinder(0.5, 1.0, VzCylinder.BOTTOM, style));
 		// Add a side box for the handle
 		vc.add(new VisChain(LinAlg.translate(-0.6, 0.0, 0.0), new VzBox(0.2, 0.1, 0.6, style)));
-		if(full){
+		if(!contents.equals(RosieConstants.EMPTY)){
 			// Add a circle for the liquid
 			VzMesh.Style liquidStyle = new VzMesh.Style(new Color(100, 100, 20));
 			vc.add(new VisChain(LinAlg.translate(0.0, 0.0, 0.4), new VzCircle(0.5, liquidStyle)));

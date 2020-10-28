@@ -26,6 +26,7 @@ public class RosieSimObject extends BaseSimObject{
 	}
 	protected Integer id;
 	protected String desc;
+	protected String handle = null;
 	protected Color  color = Color.gray;
 	protected ModelType model = ModelType.BOX;
 	protected HashMap<String, String> properties = new HashMap<String, String>();
@@ -69,6 +70,11 @@ public class RosieSimObject extends BaseSimObject{
 	
 	public Integer getID(){
 		return id;
+	}
+
+	public String getHandle(){
+		// Handle is an optional identifying string used internally to let objects refer to one another
+		return handle;
 	}
 
 	public String getDesc(){
@@ -275,9 +281,13 @@ public class RosieSimObject extends BaseSimObject{
 				model = ModelType.CUSTOM;
 			} else if(prop.contains("=")){
 				String[] splitProp = prop.split("=");
-				properties.put(splitProp[0], splitProp[1]);
-				if(splitProp[0].equals(RosieConstants.LOCK)){
-					addAttribute(new Lockable(this, splitProp[1].equals(RosieConstants.LOCKED)));
+				if(splitProp[0].equals("handle")){
+					handle = splitProp[1];
+				} else {
+					properties.put(splitProp[0], splitProp[1]);
+					if(splitProp[0].equals(RosieConstants.LOCK)){
+						addAttribute(new Lockable(this, splitProp[1].equals(RosieConstants.LOCKED)));
+					}
 				}
 			}
 		}

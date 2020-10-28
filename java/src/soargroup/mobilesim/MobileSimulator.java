@@ -122,6 +122,8 @@ public class MobileSimulator implements LCMSubscriber
 					action = parseChangeState(controlLaw);
 				} else if(controlLaw.name.equals("use-object")){
 					action = parseUseObject(controlLaw);
+				} else if(controlLaw.name.equals("press")){
+					action = parsePress(controlLaw);
 				} else {
 					// Unrecognized name - ignore control law
 					return;
@@ -186,6 +188,12 @@ public class MobileSimulator implements LCMSubscriber
 			return default_value;
 		}
 		return null;
+	}
+
+	private Press parsePress(control_law_t controlLaw){
+		RosieSimObject obj = getRosieObject(controlLaw, "object-id");
+		if(obj == null){ return null; }
+		return new Press(obj);
 	}
 
 	private PickUp parsePickUp(control_law_t controlLaw){

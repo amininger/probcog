@@ -212,7 +212,7 @@
   2
     category=lightswitch1
     is-activated1=not-activated1
-wp01
+    wp01
 }
 "soargroup.mobilesim.sim.RosieSimObject"
 {
@@ -740,6 +740,50 @@ wp01
   2
     name=charlie1
     category=person
+}
+"soargroup.mobilesim.sim.SimDoor"
+{
+  # Object Description
+  door
+  # Object xyz
+  vec 3
+    6.00   3.00   1.00
+  # Rotation (yaw)
+  0.0
+  # Scale xyz
+  vec 3
+    0.10   1.90   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+    94 76 28
+  # Properties
+  2
+    category=door1
+    is-open1=open2
+    wp01
+    wp08
+}
+"soargroup.mobilesim.sim.SimDoor"
+{
+  # Object Description
+  door
+  # Object xyz
+  vec 3
+    6.00  12.00   1.00
+  # Rotation (yaw)
+  0.0
+  # Scale xyz
+  vec 3
+    0.10   1.90   2.00
+  # Color rgb (int 0-255)
+  ivec 3
+    94 76 28
+  # Properties
+  2
+    category=door1
+    is-open1=open2
+    wp03
+    wp09
 }
 "soargroup.mobilesim.sim.SimRoomWall"
 {

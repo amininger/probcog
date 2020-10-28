@@ -38,6 +38,7 @@ public class ControlLawFactory
         registerControlLaw("put-on-object", PutOnObject.class.getName());
         registerControlLaw("change-state", ChangeState.class.getName());
         registerControlLaw("use-object", UseObject.class.getName());
+        registerControlLaw("press", Press.class.getName());
     }
 
     /** Register control laws with the factory. It is the job of the

@@ -23,6 +23,8 @@ public class Surface extends ObjectHolder {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects){
+		// Check to see if there are any objects that start off on this
+		// surface and add each one to an anchor point
 		BoundingBox bbox = baseObject.getBoundingBox();
 		for(SimObject simObj : worldObjects){
 			if(!(simObj instanceof RosieSimObject)){
@@ -30,6 +32,9 @@ public class Surface extends ObjectHolder {
 			}
 			RosieSimObject rosieObj = (RosieSimObject)simObj;
 			if(rosieObj == baseObject){
+				continue;
+			}
+			if(!rosieObj.is(Grabbable.class)){
 				continue;
 			}
 			// Check to see if the bottom of the object (center_z-height/2-episilon)

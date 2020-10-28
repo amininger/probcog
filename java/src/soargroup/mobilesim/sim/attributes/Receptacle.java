@@ -31,8 +31,10 @@ public class Receptacle extends ObjectHolder {
 	@Override
 	public void init(ArrayList<SimObject> worldObjects){
 		Openable openable = baseObject.getAttr(Openable.class);
-		boolean doorClosed = (openable == null) || !openable.isOpen();
+		boolean doorClosed = (openable != null) && !openable.isOpen();
 
+		// Check to see if there are any objects that start off inside this
+		// receptacle and add each one to an anchor point
 		BoundingBox bbox = baseObject.getBoundingBox();
 		for(SimObject simObj : worldObjects){
 			if(!(simObj instanceof RosieSimObject)){
@@ -40,6 +42,9 @@ public class Receptacle extends ObjectHolder {
 			}
 			RosieSimObject rosieObj = (RosieSimObject)simObj;
 			if(rosieObj == baseObject){
+				continue;
+			}
+			if(!rosieObj.is(Grabbable.class)){
 				continue;
 			}
 			// Check if our bounding box contains the center of the sim object
