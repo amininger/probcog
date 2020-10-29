@@ -45,7 +45,7 @@ class ControlLawUtil:
                 tv.type = typed_value_t.TYPE_INT
             elif val_type == 'double':
                 tv.type = typed_value_t.TYPE_DOUBLE
-            elif tv.value == 'true' or tv.value == 'false':
+            elif wme.GetValueAsString().lower() in ['true', 'false']:
                 tv.type = typed_value_t.TYPE_BOOL
             else:
                 tv.type = typed_value_t.TYPE_STRING
