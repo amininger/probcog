@@ -18,7 +18,7 @@ import soargroup.mobilesim.sim.actions.ActionHandler;
 import soargroup.mobilesim.sim.actions.ActionHandler.*;
 
 public class SimButton extends RosieSimObject {
-	private String targetHandle;
+	private String targetId;
 	private RosieSimObject target = null;
 
 	private Pressable pressable;
@@ -29,11 +29,11 @@ public class SimButton extends RosieSimObject {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects) { 
-		// Try to find a world object with the target handle
+		// Try to find a world object with the target id
 		for(SimObject simObj : worldObjects){
 			if(simObj instanceof RosieSimObject){
 				RosieSimObject obj = (RosieSimObject)simObj;
-				if(obj.getHandle() != null && obj.getHandle().equals(targetHandle)){
+				if(obj.getTempId() != null && obj.getTempId().equals(targetId)){
 					target = obj;
 				}
 			}
@@ -55,14 +55,14 @@ public class SimButton extends RosieSimObject {
 	@Override
 	public void read(StructureReader ins) throws IOException {
 		super.read(ins);
-		// [Str] target handle
-		targetHandle = ins.readString();
+		// [Str] target id (matches temp_id)
+		targetId = ins.readString();
 	}
 
 	@Override
 	public void write(StructureWriter outs) throws IOException {
 		super.write(outs);
-		outs.writeString(targetHandle);
+		outs.writeString(targetId);
 	}
 
 }

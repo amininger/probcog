@@ -26,7 +26,7 @@ public class RosieSimObject extends BaseSimObject{
 	}
 	protected Integer id;
 	protected String desc;
-	protected String handle = null;
+	protected String tempId = null;
 	protected Color  color = Color.gray;
 	protected ModelType model = ModelType.BOX;
 	protected HashMap<String, String> properties = new HashMap<String, String>();
@@ -72,9 +72,9 @@ public class RosieSimObject extends BaseSimObject{
 		return id;
 	}
 
-	public String getHandle(){
-		// Handle is an optional identifying string used internally to let objects refer to one another
-		return handle;
+	public String getTempId(){
+		// tempId is an optional identifying string used internally to let objects refer to one another
+		return tempId;
 	}
 
 	public String getDesc(){
@@ -267,6 +267,8 @@ public class RosieSimObject extends BaseSimObject{
 				addAttribute(new Surface(this, true));
 			} else if(prop.equals("receptacle")){
 				addAttribute(new Receptacle(this, true));
+			} else if(prop.equals("drain")){
+				addAttribute(new Drain(this));
 			} else if(prop.equals("openbox")){
 				model = ModelType.OPENBOX;
 			} else if(prop.equals("cylinder")){
@@ -281,8 +283,8 @@ public class RosieSimObject extends BaseSimObject{
 				model = ModelType.CUSTOM;
 			} else if(prop.contains("=")){
 				String[] splitProp = prop.split("=");
-				if(splitProp[0].equals("handle")){
-					handle = splitProp[1];
+				if(splitProp[0].equals("temp_id")){
+					tempId = splitProp[1];
 				} else {
 					properties.put(splitProp[0], splitProp[1]);
 					if(splitProp[0].equals(RosieConstants.LOCK)){
