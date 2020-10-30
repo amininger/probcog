@@ -41,7 +41,7 @@ public class SimMug extends RosieSimObject {
 		vc.add(new VisChain(LinAlg.translate(-0.6, 0.0, 0.0), new VzBox(0.2, 0.1, 0.6, style)));
 		if(!contents.equals(RosieConstants.EMPTY)){
 			// Add a circle for the liquid
-			VzMesh.Style liquidStyle = new VzMesh.Style(new Color(100, 100, 20));
+			VzMesh.Style liquidStyle = new VzMesh.Style(fillable.getColor());
 			vc.add(new VisChain(LinAlg.translate(0.0, 0.0, 0.4), new VzCircle(0.5, liquidStyle)));
 		}
 		return new VisChain(LinAlg.scale(scale_xyz[0], scale_xyz[1], scale_xyz[2]), vc);

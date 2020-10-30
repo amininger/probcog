@@ -89,6 +89,10 @@ public class RosieSimObject extends BaseSimObject{
 		return desc + "_" + id.toString();
 	}
 
+	public String getProperty(String prop){
+		return properties.get(prop);
+	}
+
 	public boolean isVisible(){
 		return _isVisible;
 	}
@@ -269,6 +273,8 @@ public class RosieSimObject extends BaseSimObject{
 				addAttribute(new Receptacle(this, true));
 			} else if(prop.equals("drain")){
 				addAttribute(new Drain(this));
+			} else if(prop.equals("dispenser")){
+				addAttribute(new Dispenser(this));
 			} else if(prop.equals("openbox")){
 				model = ModelType.OPENBOX;
 			} else if(prop.equals("cylinder")){

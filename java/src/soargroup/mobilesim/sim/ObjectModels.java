@@ -8,6 +8,7 @@ import april.util.*;
 import april.jmat.LinAlg;
 
 import soargroup.mobilesim.vis.VzOpenBox;
+import soargroup.mobilesim.vis.VzTriangularPrism;
 
 public class ObjectModels {
 
@@ -29,8 +30,39 @@ public class ObjectModels {
 			return createTruckModel(scale, color);
 		if(modelName.equals("extinguisher"))
 			return createExtinguisherModel(scale, color);
+		if(modelName.equals("carton"))
+			return createCartonModel(scale, color);
 		return null;
 	}
+
+	/***** Helper Methods that simplify adding certain types of models *****/
+
+	// Adds a VzSphere to the given VisChain with the given x,y,z center and radius, with the given style
+	public static void addSphere(VisChain vc, double x, double y, double z, double r, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzSphere(r, style)));
+	}
+
+	// Adds a VzBox to the given VisChain with the given x,y,z center and dx,dy,dz bounds, with the given style
+	public static void addBox(VisChain vc, double x, double y, double z, double dx, double dy, double dz, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzBox(dx, dy, dz, style)));
+	}
+
+	// Adds a VzCylinder to the given VisChain with the given x,y,z center with given radius, height, and style
+	public static void addCyl(VisChain vc, double x, double y, double z, double r, double h, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzCylinder(r, h, style)));
+	}
+
+	// Adds a VzCone to the given VisChain with the given x,y,z center with given face radius, height, and style
+	public static void addCone(VisChain vc, double x, double y, double z, double r, double h, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z-h*0.5), new VzCone(r, h, style)));
+	}
+
+	// Adds a VzTriangularPrism to the given VisChain with the given x,y,z center, scale, and style
+	public static void addTriPrism(VisChain vc, double x, double y, double z, double dx, double dy, double dz, VzMesh.Style style){
+		vc.add(new VisChain(LinAlg.translate(x, y, z), LinAlg.scale(dx, dy, dz), new VzTriangularPrism(style)));
+	}
+
+	/***** Specific Models ******/
 
 	public static VisChain createChairModel(double[] scale, Color color){
 		VisChain vc = new VisChain();
@@ -202,23 +234,22 @@ public class ObjectModels {
 		return vc;
 	}
 
-	// Adds a VzSphere to the given VisChain with the given x,y,z center and radius, with the given style
-	public static void addSphere(VisChain vc, double x, double y, double z, double r, VzMesh.Style style){
-		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzSphere(r, style)));
+	public static VisChain createCartonModel(double[] scale, Color color){
+		VisChain vc = new VisChain();
+		VzMesh.Style style = new VzMesh.Style(color);
+
+		System.out.println("CARTON!");
+
+		vc.add(LinAlg.scale(scale[0], scale[1], scale[2]));
+
+		final double TOP_H = 0.3;
+		final double BOT_H = 1.0 - TOP_H;
+		// Top Triangular Prism
+		vc.add(new VisChain(LinAlg.translate(0.0, 0.0, 0.5 - TOP_H/2), LinAlg.scale(1.0, 1.0, TOP_H), new VzTriangularPrism(style)));
+		// Bottom Box
+		vc.add(new VisChain(LinAlg.translate(0.0, 0.0, -0.5 + BOT_H/2), new VzBox(1.0, 1.0, BOT_H, style)));
+
+		return vc;
 	}
 
-	// Adds a VzBox to the given VisChain with the given x,y,z center and dx,dy,dz bounds, with the given style
-	public static void addBox(VisChain vc, double x, double y, double z, double dx, double dy, double dz, VzMesh.Style style){
-		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzBox(dx, dy, dz, style)));
-	}
-
-	// Adds a VzCylinder to the given VisChain with the given x,y,z center with given radius, height, and style
-	public static void addCyl(VisChain vc, double x, double y, double z, double r, double h, VzMesh.Style style){
-		vc.add(new VisChain(LinAlg.translate(x, y, z), new VzCylinder(r, h, style)));
-	}
-
-	// Adds a VzCone to the given VisChain with the given x,y,z center with given face radius, height, and style
-	public static void addCone(VisChain vc, double x, double y, double z, double r, double h, VzMesh.Style style){
-		vc.add(new VisChain(LinAlg.translate(x, y, z-h*0.5), new VzCone(r, h, style)));
-	}
 }

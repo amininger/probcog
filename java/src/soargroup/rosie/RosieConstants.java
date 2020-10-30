@@ -16,6 +16,7 @@ public class RosieConstants {
 	public final static String CONTENTS = "contents1";
 	public final static String EMPTY = "empty1";
 	public final static String WATER = "water1";
+	public final static String MILK = "milk1";
 
 	public final static String REL_IN = "in1";
 	public final static String REL_ON = "on1";
