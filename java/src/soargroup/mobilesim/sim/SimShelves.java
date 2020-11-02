@@ -36,6 +36,9 @@ public class SimShelves extends RosieSimObject {
 		for(int i = 0; i < nshelves; i += 1){
 			receptacle.addPoints(scale_xyz[0], scale_xyz[1], (sz + i)*SHELF_SPACING, OBJ_SPACING);
 		}
+		if(getProperty("category").equals("cupboard1")){
+			receptacle.addPoints(scale_xyz[0], scale_xyz[1], -sz/2, OBJ_SPACING);
+		}
 		addAttribute(receptacle);
 
 		// If there is a door property, then make it openable

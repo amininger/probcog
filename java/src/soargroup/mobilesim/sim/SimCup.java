@@ -14,10 +14,10 @@ import soargroup.rosie.RosieConstants;
 import soargroup.mobilesim.sim.actions.*;
 import soargroup.mobilesim.sim.attributes.*;
 
-public class SimMug extends RosieSimObject {
+public class SimCup extends RosieSimObject {
 	protected Fillable fillable = null;
 
-	public SimMug(SimWorld sw){
+	public SimCup(SimWorld sw){
 		super(sw);
 	}
 
@@ -37,12 +37,16 @@ public class SimMug extends RosieSimObject {
 
 		VzMesh.Style style = new VzMesh.Style(color);
 		vc.add(new VzCylinder(0.5, 1.0, VzCylinder.BOTTOM, style));
-		// Add a side box for the handle
-		vc.add(new VisChain(LinAlg.translate(-0.6, 0.0, 0.0), new VzBox(0.2, 0.1, 0.6, style)));
+
 		if(!contents.equals(RosieConstants.EMPTY)){
 			// Add a circle for the liquid
 			VzMesh.Style liquidStyle = new VzMesh.Style(fillable.getColor());
 			vc.add(new VisChain(LinAlg.translate(0.0, 0.0, 0.4), new VzCircle(0.5, liquidStyle)));
+		}
+
+		// If this is a mug, add a handle
+		if(getProperty("category").equals("mug1")){
+			vc.add(new VisChain(LinAlg.translate(-0.6, 0.0, 0.0), new VzBox(0.2, 0.1, 0.6, style)));
 		}
 		return new VisChain(LinAlg.scale(scale_xyz[0], scale_xyz[1], scale_xyz[2]), vc);
 	}
