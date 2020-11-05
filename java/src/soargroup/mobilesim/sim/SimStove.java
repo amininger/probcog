@@ -50,7 +50,7 @@ public class SimStove extends RosieSimObject {
 		List<RosieSimObject> objects = surface.getHeldObjects();
 		for(RosieSimObject obj : objects){
 			if(obj.is(HasTemp.class)){
-				obj.getAttr(HasTemp.class).changeTemperature(TEMPERATURE);
+				obj.as(HasTemp.class).changeTemperature(TEMPERATURE);
 			}
 		}
 	}

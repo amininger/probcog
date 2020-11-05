@@ -57,7 +57,7 @@ public class SimKettle extends RosieSimObject {
 		ActionHandler.addApplyRule(UseObject.class, new ApplyRule<UseObject>(){
 			public Result apply(UseObject use){
 				if(use.object instanceof SimKettle){
-					Fillable fillable = use.target.getAttr(Fillable.class);
+					Fillable fillable = use.target.as(Fillable.class);
 					fillable.setContents(RosieConstants.WATER);
 					use.target.recreateVisObject();
 				}

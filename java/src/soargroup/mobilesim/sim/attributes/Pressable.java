@@ -14,7 +14,7 @@ public class Pressable extends Attribute {
 
 	public void press(){
 		if(target != null && target.is(Triggerable.class)){
-			target.getAttr(Triggerable.class).trigger(baseObject);
+			target.as(Triggerable.class).trigger(baseObject);
 		}
 	}
 
@@ -32,7 +32,7 @@ public class Pressable extends Attribute {
 		// Press Apply: Trigger the target object
 		ActionHandler.addApplyRule(Press.class, new ApplyRule<Press>() {
 			public Result apply(Press press){
-				Pressable pressable = press.object.getAttr(Pressable.class);
+				Pressable pressable = press.object.as(Pressable.class);
 				if(pressable == null){
 					return Result.Err("Pressable: Object is not pressable");
 				}

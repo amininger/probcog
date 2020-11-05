@@ -32,7 +32,7 @@ public class Openable extends Attribute {
 		// SetProp.Open: Valid if the object is Openable and not open
 		ActionHandler.addValidateRule(SetProp.Open.class, new ValidateRule<SetProp.Open>() {
 			public IsValid validate(SetProp.Open open){
-				Openable openable = open.object.getAttr(Openable.class);
+				Openable openable = open.object.as(Openable.class);
 				if(openable == null){
 					return IsValid.False("Openable: Object is not openable");
 				}
@@ -45,7 +45,7 @@ public class Openable extends Attribute {
 		// SetProp.Open Apply: Update isOpen flag on object
 		ActionHandler.addApplyRule(SetProp.Open.class, new ApplyRule<SetProp.Open>() {
 			public Result apply(SetProp.Open open){
-				Openable openable = open.object.getAttr(Openable.class);
+				Openable openable = open.object.as(Openable.class);
 				if(openable == null){
 					return Result.Err("Openable: Object is not openable");
 				}
@@ -58,7 +58,7 @@ public class Openable extends Attribute {
 		// SetProp.Close: Valid if the object is Openable and open
 		ActionHandler.addValidateRule(SetProp.Close.class, new ValidateRule<SetProp.Close>() {
 			public IsValid validate(SetProp.Close close){
-				Openable openable = close.object.getAttr(Openable.class);
+				Openable openable = close.object.as(Openable.class);
 				if(openable == null){
 					return IsValid.False("Openable: Object is not openable");
 				}
@@ -71,7 +71,7 @@ public class Openable extends Attribute {
 		// SetProp.Close Apply: Update isOpen flag on object
 		ActionHandler.addApplyRule(SetProp.Close.class, new ApplyRule<SetProp.Close>() {
 			public Result apply(SetProp.Close close){
-				Openable openable = close.object.getAttr(Openable.class);
+				Openable openable = close.object.as(Openable.class);
 				if(openable == null){
 					return Result.Err("Openable: Object is not openable");
 				}
@@ -84,7 +84,7 @@ public class Openable extends Attribute {
 		// (This should only happen due to simulator teleporting objects for testing, etc.)
 		ActionHandler.addApplyRule(PutDown.Target.class, new ApplyRule<PutDown.Target>() {
 			public Result apply(PutDown.Target putdown){
-				Openable openable = putdown.target.getAttr(Openable.class);
+				Openable openable = putdown.target.as(Openable.class);
 				if(openable != null && !openable.isOpen()){
 					putdown.object.setVisible(false);
 				}

@@ -34,7 +34,7 @@ public class Grabbable extends Attribute {
 		// PickUp Apply: Update isGrabbed flag on object
 		ActionHandler.addApplyRule(PickUp.class, new ApplyRule<PickUp>() {
 			public Result apply(PickUp pickup){
-				Grabbable grabbable = pickup.object.getAttr(Grabbable.class);
+				Grabbable grabbable = pickup.object.as(Grabbable.class);
 				if(grabbable == null){
 					return Result.Err("Grabbable: Object is not grabbable");
 				}
@@ -46,7 +46,7 @@ public class Grabbable extends Attribute {
 		// PutDown Apply: Update isGrabbed flag on object
 		ActionHandler.addApplyRule(PutDown.class, new ApplyRule<PutDown>() {
 			public Result apply(PutDown putdown){
-				Grabbable grabbable = putdown.object.getAttr(Grabbable.class);
+				Grabbable grabbable = putdown.object.as(Grabbable.class);
 				if(grabbable != null){
 					grabbable.setGrabbed(false);
 				}

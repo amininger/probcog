@@ -36,7 +36,7 @@ public class Dispenser extends Attribute {
 		ActionHandler.addApplyRule(UseObject.class, new ApplyRule<UseObject>(){
 			public Result apply(UseObject use){
 				if(use.object.is(Dispenser.class)){
-					Fillable fillable = use.target.getAttr(Fillable.class);
+					Fillable fillable = use.target.as(Fillable.class);
 					fillable.setContents(use.object.getProperty(RosieConstants.CONTENTS));
 				}
 				return Result.Ok();

@@ -87,11 +87,11 @@ public class SimObjectDetector {
 				// Grabbed object always in the same region
 				return true;
 			}
-			if(obj.is(InRegion.class) && obj.getAttr(InRegion.class).getRegion(regions) == null){
+			if(obj.is(InRegion.class) && obj.as(InRegion.class).getRegion(regions) == null){
 				// Object's region is null
 				return false;
 			}
-			if(obj.is(InRegion.class) && obj.getAttr(InRegion.class).getRegion(regions) != curRegion){
+			if(obj.is(InRegion.class) && obj.as(InRegion.class).getRegion(regions) != curRegion){
 				// Object's region isn't the same as curRegion
 				return false;
 			}

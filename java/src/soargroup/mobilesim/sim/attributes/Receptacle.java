@@ -30,7 +30,7 @@ public class Receptacle extends ObjectHolder {
 
 	@Override
 	public void init(ArrayList<SimObject> worldObjects){
-		Openable openable = baseObject.getAttr(Openable.class);
+		Openable openable = baseObject.as(Openable.class);
 		boolean doorClosed = (openable != null) && !openable.isOpen();
 
 		// Check to see if there are any objects that start off inside this
@@ -71,7 +71,7 @@ public class Receptacle extends ObjectHolder {
 		// SetProp.Open Apply: If the target is a Receptacle, make all objects visible
 		ActionHandler.addApplyRule(SetProp.Open.class, new ApplyRule<SetProp.Open>() {
 			public Result apply(SetProp.Open open){
-				Receptacle receptacle = open.object.getAttr(Receptacle.class);
+				Receptacle receptacle = open.object.as(Receptacle.class);
 				if(receptacle != null){
 					ArrayList<RosieSimObject> objs = receptacle.getObjects();
 					for(RosieSimObject obj : objs){
@@ -85,7 +85,7 @@ public class Receptacle extends ObjectHolder {
 		// SetProp.Close Apply: If the target is a Receptacle, make all objects not visible
 		ActionHandler.addApplyRule(SetProp.Close.class, new ApplyRule<SetProp.Close>() {
 			public Result apply(SetProp.Close close){
-				Receptacle receptacle = close.object.getAttr(Receptacle.class);
+				Receptacle receptacle = close.object.as(Receptacle.class);
 				if(receptacle != null){
 					ArrayList<RosieSimObject> objs = receptacle.getObjects();
 					for(RosieSimObject obj : objs){

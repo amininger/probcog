@@ -26,7 +26,7 @@ public class SimFridge extends SimShelves {
 		List<RosieSimObject> objects = receptacle.getHeldObjects();
 		for(RosieSimObject obj : objects){
 			if(obj.is(HasTemp.class)){
-				obj.getAttr(HasTemp.class).changeTemperature(TEMPERATURE);
+				obj.as(HasTemp.class).changeTemperature(TEMPERATURE);
 			}
 		}
 	}

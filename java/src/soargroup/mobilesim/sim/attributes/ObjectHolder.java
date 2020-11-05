@@ -143,7 +143,7 @@ public class ObjectHolder extends Attribute {
 		//  PutDown.Target: Valid if there is a free anchor available
 		ActionHandler.addValidateRule(PutDown.Target.class, new ValidateRule<PutDown.Target>() {
 			public IsValid validate(PutDown.Target putdown){
-				ObjectHolder holder = putdown.target.getAttr(ObjectHolder.class);
+				ObjectHolder holder = putdown.target.as(ObjectHolder.class);
 				if(holder == null){
 					return IsValid.False("Target is not an ObjectHolder");
 				}
@@ -154,7 +154,7 @@ public class ObjectHolder extends Attribute {
 		// PutDown.Target Apply: Add the object to the anchors
 		ActionHandler.addApplyRule(PutDown.Target.class, new ApplyRule<PutDown.Target>() {
 			public Result apply(PutDown.Target putdown){
-				ObjectHolder holder = putdown.target.getAttr(ObjectHolder.class);
+				ObjectHolder holder = putdown.target.as(ObjectHolder.class);
 				if(holder == null){
 					return Result.Err("Target is not an ObjectHolder");
 				}

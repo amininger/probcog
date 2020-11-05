@@ -27,7 +27,7 @@ public class Drain extends Attribute {
 		ActionHandler.addApplyRule(UseObject.class, new ApplyRule<UseObject>(){
 			public Result apply(UseObject use){
 				if(use.target.is(Drain.class)){
-					Fillable fillable = use.object.getAttr(Fillable.class);
+					Fillable fillable = use.object.as(Fillable.class);
 					fillable.setContents(RosieConstants.EMPTY);
 					use.target.recreateVisObject();
 				}

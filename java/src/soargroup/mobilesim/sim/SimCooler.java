@@ -66,7 +66,7 @@ public class SimCooler extends RosieSimObject {
 		ArrayList<RosieSimObject> objs = receptacle.getObjects();
 		for(RosieSimObject obj : objs){
 			if(obj.is(Fillable.class)){
-				obj.getAttr(Fillable.class).setContents(RosieConstants.WATER);
+				obj.as(Fillable.class).setContents(RosieConstants.WATER);
 			}
 		}
 	}

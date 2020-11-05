@@ -47,12 +47,19 @@ public class RosieSimObject extends BaseSimObject{
 	//
 	// Notes: the attributes map can have multiple keys mapped to the same Attribute object
 	//        whereas the uniqueAttrs set has only 1 of each object
+	//
+	// For example, to see if a given object is Grabbable, do:
+	//    if(object.is(Grabbable.class))
+	//
+	// To make the object not grabbed, you would do:
+	//    object.as(Grabbable.class).setGrabbed(false)
+	//
 	protected HashMap<Class<?>, Attribute> attributes = new HashMap<Class<?>, Attribute>();
 	private HashSet<Attribute> uniqueAttrs = new HashSet<Attribute>();
 	public <T extends Attribute> boolean is(Class<T> cls){
 		return attributes.containsKey(cls);
 	}
-	public <T extends Attribute> T getAttr(Class<T> cls){
+	public <T extends Attribute> T as(Class<T> cls){
 		Attribute attr = attributes.get(cls);
 		return attr == null ? null : (T)attr;
 	}
@@ -232,7 +239,7 @@ public class RosieSimObject extends BaseSimObject{
 		}
 
 		if(this.is(ObjectHolder.class)){
-			ObjectHolder objHolder = this.getAttr(ObjectHolder.class);
+			ObjectHolder objHolder = this.as(ObjectHolder.class);
 			List<RosieSimObject> heldObjs = objHolder.getHeldObjects();
 			objdat.num_objects = heldObjs.size();
 			objdat.contained_objects = new int[objdat.num_objects];

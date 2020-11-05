@@ -29,7 +29,7 @@ public class Activatable extends Attribute {
 		// SetProp.TurnOn: Valid if the object is Activatable and off
 		ActionHandler.addValidateRule(SetProp.TurnOn.class, new ValidateRule<SetProp.TurnOn>() {
 			public IsValid validate(SetProp.TurnOn turnon){
-				Activatable activatable = turnon.object.getAttr(Activatable.class);
+				Activatable activatable = turnon.object.as(Activatable.class);
 				if(activatable == null){
 					return IsValid.False("Activatable: Object is not activatable");
 				}
@@ -42,7 +42,7 @@ public class Activatable extends Attribute {
 		// SetProp.TurnOn Apply: Update isOn flag on object
 		ActionHandler.addApplyRule(SetProp.TurnOn.class, new ApplyRule<SetProp.TurnOn>() {
 			public Result apply(SetProp.TurnOn turnon){
-				Activatable activatable = turnon.object.getAttr(Activatable.class);
+				Activatable activatable = turnon.object.as(Activatable.class);
 				if(activatable == null){
 					return Result.Err("Activatable: Object is not activatable");
 				}
@@ -55,7 +55,7 @@ public class Activatable extends Attribute {
 		// SetProp.TurnOff: Valid if the object is Activatable and on
 		ActionHandler.addValidateRule(SetProp.TurnOff.class, new ValidateRule<SetProp.TurnOff>() {
 			public IsValid validate(SetProp.TurnOff turnoff){
-				Activatable activatable = turnoff.object.getAttr(Activatable.class);
+				Activatable activatable = turnoff.object.as(Activatable.class);
 				if(activatable == null){
 					return IsValid.False("Activatable: Object is not activatable");
 				}
@@ -68,7 +68,7 @@ public class Activatable extends Attribute {
 		// SetProp.TurnOff Apply: Update isOn flag on object
 		ActionHandler.addApplyRule(SetProp.TurnOff.class, new ApplyRule<SetProp.TurnOff>() {
 			public Result apply(SetProp.TurnOff turnoff){
-				Activatable activatable = turnoff.object.getAttr(Activatable.class);
+				Activatable activatable = turnoff.object.as(Activatable.class);
 				if(activatable == null){
 					return Result.Err("Activatable: Object is not activatable");
 				}

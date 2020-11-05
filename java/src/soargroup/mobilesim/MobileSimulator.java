@@ -293,7 +293,7 @@ public class MobileSimulator implements LCMSubscriber
 				if(!(obj instanceof RosieSimObject)){
 					continue;
 				}
-				ObjectHolder holder = ((RosieSimObject)obj).getAttr(ObjectHolder.class);
+				ObjectHolder holder = ((RosieSimObject)obj).as(ObjectHolder.class);
 				if(holder != null){
 					holder.removeObject(object);
 				}

@@ -29,7 +29,7 @@ public class Lockable extends Attribute {
 		// SetProp.Lock: Valid if the object is Lockable and unlocked
 		ActionHandler.addValidateRule(SetProp.Lock.class, new ValidateRule<SetProp.Lock>() {
 			public IsValid validate(SetProp.Lock lock){
-				Lockable lockable = lock.object.getAttr(Lockable.class);
+				Lockable lockable = lock.object.as(Lockable.class);
 				if(lockable == null){
 					return IsValid.False("Lockable: Object is not lockable");
 				}
@@ -42,7 +42,7 @@ public class Lockable extends Attribute {
 		// SetProp.Lock Apply: Update isLocked flag on object
 		ActionHandler.addApplyRule(SetProp.Lock.class, new ApplyRule<SetProp.Lock>() {
 			public Result apply(SetProp.Lock lock){
-				Lockable lockable = lock.object.getAttr(Lockable.class);
+				Lockable lockable = lock.object.as(Lockable.class);
 				if(lockable == null){
 					return Result.Err("Lockable: Object is not lockable");
 				}
@@ -55,7 +55,7 @@ public class Lockable extends Attribute {
 		// SetProp.Unlock: Valid if the object is Lockable and locked
 		ActionHandler.addValidateRule(SetProp.Unlock.class, new ValidateRule<SetProp.Unlock>() {
 			public IsValid validate(SetProp.Unlock unlock){
-				Lockable lockable = unlock.object.getAttr(Lockable.class);
+				Lockable lockable = unlock.object.as(Lockable.class);
 				if(lockable == null){
 					return IsValid.False("Lockable: Object is not lockable");
 				}
@@ -68,7 +68,7 @@ public class Lockable extends Attribute {
 		// SetProp.Unlock Apply: Update isLocked flag on object
 		ActionHandler.addApplyRule(SetProp.Unlock.class, new ApplyRule<SetProp.Unlock>() {
 			public Result apply(SetProp.Unlock unlock){
-				Lockable lockable = unlock.object.getAttr(Lockable.class);
+				Lockable lockable = unlock.object.as(Lockable.class);
 				if(lockable == null){
 					return Result.Err("Lockable: Object is not lockable");
 				}
