@@ -36,13 +36,13 @@ class MobileSimCommandConnector(CommandHandler):
                 self.agent.start()
 
     def _handle_teleport_command(self, obj_id, x, y, z, wp_handle):
-        cl_params = { 'object-id': int(obj_id), 'x': x, 'y': y, 'z': z }
+        cl_params = { 'object-id': int(obj_id), 'x': x, 'y': y, 'z': z, 'teleport': True}
         cond_test = ControlLawUtil.create_empty_condition_test("stabilized")
         control_law = ControlLawUtil.create_control_law("put-at-xyz", cl_params, cond_test)
         self.agent.get_connector('actuation').queue_command(control_law, self.callback)
 
     def _handle_place_command(self, obj_id, rel_handle, dest_id):
-        cl_params = { 'object-id': int(obj_id), 'relation': rel_handle, 'destination-id': int(dest_id) }
+        cl_params = { 'object-id': int(obj_id), 'relation': rel_handle, 'destination-id': int(dest_id), 'teleport': True }
         cond_test = ControlLawUtil.create_empty_condition_test("stabilized")
         control_law = ControlLawUtil.create_control_law("put-on-object", cl_params, cond_test)
         self.agent.get_connector('actuation').queue_command(control_law, self.callback)

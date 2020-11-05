@@ -19,6 +19,9 @@ class ControlLawUtil:
         elif type(v) is float:
             tv.type = typed_value_t.TYPE_DOUBLE
             tv.value = str(v)
+        elif type(v) is bool:
+            tv.type = typed_value_t.TYPE_BOOL
+            tv.value = str(v)
         elif type(v) is str and (v == 'true' or v == 'false'):
             tv.type = typed_value_t.TYPE_BOOL
             tv.value = v

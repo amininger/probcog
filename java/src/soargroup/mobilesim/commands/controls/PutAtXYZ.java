@@ -18,6 +18,7 @@ public class PutAtXYZ extends ControlLaw {
 			params.add(new TypedParameter("x", TypedValue.TYPE_DOUBLE, true));
 			params.add(new TypedParameter("y", TypedValue.TYPE_DOUBLE, true));
 			params.add(new TypedParameter("z", TypedValue.TYPE_DOUBLE, true));
+			params.add(new TypedParameter("teleport", TypedValue.TYPE_BOOLEAN, false));
 			parameters = Collections.unmodifiableList(params);
 		}
 		return parameters;
@@ -28,6 +29,9 @@ public class PutAtXYZ extends ControlLaw {
 	public final double y;
 	public final double z;
 
+	// If true, don't worry about the object in relation to the robot
+	public final boolean teleport;
+
     public PutAtXYZ(Map<String, TypedValue> parameters) {
 		super(parameters);
 		ControlLaw.validateParameters(parameters, PutAtXYZ.getParameters());
@@ -35,6 +39,7 @@ public class PutAtXYZ extends ControlLaw {
 		x = parameters.get("x").getDouble();
 		y = parameters.get("y").getDouble();
 		z = parameters.get("z").getDouble();
+		teleport = parameters.getOrDefault("teleport", new TypedValue(false)).getBoolean();
     }
 
 	@Override

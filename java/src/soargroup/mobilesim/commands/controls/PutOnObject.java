@@ -18,6 +18,7 @@ public class PutOnObject extends ControlLaw {
 			ArrayList<TypedParameter> params = new ArrayList<TypedParameter>();
 			params.add(new TypedParameter("destination-id", TypedValue.TYPE_INT, true));
 			params.add(new TypedParameter("relation", TypedValue.TYPE_STRING, false));
+			params.add(new TypedParameter("teleport", TypedValue.TYPE_BOOLEAN, false));
 			parameters = Collections.unmodifiableList(params);
 		}
 		return parameters;
@@ -26,6 +27,9 @@ public class PutOnObject extends ControlLaw {
 	// The coordinate to put the object at
 	public final Integer destinationId;
 	public final String relation;
+
+	// If true, don't worry about the object in relation to the robot
+	public final boolean teleport;
 
     public PutOnObject(Map<String, TypedValue> parameters) {
 		super(parameters);
@@ -37,6 +41,8 @@ public class PutOnObject extends ControlLaw {
 		} else {
 			relation = "on";
 		}
+
+		teleport = parameters.getOrDefault("teleport", new TypedValue(false)).getBoolean();
     }
 
 	@Override

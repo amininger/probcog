@@ -235,7 +235,10 @@ public class MobileSimulator implements LCMSubscriber
 				xyz[2] = Double.parseDouble(controlLaw.param_values[p].value);
 			} 
 		}
-		return new PutDown.XYZ(movingObj, xyz);
+
+		Boolean teleport = getParam(controlLaw, "teleport", "false").toLowerCase().equals("true");
+
+		return new PutDown.XYZ(movingObj, xyz, teleport);
 	}
 
 	private PutDown.Target parsePutOnObject(control_law_t controlLaw){
@@ -255,8 +258,9 @@ public class MobileSimulator implements LCMSubscriber
 		if(target == null){ return null; }
 
 		String relation = getParam(controlLaw, "relation", RosieConstants.REL_ON);
+		Boolean teleport = getParam(controlLaw, "teleport", "false").toLowerCase().equals("true");
 
-		return new PutDown.Target(movingObj, relation, target);
+		return new PutDown.Target(movingObj, relation, target, teleport);
 	}
 
 	private SetProp parseChangeState(control_law_t controlLaw){

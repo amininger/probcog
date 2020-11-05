@@ -332,6 +332,16 @@ public class SimRobot implements SimObject, LCMSubscriber
 			}
 		});
 
+		// PutDown: Valid if currently held (and not teleporting)
+		ActionHandler.addValidateRule(PutDown.class, new ValidateRule<PutDown>(){
+			public IsValid validate(PutDown putdown){
+				if(!putdown.teleport && putdown.object != grabbedObject){
+					return IsValid.False("SimRobot: Object " + grabbedObject + " is not the held object");
+				}
+				return IsValid.True();
+			}
+		});
+
 		// PutDown Apply: Set grabbedObject
 		ActionHandler.addApplyRule(PutDown.class, new ApplyRule<PutDown>(){
 			public Result apply(PutDown putdown){

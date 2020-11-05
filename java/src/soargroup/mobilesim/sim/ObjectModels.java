@@ -32,6 +32,8 @@ public class ObjectModels {
 			return createExtinguisherModel(scale, color);
 		if(modelName.equals("carton"))
 			return createCartonModel(scale, color);
+		if(modelName.equals("computer"))
+			return createComputerModel(scale, color);
 		return null;
 	}
 
@@ -248,6 +250,30 @@ public class ObjectModels {
 		vc.add(new VisChain(LinAlg.translate(0.0, 0.0, 0.5 - TOP_H/2), LinAlg.scale(1.0, 1.0, TOP_H), new VzTriangularPrism(style)));
 		// Bottom Box
 		vc.add(new VisChain(LinAlg.translate(0.0, 0.0, -0.5 + BOT_H/2), new VzBox(1.0, 1.0, BOT_H, style)));
+
+		return vc;
+	}
+
+	public static VisChain createComputerModel(double[] scale, Color color){
+		VisChain vc = new VisChain();
+		VzMesh.Style style = new VzMesh.Style(color);
+
+		vc.add(LinAlg.scale(scale[0], scale[1], scale[2]));
+
+		// PC Tower
+		addBox(vc, 0.0, -0.4, 0.0, 1.0, 0.2, 1.0, style);
+
+		// Monitor Base
+		addBox(vc, -0.2,  0.15, -0.45, 0.4, 0.4, 0.1, style);
+
+		// Monitor Stand
+		addBox(vc, -0.3,  0.15, -0.2, 0.1, 0.1, 0.6, style);
+
+		// Monitor Screen
+		addBox(vc, -0.2,  0.15, 0.1, 0.1, 0.7, 0.8, style);
+
+		// Keyboard
+		addBox(vc, 0.3, 0.15, -0.45, 0.4, 0.6, 0.1, style);
 
 		return vc;
 	}
