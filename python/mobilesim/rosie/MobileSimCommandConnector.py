@@ -1,6 +1,6 @@
 from pysoarlib import *
 
-from rosie import CommandHandler
+from rosie import CommandConnector
 from mobilesim.lcmtypes import rosie_agent_command_t
 from mobilesim.rosie.actuation import ControlLawUtil
 
@@ -9,9 +9,9 @@ from mobilesim.rosie.actuation import ControlLawUtil
 #    will stop the agent
 # command_type == CONTINUE:
 #    will run the agent
-class MobileSimCommandConnector(CommandHandler):
+class MobileSimCommandConnector(CommandConnector):
     def __init__(self, agent, lcm, print_handler=None):
-        CommandHandler.__init__(self, agent, print_handler)
+        CommandConnector.__init__(self, agent, print_handler)
 
         self.lcm = lcm
         self.lcm_handler = lambda channel, data: self.message_received(channel, data)
@@ -35,21 +35,21 @@ class MobileSimCommandConnector(CommandHandler):
             elif agent_command.command_type == rosie_agent_command_t.CONTINUE:
                 self.agent.start()
 
-    def _handle_teleport_command(self, obj_id, x, y, z, wp_handle):
+    def _handle_teleport_command(self, command, obj_id, x, y, z, wp_handle):
         cl_params = { 'object-id': int(obj_id), 'x': x, 'y': y, 'z': z, 'teleport': True}
         cond_test = ControlLawUtil.create_empty_condition_test("stabilized")
         control_law = ControlLawUtil.create_control_law("put-at-xyz", cl_params, cond_test)
-        self.agent.get_connector('actuation').queue_command(control_law, self.callback)
+        self.agent.get_connector('actuation').queue_command(control_law, self._evoke_callbacks)
 
-    def _handle_place_command(self, obj_id, rel_handle, dest_id):
+    def _handle_place_command(self, command, obj_id, rel_handle, dest_id):
         cl_params = { 'object-id': int(obj_id), 'relation': rel_handle, 'destination-id': int(dest_id), 'teleport': True }
         cond_test = ControlLawUtil.create_empty_condition_test("stabilized")
         control_law = ControlLawUtil.create_control_law("put-on-object", cl_params, cond_test)
-        self.agent.get_connector('actuation').queue_command(control_law, self.callback)
+        self.agent.get_connector('actuation').queue_command(control_law, self._evoke_callbacks)
 
-    def _handle_set_pred_command(self, obj_id, prop_handle, pred_handle):
+    def _handle_set_pred_command(self, command, obj_id, prop_handle, pred_handle):
         cl_params = { 'object-id': int(obj_id), 'property': prop_handle, 'value': pred_handle }
         cond_test = ControlLawUtil.create_empty_condition_test("stabilized")
         control_law = ControlLawUtil.create_control_law("change-state", cl_params, cond_test)
-        self.agent.get_connector('actuation').queue_command(control_law, self.callback)
+        self.agent.get_connector('actuation').queue_command(control_law, self._evoke_callbacks)
 
