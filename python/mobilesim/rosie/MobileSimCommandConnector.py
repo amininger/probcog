@@ -35,21 +35,24 @@ class MobileSimCommandConnector(CommandConnector):
             elif agent_command.command_type == rosie_agent_command_t.CONTINUE:
                 self.agent.start()
 
-    def _handle_teleport_command(self, command, obj_id, x, y, z, wp_handle):
+    def _handle_teleport_command(self, obj_id, x, y, z, wp_handle):
         cl_params = { 'object-id': int(obj_id), 'x': x, 'y': y, 'z': z, 'teleport': True}
         cond_test = ControlLawUtil.create_empty_condition_test("stabilized")
         control_law = ControlLawUtil.create_control_law("put-at-xyz", cl_params, cond_test)
-        self.agent.get_connector('actuation').queue_command(control_law, self._evoke_callbacks)
+        self.agent.get_connector('actuation').queue_command(control_law, lambda s: self.complete_command())
+        return False
 
-    def _handle_place_command(self, command, obj_id, rel_handle, dest_id):
+    def _handle_place_command(self, obj_id, rel_handle, dest_id):
         cl_params = { 'object-id': int(obj_id), 'relation': rel_handle, 'destination-id': int(dest_id), 'teleport': True }
         cond_test = ControlLawUtil.create_empty_condition_test("stabilized")
         control_law = ControlLawUtil.create_control_law("put-on-object", cl_params, cond_test)
-        self.agent.get_connector('actuation').queue_command(control_law, self._evoke_callbacks)
+        self.agent.get_connector('actuation').queue_command(control_law, lambda s: self.complete_command())
+        return False
 
-    def _handle_set_pred_command(self, command, obj_id, prop_handle, pred_handle):
+    def _handle_set_pred_command(self, obj_id, prop_handle, pred_handle):
         cl_params = { 'object-id': int(obj_id), 'property': prop_handle, 'value': pred_handle }
         cond_test = ControlLawUtil.create_empty_condition_test("stabilized")
         control_law = ControlLawUtil.create_control_law("change-state", cl_params, cond_test)
-        self.agent.get_connector('actuation').queue_command(control_law, self._evoke_callbacks)
+        self.agent.get_connector('actuation').queue_command(control_law, lambda s: self.complete_command())
+        return False
 
