@@ -357,9 +357,9 @@ public class SimRobot implements SimObject, LCMSubscriber
 			public Result apply(PutDown.Floor putdown){
 				double[] robotPos = LinAlg.copy(drive.poseTruth.pos);
 				double[] forward = LinAlg.matrixAB(LinAlg.quatToMatrix(drive.poseTruth.orientation), new double[]{1.0, 0.0, 0.0, 0.0});
-				forward = LinAlg.scale(forward, 0.3);
+				forward = LinAlg.scale(forward, 0.6);
 				double[] newPos = LinAlg.add(robotPos, forward);
-				double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.5, 0, 0, 0 };
+				double[] xyzrpy = new double[]{ newPos[0], newPos[1], 0.2, 0, 0, 0 };
 				putdown.object.setPose(LinAlg.xyzrpyToMatrix(xyzrpy));
 				return Result.Ok();
 			}
