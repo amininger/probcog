@@ -44,6 +44,9 @@ public class SimDoor extends RosieSimObject {
 	}
 
 	public boolean connectsRegion(SimRegion region){
+		if(region == null){
+			return false;
+		}
 		return reg1.equals(region.getHandle()) || reg2.equals(region.getHandle());
 	}
 

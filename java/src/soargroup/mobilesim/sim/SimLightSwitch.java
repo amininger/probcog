@@ -33,6 +33,8 @@ public class SimLightSwitch extends RosieSimObject {
 		activatable = new Activatable(this, isOn);
 		addAttribute(activatable);
 
+		super.init(worldObjects);
+
 		for(SimObject obj : worldObjects){
 			if(!(obj instanceof SimRegion)){
 				continue;
@@ -47,8 +49,6 @@ public class SimLightSwitch extends RosieSimObject {
 		if(region == null){
 			System.err.println("ERROR: LightSwitch cannot find region " + regionHandle);
 		}
-
-		super.init(worldObjects);
 	}
 
 	@Override

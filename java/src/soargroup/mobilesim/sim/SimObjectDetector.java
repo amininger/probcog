@@ -87,15 +87,14 @@ public class SimObjectDetector {
 				// Grabbed object always in the same region
 				return true;
 			}
-			if(obj.is(InRegion.class) && obj.as(InRegion.class).getRegion(regions) == null){
-				// Object's region is null
+			if(!obj.is(InRegion.class)){
+				// We cannot check the region of the object, so we return false
 				return false;
 			}
-			if(obj.is(InRegion.class) && obj.as(InRegion.class).getRegion(regions) != curRegion){
-				// Object's region isn't the same as curRegion
-				return false;
-			}
-			return true;
+
+			// Return true if object's region is the same as the curRegion
+			SimRegion objRegion = obj.as(InRegion.class).getRegion(regions);
+			return objRegion != null && objRegion == curRegion;
 		}
 
 		private boolean isVisible(RosieSimObject obj, SimRobot robot){

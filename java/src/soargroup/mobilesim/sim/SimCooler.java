@@ -22,6 +22,7 @@ public class SimCooler extends RosieSimObject {
 	private final double BOT_H = 0.50; // Height of bottom box
 	
 	private Receptacle receptacle;
+	private boolean auto = false;
 
 	public SimCooler(SimWorld sw){
 		super(sw);
@@ -69,6 +70,26 @@ public class SimCooler extends RosieSimObject {
 				obj.as(Fillable.class).setContents(RosieConstants.WATER);
 			}
 		}
+	}
+
+	@Override
+	public void update(double dt, ArrayList<SimObject> worldObjects){
+		super.update(dt, worldObjects);
+		if(auto){
+			dispense();
+		}
+	}
+
+	public void read(StructureReader ins) throws IOException {
+		super.read(ins);
+
+		// [Str] either auto or manual
+		auto = ins.readString().toLowerCase().equals("auto");
+	}
+
+	public void write(StructureWriter outs) throws IOException {
+		super.write(outs);
+		outs.writeString(auto ? "auto" : "manual");
 	}
 
 }
